@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.StockInfoMapper">
+
+    <!-- 종목 상세 정보 조회 -->
+    <select id="findByStockCode" parameterType="string" resultType="com.example.myapp.domain.StockInfo">
+        SELECT stock_code, exchange_code, sector, market_type, market_cap, updated_at
+        FROM stock_info
+        WHERE stock_code = #{stockCode}
+        LIMIT 1 -- 임시로 하나만 가져옴
+    </select>
+
+    <!-- 종목 정보 등록 또는 갱신 (UPSERT) -->
+    <insert id="upsert" parameterType="com.example.myapp.domain.StockInfo">
+        INSERT INTO stock_info (stock_code, exchange_code, sector, market_type, market_cap, updated_at)
+        VALUES (#{stockCode}, #{exchangeCode}, #{sector}, #{marketType}, #{marketCap}, NOW())
+        ON DUPLICATE KEY UPDATE
+            exchange_code = VALUES(exchange_code),
+            sector = VALUES(sector),
+            market_type = VALUES(market_type),
+            market_cap = VALUES(market_cap),
+            updated_at = NOW()
+    </insert>
+
+</mapper>

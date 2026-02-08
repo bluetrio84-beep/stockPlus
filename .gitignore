@@ -1,0 +1,7 @@
+.env
+.idea
+.vscode
+*.log
+docker-compose.override.yml
+*.tar.gz
+*.bak

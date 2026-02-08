@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.UserMapper">
+
+    <select id="findAll" resultType="com.example.myapp.domain.User">
+        SELECT 
+            USRID as usrId, 
+            USRNAME as usrName, 
+            email, 
+            phone_number as phoneNumber, 
+            created_at as createdAt 
+        FROM users
+    </select>
+
+    <select id="findByUsrId" resultType="com.example.myapp.domain.User">
+        SELECT USRID as usrId, USRNAME as usrName, password, phone_number as phoneNumber, email, created_at as createdAt 
+        FROM users WHERE USRID = #{usrId}
+    </select>
+
+    <insert id="insert" parameterType="com.example.myapp.domain.User">
+        INSERT INTO users (USRID, USRNAME, password, phone_number, email, created_at)
+        VALUES (#{usrId}, #{usrName}, #{password}, #{phoneNumber}, #{email}, NOW())
+    </insert>
+
+    <select id="existsByUsrId" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM users WHERE USRID = #{usrId}
+    </select>
+
+    <select id="existsByPhoneNumber" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM users WHERE phone_number = #{phoneNumber}
+    </select>
+
+</mapper>

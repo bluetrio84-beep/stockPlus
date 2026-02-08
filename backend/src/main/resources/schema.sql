@@ -1,0 +1,104 @@
+DROP TABLE IF EXISTS watchlist;
+DROP TABLE IF EXISTS user_note;
+DROP TABLE IF EXISTS notification_log;
+DROP TABLE IF EXISTS user_market_insight;
+DROP TABLE IF EXISTS user_keyword;
+DROP TABLE IF EXISTS stock_master;
+DROP TABLE IF EXISTS news;
+DROP TABLE IF EXISTS stock_info;
+DROP TABLE IF EXISTS stock_analysis_log;
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    USRID VARCHAR(50) PRIMARY KEY,
+    USRNAME VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE stock_master (
+    stock_code VARCHAR(20),
+    stock_name VARCHAR(100),
+    market_type VARCHAR(20),
+    exchange_code VARCHAR(10),
+    PRIMARY KEY (stock_code, exchange_code)
+);
+
+CREATE TABLE watchlist (
+    USRID VARCHAR(50) NOT NULL,
+    stock_code VARCHAR(20) NOT NULL,
+    stock_name VARCHAR(100),
+    exchange_code VARCHAR(10),
+    group_id INT DEFAULT 1,
+    is_favorite BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (USRID, stock_code, group_id),
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);
+
+CREATE TABLE user_note (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    USRID VARCHAR(50) NOT NULL,
+    ref_code VARCHAR(50), 
+    title VARCHAR(200),
+    content TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);
+
+CREATE TABLE news (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    link VARCHAR(500) UNIQUE,
+    description TEXT,
+    pub_date DATETIME,
+    is_ai_summarized BOOLEAN DEFAULT FALSE,
+    ai_summary TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notification_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    USRID VARCHAR(50) NOT NULL,
+    news_id BIGINT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);
+
+CREATE TABLE user_market_insight (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    USRID VARCHAR(50) NOT NULL,
+    insight_text TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);
+
+CREATE TABLE user_keyword (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    USRID VARCHAR(50) NOT NULL,
+    keyword VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);
+
+CREATE TABLE stock_info (
+    stock_code VARCHAR(20) PRIMARY KEY,
+    sector VARCHAR(100),
+    main_products TEXT,
+    listing_date DATE,
+    website VARCHAR(255),
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE stock_analysis_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    USRID VARCHAR(50) NOT NULL,
+    stock_code VARCHAR(20),
+    analysis_result TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (USRID) REFERENCES users(USRID) ON DELETE CASCADE
+);

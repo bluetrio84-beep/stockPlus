@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.NotificationMapper">
+
+    <select id="findRecentNotifications" resultType="map">
+        SELECT id, message, is_read as isRead, created_at as createdAt, type
+        FROM notification_log
+        WHERE USRID = #{usrId}
+        ORDER BY created_at DESC
+        LIMIT 10
+    </select>
+
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*) FROM notification_log
+        WHERE USRID = #{usrId} AND is_read = false
+    </select>
+
+    <insert id="insertNotification">
+        INSERT INTO notification_log (USRID, message, type, is_read, created_at)
+        VALUES (#{usrId}, #{message}, #{type}, false, NOW())
+    </insert>
+
+    <update id="markAsRead">
+        UPDATE notification_log
+        SET is_read = true
+        WHERE USRID = #{usrId}
+    </update>
+
+</mapper>

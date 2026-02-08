@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.NewsMapper">
+
+    <insert id="saveNews" parameterType="com.example.myapp.domain.NewsItem">
+        INSERT IGNORE INTO news_item (
+            title,
+            link,
+            description,
+            pub_date,
+            created_at
+        ) VALUES (
+            #{title},
+            #{link},
+            #{description},
+            #{pubDate},
+            NOW()
+        )
+    </insert>
+
+    <select id="findRecentNews" resultType="com.example.myapp.domain.NewsItem">
+        SELECT
+            id, title, link, description, pub_date AS pubDate,
+            is_ai_summarized AS isAiSummarized, ai_summary AS aiSummary, created_at AS createdAt
+        FROM news_item
+        WHERE pub_date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        ORDER BY pub_date DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findPendingSummaryNews" resultType="com.example.myapp.domain.NewsItem">
+        SELECT
+            id, title, link, description, pub_date AS pubDate
+        FROM news_item
+        WHERE is_ai_summarized = FALSE
+        ORDER BY pub_date DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateAiSummary" parameterType="com.example.myapp.domain.NewsItem">
+        UPDATE news_item
+        SET ai_summary = #{aiSummary},
+            is_ai_summarized = TRUE
+        WHERE id = #{id}
+    </update>
+
+</mapper>

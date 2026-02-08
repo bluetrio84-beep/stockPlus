@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.WatchlistMapper">
+
+    <resultMap id="WatchlistMap" type="com.example.myapp.domain.Watchlist">
+        <id property="id" column="id"/>
+        <result property="usrId" column="USRID"/>
+        <result property="stockCode" column="stock_code"/>
+        <result property="stockName" column="stock_name"/>
+        <result property="exchangeCode" column="exchange_code"/>
+        <result property="groupId" column="group_id"/>
+        <result property="isFavorite" column="is_favorite"/>
+        <result property="marketType" column="market_type"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 관심 종목 전체 조회 -->
+    <select id="findAll" resultMap="WatchlistMap">
+        SELECT w.*, sm.market_type
+        FROM watchlist w
+        LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code AND w.exchange_code = sm.exchange_code
+        WHERE w.USRID = #{usrId}
+        ORDER BY w.created_at DESC
+    </select>
+
+    <!-- 실시간 구독용 전체 종목 조회 -->
+    <select id="findAllGlobal" resultMap="WatchlistMap">
+        SELECT DISTINCT stock_code, exchange_code FROM watchlist
+    </select>
+
+    <!-- 그룹별 관심 종목 조회 -->
+    <select id="findByGroupId" resultMap="WatchlistMap">
+        SELECT w.*, sm.market_type
+        FROM watchlist w
+        LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code AND w.exchange_code = sm.exchange_code
+        WHERE w.USRID = #{usrId} AND w.group_id = #{groupId}
+        ORDER BY w.created_at DESC
+    </select>
+    
+    <!-- 즐겨찾기 종목 조회 -->
+    <select id="findFavorites" resultMap="WatchlistMap">
+        SELECT w.*, sm.market_type
+        FROM watchlist w
+        LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code AND w.exchange_code = sm.exchange_code
+        WHERE w.USRID = #{usrId} AND w.is_favorite = true
+        ORDER BY w.created_at DESC
+    </select>
+
+    <!-- 관심 종목 추가 -->
+    <insert id="insert" parameterType="com.example.myapp.domain.Watchlist">
+        INSERT INTO watchlist (USRID, stock_code, stock_name, exchange_code, group_id, is_favorite, created_at)
+        VALUES (#{usrId}, #{stockCode}, #{stockName}, #{exchangeCode}, #{groupId}, #{isFavorite}, NOW())
+    </insert>
+
+    <!-- 관심 종목 삭제 -->
+    <delete id="deleteByStockCode">
+        DELETE FROM watchlist 
+        WHERE USRID = #{usrId} AND stock_code = #{stockCode} AND group_id = #{groupId}
+    </delete>
+
+    <!-- 그룹 전체 삭제 -->
+    <delete id="deleteByGroupId">
+        DELETE FROM watchlist 
+        WHERE USRID = #{usrId} AND group_id = #{groupId}
+    </delete>
+    
+    <!-- 즐겨찾기 토글 -->
+    <update id="updateFavorite">
+        UPDATE watchlist
+        SET is_favorite = #{isFavorite}
+        WHERE USRID = #{usrId} AND stock_code = #{stockCode} AND group_id = #{groupId}
+    </update>
+
+</mapper>

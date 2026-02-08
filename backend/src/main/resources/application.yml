@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: myStockPlusBackend
+  datasource:
+    # JDBC URL 인코딩 및 세션 설정 강화
+    url: jdbc:mysql://mysql:3306/stockplus?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true&connectionCollation=utf8mb4_unicode_ci&sessionVariables=collation_connection=utf8mb4_unicode_ci
+    username: lms
+    password: cnbas.2015
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: never
+      encoding: UTF-8
+
+# MyBatis SQL 로그 활성화
+logging:
+  level:
+    com.example.myapp.mapper: DEBUG
+    org.springframework.jdbc: DEBUG
+
+mybatis:
+  type-aliases-package: com.example.myapp.domain
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+kis:
+  api:
+    base-url: https://openapi.koreainvestment.com:9443
+    key: ${KIS_APP_KEY}
+    secret: ${KIS_APP_SECRET}
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+
+naver:
+  api:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+    url: https://openapi.naver.com/v1/search/news.json
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true

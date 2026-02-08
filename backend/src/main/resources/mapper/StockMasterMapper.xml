@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.myapp.mapper.StockMasterMapper">
+
+    <resultMap id="StockMasterMap" type="com.example.myapp.domain.StockMaster">
+        <result column="stock_code" property="stockCode"/>
+        <result column="stock_name" property="stockName"/>
+        <result column="exchange_code" property="exchangeCode"/>
+        <result column="market_type" property="marketType"/>
+    </resultMap>
+
+    <select id="searchStocks" parameterType="string" resultMap="StockMasterMap">
+        SELECT 
+            stock_code, 
+            stock_name, 
+            exchange_code, 
+            market_type
+        FROM stock_master
+        WHERE stock_name LIKE CONCAT('%', #{keyword}, '%')
+           OR stock_code LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY stock_name ASC
+        LIMIT 20
+    </select>
+
+</mapper>
