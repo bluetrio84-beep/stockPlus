@@ -44,6 +44,26 @@ public class HoldingsController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/history/{id}")
+    public ResponseEntity<?> updateTrade(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload) {
+        
+        try {
+            String usrId = jwtUtil.extractUsername(token.substring(7));
+            int quantity = Integer.parseInt(payload.get("quantity").toString());
+            BigDecimal price = new BigDecimal(payload.get("price").toString());
+            LocalDate tradeDate = LocalDate.parse(payload.get("tradeDate").toString());
+
+            holdingsService.updateTrade(id, usrId, quantity, price, tradeDate);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(HoldingsController.class).error("Update Trade Error: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     @PostMapping
     public ResponseEntity<?> addTrade(
             @RequestHeader("Authorization") String token,

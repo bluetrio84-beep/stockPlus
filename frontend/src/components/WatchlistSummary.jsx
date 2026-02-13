@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory } from '../api/stockApi';
+import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory } from '../api/stockApi';
 import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import classNames from 'classnames';
 import { getSignSymbol, getColorClass, getMarketDisplay } from '../utils/stockUtils';
@@ -15,6 +15,7 @@ const WatchlistSummary = () => {
     const [selectedStock, setSelectedStock] = useState(null); 
     const [tradeHistory, setTradeHistory] = useState([]); 
     const [isTradeFormOpen, setIsTradeFormOpen] = useState(false); 
+    const [editingTrade, setEditingTrade] = useState(null); // [추가] 수정 중인 내역
     const [tradeFormData, setTradeFormData] = useState({
         tradeDate: new Date().toISOString().split('T')[0], 
         price: '',
@@ -133,27 +134,70 @@ const WatchlistSummary = () => {
         const holdingInfo = holdings.find(h => h.stockCode === stock.code);
         setSelectedStock({ ...stock, holding: holdingInfo });
         loadTradeHistory(stock.code); 
-        setTradeFormData({ tradeDate: new Date().toISOString().split('T')[0], price: stock.price || '', quantity: '' });
-        setIsTradeFormOpen(false);
+        resetTradeForm();
     };
 
-    const handleAddTrade = async () => {
+    const resetTradeForm = () => {
+        setTradeFormData({ tradeDate: new Date().toISOString().split('T')[0], price: selectedStock?.price || '', quantity: '' });
+        setIsTradeFormOpen(false);
+        setEditingTrade(null);
+    };
+
+    const handleHistoryItemClick = (item) => {
+        setEditingTrade(item);
+        setTradeFormData({
+            tradeDate: item.tradeDate,
+            price: item.price,
+            quantity: item.quantity
+        });
+        setIsTradeFormOpen(true);
+    };
+
+    const handleSaveTrade = async () => {
         if (!tradeFormData.quantity || !tradeFormData.price) return alert("수량과 단가를 입력해주세요.");
+        
+        console.log(">>> [TradeSave] Start. Editing:", editingTrade);
+        
         try {
-            await addTrade({
-                stockCode: selectedStock.code, stockName: selectedStock.name,
-                quantity: parseInt(tradeFormData.quantity), price: parseFloat(tradeFormData.price),
-                tradeDate: tradeFormData.tradeDate 
-            });
-            setIsTradeFormOpen(false);
+            let result;
+            if (editingTrade) {
+                if (!editingTrade.id) {
+                    console.error(">>> [TradeSave] Error: Missing ID for editing", editingTrade);
+                    return alert("수정할 내역의 ID를 찾을 수 없습니다.");
+                }
+                // 수정
+                result = await updateTradeHistory(editingTrade.id, {
+                    quantity: parseInt(tradeFormData.quantity),
+                    price: parseFloat(tradeFormData.price),
+                    tradeDate: tradeFormData.tradeDate
+                });
+            } else {
+                // 추가
+                result = await addTrade({
+                    stockCode: selectedStock.code, stockName: selectedStock.name,
+                    quantity: parseInt(tradeFormData.quantity), price: parseFloat(tradeFormData.price),
+                    tradeDate: tradeFormData.tradeDate 
+                });
+            }
+
+            if (result === null) {
+                throw new Error("API request returned null");
+            }
+
+            console.log(">>> [TradeSave] Success:", result);
+            resetTradeForm();
             await refreshDetailData();
-        } catch (e) { alert("저장에 실패했습니다."); }
+        } catch (e) { 
+            console.error(">>> [TradeSave] Failed:", e);
+            alert("저장에 실패했습니다. 콘솔 로그를 확인하세요."); 
+        }
     };
 
     const handleDeleteTrade = async (id) => {
         if (!window.confirm("내역을 삭제하시겠습니까?")) return;
         try {
-            await deleteTradeHistory(id);
+            await deleteTradeHistory(id || editingTrade.id);
+            resetTradeForm();
             await refreshDetailData();
         } catch (e) { alert("삭제에 실패했습니다."); }
     };
@@ -200,13 +244,20 @@ const WatchlistSummary = () => {
                     </div>
 
                     <div className="px-4 pb-4">
-                        <div className="flex items-center gap-2 mb-3 mt-2"><History size={14} className="text-indigo-400" /><h3 className="text-xs font-bold text-slate-300 uppercase tracking-tight">매매 히스토리</h3></div>
+                        <div className="flex items-center gap-2 mb-3 mt-2"><History size={14} className="text-indigo-400" /><h3 className="text-xs font-bold text-slate-300 uppercase tracking-tight">매매 히스토리 (클릭하여 수정)</h3></div>
                         {tradeHistory.length > 0 ? (
                             <div className="space-y-2">
                                 {tradeHistory.map((item) => (
-                                    <div key={item.id} className="bg-slate-800/20 border border-slate-800/50 rounded-lg p-2.5 flex justify-between items-center group">
+                                    <div 
+                                        key={item.id} 
+                                        onClick={() => handleHistoryItemClick(item)}
+                                        className={classNames("bg-slate-800/20 border border-slate-800/50 rounded-lg p-2.5 flex justify-between items-center group cursor-pointer transition-colors", {
+                                            "border-indigo-500 bg-indigo-500/5": editingTrade?.id === item.id,
+                                            "hover:bg-slate-800/40": editingTrade?.id !== item.id
+                                        })}
+                                    >
                                         <div className="flex items-center gap-2.5"><div className="bg-slate-800 p-1.5 rounded-md"><Calendar size={12} className="text-slate-500" /></div><div><p className="text-[11px] font-bold text-slate-300">{item.tradeDate}</p><p className="text-[10px] text-slate-500">{item.quantity}주 · {item.price.toLocaleString()}원</p></div></div>
-                                        <div className="flex items-center gap-2"><div className="text-right"><p className="text-[11px] font-bold text-white">{(item.quantity * item.price).toLocaleString()}원</p><span className="text-[8px] text-indigo-400 font-bold">매수</span></div><button onClick={() => handleDeleteTrade(item.id)} className="p-1.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button></div>
+                                        <div className="flex items-center gap-2"><div className="text-right"><p className="text-[11px] font-bold text-white">{(item.quantity * item.price).toLocaleString()}원</p><span className="text-[8px] text-indigo-400 font-bold">매수</span></div><div className="p-1.5 text-slate-600 group-hover:text-slate-400 transition-all"><Plus size={14} className="rotate-45" /></div></div>
                                     </div>
                                 ))}
                             </div>
@@ -219,12 +270,19 @@ const WatchlistSummary = () => {
                         <button onClick={() => setIsTradeFormOpen(true)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/10"><Plus size={18} /> 매매내역 추가</button>
                     ) : (
                         <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 animate-in slide-in-from-bottom-2 duration-300">
+                            <h4 className="text-[10px] font-black text-indigo-400 uppercase mb-2">{editingTrade ? '매매 내역 수정' : '매매 내역 추가'}</h4>
                             <div className="grid grid-cols-2 gap-2 mb-3">
                                 <div className="col-span-2"><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">매수일자</label><input type="date" value={tradeFormData.tradeDate} onChange={e => setTradeFormData({...tradeFormData, tradeDate: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
                                 <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">단가</label><input type="number" value={tradeFormData.price} onChange={e => setTradeFormData({...tradeFormData, price: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
                                 <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">수량</label><input type="number" value={tradeFormData.quantity} onChange={e => setTradeFormData({...tradeFormData, quantity: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
                             </div>
-                            <div className="flex gap-2"><button onClick={() => setIsTradeFormOpen(false)} className="flex-1 py-2 bg-slate-700 text-slate-300 font-bold rounded-lg text-xs">취소</button><button onClick={handleAddTrade} className="flex-1 py-2 bg-indigo-600 text-white font-bold rounded-lg text-xs">저장</button></div>
+                            <div className="flex gap-2">
+                                <button onClick={resetTradeForm} className="flex-1 py-2 bg-slate-700 text-slate-300 font-bold rounded-lg text-xs">취소</button>
+                                {editingTrade && (
+                                    <button onClick={() => handleDeleteTrade(editingTrade.id)} className="px-3 py-2 bg-red-500/20 text-red-400 font-bold rounded-lg text-xs hover:bg-red-500/30 transition-colors"><Trash2 size={14} /></button>
+                                )}
+                                <button onClick={handleSaveTrade} className="flex-[2] py-2 bg-indigo-600 text-white font-bold rounded-lg text-xs">저장</button>
+                            </div>
                         </div>
                     )}
                 </div>

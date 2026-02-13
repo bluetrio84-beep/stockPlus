@@ -29,4 +29,12 @@
         DELETE FROM trade_history WHERE id = #{id}
     </delete>
 
+    <update id="update" parameterType="com.stockPlus.domain.TradeHistory">
+        UPDATE trade_history 
+        SET quantity = #{quantity}, 
+            price = #{price}, 
+            trade_date = #{tradeDate}
+        WHERE id = #{id}
+    </update>
+
 </mapper>

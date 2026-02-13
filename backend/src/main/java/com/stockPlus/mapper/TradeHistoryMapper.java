@@ -11,5 +11,6 @@ public interface TradeHistoryMapper {
     List<TradeHistory> findByUsrIdAndStockCode(@Param("usrId") String usrId, @Param("stockCode") String stockCode);
     TradeHistory findById(Long id);
     void insert(TradeHistory history);
+    void update(TradeHistory history);
     void deleteById(Long id);
 }

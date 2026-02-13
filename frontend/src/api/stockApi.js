@@ -15,8 +15,8 @@ export const getAuthHeader = () => {
 // API 요청을 안전하게 수행하는 래퍼 함수 (공통 에러 처리 및 URL 보정)
 async function safeFetch(url, options = {}) {
     try {
-        // 경로 보정: /stockPlus/api 로 시작하지 않으면 앞에 붙여줍니다.
         const fullUrl = url.startsWith('/') ? url : `/stockPlus/${url}`;
+        console.log(`[API Request] ${options.method || 'GET'} ${fullUrl}`, options.body ? JSON.parse(options.body) : '');
         
         const response = await fetch(fullUrl, {
             ...options,
@@ -228,9 +228,18 @@ export async function deleteTradeHistory(id) {
     });
 }
 
+export async function updateTradeHistory(id, tradeData) {
+    // tradeData: { quantity, price, tradeDate }
+    return await safeFetch(`api/holdings/history/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeData),
+    });
+}
+
 export async function addTrade(tradeData) {
     // tradeData: { stockCode, stockName, quantity, price, tradeDate }
-    await safeFetch('api/holdings', {
+    return await safeFetch('api/holdings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(tradeData),

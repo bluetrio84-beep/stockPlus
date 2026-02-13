@@ -36,26 +36,60 @@ public class HoldingsService {
         TradeHistory history = tradeHistoryMapper.findById(historyId);
         if (history == null || !history.getUsrId().equals(usrId)) return;
 
+        processRollbackHolding(usrId, history);
+        tradeHistoryMapper.deleteById(historyId);
+    }
+
+    /**
+     * 매매 내역 수정 - 기존 내역 롤백 후 새로운 데이터로 재적용
+     */
+    @Transactional
+    public void updateTrade(Long historyId, String usrId, int newQuantity, BigDecimal newPrice, LocalDate newTradeDate) {
+        TradeHistory history = tradeHistoryMapper.findById(historyId);
+        if (history == null || !history.getUsrId().equals(usrId)) return;
+
+        // 1. 기존 보유 현황에서 이전 내역만큼 롤백
+        processRollbackHolding(usrId, history);
+
+        // 2. 새로운 데이터로 보유 현황 재계산 (addTrade 로직 재사용 가능하나 독립 구현)
+        Holdings holding = holdingsMapper.findByUsrIdAndStockCode(usrId, history.getStockCode()).orElse(null);
+        if (holding == null) {
+            holdingsMapper.insert(Holdings.builder()
+                    .usrId(usrId).stockCode(history.getStockCode()).stockName(history.getStockCode())
+                    .quantity(newQuantity).avgPrice(newPrice).build());
+        } else {
+            BigDecimal currentTotal = holding.getAvgPrice().multiply(BigDecimal.valueOf(holding.getQuantity()));
+            BigDecimal newTotal = newPrice.multiply(BigDecimal.valueOf(newQuantity));
+            int totalQty = holding.getQuantity() + newQuantity;
+            BigDecimal newAvgPrice = currentTotal.add(newTotal).divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP);
+            
+            holding.setQuantity(totalQty);
+            holding.setAvgPrice(newAvgPrice);
+            holdingsMapper.update(holding);
+        }
+
+        // 3. 히스토리 업데이트
+        history.setQuantity(newQuantity);
+        history.setPrice(newPrice);
+        history.setTradeDate(newTradeDate);
+        tradeHistoryMapper.update(history);
+    }
+
+    private void processRollbackHolding(String usrId, TradeHistory history) {
         Holdings holding = holdingsMapper.findByUsrIdAndStockCode(usrId, history.getStockCode()).orElse(null);
         if (holding != null) {
             int newQty = holding.getQuantity() - history.getQuantity();
-            
             if (newQty <= 0) {
-                // 수량이 0이 되면 보유 종목 삭제
                 holdingsMapper.delete(usrId, history.getStockCode());
             } else {
-                // 평단가 역계산: (현재총액 - 삭제할총액) / 남은수량
                 BigDecimal currentTotal = holding.getAvgPrice().multiply(BigDecimal.valueOf(holding.getQuantity()));
                 BigDecimal deleteTotal = history.getPrice().multiply(BigDecimal.valueOf(history.getQuantity()));
                 BigDecimal newAvgPrice = currentTotal.subtract(deleteTotal).divide(BigDecimal.valueOf(newQty), 2, RoundingMode.HALF_UP);
-                
                 holding.setQuantity(newQty);
                 holding.setAvgPrice(newAvgPrice);
                 holdingsMapper.update(holding);
             }
         }
-        
-        tradeHistoryMapper.deleteById(historyId);
     }
 
     /**
