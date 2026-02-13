@@ -3,7 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signup } from '../api/authApi';
 import { BarChart2, Mail, Phone, Lock, User, ArrowLeft } from 'lucide-react';
 
+/**
+ * 회원가입 페이지 컴포넌트입니다.
+ * 사용자로부터 필수 정보(아이디, 이름, 비밀번호, 전화번호, 이메일)를 입력받아 계정을 생성합니다.
+ */
 const Signup = () => {
+    // 폼 데이터 상태 관리
     const [formData, setFormData] = useState({
         usrId: '',
         usrName: '',
@@ -14,16 +19,18 @@ const Signup = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    // 입력 필드 변경 핸들러
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // 회원가입 제출 핸들러
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await signup(formData);
             alert('회원가입이 완료되었습니다. 로그인해 주세요.');
-            navigate('/login');
+            navigate('/login'); // 성공 시 로그인 페이지로 이동
         } catch (err) {
             setError(err.message || '회원가입에 실패했습니다.');
         }
@@ -32,6 +39,7 @@ const Signup = () => {
     return (
         <div className="min-h-[100dvh] bg-slate-950 flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+                {/* 뒤로가기 버튼 */}
                 <button onClick={() => navigate('/login')} className="mb-6 flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-medium">
                     <ArrowLeft size={16} /> 뒤로가기
                 </button>
@@ -42,6 +50,7 @@ const Signup = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* 아이디 입력 */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">아이디 (ID)</label>
                         <div className="relative">
@@ -50,6 +59,7 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* 이름 입력 */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">이름 (Name)</label>
                         <div className="relative">
@@ -58,6 +68,7 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* 비밀번호 입력 */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">비밀번호</label>
                         <div className="relative">
@@ -66,6 +77,7 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* 전화번호 입력 */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">휴대폰 번호</label>
                         <div className="relative">
@@ -74,6 +86,7 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* 이메일 입력 */}
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">이메일</label>
                         <div className="relative">
@@ -82,8 +95,10 @@ const Signup = () => {
                         </div>
                     </div>
 
+                    {/* 에러 메시지 */}
                     {error && <p className="text-red-500 text-xs text-center font-medium">{error}</p>}
 
+                    {/* 가입 버튼 */}
                     <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 mt-4">
                         가입하기
                     </button>

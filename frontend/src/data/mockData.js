@@ -1,3 +1,9 @@
+/**
+ * UI 개발 및 테스트를 위한 목업(Mock) 데이터입니다.
+ * 백엔드 API가 연결되지 않았거나 데이터를 가져오지 못했을 때 대체 데이터로 사용됩니다.
+ */
+
+// 주식 종목 더미 데이터 (주요 우량주 위주)
 export const mockStocks = [
   {
     id: '005930',
@@ -8,6 +14,7 @@ export const mockStocks = [
     changeRate: 1.68,
     volume: '12.5M',
     marketCap: '432T',
+    // 50일치 랜덤 차트 데이터 생성
     chartData: Array.from({ length: 50 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (50 - i));
@@ -109,6 +116,7 @@ export const mockStocks = [
   },
 ];
 
+// 뉴스 피드 더미 데이터 (시장 분위기 파악용 예시)
 export const mockNews = [
   {
     id: 1,

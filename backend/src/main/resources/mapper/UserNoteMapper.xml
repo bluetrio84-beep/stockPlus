@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.myapp.mapper.UserNoteMapper">
+<mapper namespace="com.stockPlus.mapper.UserNoteMapper">
 
-    <select id="findAll" resultType="com.example.myapp.domain.UserNote">
+    <select id="findAll" resultType="com.stockPlus.domain.UserNote">
         SELECT id, USRID as usrId, ref_code as refCode, title, content, created_at as createdAt, updated_at as updatedAt 
         FROM user_note WHERE USRID = #{usrId} ORDER BY created_at DESC
     </select>
 
-    <select id="findByRefCode" resultType="com.example.myapp.domain.UserNote">
+    <select id="findByRefCode" resultType="com.stockPlus.domain.UserNote">
         SELECT id, USRID as usrId, ref_code as refCode, title, content, created_at as createdAt, updated_at as updatedAt 
         FROM user_note WHERE USRID = #{usrId} AND ref_code = #{refCode} ORDER BY created_at DESC
     </select>
 
-    <insert id="insert" parameterType="com.example.myapp.domain.UserNote" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" parameterType="com.stockPlus.domain.UserNote" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user_note (USRID, ref_code, title, content, created_at, updated_at)
         VALUES (#{usrId}, #{refCode}, #{title}, #{content}, NOW(), NOW())
     </insert>
 
-    <update id="update" parameterType="com.example.myapp.domain.UserNote">
+    <update id="update" parameterType="com.stockPlus.domain.UserNote">
         UPDATE user_note
         SET title = #{title}, content = #{content}, updated_at = NOW()
         WHERE USRID = #{usrId} AND id = #{id}

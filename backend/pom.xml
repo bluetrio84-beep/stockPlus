@@ -8,11 +8,11 @@
 		<version>3.2.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
-	<artifactId>myapp</artifactId>
+	<groupId>com.stockPlus</groupId>
+	<artifactId>stock-plus-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>myapp</name>
-	<description>Demo project for Spring Boot</description>
+	<name>StockPlusBackend</name>
+	<description>StockPlus Backend Service</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

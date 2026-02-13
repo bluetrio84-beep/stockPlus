@@ -1,10 +1,16 @@
+/**
+ * 메인 App 컴포넌트와 관련된 스타일 시트입니다.
+ * 주로 Vite 템플릿의 기본 스타일과 애니메이션 효과를 포함합니다.
+ */
+
 #root {
-  max-width: 1280px;
+  max-width: 1280px; /* 전체 최대 너비 제한 */
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
 
+/* 로고 스타일링 및 호버 효과 */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -18,13 +24,10 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* 리액트 로고 회전 애니메이션 */
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {

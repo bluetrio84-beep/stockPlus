@@ -3,7 +3,12 @@ import classNames from 'classnames';
 import { Star } from 'lucide-react';
 import { getSignSymbol, getColorClass } from '../utils/stockUtils';
 
+/**
+ * 리스트에서 개별 주식 항목을 표시하는 UI 컴포넌트입니다.
+ */
 const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) => {
+    const sign = stock.priceSign;
+
     return (
         <div 
             onClick={() => onStockClick && onStockClick(stock)} 
@@ -31,11 +36,11 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-0.5">
-                <div className={classNames("text-xl font-bold tracking-tight", getColorClass(stock.priceSign))}>
+                <div className={classNames("text-xl font-bold tracking-tight", getColorClass(sign))}>
                     {stock.isExpected ? '*' : ''}{stock.price ? stock.price.toLocaleString() : '-'}
                 </div>
-                <div className={classNames("text-xs font-medium tabular-nums flex items-center", getColorClass(stock.priceSign))}>
-                     {getSignSymbol(stock.priceSign)} {Math.abs(stock.changeRate || 0).toFixed(2)}%
+                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5", getColorClass(sign))}>
+                     {getSignSymbol(sign)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
                 </div>
             </div>
         </div>

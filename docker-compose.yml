@@ -1,6 +1,11 @@
 services:
   mysql:
     image: mysql/mysql-server:latest
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       TZ: Asia/Seoul
       MYSQL_ROOT_PASSWORD: cnbas.2015
@@ -23,12 +28,19 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       TZ: Asia/Seoul
     ports:
       - "8080:8080"
     env_file:
       - .env
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
@@ -39,6 +51,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       TZ: Asia/Seoul
     ports:

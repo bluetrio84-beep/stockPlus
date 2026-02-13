@@ -1,4 +1,7 @@
 spring:
+  mvc:
+    servlet:
+      path: /
   application:
     name: myStockPlusBackend
   datasource:
@@ -15,11 +18,20 @@ spring:
 # MyBatis SQL 로그 활성화
 logging:
   level:
-    com.example.myapp.mapper: DEBUG
+    com.stockPlus: DEBUG
+    com.stockPlus.mapper: DEBUG
     org.springframework.jdbc: DEBUG
+  file:
+    name: logs/stockplus.log
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 7
 
 mybatis:
-  type-aliases-package: com.example.myapp.domain
+  type-aliases-package: com.stockPlus.domain
   mapper-locations: classpath:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true

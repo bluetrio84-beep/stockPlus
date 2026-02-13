@@ -5,3 +5,9 @@
 docker-compose.override.yml
 *.tar.gz
 *.bak
+
+# Build and Dependency directories
+node_modules/
+backend/target/
+frontend/dist/
+frontend/node_modules/

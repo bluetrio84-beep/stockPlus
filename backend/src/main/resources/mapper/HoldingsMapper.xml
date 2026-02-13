@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.stockPlus.mapper.HoldingsMapper">
+
+    <select id="findByUsrId" resultType="com.stockPlus.domain.Holdings">
+        SELECT 
+            id, USRID as usrId, stock_code as stockCode, stock_name as stockName, 
+            quantity, avg_price as avgPrice, created_at as createdAt, updated_at as updatedAt
+        FROM holdings
+        WHERE USRID = #{usrId}
+    </select>
+
+    <select id="findByUsrIdAndStockCode" resultType="com.stockPlus.domain.Holdings">
+        SELECT 
+            id, USRID as usrId, stock_code as stockCode, stock_name as stockName, 
+            quantity, avg_price as avgPrice, created_at as createdAt, updated_at as updatedAt
+        FROM holdings
+        WHERE USRID = #{usrId} AND stock_code = #{stockCode}
+    </select>
+
+    <insert id="insert" parameterType="com.stockPlus.domain.Holdings">
+        INSERT INTO holdings (USRID, stock_code, stock_name, quantity, avg_price)
+        VALUES (#{usrId}, #{stockCode}, #{stockName}, #{quantity}, #{avgPrice})
+    </insert>
+
+    <update id="update" parameterType="com.stockPlus.domain.Holdings">
+        UPDATE holdings
+        SET quantity = #{quantity}, avg_price = #{avgPrice}, updated_at = NOW()
+        WHERE USRID = #{usrId} AND stock_code = #{stockCode}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM holdings WHERE USRID = #{usrId} AND stock_code = #{stockCode}
+    </delete>
+
+</mapper>

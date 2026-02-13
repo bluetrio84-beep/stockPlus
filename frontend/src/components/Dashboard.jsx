@@ -22,7 +22,7 @@ function Dashboard() {
   const [watchlistSubTab, setWatchlistSubTab] = useState('list'); // 'list' or 'ai'
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [globalMarketMode, setGlobalMarketMode] = useState('J');
+  const [globalMarketMode, setGlobalMarketMode] = useState('UN');
   const [activeWatchlistTab, setActiveWatchlistTab] = useState(1);
   const [currentPeriod, setCurrentPeriod] = useState('1D');
   const [isLoading, setIsLoading] = useState(true);
@@ -47,10 +47,10 @@ function Dashboard() {
           {isNumbered ? (
             <div className="flex gap-2">
               <span className="text-indigo-400 font-black shrink-0 text-[13px]">{line.match(/^\d+\./)[0]}</span>
-              <span className="text-slate-200 font-semibold text-[13px]">{line.replace(/^\d+\./, '').trim()}</span>
+              <span className="text-white font-semibold text-[13px]">{line.replace(/^\d+\./, '').trim()}</span>
             </div>
           ) : (
-            <span className="text-slate-300 text-[13px]">{line}</span>
+            <span className="text-slate-100 text-[13px]">{line}</span>
           )}
         </div>
       );
@@ -84,6 +84,7 @@ function Dashboard() {
           const stocksWithInitialData = await Promise.all(
             dbWatchlist.map(async (w) => {
               const priceData = await fetchStockPrice(w.stockCode, market);
+              console.log(`[Initial Load] ${w.stockName} (${w.stockCode}) - Market: ${market}`, priceData);
               const existing = displayStocks.find(s => s.code === w.stockCode);
               return {
                 id: w.stockCode, name: w.stockName, code: w.stockCode,
@@ -124,6 +125,13 @@ function Dashboard() {
     }
   }, [stockCodeFromUrl, displayStocks, globalMarketMode]);
 
+  // [추가] 시장 모드 변경 시 selectedStock의 거래소 코드 즉시 동기화 (차트/투자자 데이터 갱신 트리거)
+  useEffect(() => {
+    if (selectedStock) {
+        setSelectedStock(prev => ({ ...prev, exchangeCode: globalMarketMode }));
+    }
+  }, [globalMarketMode]);
+
   useEffect(() => {
     if (selectedStock?.code) {
         const needsLoad = !selectedStock.lastLoadedPeriod || 
@@ -146,12 +154,17 @@ function Dashboard() {
 
   useEffect(() => {
     const eventSource = new EventSource('/stockPlus/api/sse/stocks');
+    console.log("SSE Connecting to: /stockPlus/api/sse/stocks");
+
     eventSource.addEventListener('priceUpdate', (e) => {
         try {
             let updates = JSON.parse(e.data);
+            console.log("SSE Price Update Received:", updates); // 브라우저 콘솔에서 확인 가능
             if (!Array.isArray(updates)) updates = [updates];
             updates.forEach(upd => stockUpdatesBuffer.current.set(`${upd.stockCode}-${upd.exchangeCode || 'J'}`, upd));
-        } catch (err) {}
+        } catch (err) {
+            console.error("SSE Parse Error:", err);
+        }
     });
     const flushInterval = setInterval(() => {
         if (stockUpdatesBuffer.current.size === 0) return;
@@ -283,9 +296,9 @@ function Dashboard() {
 
         {/* Mobile View */}
         <div className="lg:hidden flex-1 overflow-hidden relative h-full"> 
-            <div className={classNames("transition-transform duration-300 absolute inset-0 bottom-16 bg-slate-950 z-10 h-full", { "translate-x-0": !stockCodeFromUrl, "-translate-x-full": !!stockCodeFromUrl })}>
-                 {/* 1. 관심종목요약 탭 (home) - 상단 탭 배치 */}
-                 {activeTab === 'home' && <div className="h-full p-2 pb-24 flex flex-col relative">
+            <div className={classNames("transition-transform duration-300 absolute inset-0 bottom-[56px] bg-slate-950 z-10 h-full", { "translate-x-0": !stockCodeFromUrl, "-translate-x-full": !!stockCodeFromUrl })}>
+                 {/* 1. 관심종목요약 탭 (home) */}
+                 {activeTab === 'home' && <div className="h-full p-1.5 pb-20 flex flex-col relative">
                      <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl mb-0">
                         <div className="flex border-b border-slate-800 bg-slate-900">
                             <button onClick={() => setWatchlistSubTab('list')} className={classNames("flex-1 py-3 text-sm font-bold transition-all border-b-2", { "border-indigo-500 text-white bg-slate-800/50": watchlistSubTab === 'list', "border-transparent text-slate-500": watchlistSubTab !== 'list' })}>관심종목시세</button>
@@ -309,15 +322,15 @@ function Dashboard() {
                             </div>
                         ) : (
                             <div className="flex flex-col h-full bg-slate-900">
-                                <div className="p-4 border-b border-slate-800 bg-slate-850 flex items-center gap-3"><div className="p-2 bg-indigo-500/20 rounded-lg"><Brain className="text-indigo-400" size={20} /></div><div><h3 className="font-black text-white text-base">전담 AI 분석가 리포트</h3><p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Strategic Analysis</p></div></div>
-                                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-slate-950/50">{renderFormattedText(specialReport) || <div className="flex flex-col items-center justify-center h-full text-slate-600"><Sparkles size={40} className="mb-4 opacity-10 animate-pulse" /><p className="text-sm font-medium">분석 리포트를 생성하고 있습니다...</p></div>}</div>
+                                <div className="p-4 border-b border-slate-800 bg-slate-850 flex items-center gap-3"><div className="p-2 bg-indigo-500/20 rounded-lg"><Brain className="text-indigo-400" size={20} /></div><div><h3 className="font-black !text-white text-base">전담 AI 분석가 리포트</h3><p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Strategic Analysis</p></div></div>
+                                <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar bg-slate-950/50 break-words">{renderFormattedText(specialReport) || <div className="flex flex-col items-center justify-center h-full text-slate-600"><Sparkles size={40} className="mb-4 opacity-10 animate-pulse" /><p className="text-sm font-medium">분석 리포트를 생성하고 있습니다...</p></div>}</div>
                             </div>
                         )}
                      </div>
                  </div>}
 
-                 {/* 2. 종목검색 탭 (watchlist) - 검색 아이콘 클릭 시 검색창 노출 */}
-                 {activeTab === 'watchlist' && <div className="h-full p-2 pb-24 flex flex-col relative">
+                 {/* 2. 종목검색 탭 (watchlist) */}
+                 {activeTab === 'watchlist' && <div className="h-full p-1.5 pb-20 flex flex-col relative">
                      <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
                         <div className="p-3 bg-slate-850 flex items-center justify-between border-b border-slate-800">
                             <div className="flex items-center gap-2">
@@ -354,11 +367,11 @@ function Dashboard() {
                         </div>
                      </div>
                  </div>}
-                 {activeTab === 'news' && <div className="h-full p-2 pb-24 flex flex-col"><NewsFeed news={news} /></div>}
+                 {activeTab === 'news' && <div className="h-full p-1.5 pb-20 flex flex-col"><NewsFeed news={news} /></div>}
             </div>
 
             {/* Mobile Detail View */}
-            <div className={classNames("transition-transform duration-300 absolute inset-0 bottom-16 bg-slate-950 z-20 flex flex-col h-full", { "translate-x-0": !!stockCodeFromUrl, "translate-x-full": !stockCodeFromUrl })}>
+            <div className={classNames("transition-transform duration-300 absolute inset-0 bottom-[56px] bg-slate-950 z-20 flex flex-col", { "translate-x-0": !!stockCodeFromUrl, "translate-x-full": !stockCodeFromUrl })}>
                  <div className="flex items-center justify-between px-3 h-12 shrink-0 bg-slate-900 border-b border-slate-800">
                      <button onClick={() => navigate('/')} className="p-1 text-slate-300"><ArrowLeft size={20} /></button>
                      <button 

@@ -1,34 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.myapp.mapper.NewsMapper">
+<mapper namespace="com.stockPlus.mapper.NewsMapper">
 
-    <insert id="saveNews" parameterType="com.example.myapp.domain.NewsItem">
+    <insert id="saveNews" parameterType="com.stockPlus.domain.NewsItem">
         INSERT IGNORE INTO news_item (
+            usrid,
             title,
             link,
             description,
             pub_date,
+            is_ai_summarized,
+            ai_summary,
             created_at
         ) VALUES (
+            #{usrId},
             #{title},
             #{link},
             #{description},
             #{pubDate},
+            #{isAiSummarized},
+            #{aiSummary},
             NOW()
         )
     </insert>
 
-    <select id="findRecentNews" resultType="com.example.myapp.domain.NewsItem">
+    <select id="findRecentNews" resultType="com.stockPlus.domain.NewsItem">
         SELECT
-            id, title, link, description, pub_date AS pubDate,
+            id, usrid, title, link, description, pub_date AS pubDate,
             is_ai_summarized AS isAiSummarized, ai_summary AS aiSummary, created_at AS createdAt
         FROM news_item
-        WHERE pub_date >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+        WHERE usrid = #{usrId}
+        AND pub_date >= DATE_SUB(NOW(), INTERVAL 2 DAY)
         ORDER BY pub_date DESC
         LIMIT #{limit}
     </select>
 
-    <select id="findPendingSummaryNews" resultType="com.example.myapp.domain.NewsItem">
+    <select id="findPendingSummaryNews" resultType="com.stockPlus.domain.NewsItem">
         SELECT
             id, title, link, description, pub_date AS pubDate
         FROM news_item
@@ -37,11 +44,15 @@
         LIMIT #{limit}
     </select>
 
-    <update id="updateAiSummary" parameterType="com.example.myapp.domain.NewsItem">
+    <update id="updateAiSummary" parameterType="com.stockPlus.domain.NewsItem">
         UPDATE news_item
         SET ai_summary = #{aiSummary},
             is_ai_summarized = TRUE
         WHERE id = #{id}
     </update>
+
+    <select id="findAllUniqueUserKeywords" resultType="string">
+        SELECT DISTINCT keyword FROM user_keyword
+    </select>
 
 </mapper>
