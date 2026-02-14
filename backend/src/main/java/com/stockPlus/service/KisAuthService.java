@@ -67,10 +67,12 @@ public class KisAuthService {
                 .bodyValue(body)
                 .retrieve()
                 .onStatus(status -> status.isError(), clientResponse -> 
-                    clientResponse.bodyToMono(String.class).flatMap(errorBody -> {
-                        log.error(">>> [KIS TOKEN ERROR] Status: {}, Body: {}", clientResponse.statusCode(), errorBody);
-                        return Mono.error(new RuntimeException("KIS Token API Error: " + errorBody));
-                    })
+                    clientResponse.bodyToMono(byte[].class) // byte 배열로 직접 받음
+                        .map(bytes -> new String(bytes, java.nio.charset.StandardCharsets.UTF_8)) // 명시적 UTF-8 변환
+                        .flatMap(errorBody -> {
+                            log.error(">>> [KIS TOKEN ERROR] Status: {}, Body: {}", clientResponse.statusCode(), errorBody);
+                            return Mono.error(new RuntimeException("KIS Token API Error: " + errorBody));
+                        })
                 )
                 .bodyToMono(KisTokenResponse.class)
                 .doOnNext(res -> log.info("Successfully obtained Access Token"))

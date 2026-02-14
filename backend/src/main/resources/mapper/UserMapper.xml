@@ -34,4 +34,8 @@
         SELECT USRID FROM users
     </select>
 
+    <update id="updatePassword">
+        UPDATE users SET password = #{password} WHERE USRID = #{usrId}
+    </update>
+
 </mapper>

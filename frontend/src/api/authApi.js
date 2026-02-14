@@ -57,3 +57,31 @@ export function isAuthenticated() {
     const token = localStorage.getItem('token');
     return !!(token && token !== 'null' && token !== 'undefined' && token.length > 10);
 }
+
+// 비밀번호 초기화 인증 코드 요청
+export async function requestCode(usrId, email) {
+    const response = await fetch('/stockPlus/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usrId, email }),
+    });
+    if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg || 'Failed to request code');
+    }
+    return true;
+}
+
+// 인증 코드 검증 및 비밀번호 초기화
+export async function verifyAndReset(usrId, email, code, newPassword) {
+    const response = await fetch('/stockPlus/api/auth/verify-and-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usrId, email, code, newPassword }),
+    });
+    if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg || 'Failed to reset password');
+    }
+    return true;
+}

@@ -3,6 +3,7 @@ package com.stockPlus.controller;
 import com.stockPlus.domain.User;
 import com.stockPlus.mapper.UserMapper;
 import com.stockPlus.security.JwtUtil;
+import com.stockPlus.service.EmailService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,56 @@ public class AuthController {
     private final UserMapper userMapper; // DB 접근을 위한 MyBatis 매퍼
     private final JwtUtil jwtUtil; // JWT 토큰 생성 및 검증 유틸리티
     private final PasswordEncoder passwordEncoder; // 비밀번호 암호화 처리를 위한 인코더
+    private final EmailService emailService; // [추가] 이메일 발송 서비스
+
+    /**
+     * 비밀번호 초기화를 위한 인증 코드 발송 API
+     */
+    @PostMapping("/request-code")
+    public ResponseEntity<?> requestCode(@RequestBody Map<String, String> payload) {
+        String usrId = payload.get("usrId");
+        String email = payload.get("email");
+
+        log.info("Password reset request code for USRID: {}, Email: {}", usrId, email);
+
+        // 사용자가 존재하고 이메일이 일치하는지 확인
+        User user = userMapper.findByUsrId(usrId).orElse(null);
+        if (user == null || !email.equals(user.getEmail())) {
+            return ResponseEntity.badRequest().body("User not found or email does not match.");
+        }
+
+        try {
+            emailService.sendVerificationCode(email);
+            return ResponseEntity.ok("Verification code sent to your email.");
+        } catch (Exception e) {
+            log.error("Failed to send email: {}", e.getMessage());
+            return ResponseEntity.internalServerError().body("Failed to send verification email. Please check your mail settings.");
+        }
+    }
+
+    /**
+     * 인증 코드 검증 및 비밀번호 변경 API
+     */
+    @PostMapping("/verify-and-reset")
+    public ResponseEntity<?> verifyAndReset(@RequestBody Map<String, String> payload) {
+        String usrId = payload.get("usrId");
+        String email = payload.get("email");
+        String code = payload.get("code");
+        String newPassword = payload.get("newPassword");
+
+        log.info("Verifying code and resetting password for USRID: {}", usrId);
+
+        // 1. 코드 검증
+        if (!emailService.verifyCode(email, code)) {
+            return ResponseEntity.badRequest().body("Invalid or expired verification code.");
+        }
+
+        // 2. 비밀번호 암호화 및 업데이트
+        userMapper.updatePassword(usrId, passwordEncoder.encode(newPassword));
+        
+        log.info("Password reset successful for USRID: {}", usrId);
+        return ResponseEntity.ok("Password reset successfully. You can now login with your new password.");
+    }
 
     /**
      * 회원가입을 처리하는 API입니다.

@@ -31,7 +31,9 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(error, ex.getStatusCode());
+        return ResponseEntity.status(ex.getStatusCode())
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .body(error);
     }
 
     /**
@@ -49,7 +51,9 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .body(error);
     }
 
     /**
@@ -67,6 +71,8 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
 
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json;charset=UTF-8")
+                .body(error);
     }
 }

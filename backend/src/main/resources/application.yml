@@ -15,23 +15,29 @@ spring:
       mode: never
       encoding: UTF-8
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 # MyBatis SQL 로그 활성화
 logging:
   level:
     com.stockPlus: DEBUG
     com.stockPlus.mapper: DEBUG
     org.springframework.jdbc: DEBUG
-  file:
-    name: logs/stockplus.log
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-  logback:
-    rollingpolicy:
-      max-file-size: 100MB
-      max-history: 7
-    encoder:
-      charset: UTF-8
+  config: classpath:logback-spring.xml
 
 mybatis:
   type-aliases-package: com.stockPlus.domain

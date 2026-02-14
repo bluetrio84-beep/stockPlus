@@ -12,6 +12,10 @@ COPY backend/pom.xml .
 # Ensure mvnw has execute permissions
 RUN chmod +x mvnw
 
+# [추가] 로케일 및 인코딩 환경변수 설정
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 # Download project dependencies
 RUN ./mvnw dependency:go-offline
 

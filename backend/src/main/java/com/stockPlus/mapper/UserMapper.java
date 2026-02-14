@@ -12,6 +12,7 @@ public interface UserMapper {
     int insert(User user);
     boolean existsByUsrId(String usrId);
     boolean existsByPhoneNumber(String phoneNumber);
+    void updatePassword(@org.apache.ibatis.annotations.Param("usrId") String usrId, @org.apache.ibatis.annotations.Param("password") String password);
     
     // 모든 사용자 ID 목록 조회
     List<String> findAllUserIds();
