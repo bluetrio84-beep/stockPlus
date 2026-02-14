@@ -25,10 +25,13 @@ logging:
     name: logs/stockplus.log
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
   logback:
     rollingpolicy:
       max-file-size: 100MB
       max-history: 7
+    encoder:
+      charset: UTF-8
 
 mybatis:
   type-aliases-package: com.stockPlus.domain

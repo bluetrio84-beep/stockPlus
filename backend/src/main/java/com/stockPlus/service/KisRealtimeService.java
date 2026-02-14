@@ -75,7 +75,11 @@ public class KisRealtimeService {
     @PostConstruct
     public void init() {
         log.error("Initializing KisRealtimeService... (Force Log)");
-        connect();
+        if (isMarketOpen()) {
+            connect();
+        } else {
+            log.info("Market is closed today. Skipping initial connection.");
+        }
     }
 
     /**
@@ -83,8 +87,54 @@ public class KisRealtimeService {
      */
     @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
     public void start() {
-        log.info("Scheduled start of KisRealtimeService");
-        connect();
+        log.info("Scheduled start check of KisRealtimeService");
+        if (isMarketOpen()) {
+            connect();
+        } else {
+            log.info("Today is a holiday. Connection skipped.");
+        }
+    }
+
+    /**
+     * 휴장일 여부를 확인합니다. (주말 및 2026년 지정된 공휴일)
+     */
+    private boolean isMarketOpen() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        java.time.DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+        // 1. 주말 체크
+        if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+            log.info("Market Closed: Weekend ({})", dayOfWeek);
+            return false;
+        }
+
+        // 2. 2026년 지정된 휴장일 체크 (YYYY-MM-DD)
+        List<String> holidays = java.util.Arrays.asList(
+            "2026-02-16", "2026-02-17", "2026-02-18", // 설날 연휴
+            "2026-03-02", // 삼일절 대체공휴일
+            "2026-05-01", // 근로자의 날
+            "2026-05-05", // 어린이날
+            "2026-05-25", // 석가탄신일
+            "2026-06-03", // 지방선거
+            "2026-07-17", // 제헌절
+            "2026-08-17", // 광복절 대체공휴일
+            "2026-09-24", "2026-09-25", // 추석 연휴
+            "2026-10-05", // 개천절 대체공휴일
+            "2026-10-09", // 한글날
+            "2026-12-25", // 크리스마스
+            "2026-12-31"  // 연말 휴장일
+        );
+
+        String todayStr = today.toString();
+        for (String holiday : holidays) {
+            if (todayStr.equals(holiday)) {
+                log.info("Market Closed: Holiday ({})", holiday);
+                return false;
+            }
+        }
+
+        log.info("Market is OPEN today ({})", todayStr);
+        return true;
     }
 
     /**

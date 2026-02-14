@@ -25,4 +25,4 @@ RUN ./mvnw package -DskipTests
 EXPOSE 8080
 
 # Command to run the application
-ENTRYPOINT ["java", "-jar", "target/stock-plus-backend-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-Dsun.jnu.encoding=UTF-8", "-jar", "target/stock-plus-backend-0.0.1-SNAPSHOT.jar"]
