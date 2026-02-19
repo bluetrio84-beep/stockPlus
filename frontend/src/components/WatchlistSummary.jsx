@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory } from '../api/stockApi';
 import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import classNames from 'classnames';
-import { getSignSymbol, getColorClass, getMarketDisplay } from '../utils/stockUtils';
+import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
 const WatchlistSummary = () => {
     const [displayStocks, setDisplayStocks] = useState([]); 
@@ -69,6 +69,8 @@ const WatchlistSummary = () => {
                         const priceData = await fetchStockPrice(w.stockCode, market);
                         return {
                             id: w.stockCode, name: w.stockName, code: w.stockCode, exchangeCode: market,
+                            marketType: w.marketType, // [추가] 코스닥 여부 판별용
+                            stockStatus: priceData?.stockStatus, // [추가] 상태 배지용
                             price: parseFloat(priceData?.currentPrice) || 0,
                             change: parseFloat(priceData?.change) || 0,
                             changeRate: parseFloat(priceData?.changeRate) || 0,
@@ -108,10 +110,20 @@ const WatchlistSummary = () => {
                 if (selectedStock && selectedStock.code === s.code && u) {
                     setSelectedStock(prevSelected => ({
                         ...prevSelected, ...u,
+                        marketType: prevSelected.marketType, // 유지
+                        isExpected: u.isExpected, // [추가]
                         price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate)
                     }));
                 }
-                return u ? { ...s, ...u, price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate) } : s;
+                return u ? { 
+                    ...s, 
+                    ...u, 
+                    marketType: s.marketType, // 유지
+                    isExpected: u.isExpected, // [추가]
+                    price: parseFloat(u.currentPrice), 
+                    change: parseFloat(u.change), 
+                    changeRate: parseFloat(u.changeRate) 
+                } : s;
             }));
         }, 300);
         return () => { eventSource.close(); clearInterval(interval); };
@@ -216,12 +228,20 @@ const WatchlistSummary = () => {
         const holding = selectedStock.holding || { quantity: 0, avgPrice: 0 };
         const profit = (selectedStock.price - holding.avgPrice) * holding.quantity;
         const profitRate = holding.avgPrice > 0 ? ((selectedStock.price - holding.avgPrice) / holding.avgPrice) * 100 : 0;
+        const badge = getStockStatusBadge(selectedStock);
 
         return (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-left-4 duration-300">
                 <div className="p-4 border-b border-slate-800 flex items-center gap-3 bg-slate-850 shrink-0">
                     <button onClick={() => setSelectedStock(null)} className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400"><ArrowLeft size={20} /></button>
-                    <div><h2 className="text-base font-bold text-white leading-tight">{selectedStock.name}</h2><p className="text-[10px] text-slate-500 font-mono">{selectedStock.code}</p></div>
+                    <div>
+                        <h2 className="text-base font-bold text-white leading-tight flex items-center gap-1.5">
+                            {selectedStock.name}
+                            {isKosdaq(selectedStock) && <span className="text-indigo-400">*</span>}
+                            {badge && <span className={classNames("text-[10px] px-1 rounded border leading-tight", badge.color)}>{badge.label}</span>}
+                        </h2>
+                        <p className="text-[10px] text-slate-500 font-mono">{selectedStock.code}</p>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
@@ -315,11 +335,16 @@ const WatchlistSummary = () => {
                                             // [추가] 개별 종목 수익 및 수익률 계산
                                             const profit = holding ? (stock.price - holding.avgPrice) * holding.quantity : 0;
                                             const profitRate = (holding && holding.avgPrice > 0) ? ((stock.price - holding.avgPrice) / holding.avgPrice) * 100 : 0;
+                                            const badge = getStockStatusBadge(stock);
 
                                             return (
                                                 <div key={stock.code} onClick={() => handleStockClick(stock)} className="bg-slate-800/40 border border-slate-800/60 rounded-xl p-4 flex justify-between items-center hover:bg-slate-800/60 transition-all cursor-pointer group">
                                                     <div className="flex-1 min-w-0 mr-4">
-                                                        <div className="text-base font-bold text-slate-100 group-hover:text-indigo-300 transition-colors truncate">{stock.name}</div>
+                                                        <div className="text-base font-bold text-slate-100 group-hover:text-indigo-300 transition-colors truncate flex items-center gap-1.5">
+                                                            {stock.name}
+                                                            {isKosdaq(stock) && <span className="text-indigo-400">*</span>}
+                                                            {badge && <span className={classNames("text-[10px] px-1 rounded border leading-tight", badge.color)}>{badge.label}</span>}
+                                                        </div>
                                                         {holding ? (
                                                             // [수정] 라벨 너비를 고정(w-8)하여 수치 데이터의 세로 줄을 딱 맞춤
                                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px] font-bold border-t border-slate-800/50 pt-2">

@@ -18,5 +18,6 @@ public class Watchlist {
     private Integer groupId; // 복합 PK 일부
     private Boolean isFavorite;
     private String marketType;
+    private String indexType; // [추가] KOSPI 200, KOSDAQ 150 등
     private LocalDateTime createdAt;
 }

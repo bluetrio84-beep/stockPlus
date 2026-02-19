@@ -15,7 +15,7 @@ public class KisPriceOutput {
     private String changeRate;      // 전일 대비율
     
     @JsonProperty("prdy_vrss_sign")
-    private String priceSign;       // 대비 부호 (1:상한, 2:상승, 3:보합, 4:하한, 5:하락)
+    private String priceSign;       // 대비 부호
     
     @JsonProperty("acml_vol")
     private String volume;          // 누적 거래량
@@ -49,4 +49,19 @@ public class KisPriceOutput {
     
     @JsonProperty("w52_lwpr")
     private String low52w;          // 52주 최저가
+
+    @JsonProperty("iscd_stat_cls_code")
+    private String stockStatus;     // 종목 상태
+
+    @JsonProperty("mrkt_warn_cls_code")
+    private String marketWarning;   // 시장 경고
+
+    @JsonProperty("rprs_mrkt_kor_name")
+    private String marketKorName;   // 대표 시장 명칭 (KSP200, KSQ150 등)
+
+    @JsonProperty("idx_bztp_lcls_cd")
+    private String indexCode;       // 지수 코드
+    
+    @JsonProperty("idx_bztp_mcls_cd")
+    private String indexMidCode;    // 지수 중분류
 }

@@ -128,7 +128,18 @@ public class KisStockService {
                 boolean isNxTime = now.isAfter(LocalTime.of(15, 30, 0)) || now.isBefore(LocalTime.of(8, 50, 0));
                 
                 if (isNxTime && nxDto.getCurrentPrice() != null && !"0".equals(nxDto.getCurrentPrice())) {
-                    mainDto = nxDto;
+                    // [방어] 야간장 가격이 비정상적으로 높을 경우 (1억 이상) 정규장 데이터 사용
+                    try {
+                        long nxPrice = Long.parseLong(nxDto.getCurrentPrice());
+                        if (nxPrice < 100000000) {
+                            mainDto = nxDto;
+                        } else {
+                            log.warn(">>> [Abnormal NX Price] Code: {}, Price: {}. Falling back to J market.", stockCode, nxPrice);
+                            mainDto = jDto;
+                        }
+                    } catch (Exception e) {
+                        mainDto = jDto;
+                    }
                 } else {
                     mainDto = jDto;
                 }
@@ -390,57 +401,52 @@ public class KisStockService {
                         .header("tr_id", trId)
 
                         .header("content-type", "application/json")
-
                         .header("custtype", "P")
-
                         .retrieve()
+                        .bodyToMono(String.class) // [수정] String으로 받아서 직접 파싱
+                        .map(json -> {
+                            try {
+                                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(json);
+                                com.fasterxml.jackson.databind.JsonNode out = root.path("output");
+                                
+                                if (out.isMissingNode()) return StockPriceDto.builder().stockCode(stockCode).build();
 
-                        .bodyToMono(new ParameterizedTypeReference<KisResponse<KisPriceOutput>>() {})
+                                // [핵심] 모든 필드 맵으로 변환하여 프론트엔드로 전송
+                                java.util.Map<String, Object> rawData = objectMapper.convertValue(out, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
 
-                        .map(response -> {
+                                // [핵심] 필드명 대소문자 무관하게 지수 정보 추출
+                                String korName = out.has("rprs_mrkt_kor_name") ? out.get("rprs_mrkt_kor_name").asText() : out.path("RPRS_MRKT_KOR_NAME").asText();
+                                
+                                // 시장명에서 지수 정보(200, 150)를 완전히 제거하여 중복 방지
+                                String marketName = korName.toUpperCase().contains("KSQ") || korName.contains("KOSDAQ") ? "KOSDAQ" : 
+                                                   (korName.toUpperCase().contains("KSP") || korName.contains("KOSPI") ? "KOSPI" : korName);
+                                String indexName = korName.contains("200") ? "200" : (korName.contains("150") ? "150" : null);
 
-                            KisPriceOutput out = response.getOutput();
-
-                            if (out == null) return StockPriceDto.builder().stockCode(stockCode).build();
-
-        
-
-                            return StockPriceDto.builder()
-
-                                    .stockCode(stockCode)
-
-                                    .marketName(out.getStockName())
-
-                                    .currentPrice(out.getCurrentPrice())
-
-                                    .change(out.getChange())
-
-                                    .changeRate(out.getChangeRate())
-
-                                    .priceSign(out.getPriceSign())
-
-                                    .volume(out.getVolume())
-
-                                    .open(out.getOpen())
-
-                                    .high(out.getHigh())
-
-                                    .low(out.getLow())
-
-                                    .prevClose(out.getPrevClose())
-
-                                    .marketCap(out.getMarketCap())
-
-                                    .listedShares(out.getListedShares())
-
-                                    .high52w(out.getHigh52w())
-
-                                    .low52w(out.getLow52w())
-
-                                    .exchangeCode(requestExchange)
-
-                                    .build();
-
+                                return StockPriceDto.builder()
+                                        .stockCode(stockCode)
+                                        .marketName(marketName)
+                                        .currentPrice(out.path("stck_prpr").asText())
+                                        .change(out.path("prdy_vrss").asText())
+                                        .changeRate(out.path("prdy_ctrt").asText())
+                                        .priceSign(out.path("prdy_vrss_sign").asText())
+                                        .volume(out.path("acml_vol").asText())
+                                        .open(out.path("stck_oprc").asText())
+                                        .high(out.path("stck_hgpr").asText())
+                                        .low(out.path("stck_lwpr").asText())
+                                        .prevClose(out.path("stck_sdpr").asText())
+                                        .marketCap(out.path("hts_avls").asText())
+                                        .listedShares(out.path("lstn_stcn").asText())
+                                        .high52w(out.path("w52_hgpr").asText())
+                                        .low52w(out.path("w52_lwpr").asText())
+                                        .stockStatus(out.path("iscd_stat_cls_code").asText())
+                                        .marketWarning(out.path("mrkt_warn_cls_code").asText())
+                                        .indexName(indexName)
+                                        .exchangeCode(requestExchange)
+                                        .build();
+                            } catch (Exception e) {
+                                log.error(">>> [API Error] Parsing failed for {}: {}", stockCode, e.getMessage());
+                                return StockPriceDto.builder().stockCode(stockCode).build();
+                            }
                         })
 
                         .onErrorResume(e -> Mono.just(StockPriceDto.builder().stockCode(stockCode).exchangeCode(requestExchange).currentPrice("0").build()));

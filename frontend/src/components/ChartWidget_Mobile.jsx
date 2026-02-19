@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
 import classNames from 'classnames';
 import { Sparkles, Loader2, Repeat } from 'lucide-react';
-import { getSignSymbol, getColorClass, getMarketDisplay } from '../utils/stockUtils';
+import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
 import InvestorTable from './InvestorTable';
 import DailyPriceTable from './DailyPriceTable';
@@ -84,7 +84,22 @@ const ChartWidgetMobile = (props) => {
     <div className="w-full h-full flex flex-col bg-slate-900 rounded-lg overflow-hidden border border-slate-800 shadow-xl relative min-h-0">
       <div className="p-2.5 border-b border-slate-800 flex justify-between items-center bg-slate-850 shrink-0">
             <div>
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">{stock.name} <span className="text-xs font-normal text-slate-500">{stock.code}</span></h2>
+                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    {stock.name}
+                    {isKosdaq(stock) && <span className="text-indigo-400 -ml-1">*</span>}
+                    {getStockStatusBadge(stock) && (
+                        <span className={classNames("text-[10px] px-1 rounded border leading-tight", getStockStatusBadge(stock).color)}>
+                            {getStockStatusBadge(stock).label}
+                        </span>
+                    )}
+                    <span className="text-xs font-normal text-slate-500 flex items-center gap-1.5">
+                        {stock.code}
+                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-0.5 bg-slate-800/50 px-1 rounded">
+                            {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
+                            {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
+                        </span>
+                    </span>
+                </h2>
                 <div className={classNames("text-xl font-bold mt-0.5", getColorClass(stock.priceSign))}>
                     {stock.price ? stock.price.toLocaleString() : '-'}
                     <span className="text-xs ml-2 font-medium">{getSignSymbol(stock.priceSign)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>

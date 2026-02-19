@@ -420,38 +420,63 @@ public class KisRealtimeService {
     // 주식 데이터 파싱 및 Sink 방출
     private void parseAndEmitMultiRow(String combinedData, int recordCount, boolean isExpected, String exchangeCode, String trId) {
         try {
-            String[] allParts = combinedData.split("\\^");
-            // 데이터 필드 개수 계산 (전체 길이 / 레코드 수)
-            int fieldsPerRecord = allParts.length / recordCount;
+            String[] allParts = combinedData.split("\\^", -1); // 빈 필드 유지
             
-            for (int i = 0; i < recordCount; i++) {
+            // 데이터 필드 개수 계산 (레코드 수에 따른 분할)
+            // recordCount가 0이거나 데이터가 부족할 경우 1개로 간주하거나 안전 처리
+            int effectiveRecordCount = Math.max(1, recordCount);
+            int fieldsPerRecord = allParts.length / effectiveRecordCount;
+            
+            for (int i = 0; i < effectiveRecordCount; i++) {
                 int offset = i * fieldsPerRecord;
+                if (offset + 5 >= allParts.length) break;
                 
                 StockPriceDto dto;
                 if (trId.contains("ANC0")) {
-                    // [수정] 호가/예상체결 데이터 파싱 (Index 47~50)
+                    // 호가/예상체결 데이터 파싱 (Index 47~50)
                     if (allParts.length < offset + 51) continue; 
                     
+                    String rawPrice = allParts[offset + 47]; // 예상체결가
+                    
+                    // [방어] 야간장/통합 호가 비정상 가격 필터링 (삼성전자 8억 방지)
+                    try {
+                        long priceValue = Long.parseLong(rawPrice);
+                        if (priceValue > 100000000) { 
+                            log.error(">>> [Abnormal Expected Price Detected] Code: {}, Price: {}, TR: {}. Skipping.", allParts[offset], rawPrice, trId);
+                            continue;
+                        }
+                    } catch (Exception e) {}
+
                     dto = StockPriceDto.builder()
                             .stockCode(allParts[offset])
                             .exchangeCode(exchangeCode)
                             .time(allParts[offset + 1])
-                            .currentPrice(allParts[offset + 47]) // 예상체결가
+                            .currentPrice(rawPrice)
                             .change(allParts[offset + 48])
                             .priceSign(allParts[offset + 49])
                             .changeRate(allParts[offset + 50])
                             .volume(allParts.length > offset + 51 ? allParts[offset + 51] : "0")
                             .isExpected(true)
                             .build();
-                    
-                    if ("0".equals(dto.getCurrentPrice()) || dto.getCurrentPrice().isEmpty()) continue;
                 } else {
-                    if (offset + 5 >= allParts.length) break;
+                    // 체결 데이터 파싱 (Index 2:현재가, 3:부호, 4:전일대비, 5:등락율, 13:누적거래량)
+                    String rawPrice = allParts[offset + 2];
+                    
+                    // [재발 방지] 가격 이상치 필터링 (삼성전자가 8억으로 나오는 현상 방어)
+                    // 현재가가 전일 종가 정보가 없어 비교가 어렵다면, 최소한 비현실적인 크기 체크
+                    try {
+                        long priceValue = Long.parseLong(rawPrice);
+                        if (priceValue > 100000000) { // 1억 이상이면 파싱 오류로 간주 (삼성전자 8억 방지)
+                            log.error(">>> [Abnormal Price Detected] Code: {}, Price: {}, TR: {}. Skipping update.", allParts[offset], rawPrice, trId);
+                            continue;
+                        }
+                    } catch (Exception e) {}
+
                     dto = StockPriceDto.builder()
                             .stockCode(allParts[offset]) 
                             .exchangeCode(exchangeCode)
                             .time(allParts[offset + 1])
-                            .currentPrice(allParts[offset + 2])
+                            .currentPrice(rawPrice)
                             .priceSign(allParts[offset + 3])
                             .change(allParts[offset + 4])
                             .changeRate(allParts[offset + 5])
@@ -460,13 +485,15 @@ public class KisRealtimeService {
                             .build();
                 }
                             
-                if (i == 0) {
+                if (i == 0 && dto != null) {
                     log.debug("[SSE Emit] Code: {}, Price: {}, TR: {}", dto.getStockCode(), dto.getCurrentPrice(), trId);
                 }
-                stockPriceSink.tryEmitNext(dto);
+                if (dto != null && !"0".equals(dto.getCurrentPrice()) && !dto.getCurrentPrice().isEmpty()) {
+                    stockPriceSink.tryEmitNext(dto);
+                }
             }
         } catch (Exception e) {
-            log.error("Error parsing multi-row stock data", e);
+            log.error("Error parsing multi-row stock data: {}", e.getMessage());
         }
     }
 

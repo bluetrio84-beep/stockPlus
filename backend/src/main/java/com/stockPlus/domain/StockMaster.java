@@ -14,4 +14,5 @@ public class StockMaster {
     private String stockName;
     private String exchangeCode;
     private String marketType;
+    private String indexType; // [추가]
 }

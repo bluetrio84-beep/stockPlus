@@ -4,7 +4,7 @@ import ChartWidget from './ChartWidget';
 import NewsFeed from './NewsFeed';
 import MobileNav from './MobileNav';
 import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, fetchSpecialReport, toggleFavorite } from '../api/stockApi';
-import { getSignSymbol, getColorClass, getMarketDisplay } from '../utils/stockUtils';
+import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 import classNames from 'classnames';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Plus, Trash2, Repeat, Search, Sparkles, ArrowLeft, Brain, ChevronDown, ChevronRight, LayoutList, AlertTriangle, Star } from 'lucide-react';
@@ -84,12 +84,28 @@ function Dashboard() {
           const stocksWithInitialData = await Promise.all(
             dbWatchlist.map(async (w) => {
               const priceData = await fetchStockPrice(w.stockCode, market);
-              console.log(`[Initial Load] ${w.stockName} (${w.stockCode}) - Market: ${market}`, priceData);
               const existing = displayStocks.find(s => s.code === w.stockCode);
+              
+              // [초강력 디버그 로그] REST API 응답 구조 확인
+              console.log(`>>> [DASHBOARD DATA] ${w.stockName}:`, {
+                  marketType: w.marketType,
+                  marketName: priceData?.marketName,
+                  indexName: priceData?.indexName,
+                  status: priceData?.stockStatus
+              });
+
               return {
-                id: w.stockCode, name: w.stockName, code: w.stockCode,
-                exchangeCode: market, exchangeName: market === 'NX' ? 'NXT' : (market === 'UN' ? 'UN' : 'KRX'),
-                isFavorite: w.isFavorite,
+                ...w, 
+                id: w.stockCode,
+                code: w.stockCode,
+                name: w.stockName,
+                marketType: w.marketType, 
+                stockStatus: priceData?.stockStatus,
+                marketWarning: priceData?.marketWarning,
+                marketName: priceData?.marketName,
+                indexName: priceData?.indexName,
+                exchangeCode: market, 
+                exchangeName: market === 'NX' ? 'NXT' : (market === 'UN' ? 'UN' : 'KRX'),
                 price: parseFloat(priceData?.currentPrice) || 0,
                 change: parseFloat(priceData?.change) || 0,
                 changeRate: parseFloat(priceData?.changeRate) || 0,
@@ -173,13 +189,35 @@ function Dashboard() {
         setDisplayStocks(prev => prev.map(s => {
             let u = updates.get(`${s.code}-${s.exchangeCode}`);
             if (!u && s.exchangeCode === 'UN') u = updates.get(`${s.code}-J`) || updates.get(`${s.code}-NX`);
-            return u ? { ...s, ...u, price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate) } : s;
+            
+            return u ? { 
+                ...s, 
+                ...u, 
+                marketType: s.marketType, 
+                stockStatus: u.stockStatus || s.stockStatus,
+                marketName: s.marketName, // [추가] 시장 명칭 보존
+                indexName: s.indexName,   // [추가] 지수 명칭 보존
+                isExpected: u.isExpected,
+                price: parseFloat(u.currentPrice), 
+                change: parseFloat(u.change), 
+                changeRate: parseFloat(u.changeRate) 
+            } : s;
         }));
         setSelectedStock(prev => {
             if (!prev) return null;
             let u = updates.get(`${prev.code}-${prev.exchangeCode}`);
             if (!u && prev.exchangeCode === 'UN') u = updates.get(`${prev.code}-J`) || updates.get(`${prev.code}-NX`);
-            return u ? { ...prev, ...u, price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate) } : prev;
+            return u ? { 
+                ...prev, 
+                ...u, 
+                marketType: prev.marketType,
+                marketName: prev.marketName, // [추가] 시장 명칭 보존
+                indexName: prev.indexName,   // [추가] 지수 명칭 보존
+                isExpected: u.isExpected,
+                price: parseFloat(u.currentPrice), 
+                change: parseFloat(u.change), 
+                changeRate: parseFloat(u.changeRate) 
+            } : prev;
         });
     }, 200);
     return () => { eventSource.close(); clearInterval(flushInterval); };
@@ -312,12 +350,22 @@ function Dashboard() {
                                 </div>
                                 <h3 className="font-bold text-slate-300 mb-3 px-1 flex items-center gap-2"><Star size={16} className="text-yellow-500 fill-yellow-500" /> 주요 관심 종목</h3>
                                 <div className="space-y-3">
-                                    {displayStocks.filter(s => s.isFavorite).length > 0 ? displayStocks.filter(s => s.isFavorite).map(stock => (
-                                        <div key={`home-${stock.code}`} onClick={() => navigate(`/stock/${stock.code}`)} className="bg-slate-850 border border-slate-800 rounded-xl p-4 flex justify-between items-center active:bg-slate-800 transition-colors shadow-sm">
-                                            <div><div className="font-bold text-slate-200 text-base">{stock.name}</div><div className="text-[10px] text-slate-500">{stock.code} | {stock.exchangeName}</div></div>
-                                            <div className="flex flex-col items-end"><div className={classNames("text-xl font-bold", getColorClass(stock.priceSign))}>{stock.price.toLocaleString()}</div><div className={classNames("text-xs font-medium", getColorClass(stock.priceSign))}>{getSignSymbol(stock.priceSign)} {Math.abs(stock.changeRate).toFixed(2)}%</div></div>
-                                        </div>
-                                    )) : <div className="flex flex-col items-center justify-center py-10 text-slate-600 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"><Star size={32} className="mb-2 opacity-10" /><p className="text-xs">즐겨찾기한 종목이 없습니다.</p></div>}
+                                    {displayStocks.filter(s => s.isFavorite).length > 0 ? displayStocks.filter(s => s.isFavorite).map(stock => {
+                                        const badge = getStockStatusBadge(stock);
+                                        return (
+                                            <div key={`home-${stock.code}`} onClick={() => navigate(`/stock/${stock.code}`)} className="bg-slate-850 border border-slate-800 rounded-xl p-4 flex justify-between items-center active:bg-slate-800 transition-colors shadow-sm">
+                                                <div>
+                                                    <div className="font-bold text-slate-200 text-base flex items-center gap-1.5">
+                                                        {stock.name}
+                                                        {isKosdaq(stock) && <span className="text-indigo-400">*</span>}
+                                                        {badge && <span className={classNames("text-[10px] px-1 rounded border", badge.color)}>{badge.label}</span>}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-500">{stock.code} | {stock.exchangeName}</div>
+                                                </div>
+                                                <div className="flex flex-col items-end"><div className={classNames("text-xl font-bold", getColorClass(stock.priceSign))}>{stock.price.toLocaleString()}</div><div className={classNames("text-xs font-medium", getColorClass(stock.priceSign))}>{getSignSymbol(stock.priceSign)} {Math.abs(stock.changeRate).toFixed(2)}%</div></div>
+                                            </div>
+                                        );
+                                    }) : <div className="flex flex-col items-center justify-center py-10 text-slate-600 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"><Star size={32} className="mb-2 opacity-10" /><p className="text-xs">즐겨찾기한 종목이 없습니다.</p></div>}
                                 </div>
                             </div>
                         ) : (

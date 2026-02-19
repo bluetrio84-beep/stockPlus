@@ -1,13 +1,14 @@
 import React from 'react';
 import classNames from 'classnames';
 import { Star } from 'lucide-react';
-import { getSignSymbol, getColorClass } from '../utils/stockUtils';
+import { getSignSymbol, getColorClass, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
 /**
  * 리스트에서 개별 주식 항목을 표시하는 UI 컴포넌트입니다.
  */
 const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) => {
     const sign = stock.priceSign;
+    const badge = getStockStatusBadge(stock);
 
     return (
         <div 
@@ -31,7 +32,11 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                     })} />
                 </button>
                 <div>
-                    <div className="font-bold text-slate-200">{stock.name}</div>
+                    <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                        {stock.name}
+                        {isKosdaq(stock) && <span className="text-indigo-400">*</span>}
+                        {badge && <span className={classNames("text-[10px] px-1 rounded border leading-tight", badge.color)}>{badge.label}</span>}
+                    </div>
                     <div className="text-xs text-slate-500">{stock.code}</div>
                 </div>
             </div>

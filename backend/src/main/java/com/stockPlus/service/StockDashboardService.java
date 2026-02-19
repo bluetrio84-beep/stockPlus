@@ -103,9 +103,22 @@ public class StockDashboardService {
         List<Watchlist> current = watchlistMapper.findByGroupId(usrId, watchlist.getGroupId());
         if (current.stream().anyMatch(w -> w.getStockCode().equals(watchlist.getStockCode()))) return;
         
-        // 종목명 보정 (마스터 데이터 조회)
+        // 종목명 및 마스터 데이터 보정
         StockMaster master = stockMasterMapper.findByStockCode(watchlist.getStockCode());
-        if (master != null) watchlist.setStockName(master.getStockName());
+        if (master != null) {
+            watchlist.setStockName(master.getStockName());
+        } else {
+            // [보완] 마스터 데이터가 없으면 자동 생성하여 별표(*) 로직이 작동하게 함
+            String inferredMarket = watchlist.getStockCode().startsWith("0") ? "KOSPI" : "KOSDAQ";
+            // 단, 005930(삼성전자) 처럼 00으로 시작하는 코스피가 많으므로 세밀한 판별 필요
+            // 여기서는 일단 추가 시 전달된 이름으로 마스터 등록
+            stockMasterMapper.insert(StockMaster.builder()
+                    .stockCode(watchlist.getStockCode())
+                    .stockName(watchlist.getStockName())
+                    .exchangeCode(watchlist.getExchangeCode() != null ? watchlist.getExchangeCode() : "J")
+                    .marketType(inferredMarket)
+                    .build());
+        }
         
         if (watchlist.getIsFavorite() == null) watchlist.setIsFavorite(false);
         
