@@ -8,7 +8,7 @@ import java.util.Optional;
 @Mapper
 public interface UserMapper {
     List<User> findAll();
-    Optional<User> findByUsrId(String usrId);
+    User findByUsrId(String usrId); // [수정] Optional 제거
     int insert(User user);
     boolean existsByUsrId(String usrId);
     boolean existsByPhoneNumber(String phoneNumber);

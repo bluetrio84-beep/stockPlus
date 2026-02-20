@@ -31,12 +31,20 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String usrId) throws UsernameNotFoundException {
         // 1. DB에서 사용자 조회
-        User user = userMapper.findByUsrId(usrId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + usrId));
+        User user = userMapper.findByUsrId(usrId);
+        
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with ID: " + usrId);
+        }
 
         // 2. UserDetails 객체 생성 및 반환
-        // 현재 권한(Authorities)은 빈 리스트로 처리 (추후 역할/권한 시스템 도입 시 수정 가능)
+        // 역할(Role)이 있으면 'ROLE_' 접두사를 붙여 권한 설정
+        String role = user.getRole() != null ? user.getRole() : "USER";
+        
         return new org.springframework.security.core.userdetails.User(
-                user.getUsrId(), user.getPassword(), new ArrayList<>());
+                user.getUsrId(), 
+                user.getPassword(), 
+                org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_" + role)
+        );
     }
 }

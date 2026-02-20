@@ -1,5 +1,6 @@
 package com.stockPlus.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +17,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import java.util.Arrays;
 
-/**
- * Spring Security의 핵심 설정 클래스입니다.
- */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -34,12 +31,21 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            // [핵심] REST API 설정: 인증 실패 시 리다이렉트하지 않고 401 반환
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                })
+            )
             .authorizeHttpRequests(auth -> auth
-                // 특정 경로명시 (SSE 및 정적 리소스 등)
-                .requestMatchers(new AntPathRequestMatcher("/api/sse/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/api/auth/**")).permitAll()
-                // 그 외 모든 요청 허용 (개발 단계)
-                .anyRequest().permitAll() 
+                // 1. 공용 API 및 대시보드 시세 조회 허용 (로그인 전에도 화면이 뜨게 함)
+                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**").permitAll()
+                
+                // 2. 관리자 전용 API
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                
+                // 3. 그 외 모든 요청은 인증 필요
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -49,38 +55,23 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * 비밀번호 암호화를 위한 BCrypt 인코더 빈 등록
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * AuthenticationManager 빈 등록 (로그인 컨트롤러에서 사용)
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * CORS(Cross-Origin Resource Sharing) 설정
-     * 프론트엔드 등 다른 도메인에서의 API 접근을 허용합니다.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 모든 출처(Origin) 허용
         configuration.setAllowedOrigins(Arrays.asList("*"));
-        // 허용할 HTTP 메서드
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // 허용할 헤더
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
-        // 클라이언트에 노출할 헤더 (Authorization 헤더 등)
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

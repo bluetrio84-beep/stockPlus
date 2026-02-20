@@ -28,20 +28,33 @@ public class JwtUtil {
     private static final long EXPIRATION_TIME = 365L * 24 * 60 * 60 * 1000;
 
     /**
-     * 사용자 아이디를 기반으로 JWT 토큰을 생성합니다.
+     * 사용자 아이디와 권한을 기반으로 JWT 토큰을 생성합니다.
      * @param username 사용자 아이디
+     * @param role 사용자 권한 (ADMIN, USER 등)
      * @return 생성된 JWT 문자열
      */
-    public String generateToken(String username) {
-        // 시크릿 키 객체 생성 (HMAC-SHA 알고리즘용)
+    public String generateToken(String username, String role) {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         
         return Jwts.builder()
-                .setSubject(username) // 토큰 주제(Subject)에 사용자 아이디 설정
-                .setIssuedAt(new Date()) // 토큰 발행 시간
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // 토큰 만료 시간
-                .signWith(key, SignatureAlgorithm.HS256) // 서명 알고리즘 및 키 설정
+                .setSubject(username)
+                .claim("role", role) // [추가] 권한 클레임 주입
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // [추가] 기존 메서드 유지 (하위 호환성)
+    public String generateToken(String username) {
+        return generateToken(username, "USER");
+    }
+
+    /**
+     * 토큰에서 역할(Role) 정보를 추출합니다.
+     */
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
     /**

@@ -13,13 +13,13 @@
     </select>
 
     <select id="findByUsrId" resultType="com.stockPlus.domain.User">
-        SELECT USRID as usrId, USRNAME as usrName, password, phone_number as phoneNumber, email, created_at as createdAt 
+        SELECT USRID as usrId, USRNAME as usrName, password, phone_number as phoneNumber, email, role, created_at as createdAt 
         FROM users WHERE USRID = #{usrId}
     </select>
 
     <insert id="insert" parameterType="com.stockPlus.domain.User">
-        INSERT INTO users (USRID, USRNAME, password, phone_number, email, created_at)
-        VALUES (#{usrId}, #{usrName}, #{password}, #{phoneNumber}, #{email}, NOW())
+        INSERT INTO users (USRID, USRNAME, password, phone_number, email, role, created_at)
+        VALUES (#{usrId}, #{usrName}, #{password}, #{phoneNumber}, #{email}, #{role}, NOW())
     </insert>
 
     <select id="existsByUsrId" resultType="boolean">

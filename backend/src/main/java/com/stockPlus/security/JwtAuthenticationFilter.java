@@ -40,36 +40,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String username = null;
 
         // 1. JWT 토큰 추출
-        // 기본적으로 Authorization 헤더의 Bearer 토큰을 확인합니다.
         final String authHeader = request.getHeader("Authorization");
+        log.debug(">>> [AUTH DEBUG] URL: {}, Header: {}", request.getRequestURI(), authHeader);
+        
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
         } 
-        // 2. 헤더에 없으면 쿼리 파라미터에서 추출
-        // (EventSource/SSE 연결은 헤더 커스텀이 어렵기 때문에 URL 파라미터로 토큰을 전달받음)
         else {
             jwt = request.getParameter("token");
         }
 
-        // 3. 토큰 유효성 검증 및 인증 처리
         if (jwt != null && !jwt.equals("null") && !jwt.isEmpty()) {
+            log.debug(">>> [AUTH DEBUG] JWT Found: {}", jwt.substring(0, Math.min(jwt.length(), 10)) + "...");
             try {
-                // 토큰에서 사용자 아이디 추출
                 username = jwtUtil.extractUsername(jwt);
+                log.debug(">>> [AUTH DEBUG] Extracted Username: {}", username);
 
                 // 현재 SecurityContext에 인증 정보가 없는 경우에만 처리
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // 사용자 상세 정보 로드
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-                    
-                    // 토큰이 유효한지 최종 확인 (만료 여부, 사용자 일치 여부)
-                    if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                        // 인증 객체 생성 및 SecurityContext 설정
+                    // [최적화] 토큰에서 직접 Role 추출하여 권한 부여
+                    String role = jwtUtil.extractRole(jwt);
+                    var authorities = org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_" + (role != null ? role : "USER"));
+
+                    // 토큰 유효성 최종 확인
+                    if (jwtUtil.validateToken(jwt, username)) {
+                        // 인증 객체 생성
+                        log.debug(">>> [AUTH DEBUG] Final Authorities: {}", authorities);
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                                username, null, authorities);
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         
-                        // 이 시점부터 Spring Security는 해당 요청을 인증된 상태로 처리함
                         SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 }

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut } from 'lucide-react';
+import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings } from 'lucide-react';
 import classNames from 'classnames';
+import { isAdmin } from '../api/authApi'; // [추가]
 
 const LayoutMobile = ({ logic }) => {
     const { 
@@ -16,9 +17,12 @@ const LayoutMobile = ({ logic }) => {
         { name: 'AI 키워드 관리', path: '/keywords', icon: Tag },
     ];
 
+    if (isAdmin()) {
+        navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
+    }
+
     return (
         <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-200 font-sans overflow-hidden select-none">
-            {/* Header (모바일 상단 바) - PC와 100% 동일한 스타일 */}
             <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-40 relative shadow-lg">
                 <div className="flex items-center gap-3">
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 active:bg-slate-800 rounded-full transition-colors">
@@ -33,22 +37,11 @@ const LayoutMobile = ({ logic }) => {
                 </div>
 
                 <div className="flex items-center gap-1.5 relative">
-                    <button 
-                        onClick={handleUserMenuToggle}
-                        className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 mr-1 shadow-sm active:bg-slate-700"
-                    >
-                        <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white">
-                            {usrName.charAt(0).toUpperCase()}
-                        </div>
+                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 mr-1 shadow-sm active:bg-slate-700">
+                        <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
                         <span className="text-[11px] font-bold text-slate-300 max-w-[60px] truncate">{usrName}님</span>
                     </button>
-
-                    <button onClick={handleNotificationToggle} className="p-2 text-slate-400 relative">
-                        <Bell size={20} />
-                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>}
-                    </button>
-
-                    {/* 알림 팝업 (모바일용으로 이식) */}
+                    <button onClick={handleNotificationToggle} className="p-2 text-slate-400 relative"><Bell size={20} />{unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>}</button>
                     {logic.isNotificationOpen && (
                         <>
                             <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" onClick={() => logic.setIsNotificationOpen(false)}></div>
@@ -57,33 +50,28 @@ const LayoutMobile = ({ logic }) => {
                                     <h3 className="text-sm font-bold text-white">최신 알림</h3>
                                     <button onClick={() => logic.setIsNotificationOpen(false)}><X size={18} className="text-slate-500" /></button>
                                 </div>
-                                <div className="max-h-[350px] overflow-y-auto no-scrollbar">
-                                    {logic.notifications.length > 0 ? (
-                                        logic.notifications.map((notif, idx) => {
-                                            const date = notif.createdAt ? new Date(notif.createdAt) : null;
-                                            const timeStr = date && !isNaN(date) 
-                                                ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-                                                : '';
-                                            return (
-                                                <div key={idx} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors">
-                                                    <div className="flex gap-3 items-start">
-                                                        <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", notif.is_read === 0 ? "bg-indigo-500" : "bg-slate-700")}></div>
-                                                        <div className="flex-1">
-                                                            <p className="text-[11px] text-slate-200 leading-normal">{notif.message}</p>
-                                                            <span className="text-[11px] text-slate-200 font-mono">{timeStr}</span>
-                                                        </div>
+                                <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-slate-900">
+                                    {logic.notifications.length > 0 ? logic.notifications.map((notif, idx) => {
+                                        const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
+                                        const timeStr = date && !isNaN(date) 
+                                            ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+                                            : '';
+                                        return (
+                                            <div key={idx} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors">
+                                                <div className="flex gap-3 items-start text-white">
+                                                    <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-700")}></div>
+                                                    <div className="flex-1">
+                                                        <p className={classNames("text-[11px] leading-normal mb-1", (notif.is_read === 0 || !notif.isRead) ? "font-bold" : "font-medium opacity-90")}>{notif.message}</p>
+                                                        <span className="text-[10px] text-white/60 font-mono block">{timeStr}</span>
                                                     </div>
                                                 </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="p-10 text-center text-slate-500 text-xs font-bold">새로운 알림이 없습니다.</div>
-                                    )}
+                                            </div>
+                                        );
+                                    }) : <div className="p-10 text-center text-white text-xs font-bold flex flex-col items-center gap-2"><Bell size={24} className="opacity-20 mb-1" />새로운 알림이 없습니다.</div>}
                                 </div>
                             </div>
                         </>
                     )}
-
                     {isUserMenuOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
@@ -92,16 +80,13 @@ const LayoutMobile = ({ logic }) => {
                                     <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-black text-white mb-2 shadow-lg">{usrName.charAt(0).toUpperCase()}</div>
                                     <p className="text-sm font-bold text-white">안녕하세요, <span className="text-indigo-400">{usrName}</span>님</p>
                                 </div>
-                                <div className="p-2 bg-slate-900">
-                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"><LogOut size={16} />로그아웃</button>
-                                </div>
+                                <div className="p-2 bg-slate-900"><button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"><LogOut size={16} />로그아웃</button></div>
                             </div>
                         </>
                     )}
                 </div>
             </header>
 
-            {/* 시장 지수 바 */}
             <div className="bg-slate-900/50 border-b border-slate-800 px-4 py-1.5 shrink-0 overflow-hidden">
                 <div className="flex items-center justify-start gap-5">
                     {marketIndices.map(index => (
@@ -109,16 +94,13 @@ const LayoutMobile = ({ logic }) => {
                             <span className="text-[10px] font-black text-slate-500">{index.name}</span>
                             <span className="text-[11px] font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
                             <span className={classNames("text-[10px] font-bold font-mono flex items-center gap-0.5", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
-                                {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} 
-                                {Math.abs(parseFloat(index.change || 0)).toFixed(2)}
-                                <span className="ml-0.5 text-[9px] opacity-80">({index.rate}%)</span>
+                                {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                             </span>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* 메뉴 드로어 */}
             {isMenuOpen && (
                 <>
                     <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
@@ -141,9 +123,7 @@ const LayoutMobile = ({ logic }) => {
                 </>
             )}
 
-            <main className="flex-1 overflow-hidden relative pb-4">
-                <Outlet />
-            </main>
+            <main className="flex-1 overflow-hidden relative pb-4"><Outlet /></main>
         </div>
     );
 };

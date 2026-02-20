@@ -65,6 +65,18 @@ services:
     networks:
       - stock-network
 
+  collector:
+    build:
+      context: ./collector
+    container_name: projects-collector-1
+    env_file:
+      - .env
+    network_mode: "host"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+
 volumes:
   mysql_data:
 

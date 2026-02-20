@@ -16,5 +16,6 @@ public class User {
     private String password;
     private String phoneNumber;
     private String email;
+    private String role; // [추가] 권한 필드
     private LocalDateTime createdAt;
 }
