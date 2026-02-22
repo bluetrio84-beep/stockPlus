@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { fetchStockPrice, getAuthHeader } from '../api/stockApi';
+import { fetchStockPrice, getAuthHeader, fetchTopRankings } from '../api/stockApi';
 
 /**
  * Layout의 비즈니스 로직(지수 로드, 알림, 메뉴 관리)을 담당하는 훅
@@ -11,6 +11,7 @@ export const useLayout = () => {
     
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [marketIndices, setMarketIndices] = useState([]);
+    const [rankings, setRankings] = useState([]); // [v13.5] 실시간 랭킹 추가
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -31,6 +32,13 @@ export const useLayout = () => {
         } catch (error) {}
     }, []);
 
+    const loadRankings = useCallback(async () => {
+        try {
+            const data = await fetchTopRankings();
+            setRankings(data);
+        } catch (e) {}
+    }, []);
+
     const fetchNotifications = useCallback(async () => {
         try {
             const res = await fetch('/stockPlus/api/dashboard/notifications', { headers: getAuthHeader() });
@@ -48,14 +56,17 @@ export const useLayout = () => {
 
     useEffect(() => {
         loadMarketIndices();
+        loadRankings();
         fetchNotifications();
         const interval = setInterval(() => {
             loadMarketIndices();
+            loadRankings();
             fetchNotifications();
         }, 30000); 
         return () => clearInterval(interval);
-    }, [loadMarketIndices, fetchNotifications]);
+    }, [loadMarketIndices, loadRankings, fetchNotifications]);
 
+    // [복구] 누락된 핸들러 함수들
     const handleNotificationToggle = async () => {
         setIsNotificationOpen(!isNotificationOpen);
         setIsUserMenuOpen(false);
@@ -78,7 +89,7 @@ export const useLayout = () => {
     return {
         navigate, location,
         isMenuOpen, setIsMenuOpen,
-        marketIndices,
+        marketIndices, rankings,
         notifications, unreadCount,
         isNotificationOpen, setIsNotificationOpen,
         isUserMenuOpen, setIsUserMenuOpen,

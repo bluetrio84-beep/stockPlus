@@ -6,7 +6,7 @@ import { isAdmin } from '../api/authApi';
 
 const LayoutDesktop = ({ logic }) => {
     const { 
-        navigate, location, isMenuOpen, setIsMenuOpen, marketIndices, 
+        navigate, location, isMenuOpen, setIsMenuOpen, marketIndices, rankings, // [수정] rankings 추가
         unreadCount, isUserMenuOpen, setIsUserMenuOpen, usrName, 
         handleNotificationToggle, handleUserMenuToggle, handleLogout 
     } = logic;
@@ -118,16 +118,40 @@ const LayoutDesktop = ({ logic }) => {
                 </aside>
 
                 <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
-                    <div className="bg-slate-900/50 border-b border-slate-800 px-6 py-2 flex gap-8 overflow-x-auto no-scrollbar shrink-0">
-                        {marketIndices.map(index => (
-                            <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit">
-                                <span className="text-xs font-black text-slate-500">{index.name}</span>
-                                <span className="text-sm font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
-                                <span className={classNames("text-[10px] font-bold font-mono", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
-                                    {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
-                                </span>
+                    <div className="bg-slate-900/50 border-b border-slate-800 px-6 py-2 flex items-center gap-8 overflow-hidden shrink-0">
+                        {/* 1. 시장 지수 (KOSPI/KOSDAQ) */}
+                        <div className="flex gap-8 shrink-0">
+                            {marketIndices.map(index => (
+                                <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit">
+                                    <span className="text-xs font-black text-slate-500">{index.name}</span>
+                                    <span className="text-sm font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
+                                    <span className={classNames("text-[10px] font-bold font-mono", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
+                                        {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* [v13.5] 실시간 랭킹 티커 (1~3위 통합) */}
+                        {rankings && rankings.length > 0 && (
+                            <div className="flex items-center gap-6 overflow-hidden border-l border-slate-800 pl-8 ml-2">
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter shrink-0 animate-pulse">Live Ranking</span>
+                                <div className="flex gap-6 overflow-x-auto no-scrollbar py-1">
+                                    {rankings.map((r, i) => (
+                                        <button 
+                                            key={i} 
+                                            onClick={() => navigate(`/stock/${r.stock_code}`)} 
+                                            className="flex items-center gap-1.5 whitespace-nowrap group hover:bg-slate-800/50 px-2 py-0.5 rounded-md transition-all"
+                                        >
+                                            <span className={classNames("text-[10px] font-black", r.type === 'AMOUNT' ? "text-amber-500" : "text-rose-500")}>
+                                                {r.type === 'AMOUNT' ? '●' : '▲'}
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{r.stock_name}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                     <main className="flex-1 overflow-hidden relative"><Outlet /></main>
                 </div>

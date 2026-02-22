@@ -78,6 +78,12 @@ export async function fetchStockTraders(stockCode) {
     return data || null;
 }
 
+// 실시간 랭킹 조회 API (v13.5)
+export async function fetchTopRankings() {
+    const data = await safeFetch('api/dashboard/stocks/rankings/top');
+    return data || [];
+}
+
 // --- Dashboard Backend API (뉴스 및 인사이트) ---
 
 // 최신 뉴스 조회

@@ -54,6 +54,14 @@ public class StockDashboardController {
     }
 
     /**
+     * 실시간 랭킹 Top 10을 조회합니다. (거래대금/상승률)
+     */
+    @GetMapping("/stocks/rankings/top")
+    public List<Map<String, Object>> getTopRankings() {
+        return adminMapper.getTopRankings();
+    }
+
+    /**
      * 즐겨찾기(Favorites)로 설정된 관심 종목만 조회합니다.
      * @return 즐겨찾기 종목 리스트
      */

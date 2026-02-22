@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, fetchSpecialReport, toggleFavorite } from '../api/stockApi';
+import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, fetchSpecialReport, toggleFavorite, fetchTopRankings } from '../api/stockApi';
 import classNames from 'classnames';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
@@ -15,9 +15,10 @@ function Dashboard() {
   const [news, setNews] = useState([]);
   const [marketInsight, setMarketInsight] = useState('');
   const [specialReport, setSpecialReport] = useState('');
+  const [rankings, setRankings] = useState([]); // [v13.5] 랭킹 상태 추가
   const [selectedStock, setSelectedStock] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); 
-  const [watchlistSubTab, setWatchlistSubTab] = useState('list'); // 'list' or 'ai'
+  const [watchlistSubTab, setWatchlistSubTab] = useState('list');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [globalMarketMode, setGlobalMarketMode] = useState('UN');
@@ -31,9 +32,8 @@ function Dashboard() {
   const searchTimeoutRef = useRef(null);
   const stockUpdatesBuffer = useRef(new Map());
 
-  // 삭제 확인 팝업 상태
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null); // 'ALL' or stockCode
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const renderFormattedText = (text) => {
     if (!text) return null;
@@ -55,7 +55,6 @@ function Dashboard() {
     });
   };
 
-  // 차트 로딩 로직
   const loadChartForPeriod = useCallback(async (stockCode, market, period) => {
     if (!stockCode) return;
     try {
@@ -83,15 +82,6 @@ function Dashboard() {
             dbWatchlist.map(async (w) => {
               const priceData = await fetchStockPrice(w.stockCode, market);
               const existing = displayStocks.find(s => s.code === w.stockCode);
-              
-              // [초강력 디버그 로그] REST API 응답 구조 확인
-              console.log(`>>> [DASHBOARD DATA] ${w.stockName}:`, {
-                  marketType: w.marketType,
-                  marketName: priceData?.marketName,
-                  indexName: priceData?.indexName,
-                  status: priceData?.stockStatus
-              });
-
               return {
                 ...w, 
                 id: w.stockCode,
@@ -139,11 +129,8 @@ function Dashboard() {
     }
   }, [stockCodeFromUrl, displayStocks, globalMarketMode]);
 
-  // [추가] 시장 모드 변경 시 selectedStock의 거래소 코드 즉시 동기화 (차트/투자자 데이터 갱신 트리거)
   useEffect(() => {
-    if (selectedStock) {
-        setSelectedStock(prev => ({ ...prev, exchangeCode: globalMarketMode }));
-    }
+    if (selectedStock) setSelectedStock(prev => ({ ...prev, exchangeCode: globalMarketMode }));
   }, [globalMarketMode]);
 
   useEffect(() => {
@@ -160,6 +147,7 @@ function Dashboard() {
         fetchRecentNews().then(setNews).catch(() => {});
         fetchMarketInsight().then(setMarketInsight).catch(() => {});
         fetchSpecialReport().then(setSpecialReport).catch(() => {});
+        fetchTopRankings().then(setRankings).catch(() => {}); // [v13.5] 랭킹 로드
     };
     loadData();
     const interval = setInterval(loadData, 60000);
@@ -168,17 +156,12 @@ function Dashboard() {
 
   useEffect(() => {
     const eventSource = new EventSource('/stockPlus/api/sse/stocks');
-    console.log("SSE Connecting to: /stockPlus/api/sse/stocks");
-
     eventSource.addEventListener('priceUpdate', (e) => {
         try {
             let updates = JSON.parse(e.data);
-            console.log("SSE Price Update Received:", updates); // 브라우저 콘솔에서 확인 가능
             if (!Array.isArray(updates)) updates = [updates];
             updates.forEach(upd => stockUpdatesBuffer.current.set(`${upd.stockCode}-${upd.exchangeCode || 'J'}`, upd));
-        } catch (err) {
-            console.error("SSE Parse Error:", err);
-        }
+        } catch (err) {}
     });
     const flushInterval = setInterval(() => {
         if (stockUpdatesBuffer.current.size === 0) return;
@@ -187,35 +170,13 @@ function Dashboard() {
         setDisplayStocks(prev => prev.map(s => {
             let u = updates.get(`${s.code}-${s.exchangeCode}`);
             if (!u && s.exchangeCode === 'UN') u = updates.get(`${s.code}-J`) || updates.get(`${s.code}-NX`);
-            
-            return u ? { 
-                ...s, 
-                ...u, 
-                marketType: s.marketType, 
-                stockStatus: u.stockStatus || s.stockStatus,
-                marketName: s.marketName, // [추가] 시장 명칭 보존
-                indexName: s.indexName,   // [추가] 지수 명칭 보존
-                isExpected: u.isExpected,
-                price: parseFloat(u.currentPrice), 
-                change: parseFloat(u.change), 
-                changeRate: parseFloat(u.changeRate) 
-            } : s;
+            return u ? { ...s, ...u, price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate) } : s;
         }));
         setSelectedStock(prev => {
             if (!prev) return null;
             let u = updates.get(`${prev.code}-${prev.exchangeCode}`);
             if (!u && prev.exchangeCode === 'UN') u = updates.get(`${prev.code}-J`) || updates.get(`${prev.code}-NX`);
-            return u ? { 
-                ...prev, 
-                ...u, 
-                marketType: prev.marketType,
-                marketName: prev.marketName, // [추가] 시장 명칭 보존
-                indexName: prev.indexName,   // [추가] 지수 명칭 보존
-                isExpected: u.isExpected,
-                price: parseFloat(u.currentPrice), 
-                change: parseFloat(u.change), 
-                changeRate: parseFloat(u.changeRate) 
-            } : prev;
+            return u ? { ...prev, ...u, price: parseFloat(u.currentPrice), change: parseFloat(u.change), changeRate: parseFloat(u.changeRate) } : prev;
         });
     }, 200);
     return () => { eventSource.close(); clearInterval(flushInterval); };
@@ -237,14 +198,6 @@ function Dashboard() {
     setSearchKeyword(''); setSearchResults([]); setShowMobileSearch(false);
   };
 
-  const handleDeleteStock = async (e, stockCode) => {
-    if (e) e.stopPropagation();
-    if (window.confirm('정말 삭제하시겠습니까?')) {
-        await deleteFromWatchlist(stockCode, activeWatchlistTab);
-        await loadWatchlist(globalMarketMode, activeWatchlistTab);
-    }
-  };
-
   const confirmDelete = (e, target) => {
       if (e) e.stopPropagation();
       setDeleteTarget(target);
@@ -253,18 +206,10 @@ function Dashboard() {
 
   const executeDelete = async () => {
       try {
-          if (deleteTarget === 'ALL') {
-              await deleteAllFromWatchlist(activeWatchlistTab);
-          } else if (deleteTarget) {
-              await deleteFromWatchlist(deleteTarget, activeWatchlistTab);
-          }
+          if (deleteTarget === 'ALL') await deleteAllFromWatchlist(activeWatchlistTab);
+          else if (deleteTarget) await deleteFromWatchlist(deleteTarget, activeWatchlistTab);
           await loadWatchlist(globalMarketMode, activeWatchlistTab);
-      } catch (err) {
-          console.error("Delete failed", err);
-      } finally {
-          setShowDeleteConfirm(false);
-          setDeleteTarget(null);
-      }
+      } catch (err) {} finally { setShowDeleteConfirm(false); setDeleteTarget(null); }
   };
 
   const handleToggleFavorite = (stockCode, exchangeCode, isFav) => {
@@ -275,74 +220,31 @@ function Dashboard() {
   return (
     <div className="flex flex-col w-full h-full relative overflow-hidden bg-slate-950">
         <Dashboard_Desktop 
-            displayStocks={displayStocks}
-            selectedStock={selectedStock}
-            marketInsight={marketInsight}
-            news={news}
-            searchKeyword={searchKeyword}
-            searchResults={searchResults}
-            isEditMode={isEditMode}
-            globalMarketMode={globalMarketMode}
-            activeWatchlistTab={activeWatchlistTab}
-            currentPeriod={currentPeriod}
-            handleSearch={handleSearch}
-            handleSearchResultClick={handleSearchResultClick}
-            confirmDelete={confirmDelete}
-            setGlobalMarketMode={setGlobalMarketMode}
-            setIsEditMode={setIsEditMode}
-            setActiveWatchlistTab={setActiveWatchlistTab}
-            setCurrentPeriod={setCurrentPeriod}
-            renderFormattedText={renderFormattedText}
-            navigate={navigate}
-            onToggleFavorite={handleToggleFavorite}
+            displayStocks={displayStocks} selectedStock={selectedStock} marketInsight={marketInsight} news={news} rankings={rankings}
+            searchKeyword={searchKeyword} searchResults={searchResults} isEditMode={isEditMode} globalMarketMode={globalMarketMode}
+            activeWatchlistTab={activeWatchlistTab} currentPeriod={currentPeriod} handleSearch={handleSearch}
+            handleSearchResultClick={handleSearchResultClick} confirmDelete={confirmDelete} setGlobalMarketMode={setGlobalMarketMode}
+            setIsEditMode={setIsEditMode} setActiveWatchlistTab={setActiveWatchlistTab} setCurrentPeriod={setCurrentPeriod}
+            renderFormattedText={renderFormattedText} navigate={navigate} onToggleFavorite={handleToggleFavorite}
         />
         <Dashboard_Mobile 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            watchlistSubTab={watchlistSubTab}
-            setWatchlistSubTab={setWatchlistSubTab}
-            marketInsight={marketInsight}
-            displayStocks={displayStocks}
-            isEditMode={isEditMode}
-            searchKeyword={searchKeyword}
-            searchResults={searchResults}
-            showMobileSearch={showMobileSearch}
-            setShowMobileSearch={setShowMobileSearch}
-            selectedStock={selectedStock}
-            currentPeriod={currentPeriod}
-            showDetailPopup={showDetailPopup}
-            setShowDetailPopup={setShowDetailPopup}
-            specialReport={specialReport}
-            news={news}
-            globalMarketMode={globalMarketMode}
-            activeWatchlistTab={activeWatchlistTab}
-            stockCodeFromUrl={stockCodeFromUrl}
-            handleSearch={handleSearch}
-            handleSearchResultClick={handleSearchResultClick}
-            handleDeleteStock={handleDeleteStock}
-            confirmDelete={confirmDelete}
-            setGlobalMarketMode={setGlobalMarketMode}
-            setIsEditMode={setIsEditMode}
-            setActiveWatchlistTab={setActiveWatchlistTab}
-            setCurrentPeriod={setCurrentPeriod}
-            navigate={navigate}
-            renderFormattedText={renderFormattedText}
-            onToggleFavorite={handleToggleFavorite}
+            activeTab={activeTab} setActiveTab={setActiveTab} watchlistSubTab={watchlistSubTab} setWatchlistSubTab={setWatchlistSubTab}
+            marketInsight={marketInsight} displayStocks={displayStocks} rankings={rankings} isEditMode={isEditMode}
+            searchKeyword={searchKeyword} searchResults={searchResults} showMobileSearch={showMobileSearch} setShowMobileSearch={setShowMobileSearch}
+            selectedStock={selectedStock} currentPeriod={currentPeriod} showDetailPopup={showDetailPopup} setShowDetailPopup={setShowDetailPopup}
+            specialReport={specialReport} news={news} globalMarketMode={globalMarketMode} activeWatchlistTab={activeWatchlistTab}
+            stockCodeFromUrl={stockCodeFromUrl} handleSearch={handleSearch} handleSearchResultClick={handleSearchResultClick}
+            confirmDelete={confirmDelete} setGlobalMarketMode={setGlobalMarketMode} setIsEditMode={setIsEditMode}
+            setActiveWatchlistTab={setActiveWatchlistTab} setCurrentPeriod={setCurrentPeriod} navigate={navigate}
+            renderFormattedText={renderFormattedText} onToggleFavorite={handleToggleFavorite}
         />
-
-        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-                    <div className="p-6 text-center">
-                        <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="text-red-500" size={24} /></div>
-                        <h3 className="text-lg font-bold text-white mb-2">{deleteTarget === 'ALL' ? `전체 삭제` : '관심종목 삭제'}</h3>
-                        <p className="text-sm text-slate-400 mb-6">{deleteTarget === 'ALL' ? `관심 그룹의 모든 종목을 삭제하시겠습니까?` : '선택한 종목을 삭제하시겠습니까?'}</p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button>
-                            <button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">삭제</button>
-                        </div>
-                    </div>
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6">
+                    <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="text-red-500" size={24} /></div>
+                    <h3 className="text-lg font-bold text-white mb-2">{deleteTarget === 'ALL' ? `전체 삭제` : '관심종목 삭제'}</h3>
+                    <p className="text-sm text-slate-400 mb-6">{deleteTarget === 'ALL' ? `관심 그룹의 모든 종목을 삭제하시겠습니까?` : '선택한 종목을 삭제하시겠습니까?'}</p>
+                    <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button><button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">삭제</button></div>
                 </div>
             </div>
         )}

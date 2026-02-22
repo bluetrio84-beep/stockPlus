@@ -5,10 +5,11 @@ import NewsFeed from './NewsFeed';
 import MobileNav from './MobileNav';
 import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 import classNames from 'classnames';
-import { X, Plus, Trash2, Repeat, Search, Sparkles, ArrowLeft, Brain, ChevronRight, Star } from 'lucide-react';
+import { X, Plus, Trash2, Repeat, Search, Sparkles, ArrowLeft, Brain, ChevronRight, Star, TrendingUp } from 'lucide-react'; // [수정] TrendingUp 추가
 
 const Dashboard_Mobile = ({
     activeTab, setActiveTab, watchlistSubTab, setWatchlistSubTab, marketInsight, displayStocks,
+    rankings, // [추가] rankings prop 받기
     isEditMode, searchKeyword, searchResults, showMobileSearch, setShowMobileSearch, selectedStock,
     currentPeriod, showDetailPopup, setShowDetailPopup, specialReport, news, globalMarketMode, activeWatchlistTab, stockCodeFromUrl,
     handleSearch, handleSearchResultClick, handleDeleteStock, confirmDelete, setGlobalMarketMode, setIsEditMode,
@@ -28,6 +29,20 @@ const Dashboard_Mobile = ({
                         </div>
                         {watchlistSubTab === 'list' ? (
                             <div className="h-full p-4 overflow-y-auto custom-scrollbar">
+                                {/* [v13.5] 실시간 시장 주도주 랭킹 칩 (Top 5 한정) */}
+                                {rankings && rankings.length > 0 && (
+                                    <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+                                        {rankings.map((r, i) => (
+                                            <div key={i} onClick={() => navigate(`/stock/${r.stock_code}`)} className="flex-none bg-slate-800/50 border border-slate-700/50 px-3 py-1.5 rounded-full flex items-center gap-2 active:bg-slate-700 transition-colors shadow-sm">
+                                                <span className={classNames("text-[10px] font-black", r.type === 'AMOUNT' ? "text-amber-500" : "text-rose-500")}>
+                                                    {r.type === 'AMOUNT' ? '●' : '▲'}
+                                                </span>
+                                                <span className="text-[11px] font-bold text-slate-200 whitespace-nowrap">{r.stock_name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6">
                                     <h3 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><Sparkles size={14} className="text-yellow-500"/> AI Market Insight</h3>
                                     {renderFormattedText(marketInsight)}

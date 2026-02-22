@@ -7,10 +7,10 @@ import classNames from 'classnames';
 import { Plus, Trash2, Repeat, Search, Sparkles } from 'lucide-react';
 
 const Dashboard_Desktop = ({
-    displayStocks, selectedStock, marketInsight, news,
+    displayStocks, selectedStock, marketInsight, news, rankings, // [추가] rankings 누락분 보충
     searchKeyword, searchResults, isEditMode, globalMarketMode, activeWatchlistTab, currentPeriod,
     handleSearch, handleSearchResultClick, confirmDelete, setGlobalMarketMode, setIsEditMode,
-    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText, onToggleFavorite // [수정] prop 이름 통일
+    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText, onToggleFavorite 
 }) => {
     const marketInfo = getMarketDisplay(globalMarketMode);
 
@@ -40,6 +40,7 @@ const Dashboard_Desktop = ({
                         )}
                     </div>
                 </div>
+
                 <div className="flex border-b border-slate-800 bg-slate-900">
                     {[1, 2, 3, 4].map(id => <button key={id} onClick={() => setActiveWatchlistTab(id)} className={classNames("flex-1 py-2 text-xs font-bold transition-all", { "text-white border-b-2 border-indigo-500 bg-slate-800/50": activeWatchlistTab === id, "text-slate-500 hover:text-slate-300": activeWatchlistTab !== id })}>관심 {id}</button>)}
                 </div>

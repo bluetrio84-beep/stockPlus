@@ -17,35 +17,29 @@ public interface AdminMapper {
     @Select("SELECT * FROM collector_logs ORDER BY id DESC LIMIT 100")
     List<Map<String, Object>> getCollectorLogs();
 
-    // 프론트엔드(AdminDashboard.jsx) 규격에 맞춰 필드명 별칭(AS) 적용
     @Select("SELECT stat_hour as hour, row_count as count FROM collector_hourly_stats ORDER BY stat_hour DESC LIMIT 24")
     List<Map<String, Object>> getHourlyStats();
 
     // --- 2. 수집 데이터 현황 (Admin Dashboard용) ---
-    
-    // 수급/거래원 (종목명 JOIN 및 캡처시간 별칭)
     @Select("SELECT sd.*, sm.stock_name, sd.captured_at as captured_at " +
             "FROM stock_supply_demand sd " +
             "JOIN stock_master sm ON sd.stock_code = sm.stock_code " +
             "ORDER BY sd.id DESC LIMIT 50")
     List<Map<String, Object>> getCollectedData();
 
-    // 랭킹 (실제 stock_rankings 테이블에서 데이터 로드)
     @Select("SELECT stock_code, stock_name, ranking_type, rank_val as rank_value, captured_at " +
             "FROM stock_rankings ORDER BY id DESC LIMIT 50")
     List<Map<String, Object>> getRecentRankings();
 
-    // 테마 (avg_change_rate -> change_rate 별칭)
     @Select("SELECT theme_name, avg_change_rate as change_rate, updated_at as captured_at " +
             "FROM market_themes ORDER BY avg_change_rate DESC LIMIT 50")
     List<Map<String, Object>> getRecentThemes();
 
-    // 업종 (change_rate, captured_at 별칭)
     @Select("SELECT industry_name, change_rate, updated_at as captured_at " +
             "FROM industry_quotes ORDER BY change_rate DESC LIMIT 50")
     List<Map<String, Object>> getRecentIndustries();
 
-    // --- 3. v12/v13 인텔리전스 쿼리 (Intelligence Dashboard용) ---
+    // --- 3. v12/v13 인텔리전스 및 대시보드 쿼리 ---
     
     @Select("SELECT i.*, " +
             "CASE WHEN WEEKDAY(NOW()) >= 5 OR HOUR(NOW()) < 9 OR HOUR(NOW()) >= 16 THEN 'WAIT' " +
@@ -95,4 +89,10 @@ public interface AdminMapper {
 
     @Select("SELECT * FROM stock_supply_demand WHERE stock_code = #{stockCode} ORDER BY id DESC LIMIT 1")
     Map<String, Object> getLatestStockSupplyDemand(String stockCode);
+
+    // [v13.5 최종 보정] 거래대금 Top 3 + 상승률 Top 3 믹스 (순위 1~3위)
+    @Select("(SELECT 'AMOUNT' as type, stock_name, stock_code, rank_val FROM stock_rankings WHERE ranking_type = 'AMOUNT' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'AMOUNT') ORDER BY rank_val ASC LIMIT 3) " +
+            "UNION ALL " +
+            "(SELECT 'RISE' as type, stock_name, stock_code, rank_val FROM stock_rankings WHERE ranking_type = 'RISE' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'RISE') ORDER BY rank_val ASC LIMIT 3)")
+    List<Map<String, Object>> getTopRankings();
 }
