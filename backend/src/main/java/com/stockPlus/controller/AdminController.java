@@ -4,6 +4,7 @@ import com.stockPlus.mapper.AdminMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ public class AdminController {
 
     private final AdminMapper adminMapper;
 
+    // --- 1. 수집기 설정 및 로그 (기존 기능 복구) ---
     @GetMapping("/collector/config")
     public Map<String, Object> getConfig() {
         return adminMapper.getCollectorConfig();
@@ -36,14 +38,24 @@ public class AdminController {
         return adminMapper.getHourlyStats();
     }
 
-    // 탭별 데이터 통합 API (프론트에서 골라서 쓰기 편하게)
     @GetMapping("/collector/data/all")
     public Map<String, List<Map<String, Object>>> getAllCollectedData() {
-        return Map.of(
-            "supply", adminMapper.getCollectedData(),
-            "rank", adminMapper.getRecentRankings(),
-            "theme", adminMapper.getRecentThemes(),
-            "industry", adminMapper.getRecentIndustries()
-        );
+        Map<String, List<Map<String, Object>>> response = new HashMap<>();
+        response.put("supply", adminMapper.getCollectedData());
+        response.put("rank", adminMapper.getRecentRankings());
+        response.put("theme", adminMapper.getRecentThemes());
+        response.put("industry", adminMapper.getRecentIndustries());
+        return response;
+    }
+
+    // --- 2. v12 인텔리전스 대시보드 (신규 기능) ---
+    @GetMapping("/intelligence/dashboard")
+    public Map<String, Object> getIntelligenceDashboard() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("heatmap", adminMapper.getIndustryHeatmap());
+        response.put("persistence", adminMapper.getThemePersistence());
+        response.put("leaders", adminMapper.getMarketLeaders());
+        response.put("breadth", adminMapper.getMarketBreadth());
+        return response;
     }
 }

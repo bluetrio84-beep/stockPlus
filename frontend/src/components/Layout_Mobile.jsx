@@ -1,8 +1,8 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings } from 'lucide-react';
+import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import classNames from 'classnames';
-import { isAdmin } from '../api/authApi'; // [추가]
+import { isAdmin } from '../api/authApi';
 
 const LayoutMobile = ({ logic }) => {
     const { 
@@ -19,6 +19,7 @@ const LayoutMobile = ({ logic }) => {
 
     if (isAdmin()) {
         navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
+        navItems.push({ name: 'ADMIN 대시보드', path: '/admin/intel', icon: LayoutDashboard });
     }
 
     return (
@@ -53,15 +54,13 @@ const LayoutMobile = ({ logic }) => {
                                 <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-slate-900">
                                     {logic.notifications.length > 0 ? logic.notifications.map((notif, idx) => {
                                         const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
-                                        const timeStr = date && !isNaN(date) 
-                                            ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-                                            : '';
+                                        const timeStr = date && !isNaN(date) ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}` : '';
                                         return (
                                             <div key={idx} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors">
                                                 <div className="flex gap-3 items-start text-white">
                                                     <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-700")}></div>
                                                     <div className="flex-1">
-                                                        <p className={classNames("text-[11px] leading-normal mb-1", (notif.is_read === 0 || !notif.isRead) ? "font-bold" : "font-medium opacity-90")}>{notif.message}</p>
+                                                        <p className="text-[11px] font-bold leading-normal mb-1">{notif.message}</p>
                                                         <span className="text-[10px] text-white/60 font-mono block">{timeStr}</span>
                                                     </div>
                                                 </div>

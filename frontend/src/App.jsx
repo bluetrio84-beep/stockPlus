@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import WatchlistSummary from './components/WatchlistSummary';
 import AiKeywordManager from './components/AiKeywordManager';
 import AdminDashboard from "./components/AdminDashboard";
+import AdminIntelligenceDashboard from "./components/AdminIntelligenceDashboard";
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -16,7 +17,7 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
-// [추가] 관리자 전용 라우트
+// 관리자 전용 라우트
 const AdminRoute = ({ children }) => {
     if (!isAuthenticated()) {
         return <Navigate to="/login" replace />;
@@ -37,8 +38,10 @@ function App() {
         <Route path="/stock/:stockCode" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/summary" element={<ProtectedRoute><WatchlistSummary /></ProtectedRoute>} />
         <Route path="/keywords" element={<ProtectedRoute><AiKeywordManager /></ProtectedRoute>} />
-        {/* 관리자 라우트 적용 */}
+        
+        {/* 관리자 전용 라우트 */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/intel" element={<AdminRoute><AdminIntelligenceDashboard /></AdminRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
