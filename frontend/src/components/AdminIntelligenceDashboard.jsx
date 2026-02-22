@@ -60,51 +60,71 @@ const AdminIntelligenceDashboard = () => {
         return 'bg-slate-700';
     };
 
-    // --- [v13 신규] AI 전략 탭 렌더링 ---
+    // [v13] AI 전략 탭 렌더링
     const renderAiStrategy = () => {
-        // 데이터가 없으면 기본값 처리
         const heatmap = data.heatmap || [];
         
-        // 1. 시장 신뢰도 점수 (평균 AI Score)
-        const avgScore = heatmap.length > 0 
-            ? heatmap.reduce((acc, curr) => acc + (parseFloat(curr.ai_score) || 50), 0) / heatmap.length 
-            : 50;
+        // 1. 시장 신뢰도 점수 (평균 AI Score) - 계산 정밀화
+        let avgScore = 50;
+        if (heatmap.length > 0) {
+            const validScores = heatmap.map(item => parseFloat(item.ai_score || 50)).filter(s => !isNaN(s));
+            if (validScores.length > 0) {
+                avgScore = validScores.reduce((acc, curr) => acc + curr, 0) / validScores.length;
+            }
+        }
         
-        // 2. 순환매 예측 리스트 (점수 높은 순)
         const rotationList = [...heatmap]
-            .filter(item => (parseFloat(item.ai_score) || 50) > 60) // 60점 이상만
+            .filter(item => (parseFloat(item.ai_score) || 50) > 55) // 55점 이상만 순환매 리스트에 포함
             .sort((a, b) => (parseFloat(b.ai_score) || 0) - (parseFloat(a.ai_score) || 0))
             .slice(0, 5);
 
-        // 3. 딥러닝 인사이트 텍스트 생성
         const topSector = rotationList[0]?.industry_name || "분석 중";
-        const sentiment = avgScore >= 70 ? "강력 매수(Greed)" : (avgScore <= 30 ? "공포(Fear)" : "중립(Neutral)");
-        const sentimentColor = avgScore >= 70 ? "text-rose-400" : (avgScore <= 30 ? "text-blue-400" : "text-slate-400");
+        const sentiment = avgScore >= 65 ? "상승 우위(Greed)" : (avgScore <= 35 ? "하락 우위(Fear)" : "중립(Neutral)");
+        const sentimentColor = avgScore >= 65 ? "text-rose-400" : (avgScore <= 35 ? "text-blue-400" : "text-indigo-400");
 
         return (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full overflow-y-auto custom-scrollbar p-1">
                 {/* 섹션 1: AI 신뢰도 게이지 */}
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col items-center shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-slate-500 to-rose-500 opacity-50"></div>
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                        <Brain size={16} /> Market Confidence
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col items-center shadow-2xl relative overflow-hidden shrink-0">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-rose-500 opacity-50"></div>
+                    <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                        <Brain size={14} className="text-indigo-500" /> Market Intelligence Gauge
                     </h2>
                     
                     {/* Gauge Visual */}
                     <div className="relative w-64 h-32 overflow-hidden">
-                        <div className="absolute inset-0 border-[20px] border-slate-800 rounded-t-full"></div>
+                        {/* Track */}
+                        <div className="absolute inset-0 border-[18px] border-slate-800 rounded-t-full"></div>
+                        {/* Needle / Progress */}
                         <div 
-                            className={classNames("absolute inset-0 border-[20px] rounded-t-full transition-all duration-1000 origin-bottom ease-out", 
-                                avgScore >= 60 ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]" : (avgScore <= 40 ? "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4)]" : "border-slate-500"))}
+                            className={classNames("absolute inset-0 border-[18px] rounded-t-full transition-all duration-[1500ms] origin-bottom ease-out", 
+                                avgScore >= 60 ? "border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]" : (avgScore <= 40 ? "border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]" : "border-indigo-500"))}
                             style={{ transform: `rotate(${(avgScore / 100) * 180 - 180}deg)` }}
                         ></div>
+                        {/* Inner Score */}
                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                            <span className={classNames("text-5xl font-black tracking-tighter drop-shadow-2xl", sentimentColor)}>
-                                {avgScore.toFixed(0)}
+                            <span className={classNames("text-5xl font-black tracking-tighter", sentimentColor)}>
+                                {Math.round(avgScore)}
+                                <span className="text-xl ml-0.5">%</span>
                             </span>
                         </div>
                     </div>
-                    <p className={classNames("mt-4 text-sm font-bold uppercase tracking-widest", sentimentColor)}>
+                    
+                    <div className="flex justify-between w-full mt-6 px-2 text-[9px] font-black text-slate-600 uppercase tracking-widest border-t border-slate-800/50 pt-4">
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500/50"></span>
+                            FEAR
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/50"></span>
+                            NEUTRAL
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500/50"></span>
+                            GREED
+                        </div>
+                    </div>
+                    <p className={classNames("mt-4 text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full bg-slate-950/50 border border-slate-800", sentimentColor)}>
                         {sentiment}
                     </p>
                 </div>

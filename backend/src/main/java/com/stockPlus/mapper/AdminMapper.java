@@ -20,7 +20,7 @@ public interface AdminMapper {
     @Select("SELECT stat_hour as hour, row_count as count FROM collector_hourly_stats ORDER BY stat_hour DESC LIMIT 24")
     List<Map<String, Object>> getHourlyStats();
 
-    // --- 2. 수집 데이터 현황 (Admin Dashboard용) ---
+    // --- 2. 수집 데이터 현황 ---
     @Select("SELECT sd.*, sm.stock_name, sd.captured_at as captured_at " +
             "FROM stock_supply_demand sd " +
             "JOIN stock_master sm ON sd.stock_code = sm.stock_code " +
@@ -41,12 +41,14 @@ public interface AdminMapper {
 
     // --- 3. v12/v13 인텔리전스 및 대시보드 쿼리 ---
     
+    // [v13.6 수정] prediction_score(ai_score) 필드 추가
     @Select("SELECT i.*, " +
             "CASE WHEN WEEKDAY(NOW()) >= 5 OR HOUR(NOW()) < 9 OR HOUR(NOW()) >= 16 THEN 'WAIT' " +
-            "     ELSE COALESCE(latest_sig.signal_type, 'WAIT') END as ai_signal " +
+            "     ELSE COALESCE(latest_sig.signal_type, 'WAIT') END as ai_signal, " +
+            "COALESCE(latest_sig.prediction_score, 50) as ai_score " +
             "FROM industry_quotes i " +
             "LEFT JOIN (" +
-            "  SELECT target_name, signal_type " +
+            "  SELECT target_name, signal_type, prediction_score " +
             "  FROM ai_prediction " +
             "  WHERE id IN (SELECT MAX(id) FROM ai_prediction GROUP BY target_name)" +
             ") latest_sig ON i.industry_name = latest_sig.target_name " +
@@ -68,16 +70,16 @@ public interface AdminMapper {
             "ORDER BY sd.foreign_net_buy DESC LIMIT 10")
     List<Map<String, Object>> getMarketLeaders();
 
+    // [v13.6 수정] 장외 시간 시간 제한 해제 (마지막 신호라도 보여주기 위함)
     @Select("SELECT ap.*, sm.stock_name " +
             "FROM ai_prediction ap " +
             "INNER JOIN (" +
             "  SELECT target_name, MAX(id) as max_id " +
             "  FROM ai_prediction " +
-            "  WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR) " +
+            "  WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) " +
             "  GROUP BY target_name" +
             ") latest ON ap.id = latest.max_id " +
             "JOIN stock_master sm ON ap.target_name = CONCAT('STOCK_', sm.stock_code) " +
-            "WHERE (WEEKDAY(NOW()) < 5 AND HOUR(NOW()) >= 9 AND HOUR(NOW()) < 16) " +
             "ORDER BY ap.id DESC LIMIT 10")
     List<Map<String, Object>> getLatestAiSignals();
 
@@ -90,9 +92,8 @@ public interface AdminMapper {
     @Select("SELECT * FROM stock_supply_demand WHERE stock_code = #{stockCode} ORDER BY id DESC LIMIT 1")
     Map<String, Object> getLatestStockSupplyDemand(String stockCode);
 
-    // [v13.5 최종 보정] 거래대금 Top 3 + 상승률 Top 3 믹스 (순위 1~3위)
-    @Select("(SELECT 'AMOUNT' as type, stock_name, stock_code, rank_val FROM stock_rankings WHERE ranking_type = 'AMOUNT' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'AMOUNT') ORDER BY rank_val ASC LIMIT 3) " +
+    @Select("(SELECT 'AMOUNT' as type, stock_name, stock_code FROM stock_rankings WHERE ranking_type = 'AMOUNT' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'AMOUNT') ORDER BY rank_val ASC LIMIT 3) " +
             "UNION ALL " +
-            "(SELECT 'RISE' as type, stock_name, stock_code, rank_val FROM stock_rankings WHERE ranking_type = 'RISE' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'RISE') ORDER BY rank_val ASC LIMIT 3)")
+            "(SELECT 'RISE' as type, stock_name, stock_code FROM stock_rankings WHERE ranking_type = 'RISE' AND captured_at = (SELECT MAX(captured_at) FROM stock_rankings WHERE ranking_type = 'RISE') ORDER BY rank_val ASC LIMIT 3)")
     List<Map<String, Object>> getTopRankings();
 }
