@@ -8,6 +8,7 @@ import os
 import pytz
 from bs4 import BeautifulSoup
 import re
+from ai_engine import AIEngine # [v13] AI 엔진 연동
 
 # DB 설정
 DB_CONFIG = {
@@ -115,6 +116,7 @@ class NaverMegaCollector:
                         time.sleep(0.5) # 밴 방지용 짧은 텀
                     except Exception as e:
                         print(f"   -> Error collecting {sect['name']}: {e}")
+                self.log_to_db("INFO", f"[상세] Top {len(top_sectors)} 업종 대장주 수집 완료")
 
                 # 2. 테마 수집 (1~7페이지 루프)
                 for p_idx in range(1, 8):
@@ -185,6 +187,7 @@ class NaverMegaCollector:
                         time.sleep(0.5)
                     except Exception as e:
                         print(f"   -> Error collecting theme {theme['name']}: {e}")
+                self.log_to_db("INFO", f"[상세] Top {len(top_themes)} 테마 대장주 수집 완료")
 
             except Exception as e:
                 print(f">>> Scraping Error: {e}")
@@ -203,8 +206,13 @@ class NaverMegaCollector:
             with conn.cursor() as cursor:
                 # 업종 저장 (lead_stocks 추가)
                 for s in sects:
-                    sql = "INSERT INTO industry_quotes (industry_name, change_rate, trade_volume, lead_stocks, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_volume=%s, lead_stocks=%s, updated_at=NOW()"
-                    cursor.execute(sql, (s['name'], s['rate'], s['vol'], s['lead'], s['rate'], s['vol'], s['lead']))
+                    # 1. 실시간 현황 업데이트 (UI용)
+                    sql_realtime = "INSERT INTO industry_quotes (industry_name, change_rate, trade_volume, lead_stocks, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_volume=%s, lead_stocks=%s, updated_at=NOW()"
+                    cursor.execute(sql_realtime, (s['name'], s['rate'], s['vol'], s['lead'], s['rate'], s['vol'], s['lead']))
+                    
+                    # 2. [v13] AI 학습용 히스토리 적재 (Time-series)
+                    sql_history = "INSERT INTO industry_history (industry_name, change_rate, trade_volume, captured_at) VALUES (%s, %s, %s, NOW())"
+                    cursor.execute(sql_history, (s['name'], s['rate'], s['vol']))
                 
                 # 테마 저장
                 for t in themes:
@@ -215,6 +223,15 @@ class NaverMegaCollector:
             
             self.log_to_db("INFO", f"메가 수집 완료: 업종({len(sects)}개), 테마({len(themes)}개) 갱신")
             print(f">>> [SUCCESS] Saved: {len(sects)} Industries, {len(themes)} Themes.")
+            
+            # [v13] AI 엔진 가동
+            try:
+                print(">>> [AI] Running Inference Engine...")
+                ai = AIEngine()
+                ai_count = ai.analyze_market()
+                self.log_to_db("INFO", f"[AI] 분석 완료: {ai_count}개 예측 생성")
+            except Exception as ai_e:
+                print(f">>> [AI] Execution Failed: {ai_e}")
             
         except Exception as e:
             self.log_to_db("ERROR", f"DB Save Error: {str(e)}")

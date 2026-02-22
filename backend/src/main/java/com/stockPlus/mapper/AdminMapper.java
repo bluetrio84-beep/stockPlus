@@ -34,7 +34,9 @@ public interface AdminMapper {
     @Select("SELECT industry_name, change_rate, lead_stocks, updated_at as captured_at FROM industry_quotes ORDER BY updated_at DESC LIMIT 50")
     List<Map<String, Object>> getRecentIndustries();
 
-    @Select("SELECT industry_name, change_rate, lead_stocks FROM industry_quotes ORDER BY change_rate DESC LIMIT 200")
+    @Select("SELECT i.industry_name, i.change_rate, i.lead_stocks, " +
+            "(SELECT signal_type FROM ai_prediction p WHERE p.target_name = i.industry_name ORDER BY created_at DESC LIMIT 1) as ai_signal " +
+            "FROM industry_quotes i ORDER BY i.change_rate DESC LIMIT 200")
     List<Map<String, Object>> getIndustryHeatmap();
 
     // [v12] 테마 지속성 분석 (최신 대장주 필드 포함 + 300개 한도 확대)

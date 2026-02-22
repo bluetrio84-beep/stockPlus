@@ -72,10 +72,16 @@ public class KisStockService {
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
         if ("IDX".equals(exchangeCode)) return fetchIndexHistoryChart(stockCode, period);
         
-        // [수정] 사용자 제보 및 검증 완료: KIS API가 'UN' (통합) 코드를 지원함.
-        // 복잡한 J/NX 병합 로직 제거하고 UN으로 직통 호출
         if ("UN".equals(exchangeCode)) {
-            return fetchHistoryChart(stockCode, "UN", period);
+            return fetchHistoryChart(stockCode, "UN", period)
+                    .flatMap(list -> {
+                        // [수정] UN 데이터가 없으면 J(정규장) 데이터로 Fallback
+                        if (list == null || list.isEmpty()) {
+                            log.warn(">>> [Chart] UN data empty for {}, fallback to J", stockCode);
+                            return fetchHistoryChart(stockCode, "J", period);
+                        }
+                        return Mono.just(list);
+                    });
         }
         
         String targetMarket = "NX".equals(exchangeCode) ? "NX" : "J";
@@ -88,9 +94,13 @@ public class KisStockService {
         String endDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String startDate = LocalDate.now().minusYears(2).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_PERIOD_DIV_CODE=" + typeCode + "&FID_ORG_ADJ_PRC=0&FID_INPUT_DATE_1=" + startDate + "&FID_INPUT_DATE_2=" + endDate;
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> Mono.just(Collections.emptyList()));
+        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> {
+            log.error(">>> [Chart] API Error for {}: {}", stockCode, e.getMessage());
+            return Mono.just(Collections.emptyList());
+        });
     }
 
+    // [중요] fetchIndexHistoryChart 메서드가 누락되지 않도록 주의
     private Mono<List<StockChartDto>> fetchIndexHistoryChart(String indexCode, String period) {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
@@ -109,13 +119,19 @@ public class KisStockService {
                 for (JsonNode n : dataNode) {
                     String d = n.path("stck_bsop_date").asText();
                     if (d.isEmpty()) continue;
-                    long ts = LocalDate.parse(d, df).atStartOfDay(seoulZone).toInstant().getEpochSecond();
+                    LocalDate ld = LocalDate.parse(d, df);
+                    long ts = ld.atStartOfDay(seoulZone).toInstant().getEpochSecond();
+                    
                     String o = isIndex ? n.path("bstp_nmix_oprc").asText("0") : n.path("stck_oprc").asText("0");
                     String h = isIndex ? n.path("bstp_nmix_hgpr").asText("0") : n.path("stck_hgpr").asText("0");
                     String l = isIndex ? n.path("bstp_nmix_lwpr").asText("0") : n.path("stck_lwpr").asText("0");
                     String c = isIndex ? n.path("bstp_nmix_prpr").asText("0") : n.path("stck_clpr").asText("0");
                     String v = n.path("acml_vol").asText("0");
-                    list.add(StockChartDto.builder().time(ts).open(o).high(h).low(l).close(c).volume(v).build());
+                    
+                    // [수정] date 필드를 YYYY-MM-DD 형식으로 포맷팅
+                    String dateStr = d.length() == 8 ? d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8) : ld.toString();
+                    
+                    list.add(StockChartDto.builder().time(ts).date(dateStr).open(o).high(h).low(l).close(c).volume(v).build());
                 }
             }
             Collections.reverse(list);

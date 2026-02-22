@@ -143,24 +143,36 @@ const AdminIntelligenceDashboard = () => {
                         <h2 className="text-sm lg:text-lg font-bold text-white flex items-center gap-2 lg:gap-3">
                             <PieChart size={18} className="text-indigo-400" /> 업종 등락 히트맵
                         </h2>
-                        {/* [신규] Top 50 배지 수정 */}
+                        {/* [신규] Top 50 배지 */}
                         <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">Top 50 상세</span>
                     </div>
                     {/* [모바일] aspect-[2/1] 적용하여 타일 높이를 절반으로 축소 */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-2.5 overflow-y-auto custom-scrollbar-thin pr-1 flex-1 pb-2 content-start">
-                        {data.heatmap?.map((item, idx) => (
+                        {data.heatmap?.map((item, idx) => {
+                            return (
                             <div key={idx} 
-                                onClick={() => setSelectedSector(item)} // 모달 오픈
+                                onClick={() => setSelectedSector(item)} 
                                 className={classNames(
-                                "aspect-[2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-2 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left",
+                                "relative aspect-[2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-2 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left",
                                 getHeatmapColor(item.change_rate)
                             )}>
-                                <span className="text-[10px] lg:text-[12px] font-black text-white leading-tight drop-shadow-md truncate w-full">{item.industry_name}</span>
+                                {/* [v13] AI Signal Indicator */}
+                                {item.ai_signal === 'BUY' && (
+                                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white border border-rose-500"></span>
+                                    </span>
+                                )}
+                                {item.ai_signal === 'SELL' && (
+                                    <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-blue-900 border border-blue-400"></span>
+                                )}
+
+                                <span className="text-[10px] lg:text-[12px] font-black text-white leading-tight drop-shadow-md truncate w-full pr-2">{item.industry_name}</span>
                                 <div className="mt-0.5 lg:mt-0 lg:text-right w-full">
                                     <span className="text-[11px] lg:text-base font-black text-white drop-shadow-md">{parseFloat(item.change_rate) > 0 ? '+' : ''}{item.change_rate}%</span>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </div>
 
@@ -195,11 +207,7 @@ const AdminIntelligenceDashboard = () => {
                         </div>
                     </div>
                     <div className="space-y-2 lg:space-y-3 overflow-y-auto custom-scrollbar-thin pr-1 flex-1 pb-2">
-                        {paginatedThemes?.map((theme, idx) => {
-                            // [Debug] 데이터 원본 확인
-                            if (idx === 0) console.log("Theme Data Sample:", theme);
-                            
-                            return (
+                        {paginatedThemes?.map((theme, idx) => (
                             <div key={idx} className="bg-slate-950/50 border border-slate-800/50 rounded-xl lg:rounded-2xl p-3 lg:p-4 flex flex-col gap-1.5 lg:gap-2 hover:border-indigo-500/50 transition-all shadow-inner group h-auto min-h-[70px]">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
@@ -227,7 +235,7 @@ const AdminIntelligenceDashboard = () => {
                                     </div>
                                 </div>
                             </div>
-                        );})}
+                        ))}
                     </div>
                 </div>
             </div>
@@ -286,12 +294,12 @@ const AdminIntelligenceDashboard = () => {
                                     ))
                                 ) : (
                                     <p className="text-sm text-slate-500 italic">
-                                        데이터 분석 중이거나<br/>Top 30 업종이 아닙니다.
+                                        데이터 분석 중이거나<br/>Top 50 업종이 아닙니다.
                                     </p>
                                 )}
                             </div>
                             <div className="mt-6 pt-4 border-t border-slate-800/50 text-center">
-                                <p className="text-[10px] text-slate-600">Top 30 업종만 상세 분석이 제공됩니다.</p>
+                                <p className="text-[10px] text-slate-600">Top 50 업종만 상세 분석이 제공됩니다.</p>
                             </div>
                         </div>
                     </div>
