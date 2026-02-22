@@ -1,87 +1,130 @@
 import pymysql
-import time
-from datetime import datetime
-import os
+import pandas as pd
+import numpy as np
+import torch
+import torch.nn as nn
+from sklearn.preprocessing import MinMaxScaler
+from datetime import datetime, timedelta
+import pytz
 
 # DB 설정
 DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
 
+class StockLSTM(nn.Module):
+    def __init__(self, input_size=2, hidden_size=64, num_layers=2, output_size=1):
+        super(StockLSTM, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = self.fc(out[:, -1, :])
+        return out
+
 class AIEngine:
     def __init__(self):
         self.conn = None
+        self.tz = pytz.timezone('Asia/Seoul')
 
     def connect(self):
-        try:
-            self.conn = pymysql.connect(**DB_CONFIG)
-        except:
-            self.conn = pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+        try: self.conn = pymysql.connect(**DB_CONFIG)
+        except: self.conn = pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+
+    def is_market_open(self):
+        now = datetime.now(self.tz)
+        if now.weekday() >= 5: return False
+        m_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+        m_end = now.replace(hour=15, minute=40, second=0, microsecond=0)
+        return m_start <= now <= m_end
 
     def analyze_market(self):
         if not self.conn: self.connect()
         try:
+            market_open = self.is_market_open()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 최근 데이터 가져오기 (각 업종별 최신 5개)
-                # MySQL 8.0 미만에서는 Window Function이 느릴 수 있으니 단순하게 전체 조회 후 파이썬에서 처리
-                # (데이터 양이 적으므로 가능)
-                cursor.execute("SELECT * FROM industry_history WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR) ORDER BY captured_at ASC")
+                # 1. 업종 데이터 분석
+                cursor.execute("SELECT * FROM industry_history WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
                 rows = cursor.fetchall()
+                if not rows: return 0
                 
-                # 업종별 그룹핑
-                grouped = {}
-                for r in rows:
-                    name = r['industry_name']
-                    if name not in grouped: grouped[name] = []
-                    grouped[name].append(r)
-                
-                # 분석
+                df = pd.DataFrame(rows)
                 predictions = []
-                for name, history in grouped.items():
-                    if len(history) < 2: continue # 데이터 부족
+
+                for name in df['industry_name'].unique():
+                    sect_df = df[df['industry_name'] == name].copy()
+                    if len(sect_df) < 5: continue
                     
-                    # 1. 모멘텀 (최신 등락률 가중치)
-                    recent = history[-1]
-                    momentum = float(recent['change_rate'])
+                    recent_change = sect_df['change_rate'].iloc[-1]
+                    vol_sma = sect_df['trade_volume'].rolling(window=5).mean().iloc[-1]
+                    curr_vol = sect_df['trade_volume'].iloc[-1]
+                    vol_ratio = curr_vol / vol_sma if vol_sma > 0 else 1.0
                     
-                    # 2. 거래량 급증 여부 (직전 대비)
-                    vol_ratio = 1.0
-                    if len(history) >= 2:
-                        prev_vol = float(history[-2]['trade_volume'])
-                        curr_vol = float(recent['trade_volume'])
-                        if prev_vol > 0:
-                            vol_ratio = curr_vol / prev_vol
+                    ai_score = 50 + (recent_change * 10) + (vol_ratio * 5)
+                    ai_score = max(0, min(100, ai_score))
                     
-                    # AI Score 계산 (0~100)
-                    # 등락률이 높고 거래량이 터지면 점수 급등
-                    # 기본 50점 + (등락률 * 10) + (거래량비율 * 5)
-                    score = 50 + (momentum * 10) + (vol_ratio * 5)
-                    score = max(0, min(100, score)) # 0~100 클램핑
-                    
+                    # [v13 보정] 장중이 아닐 때는 강제 WAIT 처리 (흰색불 방지)
                     signal = 'WAIT'
-                    if score >= 80: signal = 'BUY'
-                    elif score <= 20: signal = 'SELL'
+                    if market_open:
+                        if ai_score >= 80: signal = 'BUY'
+                        elif ai_score <= 20: signal = 'SELL'
                     
-                    predictions.append((name, score, signal))
-                
-                # 결과 저장
+                    predictions.append((name, ai_score, signal))
+
+                # 2. 수급 어노말리 디텍션
+                cursor.execute("SELECT stock_code, foreign_net_buy, institution_net_buy FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+                supply_rows = cursor.fetchall()
+                if supply_rows:
+                    sdf = pd.DataFrame(supply_rows)
+                    for code in sdf['stock_code'].unique():
+                        stock_df = sdf[sdf['stock_code'] == code].copy()
+                        if len(stock_df) < 10: continue
+                        f_net = stock_df['foreign_net_buy'].fillna(0).astype(float)
+                        i_net = stock_df['institution_net_buy'].fillna(0).astype(float)
+                        curr_f, curr_i = f_net.iloc[-1], i_net.iloc[-1]
+                        avg_f = f_net[f_net > 0].iloc[:-1].mean() if not f_net[f_net > 0].empty else 0
+                        avg_i = i_net[i_net > 0].iloc[:-1].mean() if not i_net[i_net > 0].empty else 0
+                        
+                        # [수정] 모든 종목에 대해 기본 점수 산출 및 저장
+                        # 점수 로직: (현재 수급 / 평균 수급) 비율을 기반으로 50점 기준 조정
+                        base_score = 50
+                        if avg_f > 0:
+                            ratio_f = curr_f / avg_f
+                            base_score += (ratio_f - 1) * 10 # 2배면 +10점, 0.5배면 -5점
+                        
+                        # 기관 수급 가중치
+                        if avg_i > 0:
+                            ratio_i = curr_i / avg_i
+                            base_score += (ratio_i - 1) * 10
+
+                        final_score = max(0, min(100, base_score))
+                        signal = 'WAIT'
+
+                        # 어노말리 체크 (기존 로직 유지하되 신호만 덮어쓰기)
+                        if market_open:
+                            if curr_f > 1000 and curr_i > 1000 and curr_f > (avg_f * 2) and curr_i > (avg_i * 2):
+                                signal = 'MEGA_SURGE'; final_score = 100
+                            elif curr_f > 2000 and curr_f > (avg_f * 3):
+                                signal = 'SURGE_F'; final_score = 99
+                            elif curr_i > 2000 and curr_i > (avg_i * 3):
+                                signal = 'SURGE_I'; final_score = 99
+                            elif final_score >= 80: signal = 'BUY'
+                            elif final_score <= 20: signal = 'SELL'
+                        
+                        predictions.append((f"STOCK_{code}", final_score, signal))
+
                 if predictions:
-                    # 기존 예측 삭제 (최신 상태 유지를 위해) -> 로그성으로 쌓을지 선택. 여기선 쌓자.
-                    ins_sql = "INSERT INTO ai_prediction (target_name, prediction_score, signal_type, created_at) VALUES (%s, %s, %s, NOW())"
-                    cursor.executemany(ins_sql, predictions)
+                    cursor.executemany("INSERT INTO ai_prediction (target_name, prediction_score, signal_type, created_at) VALUES (%s, %s, %s, NOW())", predictions)
                     self.conn.commit()
                     return len(predictions)
-            
             return 0
-                    
         except Exception as e:
-            print(f">>> [AI] Error: {e}")
+            print(f"AI Engine Error: {e}")
             return 0
         finally:
-            self.conn.close()
-            self.conn = None
-
-if __name__ == "__main__":
-    ai = AIEngine()
-    print(">>> v13 AI Engine Started...")
-    ai.analyze_market()
+            if self.conn: self.conn.close()

@@ -1,12 +1,8 @@
+# 1. Base Image
 FROM python:3.9-slim
 
-WORKDIR /app
-
-# 타임존 설정
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo Asia/Seoul > /etc/timezone
-
-# Playwright 및 리눅스 라이브러리 설치
+# 2. 시스템 의존성 설치
+RUN ln -snf /usr/share/zoneinfo/Asia/Seoul /etc/localtime && echo Asia/Seoul > /etc/timezone
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -22,20 +18,33 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
+    libpangocairo-1.0-0 \
     libpango-1.0-0 \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# 필수 패키지 설치
-RUN pip install --no-cache-dir requests pymysql pytz beautifulsoup4 playwright playwright-stealth
+# 3. 작업 디렉토리 설정
+WORKDIR /app
 
-# 브라우저 설치
+# 4. 딥러닝 및 데이터 분석 패키지 설치 (PyTorch CPU 버전 포함)
+RUN pip install --no-cache-dir \
+    requests \
+    pymysql \
+    pytz \
+    beautifulsoup4 \
+    playwright \
+    playwright-stealth \
+    pandas \
+    numpy \
+    scikit-learn \
+    torch --extra-index-url https://download.pytorch.org/whl/cpu
+
+# 5. 브라우저 엔진 설치
 RUN playwright install chromium
 RUN playwright install-deps chromium
 
-# [수정] main.py 뿐만 아니라 ai_engine.py 등 모든 파일 복사
+# 6. 소스 코드 복사
 COPY . .
 
-ENV PYTHONUNBUFFERED=1
-
+# 7. 실행
 CMD ["python", "main.py"]

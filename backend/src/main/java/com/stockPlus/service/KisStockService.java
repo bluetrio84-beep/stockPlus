@@ -38,15 +38,30 @@ public class KisStockService {
         return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST01010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(json -> {
             try {
                 JsonNode out = objectMapper.readTree(json).path("output");
+                // [v13.2] 시장 및 지수 구분 로직 최종 수정
                 String korName = getField(out, "rprs_mrkt_kor_name", "RPRS_MRKT_KOR_NAME", "");
-                return StockPriceDto.builder().stockCode(stockCode).marketName(korName.contains("KOSDAQ") ? "KOSDAQ" : "KOSPI")
+                String marketName = "KOSPI"; // 기본값
+                String indexName = null;
+
+                // 지수 편입 여부 확인
+                if (korName.contains("200")) {
+                    indexName = "KOSPI 200";
+                    marketName = "KOSPI";
+                } else if (korName.contains("150")) {
+                    indexName = "KOSDAQ 150";
+                    marketName = "KOSDAQ";
+                } else if (korName.contains("KOSDAQ") || korName.contains("코스닥")) {
+                    marketName = "KOSDAQ";
+                }
+
+                return StockPriceDto.builder().stockCode(stockCode).marketName(marketName)
                         .currentPrice(getField(out, "stck_prpr", "STCK_PRPR", "0")).change(getField(out, "prdy_vrss", "PRDY_VRSS", "0"))
                         .changeRate(getField(out, "prdy_ctrt", "PRDY_CTRT", "0.00")).priceSign(getField(out, "prdy_vrss_sign", "PRDY_VRSS_SIGN", "3"))
                         .volume(getField(out, "acml_vol", "ACML_VOL", "0")).open(getField(out, "stck_oprc", "STCK_OPRC", "0"))
                         .high(getField(out, "stck_hgpr", "STCK_HGPR", "0")).low(getField(out, "stck_lwpr", "STCK_LWPR", "0"))
                         .prevClose(getField(out, "stck_sdpr", "STCK_SDPR", "0")).marketCap(getField(out, "hts_avls", "HTS_AVLS", "0"))
                         .listedShares(getField(out, "lstn_stcn", "LSTN_STCN", "0")).high52w(getField(out, "w52_hgpr", "W52_HGPR", "0"))
-                        .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(korName.contains("200") ? "200" : (korName.contains("150") ? "150" : null))
+                        .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(indexName)
                         .exchangeCode(requestExchange).build();
             } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
         });
@@ -121,7 +136,6 @@ public class KisStockService {
      * 투자자별 매매동향 조회 (단일 호출로 원복)
      */
     public Mono<InvestorDto> fetchInvestors(String stockCode, String exchangeCode) {
-        // [원복] KIS API가 NX 요청 시에도 J 데이터를 주므로, 복잡한 합산 로직 제거
         String marketDiv = "NX".equals(exchangeCode) ? "NX" : "J";
         return fetchInvestorsInternal(stockCode, marketDiv)
                 .map(items -> InvestorDto.builder().stockCode(stockCode).items(items).build());

@@ -10,7 +10,7 @@ const Dashboard_Desktop = ({
     displayStocks, selectedStock, marketInsight, news,
     searchKeyword, searchResults, isEditMode, globalMarketMode, activeWatchlistTab, currentPeriod,
     handleSearch, handleSearchResultClick, confirmDelete, setGlobalMarketMode, setIsEditMode,
-    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText
+    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText, onToggleFavorite // [수정] prop 이름 통일
 }) => {
     const marketInfo = getMarketDisplay(globalMarketMode);
 
@@ -46,7 +46,7 @@ const Dashboard_Desktop = ({
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {displayStocks.map(s => (
                         <div key={`${s.code}-${s.exchangeCode}`} className="relative group">
-                            <StockListItem stock={s} isSelected={selectedStock?.code === s.code} onStockClick={(st) => navigate(`/stock/${st.code}`)} onToggleFavorite={(c, e, f) => { /* handleToggleFavorite needs to be passed or handled in parent but here simplified for display */ }} />
+                            <StockListItem stock={s} isSelected={selectedStock?.code === s.code} onStockClick={(st) => navigate(`/stock/${st.code}`)} onToggleFavorite={onToggleFavorite} />
                             {isEditMode && <button onClick={(e) => confirmDelete(e, s.code)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500/20 text-red-500 p-1.5 rounded-full z-10 transition-colors"><Trash2 size={14} /></button>}
                         </div>
                     ))}

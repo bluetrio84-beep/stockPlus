@@ -120,8 +120,16 @@ const ChartWidgetDesktop = (props) => {
                         {stock.code}
                         <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-slate-800/50 px-1.5 py-0.5 rounded">
                             {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
-                            {stock.indexName && <span className="text-indigo-400/90">{stock.indexName}</span>}
+                            {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
+                        {stock.aiScore !== undefined && stock.aiScore !== null && (
+                            <span className={classNames("text-[10px] font-black px-1.5 py-0.5 rounded border leading-tight", 
+                                stock.aiScore >= 80 ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : 
+                                (stock.aiScore >= 30 ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30")
+                            )}>
+                                AI {Math.round(stock.aiScore)}
+                            </span>
+                        )}
                     </span>
                 </h2>
                 <div className={classNames("text-2xl font-bold mt-1", getColorClass(stock.priceSign))}>

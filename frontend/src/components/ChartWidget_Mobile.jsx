@@ -99,6 +99,14 @@ const ChartWidgetMobile = (props) => {
                             {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
                             {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
+                        {stock.aiScore !== undefined && stock.aiScore !== null && (
+                            <span className={classNames("text-[9px] font-black px-1 py-0.5 rounded border leading-tight", 
+                                stock.aiScore >= 80 ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : 
+                                (stock.aiScore >= 30 ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30")
+                            )}>
+                                AI {Math.round(stock.aiScore)}
+                            </span>
+                        )}
                     </span>
                 </h2>
                 <div className={classNames("text-xl font-bold mt-0.5", getColorClass(stock.priceSign))}>

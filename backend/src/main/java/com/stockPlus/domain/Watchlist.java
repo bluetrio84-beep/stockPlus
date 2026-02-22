@@ -19,5 +19,6 @@ public class Watchlist {
     private Boolean isFavorite;
     private String marketType;
     private String indexType; // [추가] KOSPI 200, KOSDAQ 150 등
+    private Double aiScore; // [v13] AI 예측 점수
     private LocalDateTime createdAt;
 }

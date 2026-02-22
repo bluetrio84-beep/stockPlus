@@ -10,14 +10,25 @@
         <result property="exchangeCode" column="exchange_code"/>
         <result property="isFavorite" column="is_favorite"/>
         <result property="marketType" column="marketType"/>
+        <result property="aiScore" column="aiScore"/>
         <result property="createdAt" column="created_at"/>
     </resultMap>
 
-    <!-- 관심 종목 전체 조회 -->
+    <!-- 관심 종목 전체 조회 (AI Score 조인) -->
     <select id="findAll" resultMap="WatchlistMap">
-        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, sm.market_type AS marketType
+        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, 
+               sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
+        LEFT JOIN (
+            SELECT target_name, prediction_score 
+            FROM ai_prediction 
+            WHERE id IN (
+                SELECT MAX(id) FROM ai_prediction 
+                WHERE target_name LIKE 'STOCK_%' 
+                GROUP BY target_name
+            )
+        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
         WHERE w.USRID = #{usrId}
         ORDER BY w.created_at DESC
     </select>
@@ -27,20 +38,40 @@
         SELECT DISTINCT stock_code, exchange_code, is_favorite FROM watchlist
     </select>
 
-    <!-- 그룹별 관심 종목 조회 -->
+    <!-- 그룹별 관심 종목 조회 (AI Score 조인) -->
     <select id="findByGroupId" resultMap="WatchlistMap">
-        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, sm.market_type AS marketType
+        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, 
+               sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
+        LEFT JOIN (
+            SELECT target_name, prediction_score 
+            FROM ai_prediction 
+            WHERE id IN (
+                SELECT MAX(id) FROM ai_prediction 
+                WHERE target_name LIKE 'STOCK_%' 
+                GROUP BY target_name
+            )
+        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
         WHERE w.USRID = #{usrId} AND w.group_id = #{groupId}
         ORDER BY w.created_at DESC
     </select>
     
-    <!-- 즐겨찾기 종목 조회 -->
+    <!-- 즐겨찾기 종목 조회 (AI Score 조인) -->
     <select id="findFavorites" resultMap="WatchlistMap">
-        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, sm.market_type AS marketType
+        SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, 
+               sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
+        LEFT JOIN (
+            SELECT target_name, prediction_score 
+            FROM ai_prediction 
+            WHERE id IN (
+                SELECT MAX(id) FROM ai_prediction 
+                WHERE target_name LIKE 'STOCK_%' 
+                GROUP BY target_name
+            )
+        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
         WHERE w.USRID = #{usrId} AND w.is_favorite = true
         ORDER BY w.created_at DESC
     </select>
