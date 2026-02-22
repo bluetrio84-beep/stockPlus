@@ -26,8 +26,6 @@ public class KisStockService {
 
     public Mono<StockPriceDto> fetchUnifiedCurrentPrice(final String stockCode, final String exchangeCode) {
         if ("IDX".equals(exchangeCode)) return fetchIndexCurrentPrice(stockCode);
-        // [수정] 사용자 제보: KIS API가 'UN' 코드를 지원할 가능성 테스트
-        // 기존 J/NX 병합 로직 대신 UN으로 직접 호출 시도
         if ("UN".equals(exchangeCode)) {
             return fetchCurrentPriceInternal(stockCode, "UN", "UN");
         }
@@ -66,24 +64,12 @@ public class KisStockService {
         });
     }
 
-    /**
-     * 통합 차트 (UN) 대응: J와 NX 데이터 병합 및 시장 개별 대응
-     */
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
         if ("IDX".equals(exchangeCode)) return fetchIndexHistoryChart(stockCode, period);
-        
         if ("UN".equals(exchangeCode)) {
             return fetchHistoryChart(stockCode, "UN", period)
-                    .flatMap(list -> {
-                        // [수정] UN 데이터가 없으면 J(정규장) 데이터로 Fallback
-                        if (list == null || list.isEmpty()) {
-                            log.warn(">>> [Chart] UN data empty for {}, fallback to J", stockCode);
-                            return fetchHistoryChart(stockCode, "J", period);
-                        }
-                        return Mono.just(list);
-                    });
+                    .flatMap(list -> list.isEmpty() ? fetchHistoryChart(stockCode, "J", period) : Mono.just(list));
         }
-        
         String targetMarket = "NX".equals(exchangeCode) ? "NX" : "J";
         return fetchHistoryChart(stockCode, targetMarket, period);
     }
@@ -94,13 +80,9 @@ public class KisStockService {
         String endDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String startDate = LocalDate.now().minusYears(2).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_PERIOD_DIV_CODE=" + typeCode + "&FID_ORG_ADJ_PRC=0&FID_INPUT_DATE_1=" + startDate + "&FID_INPUT_DATE_2=" + endDate;
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> {
-            log.error(">>> [Chart] API Error for {}: {}", stockCode, e.getMessage());
-            return Mono.just(Collections.emptyList());
-        });
+        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
-    // [중요] fetchIndexHistoryChart 메서드가 누락되지 않도록 주의
     private Mono<List<StockChartDto>> fetchIndexHistoryChart(String indexCode, String period) {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
@@ -121,16 +103,12 @@ public class KisStockService {
                     if (d.isEmpty()) continue;
                     LocalDate ld = LocalDate.parse(d, df);
                     long ts = ld.atStartOfDay(seoulZone).toInstant().getEpochSecond();
-                    
                     String o = isIndex ? n.path("bstp_nmix_oprc").asText("0") : n.path("stck_oprc").asText("0");
                     String h = isIndex ? n.path("bstp_nmix_hgpr").asText("0") : n.path("stck_hgpr").asText("0");
                     String l = isIndex ? n.path("bstp_nmix_lwpr").asText("0") : n.path("stck_lwpr").asText("0");
                     String c = isIndex ? n.path("bstp_nmix_prpr").asText("0") : n.path("stck_clpr").asText("0");
                     String v = n.path("acml_vol").asText("0");
-                    
-                    // [수정] date 필드를 YYYY-MM-DD 형식으로 포맷팅
                     String dateStr = d.length() == 8 ? d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8) : ld.toString();
-                    
                     list.add(StockChartDto.builder().time(ts).date(dateStr).open(o).high(h).low(l).close(c).volume(v).build());
                 }
             }
@@ -139,19 +117,35 @@ public class KisStockService {
         } catch (Exception e) { return Collections.emptyList(); }
     }
 
+    /**
+     * 투자자별 매매동향 조회 (단일 호출로 원복)
+     */
     public Mono<InvestorDto> fetchInvestors(String stockCode, String exchangeCode) {
+        // [원복] KIS API가 NX 요청 시에도 J 데이터를 주므로, 복잡한 합산 로직 제거
+        String marketDiv = "NX".equals(exchangeCode) ? "NX" : "J";
+        return fetchInvestorsInternal(stockCode, marketDiv)
+                .map(items -> InvestorDto.builder().stockCode(stockCode).items(items).build());
+    }
+
+    private Mono<List<InvestorDto.InvestorItem>> fetchInvestorsInternal(String stockCode, String marketDiv) {
         String token = kisAuthService.getAccessToken();
-        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-investor?FID_COND_MRKT_DIV_CODE=J&FID_INPUT_ISCD=" + stockCode;
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-investor?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode;
         return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST01010900").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(JsonNode.class).map(root -> {
             JsonNode outArr = root.path("output");
             List<InvestorDto.InvestorItem> items = new ArrayList<>();
             if (outArr.isArray()) {
                 for (JsonNode n : outArr) {
-                    items.add(InvestorDto.InvestorItem.builder().date(n.path("stck_bsop_date").asText("")).retailNet(n.path("prsn_ntby_qty").asText("0")).foreignNet(n.path("n_forn_ntby_qty").asText("0")).institutionNet(n.path("org_ntby_qty").asText("0")).build());
+                    String rawDate = n.path("stck_bsop_date").asText("");
+                    if (rawDate.length() < 8) continue;
+                    String date = rawDate.substring(4, 6) + "." + rawDate.substring(6, 8);
+                    items.add(InvestorDto.InvestorItem.builder()
+                            .date(date).price(n.path("stck_clpr").asText("0")).change(n.path("prdy_vrss").asText("0"))
+                            .retailNet(n.path("prsn_ntby_qty").asText("0")).foreignNet(n.path("frgn_ntby_qty").asText("0")).institutionNet(n.path("orgn_ntby_qty").asText("0"))
+                            .build());
                 }
             }
-            return InvestorDto.builder().stockCode(stockCode).items(items).build();
-        });
+            return items;
+        }).onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
     private String getField(JsonNode node, String lower, String upper, String defaultVal) {

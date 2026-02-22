@@ -37,48 +37,49 @@ const InvestorTable = ({ data, isDataLoaded }) => {
     { 
       field: 'price', 
       headerName: '종가', 
-      flex: 1.1, // 0.9 -> 1.1 (확대)
-      minWidth: 80, // 70 -> 80 (확대)
+      flex: 1.1, 
+      minWidth: 80, 
       cellClass: (params) => {
-        const change = parseInt(params.data.change || 0);
-        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${change > 0 ? 'text-trade-up' : change < 0 ? 'text-trade-down' : 'text-white'}`;
+        const change = parseFloat(params.data.change || 0);
+        const color = change > 0 ? 'text-rose-400' : change < 0 ? 'text-blue-400' : 'text-white';
+        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${color}`;
       },
       valueFormatter: (params) => Number(params.value).toLocaleString()
     },
     { 
       field: 'retailNet', 
       headerName: '개인', 
-      flex: 1.3, // 1.2 -> 1.3 (확대)
+      flex: 1.3, 
       minWidth: 80,
       cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-slate-500'; 
-        return <span className={val === 0 ? 'text-slate-600' : color}>{Math.round(val).toLocaleString()}</span>;
+        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white'; 
+        return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     },
     { 
       field: 'foreignNet', 
       headerName: '외인', 
-      flex: 1.3, // 1.2 -> 1.3 (확대)
+      flex: 1.3, 
       minWidth: 80, 
       cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-slate-500';
-        return <span className={val === 0 ? 'text-slate-600' : color}>{Math.round(val).toLocaleString()}</span>;
+        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white';
+        return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     },
     { 
       field: 'institutionNet', 
       headerName: '기관', 
-      flex: 1.3, // 1.2 -> 1.3 (확대)
+      flex: 1.3, 
       minWidth: 80, 
       cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-slate-500';
-        return <span className={val === 0 ? 'text-slate-600' : color}>{Math.round(val).toLocaleString()}</span>;
+        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white';
+        return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     }
   ], []);
