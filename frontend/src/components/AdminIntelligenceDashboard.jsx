@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, TrendingUp, Zap, Users, ArrowUpRight, ArrowDownRight, PieChart, Activity, Briefcase, BarChart3, Search, Filter, Sparkles, Target, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Zap, Users, ArrowUpRight, ArrowDownRight, PieChart, Activity, Briefcase, BarChart3, Search, Filter, Sparkles, Target, ChevronLeft, ChevronRight, Clock, X } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
@@ -278,7 +278,7 @@ const AdminIntelligenceDashboard = () => {
                                 </span>
                             </div>
                             <button onClick={() => setSelectedSector(null)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-400 transition-colors shrink-0">
-                                <ArrowDownRight size={20} className="rotate-45" /> {/* Close Icon */}
+                                <X size={20} /> {/* Close Icon */}
                             </button>
                         </div>
                         <div className="p-6">

@@ -33,7 +33,8 @@ RUN pip install --no-cache-dir requests pymysql pytz beautifulsoup4 playwright p
 RUN playwright install chromium
 RUN playwright install-deps chromium
 
-COPY main.py .
+# [수정] main.py 뿐만 아니라 ai_engine.py 등 모든 파일 복사
+COPY . .
 
 ENV PYTHONUNBUFFERED=1
 

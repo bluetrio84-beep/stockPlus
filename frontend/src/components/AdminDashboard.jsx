@@ -62,14 +62,27 @@ const AdminDashboard = () => {
 
     const renderDataCard = (item, type) => {
         if (type === 'supply') {
+            const parts = item.top_brokers ? item.top_brokers.split(' / ') : ['-', '-'];
             return (
-                <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                        <span className="text-white font-bold text-sm">{item.stock_name || '종목'}</span>
+                <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-lg">
+                    <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <span className="text-white font-black text-sm">{item.stock_name || '종목'}</span>
                         <span className="text-[10px] text-slate-500 font-mono">{formatTimeCompact(item.captured_at)}</span>
                     </div>
-                    <div className="text-[11px] text-indigo-400 font-black">외국계합: {parseInt(item.foreign_net_buy || 0).toLocaleString()}</div>
-                    <div className="text-[10px] text-slate-400 truncate bg-slate-950/50 p-2 rounded border border-slate-800/50">{item.top_brokers || '-'}</div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-indigo-400 font-black">외국인 순매수(추정)</span>
+                        <span className={classNames("text-[12px] font-black font-mono", parseInt(item.foreign_net_buy || 0) >= 0 ? "text-rose-400" : "text-blue-400")}>
+                            {parseInt(item.foreign_net_buy || 0).toLocaleString()}
+                        </span>
+                    </div>
+                    <div className="space-y-1.5 mt-1">
+                        <div className="text-[10px] text-rose-400/90 bg-rose-400/5 p-2 rounded border border-rose-400/10 leading-relaxed break-all">
+                            {parts[0]}
+                        </div>
+                        <div className="text-[10px] text-emerald-400/90 bg-emerald-400/5 p-2 rounded border border-emerald-400/10 leading-relaxed break-all">
+                            {parts[1] || '-'}
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -134,13 +147,13 @@ const AdminDashboard = () => {
                             <tbody className="divide-y divide-slate-800/50">
                                 {logs.map((log, i) => (
                                     <tr key={i} onClick={() => setSelectedLog(log)} className="hover:bg-slate-800/50 cursor-pointer transition-colors active:bg-slate-700">
-                                        <td className="px-2 lg:px-4 py-3 text-[10px] lg:text-sm text-slate-400 font-bold whitespace-nowrap">{formatTimeCompact(log.created_at || log.stat_hour)}</td>
+                                        <td className="px-2 lg:px-4 py-3 text-[10px] lg:text-sm text-slate-200 font-bold whitespace-nowrap">{formatTimeCompact(log.created_at || log.stat_hour)}</td>
                                         <td className="px-2 lg:px-4 py-3 text-left">
                                             <span className={classNames("px-1.5 py-0.5 rounded text-[8px] lg:text-[10px] font-black", log.log_level === 'ERROR' ? "bg-red-500/20 text-red-400" : "bg-indigo-500/20 text-indigo-400")}>
                                                 {log.log_level === 'ERROR' ? 'ERR' : 'INF'}
                                             </span>
                                         </td>
-                                        <td className="px-2 lg:px-4 py-3 text-[10px] lg:text-sm text-slate-300 leading-snug break-all">{log.message || `Processed cycle.`}</td>
+                                        <td className="px-2 lg:px-4 py-3 text-[10px] lg:text-sm text-white leading-snug break-all">{log.message || `Processed cycle.`}</td>
                                     </tr>
                                 ))}
                             </tbody>
