@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { fetchStockAnalysis, fetchStockInvestors } from '../api/stockApi';
+import { fetchStockAnalysis, fetchStockInvestors, fetchStockTraders } from '../api/stockApi';
 
 /**
  * ChartWidget의 비즈니스 로직을 담당하는 커스텀 훅
@@ -7,6 +7,7 @@ import { fetchStockAnalysis, fetchStockInvestors } from '../api/stockApi';
 export const useStockWidget = (stock, currentPeriod) => {
   const [activeTab, setActiveTab] = useState('chart'); 
   const [investorsData, setInvestorsData] = useState({ items: [] });
+  const [traderData, setTraderData] = useState(null); // [v13] 거래원 수급 데이터
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiAnalysisContent, setAiAnalysisContent] = useState('');
   const [isAnalysing, setIsAnalysing] = useState(false);
@@ -93,6 +94,25 @@ export const useStockWidget = (stock, currentPeriod) => {
     loadData();
   }, [activeTab, stock.code, stock.exchangeCode]);
 
+  // [v13] 거래원 데이터 로딩
+  useEffect(() => {
+    const loadTraderData = async () => {
+      const code = stock.code || stock.stockCode;
+      if (!code || activeTab !== 'traders') return;
+      
+      setIsDataLoaded(false);
+      try {
+        const data = await fetchStockTraders(code);
+        setTraderData(data);
+      } catch (e) {
+        console.error(">>> [Logic] Trader Load Error:", e);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+    loadTraderData();
+  }, [activeTab, stock.code]);
+
   // AI 분석 제어
   const handleAiAnalysis = () => {
     if (isAnalysing) return;
@@ -127,7 +147,7 @@ export const useStockWidget = (stock, currentPeriod) => {
   }, [processedChartData]);
 
   return {
-    activeTab, setActiveTab, investorsData, dailyPrices, isDataLoaded, setIsDataLoaded,
+    activeTab, setActiveTab, investorsData, traderData, dailyPrices, isDataLoaded, setIsDataLoaded,
     processedChartData, smaData,
     showAiModal, setShowAiModal, aiAnalysisContent, isAnalysing, handleAiAnalysis, closeAiModal
   };

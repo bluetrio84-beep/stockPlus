@@ -254,13 +254,17 @@ class DaumVeteranScraper:
             def extract_brokers_zip(target_lines, foreign_total):
                 names, values = [], []
                 for line in target_lines:
-                    clean_val = line.replace(',', '').strip()
+                    clean_val = line.replace(',', '').replace(' ', '').strip()
                     if clean_val.isdigit(): values.append(clean_val)
                     elif re.match(r'^[가-힣A-Za-z]{2,}', line) and "상위" not in line and "외국계" not in line and "합" not in line:
                         names.append(line)
+                
+                # 상위 5개 증권사 매칭
                 paired = [f"{n}({v})" for n, v in zip(names, values)]
                 paired = paired[:5]
-                paired.append(f"외국계합({foreign_total:,})")
+                
+                # [수정] 6번째 데이터는 라벨 없이 '숫자'만 추가 (프론트에서 라벨링)
+                paired.append(str(foreign_total))
                 return paired
 
             sell_brokers = extract_brokers_zip(lines[s_idx:b_idx], f_sell_total)

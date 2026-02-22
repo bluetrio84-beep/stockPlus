@@ -53,6 +53,9 @@ public interface AdminMapper {
             "ORDER BY sd.foreign_net_buy DESC LIMIT 10")
     List<Map<String, Object>> getMarketLeaders();
 
+    @Select("SELECT * FROM stock_supply_demand WHERE stock_code = #{stockCode} ORDER BY id DESC LIMIT 1")
+    Map<String, Object> getLatestStockSupplyDemand(String stockCode);
+
     @Select("SELECT COUNT(CASE WHEN change_rate > 0 THEN 1 END) as rising_count, " +
             "COUNT(CASE WHEN change_rate < 0 THEN 1 END) as falling_count, " +
             "COUNT(CASE WHEN change_rate = 0 THEN 1 END) as steady_count " +

@@ -72,6 +72,12 @@ export async function fetchStockInvestors(stockCode, exchangeCode = 'J') {
     return data || { items: [] };
 }
 
+// 거래원(수급) 조회 API (v13 Daum 데이터)
+export async function fetchStockTraders(stockCode) {
+    const data = await safeFetch(`api/dashboard/stocks/${stockCode}/traders`);
+    return data || null;
+}
+
 // --- Dashboard Backend API (뉴스 및 인사이트) ---
 
 // 최신 뉴스 조회

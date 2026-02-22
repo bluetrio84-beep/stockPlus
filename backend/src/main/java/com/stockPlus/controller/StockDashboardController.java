@@ -30,6 +30,7 @@ public class StockDashboardController {
     private final StockDashboardService dashboardService;
     private final KisStockService kisStockService;
     private final KisRealtimeService kisRealtimeService;
+    private final com.stockPlus.mapper.AdminMapper adminMapper;
 
     // --- Watchlist (관심 종목) ---
 
@@ -44,6 +45,14 @@ public class StockDashboardController {
         return dashboardService.getWatchlist(groupId);
     }
     
+    /**
+     * 특정 종목의 거래원 수급 데이터를 조회합니다. (v13 Daum 데이터 활용)
+     */
+    @GetMapping("/stocks/{stockCode}/traders")
+    public Map<String, Object> getStockTraders(@PathVariable String stockCode) {
+        return adminMapper.getLatestStockSupplyDemand(stockCode);
+    }
+
     /**
      * 즐겨찾기(Favorites)로 설정된 관심 종목만 조회합니다.
      * @return 즐겨찾기 종목 리스트

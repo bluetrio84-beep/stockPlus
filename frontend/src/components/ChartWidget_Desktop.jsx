@@ -6,11 +6,12 @@ import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, is
 
 import InvestorTable from './InvestorTable';
 import DailyPriceTable from './DailyPriceTable';
+import TraderTable from './TraderTable'; // [v13] 거래원 테이블 추가
 import AiAnalysisModal from './AiAnalysisModal';
 
 const ChartWidgetDesktop = (props) => {
   const { stock, onExchangeChange, onPeriodChange, currentPeriod, marketMode, logic } = props;
-  const { activeTab, setActiveTab, investorsData, dailyPrices, isDataLoaded, setIsDataLoaded, processedChartData, smaData, showAiModal, aiAnalysisContent, isAnalysing, handleAiAnalysis, closeAiModal } = logic;
+  const { activeTab, setActiveTab, investorsData, traderData, dailyPrices, isDataLoaded, setIsDataLoaded, processedChartData, smaData, showAiModal, aiAnalysisContent, isAnalysing, handleAiAnalysis, closeAiModal } = logic;
 
   const chartContainerRef = useRef();
   const chartRef = useRef(null);
@@ -145,7 +146,7 @@ const ChartWidgetDesktop = (props) => {
             </div>
       </div>
       <div className="flex bg-slate-900 border-b border-slate-800 shrink-0">
-        {[ { id: 'chart', name: '차트' }, { id: 'daily', name: '일별' }, { id: 'investors', name: '투자자' } ].map((tab) => (
+        {[ { id: 'chart', name: '차트' }, { id: 'daily', name: '일별' }, { id: 'investors', name: '투자자' }, { id: 'traders', name: '거래원' } ].map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-xs font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-slate-800/50" : "border-transparent text-slate-500 hover:text-slate-300")}>{tab.name}</button>
         ))}
       </div>
@@ -176,6 +177,11 @@ const ChartWidgetDesktop = (props) => {
         {activeTab === 'investors' && (
           <div className="absolute inset-0 flex flex-col">
             <InvestorTable data={investorsData} isDataLoaded={isDataLoaded} />
+          </div>
+        )}
+        {activeTab === 'traders' && (
+          <div className="absolute inset-0 flex flex-col">
+            <TraderTable traderData={traderData} />
           </div>
         )}
       </div>
