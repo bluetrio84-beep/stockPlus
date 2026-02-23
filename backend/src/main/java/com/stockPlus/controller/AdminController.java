@@ -56,7 +56,9 @@ public class AdminController {
         response.put("persistence", adminMapper.getThemePersistence());
         response.put("leaders", adminMapper.getMarketLeaders());
         response.put("breadth", adminMapper.getMarketBreadth());
-        response.put("aiSignals", adminMapper.getLatestAiSignals()); // [v13] AI 종목 시그널 추가
+        response.put("aiSignals", adminMapper.getLatestAiSignals());
+        Double hitRate = adminMapper.getAiHitRate();
+        response.put("hitRate", hitRate != null ? hitRate : 0.0); // [v13.7] AI 적중률 추가
         return response;
     }
 }

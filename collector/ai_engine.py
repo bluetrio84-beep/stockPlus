@@ -1,31 +1,14 @@
 import pymysql
 import pandas as pd
 import numpy as np
-import torch
-import torch.nn as nn
-from sklearn.preprocessing import MinMaxScaler
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
+import re
 
 # DB 설정
 DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
-
-class StockLSTM(nn.Module):
-    def __init__(self, input_size=2, hidden_size=64, num_layers=2, output_size=1):
-        super(StockLSTM, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
-
-    def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-        out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
-        return out
 
 class AIEngine:
     def __init__(self):
@@ -48,64 +31,56 @@ class AIEngine:
         try:
             market_open = self.is_market_open()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 업종 데이터 분석
+                # 1. 업종 데이터 분석 (최근 1시간 내 데이터만 있어도 즉시 분석)
                 cursor.execute("SELECT * FROM industry_history WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
                 rows = cursor.fetchall()
-                if not rows: return 0
-                
-                df = pd.DataFrame(rows)
                 predictions = []
 
-                for name in df['industry_name'].unique():
-                    sect_df = df[df['industry_name'] == name].copy()
-                    if len(sect_df) < 5: continue
-                    
-                    recent_change = sect_df['change_rate'].iloc[-1]
-                    vol_sma = sect_df['trade_volume'].rolling(window=5).mean().iloc[-1]
-                    curr_vol = sect_df['trade_volume'].iloc[-1]
-                    vol_ratio = curr_vol / vol_sma if vol_sma > 0 else 1.0
-                    
-                    ai_score = 50 + (recent_change * 10) + (vol_ratio * 5)
-                    ai_score = max(0, min(100, ai_score))
-                    
-                    # [v13 보정] 장중이 아닐 때는 강제 WAIT 처리 (흰색불 방지)
-                    signal = 'WAIT'
-                    if market_open:
-                        if ai_score >= 80: signal = 'BUY'
-                        elif ai_score <= 20: signal = 'SELL'
-                    
-                    predictions.append((name, ai_score, signal))
+                if rows:
+                    df = pd.DataFrame(rows)
+                    for name in df['industry_name'].unique():
+                        sect_df = df[df['industry_name'] == name].copy()
+                        if len(sect_df) < 5: continue
+                        recent = sect_df.iloc[-1]
+                        recent_change = float(recent['change_rate'])
+                        
+                        # AI 점수 단순 계산 (학습 데이터 부족 시 대용)
+                        # 기본 50점 + (등락률 * 10)
+                        ai_score = 50 + (recent_change * 10)
+                        ai_score = max(0, min(100, ai_score))
+                        
+                        signal = 'WAIT'
+                        if market_open:
+                            if ai_score >= 80 and recent_change > 0: signal = 'BUY'
+                            elif ai_score <= 20 and recent_change < 0: signal = 'SELL'
+                            elif recent_change < -2.0: signal = 'SELL' # 급락 시 SELL 강제
+                        
+                        predictions.append((name, ai_score, signal))
 
-                # 2. 수급 어노말리 디텍션
-                cursor.execute("SELECT stock_code, foreign_net_buy, institution_net_buy FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+                # 2. 종목 수급 분석
+                cursor.execute("SELECT stock_code, foreign_net_buy, institution_net_buy, top_brokers FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
                 supply_rows = cursor.fetchall()
                 if supply_rows:
                     sdf = pd.DataFrame(supply_rows)
+                    foreign_brokers = ['JP모간', '메릴린치', '모건스탠리', '골드만삭스', 'CS증권', 'UBS']
+                    
                     for code in sdf['stock_code'].unique():
                         stock_df = sdf[sdf['stock_code'] == code].copy()
-                        if len(stock_df) < 10: continue
+                        if len(stock_df) < 5: continue
+                        curr = stock_df.iloc[-1]
+                        curr_f = float(curr['foreign_net_buy'] or 0)
+                        curr_i = float(curr['institution_net_buy'] or 0)
+                        brokers_str = curr['top_brokers'] or ""
+                        
+                        # [v1.2] 적은 데이터로도 어노말리 감지 가능하도록 보정
                         f_net = stock_df['foreign_net_buy'].fillna(0).astype(float)
                         i_net = stock_df['institution_net_buy'].fillna(0).astype(float)
-                        curr_f, curr_i = f_net.iloc[-1], i_net.iloc[-1]
-                        avg_f = f_net[f_net > 0].iloc[:-1].mean() if not f_net[f_net > 0].empty else 0
-                        avg_i = i_net[i_net > 0].iloc[:-1].mean() if not i_net[i_net > 0].empty else 0
+                        avg_f = f_net[f_net > 0].mean() if not f_net[f_net > 0].empty else 0
                         
-                        # [수정] 모든 종목에 대해 기본 점수 산출 및 저장
-                        # 점수 로직: (현재 수급 / 평균 수급) 비율을 기반으로 50점 기준 조정
-                        base_score = 50
-                        if avg_f > 0:
-                            ratio_f = curr_f / avg_f
-                            base_score += (ratio_f - 1) * 10 # 2배면 +10점, 0.5배면 -5점
-                        
-                        # 기관 수급 가중치
-                        if avg_i > 0:
-                            ratio_i = curr_i / avg_i
-                            base_score += (ratio_i - 1) * 10
-
-                        final_score = max(0, min(100, base_score))
+                        final_score = 50
                         signal = 'WAIT'
-
-                        # 어노말리 체크 (기존 로직 유지하되 신호만 덮어쓰기)
+                        is_bite = any(broker in brokers_str for broker in foreign_brokers)
+                        
                         if market_open:
                             if curr_f > 1000 and curr_i > 1000 and curr_f > (avg_f * 2) and curr_i > (avg_i * 2):
                                 signal = 'MEGA_SURGE'; final_score = 100
@@ -113,13 +88,30 @@ class AIEngine:
                                 signal = 'SURGE_F'; final_score = 99
                             elif curr_i > 2000 and curr_i > (avg_i * 3):
                                 signal = 'SURGE_I'; final_score = 99
-                            elif final_score >= 80: signal = 'BUY'
+                            elif curr_f > 0 and curr_i > 0 and (curr_f + curr_i) > 1500: # [v1.4] 양매수 집결 (90%)
+                                signal = 'SMART_MONEY'; final_score = 90
+                            elif is_bite and curr_f > 500:
+                                signal = 'FOREIGN_BITE'; final_score = 85
+                            elif final_score >= 80: # [v1.5] 황소 진입 (80%)
+                                signal = 'BULL_ENTRY'
                             elif final_score <= 20: signal = 'SELL'
                         
                         predictions.append((f"STOCK_{code}", final_score, signal))
 
                 if predictions:
+                    # 기존 신호와 중복되지 않도록 현재 시점의 모든 신호 저장
                     cursor.executemany("INSERT INTO ai_prediction (target_name, prediction_score, signal_type, created_at) VALUES (%s, %s, %s, NOW())", predictions)
+                    
+                    # [v1.2] 중요 알림(BITE, SURGE)만 notification_log에 추가
+                    for target, score, sig in predictions:
+                        if target.startswith("STOCK_") and sig in ['MEGA_SURGE', 'SURGE_F', 'FOREIGN_BITE']:
+                            code = target.replace("STOCK_", "")
+                            cursor.execute("SELECT stock_name FROM stock_master WHERE stock_code = %s", (code,))
+                            res = cursor.fetchone()
+                            stock_name = res['stock_name'] if res else code
+                            msg = f"[{sig}] {stock_name} 수급 신호 포착!"
+                            cursor.execute("INSERT INTO notification_log (USRID, message, is_read, type, created_at) VALUES (%s, %s, 0, %s, NOW())", ('bluetrio', msg, sig))
+                    
                     self.conn.commit()
                     return len(predictions)
             return 0
