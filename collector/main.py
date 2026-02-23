@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+import playwright_stealth as ps
 import pymysql
 import time
 import random
@@ -19,7 +19,7 @@ DB_CONFIG = {
 # 내부 백엔드 주소
 BACKEND_API_URL = "http://172.17.0.1:8080/api/dashboard"
 
-# --- 1. 메가 수집기 (v97.0 Daum Leader Master) ---
+# --- 1. 메가 수집기 (v2.1 Master Analytics) ---
 class MegaCollector:
     def __init__(self):
         self.tz = pytz.timezone('Asia/Seoul')
@@ -40,6 +40,7 @@ class MegaCollector:
         finally: conn.close()
 
     def update_stats(self, count):
+        if count <= 0: return
         conn = self.get_db_connection()
         try:
             with conn.cursor() as cursor:
@@ -61,137 +62,231 @@ class MegaCollector:
         except: pass
         return indices
 
-    def scrape_market_data(self):
+    def scrape_lists(self, page):
+        """[v2.1] 목록 및 링크 수집"""
         all_sects, all_themes, all_ranks = [], [], []
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
-            context = browser.new_context(user_agent=self.user_agent)
-            page = context.new_page()
-            
-            # [v97.0] 다음 금융 WICS 및 상세 링크 수집
-            try:
-                page.goto("https://finance.daum.net/domestic/wics", timeout=60000, wait_until="networkidle")
-                time.sleep(5) 
-
-                for _ in range(3):
-                    # tr 요소들을 돌며 이름, 등락, 금액, 그리고 링크(상세페이지용)를 땀
-                    rows = page.locator("table tbody tr").all()
-                    for row in rows:
-                        try:
-                            # 상세 페이지 링크 추출
-                            link_elem = row.locator("td:first-child a")
-                            href = link_elem.get_attribute("href") if link_elem.count() > 0 else ""
-                            
-                            t_txt = row.inner_text()
-                            txt = t_txt.split('\n')
-                            if len(txt) < 5: txt = t_txt.split('\t')
-                            
-                            if len(txt) >= 7:
-                                name = txt[0].strip()
-                                if name and (',' in txt[6] or txt[6].isdigit()):
-                                    rate_val = float(txt[2].replace('%','').replace('+','').strip())
-                                    amt_val = int(txt[6].replace(',','').strip())
-                                    all_sects.append({'name': name, 'rate': rate_val, 'amt': amt_val, 'link': href})
-                        except: continue
-                    
-                    next_btn = page.locator("a.btn_next")
-                    if next_btn.is_visible() and "disabled" not in (next_btn.get_attribute("class") or ""):
-                        next_btn.click(); time.sleep(3)
+        
+        # 1. 다음 WICS 목록 (78개 업종)
+        try:
+            page.goto("https://finance.daum.net/domestic/wics", timeout=60000, wait_until="networkidle")
+            time.sleep(5) 
+            for pg in range(1, 4):
+                if pg > 1:
+                    btn = page.locator(f"xpath=//a[text()='{pg}']")
+                    if btn.is_visible(): btn.click(); time.sleep(3)
                     else: break
-            except Exception as e:
-                self.log_to_db("ERROR", f"[WICS] 목록 수집 실패: {str(e)}")
+                
+                rows = page.locator("tr").all()
+                for row in rows:
+                    try:
+                        t_txt = row.inner_text()
+                        txt = t_txt.split('\n')
+                        if len(txt) < 5: txt = t_txt.split('\t')
+                        if len(txt) >= 7:
+                            name = txt[0].strip()
+                            if name and name != '업종명' and (',' in txt[6] or txt[6].isdigit()):
+                                a_tag = row.locator("a").first
+                                href = a_tag.get_attribute("href") if a_tag.count() > 0 else ""
+                                all_sects.append({'name': name, 'rate': float(txt[2].replace('%','').replace('+','')), 'amt': int(txt[6].replace(',','')), 'link': href})
+                    except: continue
+        except Exception as e: self.log_to_db("ERROR", f"[WICS] 목록 수집 실패: {str(e)}")
 
-            # 네이버 테마/랭킹 (기존 유지)
-            try:
-                page.goto("https://finance.naver.com/sise/theme.naver", timeout=20000)
+        # 2. 네이버 테마 (전수 수집)
+        try:
+            for p_idx in range(1, 10):
+                page.goto(f"https://finance.naver.com/sise/theme.naver?&page={p_idx}", timeout=20000)
                 soup = BeautifulSoup(page.content(), 'html.parser')
-                for row in soup.select("table.type_1 tr")[:20]:
+                valid_rows = [r for r in soup.select("table.type_1 tr") if r.select_one("td.col_type1")]
+                if not valid_rows: break
+                for row in valid_rows:
                     tds = row.select("td")
                     if len(tds) >= 2 and tds[0].select_one("a"):
                         a, s = tds[0].select_one("a"), tds[1].select_one("span")
                         all_themes.append({'name': a.get_text(strip=True), 'rate': float(s.get_text(strip=True).replace('%','').replace('+','')), 'link': a['href']})
-            except: pass
+        except: pass
 
-            try:
-                page.goto("https://finance.naver.com/sise/sise_quant.naver?sosok=0", timeout=20000)
-                for i, a in enumerate(BeautifulSoup(page.content(), 'html.parser').select("a.tltle")[:3]):
-                    all_ranks.append({'type': 'AMOUNT', 'rank': i+1, 'code': a['href'].split('=')[-1], 'name': a.get_text(strip=True)})
-            except: pass
-            
-            browser.close()
+        # 3. 네이버 랭킹
+        try:
+            page.goto("https://finance.naver.com/sise/sise_quant.naver?sosok=0", timeout=20000); time.sleep(1)
+            soup_r = BeautifulSoup(page.content(), 'html.parser')
+            for i, a in enumerate(soup_r.select("a.tltle")[:3]):
+                all_ranks.append({'type': 'AMOUNT', 'rank': i+1, 'code': a.get('href').split('=')[-1], 'name': a.get_text(strip=True)})
+        except: pass
+
         return all_sects, all_themes, all_ranks
 
-    def run_cycle(self):
+    def run_quick_sync(self, page):
+        """1단계: 시세 및 링크 즉시 반영"""
         self.update_stats(1) 
-        sects, themes, ranks = self.scrape_market_data()
+        sects, themes, ranks = self.scrape_lists(page)
         indices = self.fetch_market_indices()
         conn = self.get_db_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 시세 반영
                 for idx in indices: cursor.execute("INSERT INTO market_index_history (index_name, index_value, change_val, change_rate, captured_at) VALUES (%s, %s, %s, %s, NOW())", (idx['name'], idx['val'], idx['change'], idx['rate']))
-                for s in sects:
-                    cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, updated_at) VALUES (%s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['rate'], s['amt']))
-                for t in themes:
-                    cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
-                for r in ranks:
-                    cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
+                for s in sects: cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, detail_url, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, detail_url=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['link'], s['rate'], s['amt'], s['link']))
+                for t in themes: cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
+                for r in ranks: cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
                 conn.commit()
-                
-                self.log_to_db("INFO", f"[메가수집] 다음WICS({len(sects)}) 시세 반영 완료 (v97)")
+                self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
+                self.update_stats(len(sects) + len(themes) + len(indices))
+        finally: conn.close()
+        return sects, themes
 
-                # [v97.0] 다음 금융 기반 업종 상세분석 (주도주 추출)
-                with sync_playwright() as p:
-                    browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
-                    page = browser.new_page(user_agent=self.user_agent)
-                    # 리소스 차단 (터보 모드)
-                    page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "font", "media"] else route.continue_())
-                    
-                    # 등락률 높은 순으로 30개 업종 상세 분석
-                    sects_sorted = sorted(sects, key=lambda x: x['rate'], reverse=True)
-                    for s in sects_sorted[:30]:
+    def run_deep_analysis(self, sects, themes):
+        """2단계: 주도주 5개(업종) 및 3개(테마) 정밀 분석"""
+        if not sects: return
+        conn = self.get_db_connection()
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                page = browser.new_page(user_agent=self.user_agent)
+                page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "font", "media"] else route.continue_())
+                
+                with conn.cursor() as cursor:
+                    # [업종] 전수 조사 (5개 + 시세)
+                    for s in sects:
                         if not s.get('link'): continue
                         try:
-                            page.goto("https://finance.daum.net" + s['link'], timeout=15000, wait_until="networkidle")
-                            time.sleep(2)
-                            # 업종 상세 페이지의 종목 리스트에서 상위 3개 종목명 추출
-                            # 다음은 보통 table tbody tr td a 에 종목명이 있음
-                            inner_html = page.content()
-                            inner_soup = BeautifulSoup(inner_html, 'html.parser')
-                            # 종목명 클래스나 구조 확인 (보통 a 태그 내 텍스트)
-                            stock_names = [a.get_text(strip=True) for a in inner_soup.select("table tbody tr td a") if len(a.get_text(strip=True)) > 1][:3]
-                            if stock_names:
-                                lead_str = ", ".join(stock_names)
-                                cursor.execute("UPDATE industry_quotes SET lead_stocks = %s WHERE industry_name = %s", (lead_str, s['name']))
+                            url = "https://finance.daum.net" + s['link'] if not s['link'].startswith('http') else s['link']
+                            page.goto(url, timeout=10000, wait_until="commit")
+                            time.sleep(1)
+                            rows = page.locator("tr").all()
+                            stock_items = []
+                            for row in rows:
+                                try:
+                                    t_txt = row.inner_text()
+                                    parts = [pt.strip() for pt in re.split(r'[\n\t]', t_txt) if pt.strip()]
+                                    if len(parts) >= 3:
+                                        name = parts[0]
+                                        rate_str = next((p for p in parts if '%' in p), "")
+                                        rate_m = re.search(r'([-+]?\d*\.?\d+)', rate_str)
+                                        if name and rate_m and name != '종목명' and len(name) > 1:
+                                            stock_items.append(f"{name}({'+' if float(rate_m.group(1))>0 else ''}{rate_m.group(1)}%)")
+                                except: continue
+                                if len(stock_items) >= 5: break
+                            if stock_items:
+                                cursor.execute("UPDATE industry_quotes SET lead_stocks = %s WHERE industry_name = %s", (", ".join(stock_items), s['name']))
                                 conn.commit()
                         except: continue
-                    browser.close()
 
-                self.log_to_db("INFO", f"[메가수집] 다음 기반 업종 상세분석(주도주) 완료")
-                
-                try: ai = AIEngine(); ai.analyze_market()
-                except: pass
+                    # [테마] 상위 50개 (3개 이름만)
+                    themes_sorted = sorted(themes, key=lambda x: x['rate'], reverse=True)
+                    for t in themes_sorted[:50]:
+                        if not t.get('link'): continue
+                        try:
+                            page.goto("https://finance.naver.com" + t['link'], timeout=7000, wait_until="commit")
+                            time.sleep(0.8)
+                            raw_a = [a.inner_text().strip() for a in page.locator("table.type_5 tr a").all()]
+                            valid = ", ".join([s for s in raw_a if s and len(s) > 1 and "사유" not in s and "편입" not in s][:3])
+                            if valid:
+                                cursor.execute("UPDATE market_themes SET lead_stocks = %s WHERE theme_name = %s", (valid, t['name']))
+                                conn.commit()
+                        except: continue
+                browser.close()
+            self.log_to_db("INFO", f"[메가수집] (테마/업종)주도주 전수 갱신 완료")
+            try: ai = AIEngine(); ai.analyze_market()
+            except: pass
         finally: conn.close()
 
+# --- 2. 다음 금융 수집기 (관심종목 거래원) ---
+class DaumTraderScraper:
+    def __init__(self):
+        self.tz = pytz.timezone('Asia/Seoul')
+        self.user_agent = "Mozilla/5.0 (Linux; Android 14; Poco M7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
+
+    def get_db_connection(self):
+        try: return pymysql.connect(**DB_CONFIG)
+        except: return pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+
+    def log_to_db(self, level, message):
+        conn = self.get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                sql = "INSERT INTO collector_logs (log_level, message, created_at) VALUES (%s, %s, NOW())"
+                cursor.execute(sql, (level, message))
+            conn.commit()
+        except: pass
+        finally: conn.close()
+
+    def fetch_current_price(self, code):
+        try:
+            res = requests.get(f"{BACKEND_API_URL}/stocks/{code}/price?exchangeCode=UN", timeout=2).json()
+            if res and res.get('currentPrice'): return int(float(res['currentPrice']))
+        except: pass
+        return 0
+
+    def run_cycle(self, mega):
+        conn = self.get_db_connection()
+        sc_cnt = 0
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT DISTINCT stock_code FROM watchlist")
+                queue = cursor.fetchall()
+            if not queue: return
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                page = browser.new_page(user_agent=self.user_agent)
+                for item in queue:
+                    try:
+                        page.goto(f"https://m.finance.daum.net/quotes/A{item['stock_code']}/influential_investors/trader", timeout=20000)
+                        time.sleep(1)
+                        soup = BeautifulSoup(page.content(), 'html.parser')
+                        f_sell, f_buy = 0, 0
+                        for t in soup.select("table"):
+                            if "매도상위" in t.text or "매수상위" in t.text:
+                                for r in t.select("tr"):
+                                    if "외국계" in r.text and "합" in r.text:
+                                        val_m = re.search(r'([0-9,]{2,})', r.text)
+                                        if val_m:
+                                            val = int(val_m.group(1).replace(',', ''))
+                                            if "매도" in t.text: f_sell = val
+                                            else: f_buy = val
+                        with conn.cursor() as cursor:
+                            cursor.execute("INSERT INTO stock_supply_demand (stock_code, current_price, foreign_net_buy, institution_net_buy, top_brokers) VALUES (%s, %s, %s, %s, %s)", (item['stock_code'], 0, f_buy - f_sell, 0, 'TRADER_SYNC'))
+                            sc_cnt += 1
+                        conn.commit()
+                    except: continue
+                browser.close()
+            mega.update_stats(sc_cnt)
+            self.log_to_db("INFO", f"[거래원수집] 실시간 종목수급 {sc_cnt}건 포착 완료")
+        finally: conn.close()
+
+# --- 3. 메인 루프 ---
 def main():
-    naver = MegaCollector(); daum = DaumTraderScraper()
-    print(">>> Daum Leader Engine v97.0 Started.")
+    mega = MegaCollector(); trader = DaumTraderScraper()
     while True:
         try:
-            conn = naver.get_db_connection()
-            interval = 300
+            conn = mega.get_db_connection()
+            interval = 180
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute('SELECT collect_interval FROM collector_config WHERE id = 1')
-                res = cursor.fetchone(); interval = int(res['collect_interval']) if res else 300
+                res = cursor.fetchone()
+                if res: interval = int(res['collect_interval'])
             conn.close()
             
-            now_hour = datetime.now(naver.tz).hour
+            now_hour = datetime.now(mega.tz).hour
             if 8 <= now_hour < 22:
-                naver.run_cycle(); daum.run_cycle(); time.sleep(interval)
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                    context = browser.new_context(user_agent=mega.user_agent)
+                    page = context.new_page()
+                    try:
+                        if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                        elif hasattr(ps, 'stealth') and hasattr(ps.stealth, 'stealth'): ps.stealth.stealth.stealth(page)
+                    except: pass
+                    
+                    sects, themes = mega.run_quick_sync(page)
+                    browser.close()
+
+                trader.run_cycle(mega)
+                mega.run_deep_analysis(sects, themes)
+                
+                time.sleep(interval)
             else:
-                naver.update_stats(1); time.sleep(600)
+                mega.update_stats(1); time.sleep(600)
         except Exception as e: 
-            try: naver.log_to_db("ERROR", f"[MainLoop] {str(e)}")
+            try: mega.log_to_db("ERROR", f"[MainLoop] {str(e)}")
             except: pass
             print(f"Main Error: {e}"); time.sleep(60)
 
