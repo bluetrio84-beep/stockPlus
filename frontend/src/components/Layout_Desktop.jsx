@@ -1,12 +1,12 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard } from 'lucide-react';
+import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
 const LayoutDesktop = ({ logic }) => {
     const { 
-        navigate, location, isMenuOpen, setIsMenuOpen, marketIndices, rankings, // [수정] rankings 추가
+        navigate, location, isMenuOpen, setIsMenuOpen, marketIndices, rankings, 
         unreadCount, isUserMenuOpen, setIsUserMenuOpen, usrName, 
         handleNotificationToggle, handleUserMenuToggle, handleLogout 
     } = logic;
@@ -20,6 +20,8 @@ const LayoutDesktop = ({ logic }) => {
     if (isAdmin()) {
         navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
         navItems.push({ name: 'ADMIN 대시보드', path: '/admin/intel', icon: LayoutDashboard });
+        // [v2.0] ADMIN CHART 메뉴 신설
+        navItems.push({ name: 'ADMIN CHART', path: '/admin/chart', icon: BarChart2 });
     }
 
     return (
@@ -119,7 +121,6 @@ const LayoutDesktop = ({ logic }) => {
 
                 <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
                     <div className="bg-slate-900/50 border-b border-slate-800 px-6 py-2 flex items-center gap-8 overflow-hidden shrink-0">
-                        {/* 1. 시장 지수 (KOSPI/KOSDAQ) */}
                         <div className="flex gap-8 shrink-0">
                             {marketIndices.map(index => (
                                 <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit">
@@ -132,7 +133,6 @@ const LayoutDesktop = ({ logic }) => {
                             ))}
                         </div>
 
-                        {/* [v13.5] 실시간 랭킹 티커 (1~3위 통합) */}
                         {rankings && rankings.length > 0 && (
                             <div className="flex items-center gap-6 overflow-hidden border-l border-slate-800 pl-8 ml-2">
                                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter shrink-0 animate-pulse">Live Ranking</span>

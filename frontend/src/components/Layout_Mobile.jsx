@@ -20,6 +20,8 @@ const LayoutMobile = ({ logic }) => {
     if (isAdmin()) {
         navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
         navItems.push({ name: 'ADMIN 대시보드', path: '/admin/intel', icon: LayoutDashboard });
+        // [v2.0] 모바일 햄버거 메뉴에도 차트 추가
+        navItems.push({ name: 'ADMIN CHART', path: '/admin/chart', icon: BarChart2 });
     }
 
     return (

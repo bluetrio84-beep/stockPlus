@@ -5,6 +5,7 @@ import WatchlistSummary from './components/WatchlistSummary';
 import AiKeywordManager from './components/AiKeywordManager';
 import AdminDashboard from "./components/AdminDashboard";
 import AdminIntelligenceDashboard from "./components/AdminIntelligenceDashboard";
+import AdminChartDashboard from "./components/AdminChartDashboard"; // [v2.0] 추가
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -42,6 +43,7 @@ function App() {
         {/* 관리자 전용 라우트 */}
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/intel" element={<AdminRoute><AdminIntelligenceDashboard /></AdminRoute>} />
+        <Route path="/admin/chart" element={<AdminRoute><AdminChartDashboard /></AdminRoute>} /> {/* [v2.0] 라우트 추가 */}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
