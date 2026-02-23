@@ -41,7 +41,6 @@ public interface AdminMapper {
 
     // --- 3. v12/v13 인텔리전스 및 대시보드 쿼리 ---
     
-    // [v1.2.3] 점수 수집 범위 최적화: 신호(Signal)는 1시간 내, 점수(Score)는 마지막 기록 기준
     @Select("SELECT i.*, " +
             "CASE WHEN latest_sig.created_at < DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN 'WAIT' " +
             "     WHEN WEEKDAY(NOW()) >= 5 OR HOUR(NOW()) < 9 OR HOUR(NOW()) >= 16 THEN 'WAIT' " +
@@ -77,16 +76,17 @@ public interface AdminMapper {
             "ORDER BY sd.foreign_net_buy DESC LIMIT 10")
     List<Map<String, Object>> getMarketLeaders();
 
+    // [v13.19] 실시간 AI 수급 포착: 최신성 강화 (15분 제한 & 상태 즉시 반영)
     @Select("SELECT ap.*, sm.stock_name " +
             "FROM ai_prediction ap " +
             "INNER JOIN (" +
             "  SELECT target_name, MAX(id) as max_id " +
             "  FROM ai_prediction " +
-            "  WHERE created_at >= DATE_SUB(NOW(), INTERVAL 60 MINUTE) " +
-            "  AND signal_type IN ('MEGA_SURGE', 'SURGE_F', 'SURGE_I', 'FOREIGN_BITE', 'BUY', 'SELL') " +
+            "  WHERE created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE) " +
             "  GROUP BY target_name" +
             ") latest ON ap.id = latest.max_id " +
             "JOIN stock_master sm ON ap.target_name = CONCAT('STOCK_', sm.stock_code) " +
+            "WHERE ap.signal_type NOT IN ('WAIT', 'NORMAL') " +
             "ORDER BY ap.id DESC LIMIT 10")
     List<Map<String, Object>> getLatestAiSignals();
 
