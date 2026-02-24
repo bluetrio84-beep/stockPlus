@@ -19,7 +19,7 @@ DB_CONFIG = {
 # 내부 백엔드 주소
 BACKEND_API_URL = "http://172.17.0.1:8080/api/dashboard"
 
-# --- 1. 메가 수집기 (v2.6 Verified Master) ---
+# --- 1. 메가 수집기 (v2.7.4 Theme Detail Fix) ---
 class MegaCollector:
     def __init__(self):
         self.tz = pytz.timezone('Asia/Seoul')
@@ -63,8 +63,8 @@ class MegaCollector:
         return indices
 
     def scrape_lists(self, page):
-        """[v2.6] 검증된 Playwright 텍스트 파싱 로직"""
         all_sects, all_themes, all_ranks = [], [], []
+        # [다움 업종] - 기존 유지
         try:
             page.goto("https://finance.daum.net/domestic/wics", timeout=60000, wait_until="networkidle")
             time.sleep(5) 
@@ -75,41 +75,30 @@ class MegaCollector:
                         if btn.is_visible(): btn.click(); time.sleep(3)
                         else: break
                     except: break
-                
-                # [핵심] Playwright 로케이터와 inner_text() 사용 (가장 잘 되었던 방식)
                 rows = page.locator("tr").all()
                 for row in rows:
                     try:
                         t_txt = row.inner_text()
                         txt = t_txt.split('\n')
                         if len(txt) < 5: txt = t_txt.split('\t')
-                        
                         if len(txt) >= 7:
                             name = txt[0].strip()
-                            # 업종명 필터링 및 데이터 유효성 체크
                             if name and name != '업종명' and (',' in txt[6] or txt[6].isdigit()):
                                 a_tag = row.locator("a").first
                                 href = a_tag.get_attribute("href") if a_tag.count() > 0 else ""
-                                
-                                # 등락률 파싱 (% 기호가 있는 칸 찾기)
                                 rate_str = next((p for p in txt if '%' in p), "0.0")
                                 rate_m = re.search(r'([-+]?\d*\.?\d+)', rate_str)
                                 rate_val = float(rate_m.group(1)) if rate_m else 0.0
-                                
-                                all_sects.append({
-                                    'name': name, 
-                                    'rate': rate_val, 
-                                    'amt': int(txt[6].replace(',','')), 
-                                    'link': href
-                                })
+                                all_sects.append({'name': name, 'rate': rate_val, 'amt': int(txt[6].replace(',','')), 'link': href})
                     except: continue
-        except Exception as e:
-            self.log_to_db("ERROR", f"[WICS] 목록 수집 중단: {str(e)}")
+        except: pass
 
-        # 2. 네이버 테마 (전수 수집)
+        # [네이버 테마] - 전수 수집
         try:
             for p_idx in range(1, 10):
                 page.goto(f"https://finance.naver.com/sise/theme.naver?&page={p_idx}", timeout=20000)
+                try: page.wait_for_selector("table.type_1", timeout=10000)
+                except: break
                 soup = BeautifulSoup(page.content(), 'html.parser')
                 valid_rows = [r for r in soup.select("table.type_1 tr") if r.select_one("td.col_type1")]
                 if not valid_rows: break
@@ -120,18 +109,16 @@ class MegaCollector:
                         all_themes.append({'name': a.get_text(strip=True), 'rate': float(s.get_text(strip=True).replace('%','').replace('+','')), 'link': a['href']})
         except: pass
 
-        # 3. 네이버 랭킹
+        # [네이버 랭킹]
         try:
             page.goto("https://finance.naver.com/sise/sise_quant.naver?sosok=0", timeout=20000); time.sleep(1)
             soup_r = BeautifulSoup(page.content(), 'html.parser')
             for i, a in enumerate(soup_r.select("a.tltle")[:3]):
                 all_ranks.append({'type': 'AMOUNT', 'rank': i+1, 'code': a.get('href').split('=')[-1], 'name': a.get_text(strip=True)})
         except: pass
-
         return all_sects, all_themes, all_ranks
 
     def run_quick_sync(self, page):
-        self.update_stats(1) 
         sects, themes, ranks = self.scrape_lists(page)
         indices = self.fetch_market_indices()
         conn = self.get_db_connection()
@@ -140,7 +127,8 @@ class MegaCollector:
                 for idx in indices: cursor.execute("INSERT INTO market_index_history (index_name, index_value, change_val, change_rate, captured_at) VALUES (%s, %s, %s, %s, NOW())", (idx['name'], idx['val'], idx['change'], idx['rate']))
                 for s in sects: cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, detail_url, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, detail_url=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['link'], s['rate'], s['amt'], s['link']))
                 for t in themes: cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
-                for r in ranks: cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
+                for r in ranks:
+                    cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
                 conn.commit()
                 self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
                 self.update_stats(len(sects) + len(themes) + len(indices))
@@ -156,18 +144,19 @@ class MegaCollector:
                 page = browser.new_page(user_agent=self.user_agent)
                 page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "font", "media"] else route.continue_())
                 with conn.cursor() as cursor:
+                    # [다움 업종] - 기존 유지
                     for s in sects:
                         if not s.get('link'): continue
                         try:
                             url = "https://finance.daum.net" + s['link'] if not s['link'].startswith('http') else s['link']
                             page.goto(url, timeout=10000, wait_until="commit")
                             time.sleep(1)
-                            # [핵심] 상세 페이지도 Playwright 텍스트 파싱으로 원복
                             rows = page.locator("tr").all()
                             stock_items = []
                             for row in rows:
                                 try:
-                                    parts = [pt.strip() for pt in re.split(r'[\n\t]', row.inner_text()) if pt.strip()]
+                                    t_txt = row.inner_text()
+                                    parts = [pt.strip() for pt in re.split(r'[\n\t]', t_txt) if pt.strip()]
                                     if len(parts) >= 3:
                                         name = parts[0]
                                         rate_str = next((p for p in parts if '%' in p), "")
@@ -180,15 +169,20 @@ class MegaCollector:
                                 cursor.execute("UPDATE industry_quotes SET lead_stocks = %s WHERE industry_name = %s", (", ".join(stock_items), s['name']))
                                 conn.commit()
                         except: continue
-                    # 테마 상세
+                    
+                    # [네이버 테마] - 상세분석 (v2.7.4 정밀 보정)
                     themes_sorted = sorted(themes, key=lambda x: x['rate'], reverse=True)
-                    for t in themes_sorted[:50]:
+                    for t in themes_sorted[:100]:
                         if not t.get('link'): continue
                         try:
-                            page.goto("https://finance.naver.com" + t['link'], timeout=7000, wait_until="commit")
-                            time.sleep(0.8)
-                            raw_a = [a.inner_text().strip() for a in page.locator("table.type_5 tr a").all()]
-                            valid = ", ".join([s for s in raw_a if s and len(s) > 1 and "사유" not in s and "편입" not in s][:3])
+                            page.goto("https://finance.naver.com" + t['link'], timeout=15000, wait_until="networkidle")
+                            # [핵심] 네이버 전용 테이블 로딩 대기
+                            page.wait_for_selector("table.type_5", timeout=10000)
+                            time.sleep(1.5)
+                            # 진짜 종목명(td.name a) 정밀 추출
+                            raw_stocks = page.locator("td.name a").all_inner_texts()
+                            if not raw_stocks: raw_stocks = page.locator("td.tltle").all_inner_texts()
+                            valid = ", ".join([s.strip() for s in raw_stocks if s and len(s.strip()) > 1][:3])
                             if valid:
                                 cursor.execute("UPDATE market_themes SET lead_stocks = %s WHERE theme_name = %s", (valid, t['name']))
                                 conn.commit()
