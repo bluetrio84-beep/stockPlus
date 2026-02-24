@@ -35,7 +35,6 @@ class AIEngine:
         self.tz = pytz.timezone('Asia/Seoul')
         self.model = None
         self.scaler = None
-        
         try:
             self.model = StockLSTM(input_size=5)
             self.model.load_state_dict(torch.load("stock_lstm_v1.pth", map_location=torch.device('cpu')))
@@ -50,28 +49,28 @@ class AIEngine:
         except: self.conn = pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
 
     def calculate_technical_indicators(self, df):
-        if len(df) < 2: return 50 
-        close = df['current_price'].astype(float)
+        if len(df) < 5: return 50 
+        close = df['current_price'].astype(float); volume = df['volume'].astype(float)
         ma5 = close.rolling(window=5).mean(); ma20 = close.rolling(window=20).mean()
+        ma60 = close.rolling(window=60).mean() if len(df) >= 60 else ma20
         delta = close.diff(); gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rsi = 100 - (100 / (1 + (gain / (loss + 1e-9))))
+        ema12 = close.ewm(span=12, adjust=False).mean(); ema26 = close.ewm(span=26, adjust=False).mean()
+        macd = ema12 - ema26; macd_signal = macd.ewm(span=9, adjust=False).mean()
         
         last_price = close.iloc[-1]; t_score = 50
-        
-        # [가점 로직]
-        if not ma20.empty and last_price > ma20.iloc[-1]: t_score += 5
-        if not ma5.empty and not ma20.empty and ma5.iloc[-1] > ma20.iloc[-1]: t_score += 5
+        if last_price > ma20.iloc[-1]: t_score += 5
+        if ma5.iloc[-1] > ma20.iloc[-1]: t_score += 5 
+        if ma5.iloc[-1] > ma20.iloc[-1] > ma60.iloc[-1]: t_score += 10 # 정배열 가점
+        if macd.iloc[-1] > macd_signal.iloc[-1]: t_score += 10 # MACD 골든크로스
         if rsi.iloc[-1] < 35: t_score += 15 
         
-        # [감점 로직: 기술적 분석이 나쁠 때]
-        if not ma20.empty and last_price < ma20.iloc[-1]: t_score -= 15 # 20일선 이탈 (강력 감점)
-        if rsi.iloc[-1] > 70: t_score -= 20 # 과매수 (강력 감점)
-        if not ma5.empty and not ma20.empty and ma5.iloc[-1] < ma20.iloc[-1]: t_score -= 5 # 역배열
-        
+        if last_price < ma20.iloc[-1]: t_score -= 15 
+        if rsi.iloc[-1] > 70: t_score -= 20 
         return max(0, min(100, t_score))
 
-    def get_lstm_score(self, stock_code, curr_price, curr_f):
+    def get_lstm_score(self, stock_code, curr_price, curr_f, curr_vol):
         if self.model is None or self.scaler is None: return 50
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -79,7 +78,7 @@ class AIEngine:
                 rows = cursor.fetchall()
                 if len(rows) < 4: return 50
                 past_df = pd.DataFrame(rows[::-1])
-                today_data = [curr_price, 0, curr_f, 0, 0]
+                today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
                 scaled_data = self.scaler.transform(df.values)
                 input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
@@ -96,7 +95,7 @@ class AIEngine:
             market_open = (now.weekday() < 5 and 9 <= now.hour < 16)
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 predictions = []
-                cursor.execute("SELECT stock_code, current_price, foreign_net_buy, institution_net_buy, top_brokers FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
+                cursor.execute("SELECT stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
                 supply_rows = cursor.fetchall()
                 if supply_rows:
                     sdf = pd.DataFrame(supply_rows)
@@ -105,35 +104,21 @@ class AIEngine:
                         stock_df = sdf[sdf['stock_code'] == code].copy()
                         if len(stock_df) < 2: continue
                         curr = stock_df.iloc[-1]
-                        price = float(curr['current_price'] or 0); f_net = float(curr['foreign_net_buy'] or 0)
+                        price = float(curr['current_price'] or 0); f_net = float(curr['foreign_net_buy'] or 0); vol = float(curr['volume'] or 0)
                         val_f = f_net * price; brokers_str = curr['top_brokers'] or ""
                         
-                        # --- 1. 수급 점수 (S-Score) ---
                         s_score = 50
                         if val_f >= 300_000_000: s_score += 20
                         elif val_f >= 100_000_000: s_score += 10
                         
-                        # --- 2. 퀀트 점수 (Q-Score) ---
                         q_score = self.calculate_technical_indicators(stock_df)
+                        l_score = self.get_lstm_score(code, price, f_net, vol)
                         
-                        # --- 3. LSTM 점수 (L-Score) ---
-                        l_score = self.get_lstm_score(code, price, f_net)
-                        
-                        # --- 최종 점수 합산 ---
-                        weighted_score = (s_score * 0.5) + (q_score * 0.2) + (l_score * 0.3)
-                        final_score = weighted_score
-                        
-                        # [상승 우선] 차트나 AI가 85점 이상이면 점수 인정
-                        if q_score >= 85 or l_score >= 85:
-                            final_score = max(final_score, q_score, l_score)
-                        
-                        # [차트 방어] 차트 점수가 너무 낮으면(35점 미만) 전체 점수를 75점 이하로 제한 (페널티)
-                        if q_score < 35:
-                            final_score = min(final_score, 75)
+                        final_score = (s_score * 0.5) + (q_score * 0.2) + (l_score * 0.3)
+                        if q_score >= 85 or l_score >= 85: final_score = max(final_score, q_score, l_score)
+                        if q_score < 35: final_score = min(final_score, 75)
 
-                        # --- [치트키] 외국인 매수 Override (단, 차트가 최악이 아닐 때만) ---
                         if market_open:
-                            # 차트가 아주 나쁘지 않다면(30점 이상) 수급 치트키 인정
                             if q_score >= 30:
                                 if val_f >= 2_000_000_000: final_score = 100
                                 elif val_f >= 1_000_000_000: final_score = 95
@@ -142,12 +127,11 @@ class AIEngine:
                                 elif val_f >= 100_000_000: final_score = max(final_score, 80)
                         
                         signal = 'WAIT'
+                        if final_score >= 80: signal = 'BULL_ENTRY'
+                        if final_score >= 85: signal = 'FOREIGN_BITE'
+                        if final_score >= 90: signal = 'SMART_MONEY'
+                        if final_score >= 95: signal = 'SURGE_F'
                         if final_score >= 100: signal = 'MEGA_SURGE'
-                        elif final_score >= 95: signal = 'SURGE_F'
-                        elif final_score >= 90: signal = 'SMART_MONEY'
-                        elif final_score >= 85: signal = 'FOREIGN_BITE'
-                        elif final_score >= 80: signal = 'BULL_ENTRY'
-                        
                         predictions.append((f"STOCK_{code}", final_score, signal))
 
                 if predictions:

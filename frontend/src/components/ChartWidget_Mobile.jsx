@@ -42,7 +42,7 @@ const ChartWidgetMobile = (props) => {
     ma10SeriesRef.current = chart.addLineSeries({ color: '#d946ef', lineWidth: 1, lastValueVisible: false });
     ma20SeriesRef.current = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, lastValueVisible: false });
     ma60SeriesRef.current = chart.addLineSeries({ color: '#0ea5e9', lineWidth: 1, lastValueVisible: false });
-    chart.priceScale('volume_scale').applyOptions({ scaleMargins: { top: 0.7, bottom: 0.07 } });
+    chart.priceScale('volume_scale').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     chartRef.current = chart;
     const resizeObserver = new ResizeObserver(entries => { if (chartRef.current) chartRef.current.applyOptions({ width: entries[0].contentRect.width, height: entries[0].contentRect.height }); });
     resizeObserver.observe(container);
