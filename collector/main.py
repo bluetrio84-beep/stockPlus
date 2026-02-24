@@ -295,7 +295,7 @@ def main():
             conn.close()
             
             now_hour = datetime.now(mega.tz).hour
-            if 8 <= now_hour < 23:
+            if 8 <= now_hour < 16:
                 with sync_playwright() as p:
                     browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
                     context = browser.new_context(user_agent=mega.user_agent)

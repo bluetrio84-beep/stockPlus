@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.stockPlus.mapper.DailyInvestorMapper">
+
+    <insert id="insertOrUpdateDailyInvestor" parameterType="map">
+        INSERT INTO daily_stock_investor (
+            stock_code, bsop_date, close_price, individual_net_buy, 
+            foreign_net_buy, institution_net_buy, volume, created_at
+        ) VALUES (
+            #{stockCode}, #{bsopDate}, #{closePrice}, #{individualNetBuy}, 
+            #{foreignNetBuy}, #{institutionNetBuy}, #{volume}, NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            close_price = #{closePrice},
+            individual_net_buy = #{individualNetBuy},
+            foreign_net_buy = #{foreignNetBuy},
+            institution_net_buy = #{institutionNetBuy},
+            volume = #{volume},
+            created_at = NOW()
+    </insert>
+
+</mapper>

@@ -123,10 +123,15 @@ const ChartWidgetDesktop = (props) => {
                             {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
                         {stock.aiScore !== undefined && stock.aiScore !== null && (
-                            <span className={classNames("text-[10px] font-black px-1.5 py-0.5 rounded border leading-tight", 
+                            <span className={classNames("text-[10px] font-black px-2 py-0.5 rounded-full border leading-tight flex items-center gap-1.5 shadow-sm transition-all", 
                                 stock.aiScore >= 80 ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : 
-                                (stock.aiScore >= 30 ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30")
+                                (stock.aiScore >= 50 ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30")
                             )}>
+                                <span className={classNames("w-1.5 h-1.5 rounded-full", 
+                                    stock.aiScore >= 90 ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" : 
+                                    (stock.aiScore >= 80 ? "bg-rose-400 shadow-[0_0_5px_rgba(244,63,94,0.5)]" : 
+                                    (stock.aiScore >= 50 ? "bg-amber-400 animate-pulse" : "bg-indigo-400"))
+                                )}></span>
                                 AI {Math.round(stock.aiScore)}
                             </span>
                         )}

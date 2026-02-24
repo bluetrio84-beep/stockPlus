@@ -16,6 +16,20 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminMapper adminMapper;
+    private final com.stockPlus.scheduler.DailyInvestorScheduler dailyInvestorScheduler;
+
+    @PostMapping("/dump-investor")
+    public String triggerInvestorDump() {
+        log.error(">>> [Admin] Manual Investor Data Dump Triggered! STARTING...");
+        try {
+            dailyInvestorScheduler.collectDailyInvestorData();
+            log.error(">>> [Admin] Manual Investor Data Dump FINISHED SUCCESSFULLY!");
+            return "Dump finished.";
+        } catch (Exception e) {
+            log.error(">>> [Admin] Manual Dump FAILED: {}", e.getMessage(), e);
+            return "Dump failed: " + e.getMessage();
+        }
+    }
 
     // --- 1. 수집기 설정 및 로그 (기존 기능 복구) ---
     @GetMapping("/collector/config")
