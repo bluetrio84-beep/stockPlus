@@ -11,3 +11,6 @@ node_modules/
 backend/target/
 frontend/dist/
 frontend/node_modules/
+
+# Logs
+logs/
