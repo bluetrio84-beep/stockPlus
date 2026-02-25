@@ -40,7 +40,7 @@ class MegaCollector:
         finally: conn.close()
 
     def update_stats(self, count):
-        if count <= 0: return
+        # 0건이라도 사이클이 돌았음을 표시하기 위해 기록 (기존 return 제거)
         conn = self.get_db_connection()
         try:
             with conn.cursor() as cursor:
@@ -48,7 +48,8 @@ class MegaCollector:
                 sql = "INSERT INTO collector_hourly_stats (stat_hour, row_count) VALUES (%s, %s) ON DUPLICATE KEY UPDATE row_count = row_count + %s"
                 cursor.execute(sql, (hour_key, count, count))
             conn.commit()
-        except: pass
+            print(f">>> [Stats Update] Hour: {hour_key}, Added: {count}")
+        except Exception as e: print(f">>> [Stats Update Error] {e}")
         finally: conn.close()
 
     def fetch_market_indices(self):
@@ -314,38 +315,46 @@ def main():
                 # 1. 메가 수집 (Quick) - 에러 격리
                 try:
                     sects, themes, q_cnt = mega.run_quick_sync()
-                    total_collected += q_cnt
+                    total_collected += (q_cnt if q_cnt else 0)
+                    print(f">>> [Step 1] Quick Sync: {q_cnt} items")
                 except Exception as e:
                     print(f">>> [Quick Sync Error] {e}")
                 
                 # 2. 거래원 수집 - 에러 격리
                 try:
                     t_cnt = trader.run_relay_cycle(mega)
-                    total_collected += t_cnt
+                    total_collected += (t_cnt if t_cnt else 0)
+                    print(f">>> [Step 2] Trader Relay: {t_cnt} items")
                 except Exception as e:
                     print(f">>> [Trader Relay Error] {e}")
                 
                 # 3. 메가 수집 (Deep) - 에러 격리
                 try:
-                    # sects, themes가 이전 단계 실패로 없을 경우 대비
                     if 'sects' not in locals(): sects = []
                     if 'themes' not in locals(): themes = []
                     d_cnt = mega.run_deep_analysis(sects, themes)
-                    total_collected += d_cnt
+                    total_collected += (d_cnt if d_cnt else 0)
+                    print(f">>> [Step 3] Deep Analysis: {d_cnt} items")
                 except Exception as e:
                     print(f">>> [Deep Analysis Error] {e}")
 
-                # 4. 분석 및 통계 저장 (어떤 에러가 나도 실행 보장)
+                # 4. 통계 저장 및 완료 로그 (AI 분석 전 즉시 실행)
                 try:
+                    duration = (datetime.now() - start_time).seconds
+                    print(f">>> [Cycle Result] Total Collected: {total_collected}")
+                    mega.update_stats(total_collected)
+                    mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
+                    print(f">>> Cycle Count Updated: {total_collected} items recorded.")
+                    
+                    # 5. AI 분석 (무거울 수 있으므로 마지막에 배치)
                     print(">>> Starting AI Engine Analysis...")
                     engine.analyze_market()
-                    mega.update_stats(total_collected)
-                    
-                    duration = (datetime.now() - start_time).seconds
-                    mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
-                    print(f">>> Cycle Finished Successfully. Total: {total_collected}")
+                    print(f">>> AI Engine Analysis Finished.")
                 except Exception as e:
-                    print(f">>> [Stats/AI Error] {e}")
+                    print(f">>> [Post-Collection Error] {e}")
+                    # 에러가 나도 건수 누락을 막기 위해 한 번 더 시도
+                    try: mega.update_stats(total_collected)
+                    except: pass
             
             time.sleep(interval)
         except Exception as e:

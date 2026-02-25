@@ -159,8 +159,17 @@ public class KisStockService {
                     String t = n.path("stck_cntg_hour").asText("");
                     if (t.isEmpty()) continue;
                     if (t.length() < 6) t = "0".repeat(6 - t.length()) + t;
-                    long ts = java.time.LocalDateTime.parse(d + t, fullFormatter).atZone(seoulZone).toInstant().getEpochSecond();
-                    oneMinList.add(StockChartDto.builder().time(ts).date(d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8)).open(n.path("stck_oprc").asText("0")).high(n.path("stck_hgpr").asText("0")).low(n.path("stck_lwpr").asText("0")).close(n.path("stck_prpr").asText("0")).volume(n.path("cntg_vol").asText("0")).build());
+                    // [수정] 타임존 오차 해결을 위해 명시적으로 Asia/Seoul 적용
+                    long ts = java.time.LocalDateTime.parse(d + t, fullFormatter)
+                            .atZone(ZoneId.of("Asia/Seoul"))
+                            .toEpochSecond();
+                    
+                    oneMinList.add(StockChartDto.builder()
+                            .time(ts)
+                            .date(d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8))
+                            .open(n.path("stck_oprc").asText("0")).high(n.path("stck_hgpr").asText("0"))
+                            .low(n.path("stck_lwpr").asText("0")).close(n.path("stck_prpr").asText("0"))
+                            .volume(n.path("cntg_vol").asText("0")).build());
                 } catch (Exception inner) {}
             }
 
@@ -181,8 +190,9 @@ public class KisStockService {
                 long minLow = items.stream().mapToLong(i -> Long.parseLong(i.getLow())).min().orElse(0);
                 long sumVol = items.stream().mapToLong(i -> Long.parseLong(i.getVolume())).sum();
 
+                // [원복] Lightweight Charts 규격인 초(Seconds) 단위 사용
                 aggregatedList.add(StockChartDto.builder()
-                    .time(entry.getKey()) // 5분 단위 시작 시간
+                    .time(entry.getKey()) 
                     .date(first.getDate())
                     .open(first.getOpen())
                     .high(String.valueOf(maxHigh))
