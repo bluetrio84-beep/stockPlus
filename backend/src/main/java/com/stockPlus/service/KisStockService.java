@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -90,27 +91,9 @@ public class KisStockService {
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
         if ("IDX".equals(exchangeCode)) return fetchIndexHistoryChart(stockCode, period);
         
-        // [v1.13] 5분봉 개별 조회 후 병합 (zip 제거로 안정성 확보)
-        if ("5m".equals(period)) {
+        if ("5m".equalsIgnoreCase(period)) {
             String marketDiv = "NX".equals(exchangeCode) ? "NX" : "J";
-            
-            return fetchHistory5MinChart(stockCode, marketDiv)
-                .flatMap(historyList -> {
-                    log.info(">>> [Step 1] History 5Min Loaded: {} items", historyList.size());
-                    return fetchToday5MinChart(stockCode, marketDiv)
-                        .map(todayList -> {
-                            log.info(">>> [Step 2] Today 5Min Loaded: {} items", todayList.size());
-                            
-                            // 병합 및 정렬
-                            Map<Long, StockChartDto> mergedMap = new TreeMap<>();
-                            for (StockChartDto h : historyList) mergedMap.put(h.getTime(), h);
-                            for (StockChartDto t : todayList) mergedMap.put(t.getTime(), t);
-                            
-                            List<StockChartDto> finalResult = new ArrayList<>(mergedMap.values());
-                            log.info(">>> [Step 3] Final Merged 5Min: {} items", finalResult.size());
-                            return finalResult;
-                        });
-                });
+            return fetchHistory5MinChart(stockCode, marketDiv);
         }
 
         if ("UN".equals(exchangeCode)) {
@@ -120,57 +103,101 @@ public class KisStockService {
         return fetchHistoryChart(stockCode, "NX".equals(exchangeCode) ? "NX" : "J", period);
     }
 
-    private Mono<List<StockChartDto>> fetchToday5MinChart(String stockCode, String marketDiv) {
-        log.info(">>> [KIS API] Fetching Today 5Min for {}", stockCode);
-        String token = kisAuthService.getAccessToken();
-        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_INPUT_HOUR_1=&FID_PW_DATA_INCU_YN=N&FID_ETC_CLS_CODE=";
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010200").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parse5MinResponse(res, "output2")).onErrorResume(e -> Mono.just(Collections.emptyList()));
-    }
-
     private Mono<List<StockChartDto>> fetchHistory5MinChart(String stockCode, String marketDiv) {
-        log.info(">>> [KIS API] Fetching History 5Min for {}", stockCode);
+        log.info(">>> [KIS API] Fetching 5Min Chart (FHKST03010230) for {}", stockCode);
         String token = kisAuthService.getAccessToken();
         String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-time-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_INPUT_HOUR_1=153000&FID_INPUT_DATE_1=" + today + "&FID_PW_DATA_INCU_YN=Y&FID_FAKE_TICK_INCU_YN=N";
-        // [수정] 일별 분봉도 명세에 따라 output2 노드 사용
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010230").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parse5MinResponse(res, "output2")).onErrorResume(e -> Mono.just(Collections.emptyList()));
+        String nowTime = LocalTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HHmmss"));
+        
+        // [보정] UN 코드가 들어오면 KIS가 거부할 수 있으므로 J로 전환
+        String finalMarketDiv = "UN".equals(marketDiv) ? "J" : marketDiv;
+
+        // [수정] 정확한 API URL 경로 적용
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-time-dailychartprice"
+                + "?FID_COND_MRKT_DIV_CODE=" + finalMarketDiv
+                + "&FID_INPUT_ISCD=" + stockCode
+                + "&FID_INPUT_HOUR_1=" + nowTime
+                + "&FID_INPUT_DATE_1=" + today
+                + "&FID_ETC_CLS_CODE=2" // 5분봉
+                + "&FID_PW_DATA_INCU_YN=Y"
+                + "&FID_FAKE_TICK_INCU_YN="; // 명세서상 공백 필수
+
+        return webClientBuilder.build().get().uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "FHKST03010230")
+                .header("content-type", "application/json; charset=utf-8") // [수정] UTF-8 명시
+                .header("custtype", "P") // [수정] 개인 고객 명시
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(res -> parse5MinResponse(res, "output2"))
+                .onErrorResume(e -> {
+                    log.error(">>> [KIS API] 5Min Request Error: {}", e.getMessage());
+                    return Mono.just(Collections.emptyList());
+                });
     }
 
     private List<StockChartDto> parse5MinResponse(String response, String outputKey) {
         try {
             JsonNode root = objectMapper.readTree(response);
-            String msg = root.path("msg1").asText("");
-            log.info(">>> [KIS API] 5Min Response Msg: {}, Node: {}", msg, outputKey);
-            
-            if (!root.has(outputKey)) {
-                log.warn(">>> [KIS API] Missing node: {}. Available: {}", outputKey, root.fieldNames());
-                return Collections.emptyList();
-            }
+            JsonNode dataNode = root.path(outputKey);
+            if (dataNode.isMissingNode() || dataNode.isEmpty()) dataNode = root.path("output");
+            if (dataNode.isMissingNode() || !dataNode.isArray()) return Collections.emptyList();
 
-            List<StockChartDto> list = new ArrayList<>();
+            List<StockChartDto> oneMinList = new ArrayList<>();
             String commonDate = root.path("output1").path("stck_bsop_date").asText("");
             if (commonDate.isEmpty()) commonDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             
-            JsonNode dataNode = root.path(outputKey);
             ZoneId seoulZone = ZoneId.of("Asia/Seoul");
             DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-            if (dataNode.isArray()) {
-                for (JsonNode n : dataNode) {
-                    try {
-                        String d = n.path("stck_bsop_date").asText("");
-                        if (d.isEmpty()) d = commonDate;
-                        String t = n.path("stck_cntg_hour").asText("");
-                        if (t.isEmpty()) continue;
-                        if (t.length() < 6) t = "0".repeat(6 - t.length()) + t;
-                        long ts = java.time.LocalDateTime.parse(d + t, fullFormatter).atZone(seoulZone).toInstant().getEpochSecond();
-                        list.add(StockChartDto.builder().time(ts).date(d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8)).open(n.path("stck_oprc").asText("0")).high(n.path("stck_hgpr").asText("0")).low(n.path("stck_lwpr").asText("0")).close(n.path("stck_prpr").asText("0")).volume(n.path("cntg_vol").asText("0")).build());
-                    } catch (Exception inner) {}
-                }
+            // 1. 먼저 1분봉 데이터를 모두 리스트에 담음
+            for (JsonNode n : dataNode) {
+                try {
+                    String d = n.path("stck_bsop_date").asText(commonDate);
+                    String t = n.path("stck_cntg_hour").asText("");
+                    if (t.isEmpty()) continue;
+                    if (t.length() < 6) t = "0".repeat(6 - t.length()) + t;
+                    long ts = java.time.LocalDateTime.parse(d + t, fullFormatter).atZone(seoulZone).toInstant().getEpochSecond();
+                    oneMinList.add(StockChartDto.builder().time(ts).date(d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8)).open(n.path("stck_oprc").asText("0")).high(n.path("stck_hgpr").asText("0")).low(n.path("stck_lwpr").asText("0")).close(n.path("stck_prpr").asText("0")).volume(n.path("cntg_vol").asText("0")).build());
+                } catch (Exception inner) {}
             }
-            log.info(">>> [KIS API] Successfully parsed {} items from {}", list.size(), outputKey);
-            return list;
-        } catch (Exception e) { return Collections.emptyList(); }
+
+            // 2. 5분 단위로 그룹화 (Aggregation)
+            Collections.sort(oneMinList, Comparator.comparingLong(StockChartDto::getTime));
+            List<StockChartDto> aggregatedList = new ArrayList<>();
+            Map<Long, List<StockChartDto>> groups = oneMinList.stream()
+                .collect(Collectors.groupingBy(item -> (item.getTime() / 300) * 300, TreeMap::new, Collectors.toList()));
+
+            for (Map.Entry<Long, List<StockChartDto>> entry : groups.entrySet()) {
+                List<StockChartDto> items = entry.getValue();
+                if (items.isEmpty()) continue;
+                
+                StockChartDto first = items.get(0);
+                StockChartDto last = items.get(items.size() - 1);
+                
+                long maxHigh = items.stream().mapToLong(i -> Long.parseLong(i.getHigh())).max().orElse(0);
+                long minLow = items.stream().mapToLong(i -> Long.parseLong(i.getLow())).min().orElse(0);
+                long sumVol = items.stream().mapToLong(i -> Long.parseLong(i.getVolume())).sum();
+
+                aggregatedList.add(StockChartDto.builder()
+                    .time(entry.getKey()) // 5분 단위 시작 시간
+                    .date(first.getDate())
+                    .open(first.getOpen())
+                    .high(String.valueOf(maxHigh))
+                    .low(String.valueOf(minLow))
+                    .close(last.getClose())
+                    .volume(String.valueOf(sumVol))
+                    .build());
+            }
+
+            log.info(">>> [KIS API] Aggregated {} 1Min items into {} 5Min candles.", oneMinList.size(), aggregatedList.size());
+            return aggregatedList;
+        } catch (Exception e) { 
+            log.error(">>> [KIS API] 5Min Aggregation Error: {}", e.getMessage());
+            return Collections.emptyList(); 
+        }
     }
 
     private Mono<List<StockChartDto>> fetchHistoryChart(String stockCode, String marketDiv, String period) {
