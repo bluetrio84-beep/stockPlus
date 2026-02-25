@@ -25,5 +25,6 @@ public class InvestorDto {
         private String retailNet;      // 개인
         private String foreignNet;     // 외국인
         private String institutionNet; // 기관계 (합계)
+        private String volume;         // 거래량 [추가]
     }
 }

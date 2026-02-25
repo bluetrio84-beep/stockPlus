@@ -267,7 +267,15 @@ public class KisStockService {
                 for (JsonNode n : outArr) {
                     String rawDate = n.path("stck_bsop_date").asText("");
                     if (rawDate.length() < 8) continue;
-                    items.add(InvestorDto.InvestorItem.builder().date(rawDate.substring(4, 6) + "." + rawDate.substring(6, 8)).price(n.path("stck_clpr").asText("0")).change(n.path("prdy_vrss").asText("0")).retailNet(n.path("prsn_ntby_qty").asText("0")).foreignNet(n.path("frgn_ntby_qty").asText("0")).institutionNet(n.path("orgn_ntby_qty").asText("0")).build());
+                    items.add(InvestorDto.InvestorItem.builder()
+                            .date(rawDate.substring(4, 6) + "." + rawDate.substring(6, 8))
+                            .price(n.path("stck_clpr").asText("0"))
+                            .change(n.path("prdy_vrss").asText("0"))
+                            .retailNet(n.path("prsn_ntby_qty").asText("0"))
+                            .foreignNet(n.path("frgn_ntby_qty").asText("0"))
+                            .institutionNet(n.path("orgn_ntby_qty").asText("0"))
+                            .volume(n.path("acml_vol").asText("0")) // [추가]
+                            .build());
                 }
             }
             return items;

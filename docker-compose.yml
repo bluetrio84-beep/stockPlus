@@ -69,6 +69,7 @@ services:
     build:
       context: ./collector
     container_name: projects-collector-1
+    init: true
     env_file:
       - .env
     network_mode: "host"

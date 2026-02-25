@@ -1,124 +1,123 @@
 package com.stockPlus.scheduler;
 
+import com.stockPlus.domain.InvestorDto;
+import com.stockPlus.domain.StockChartDto;
 import com.stockPlus.mapper.DailyInvestorMapper;
 import com.stockPlus.mapper.WatchlistMapper;
-import com.stockPlus.service.KisAuthService;
-import com.stockPlus.service.KisRealtimeService;
 import com.stockPlus.service.KisStockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
- * 매일 오후 4시 5분에 장 마감 후의 투자자 매매동향 및 종가를 DB에 저장하는 스케줄러입니다.
- * 이 데이터는 LSTM 딥러닝 학습용으로 사용됩니다.
+ * 매일 오전 9시 00분에 전일 최종 데이터를 확정하여 DB에 저장합니다.
+ * 수급 데이터와 일봉 거래량 데이터를 병합하여 완벽한 LSTM 학습 데이터를 구축합니다.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DailyInvestorScheduler {
 
-    private final KisAuthService kisAuthService;
-    private final KisRealtimeService kisRealtimeService;
     private final KisStockService kisStockService;
     private final WatchlistMapper watchlistMapper;
     private final DailyInvestorMapper dailyInvestorMapper;
-    private final WebClient.Builder webClientBuilder;
 
     /**
-     * 서버 시작 시 즉시 과거 데이터 덤프를 실행합니다. (일회성)
+     * 서버 시작 시 덤프 실행 (10초 후)
      */
     @jakarta.annotation.PostConstruct
     public void init() {
-        log.error(">>> [INIT] Triggering FULL STOCK Historical Data Dump...");
+        log.error(">>> [INIT] Starting Historical Data Aggregation...");
         new Thread(() -> {
             try {
-                Thread.sleep(10000); // DB 연결 및 초기화 대기
+                Thread.sleep(10000);
                 collectDailyInvestorData();
             } catch (Exception e) {
-                log.error("Init dump failed", e);
+                log.error("Init aggregation failed", e);
             }
         }).start();
     }
 
-    @Value("${kis.api.url:https://openapi.koreainvestment.com:9443}")
-    private String apiUrl;
-
     /**
-     * 평일 오후 16:05에 실행 (장 마감 확정치 수집)
+     * 평일 오후 19:00 실행 (당일 데이터 최종 확정 수집)
      */
-    @Scheduled(cron = "0 5 16 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 19 * * MON-FRI", zone = "Asia/Seoul")
     public void collectDailyInvestorData() {
-        log.error(">>> [Batch] Starting Daily Investor Data Collection...");
+        log.error(">>> [Batch] Starting High-Precision Data Collection (19:00)...");
         
         List<String> stockCodes = watchlistMapper.findAllGlobal().stream()
                 .map(w -> w.getStockCode())
                 .distinct()
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
-        if (stockCodes.isEmpty()) {
-            log.warn(">>> [Batch] Watchlist is empty. Skipping...");
-            return;
-        }
-
-        // KIS API 호출 및 DB 저장
         for (String code : stockCodes) {
             try {
-                // KisStockService를 통해 검증된 데이터 가져오기
-                com.stockPlus.domain.InvestorDto dto = kisStockService.fetchInvestors(code, "J").block();
-                
-                if (dto != null && dto.getItems() != null) {
-                    int count = 0;
-                    String currentYear = String.valueOf(java.time.Year.now().getValue()); // "2026"
+                // 수급 데이터와 일봉 데이터를 병렬로 호출
+                Mono.zip(
+                    kisStockService.fetchInvestors(code, "J"),
+                    kisStockService.fetchUnifiedChart(code, "J", "1D")
+                ).subscribe(tuple -> {
+                    List<InvestorDto.InvestorItem> investors = tuple.getT1().getItems();
+                    List<StockChartDto> charts = tuple.getT2();
                     
-                    for (com.stockPlus.domain.InvestorDto.InvestorItem item : dto.getItems()) {
-                        // 날짜 포맷 변환: "MM.DD" -> "YYYYMMDD"
-                        String rawDate = item.getDate().replace(".", ""); 
-                        String date = currentYear + rawDate; // "2026" + "0224" -> "20260224"
+                    if (investors == null || charts == null) return;
+
+                    // 차트 데이터를 날짜별 맵으로 변환 (YYYY-MM-DD -> Volume)
+                    Map<String, StockChartDto> chartMap = charts.stream()
+                            .collect(Collectors.toMap(StockChartDto::getDate, c -> c, (a, b) -> a));
+
+                    int count = 0;
+                    String currentYear = String.valueOf(LocalDate.now().getYear());
+
+                    for (InvestorDto.InvestorItem inv : investors) {
+                        // 수급 날짜: "MM.DD" -> "YYYY-MM-DD"
+                        String dateKey = currentYear + "-" + inv.getDate().replace(".", "-");
                         
-                        if (date.compareTo("20260109") >= 0) {
-                            saveDtoToDb(code, date, item);
+                        // 차트 데이터(거래량 포함)가 있는 경우에만 결합하여 저장
+                        if (chartMap.containsKey(dateKey)) {
+                            StockChartDto chart = chartMap.get(dateKey);
+                            saveMergedData(code, dateKey.replace("-", ""), inv, chart);
                             count++;
                         }
                     }
-                    log.info(">>> [Batch] FETCH SUCCESS for {}: {} records saved.", code, count);
-                }
-                Thread.sleep(200); // 스로틀링 방지
+                    if (count > 0) log.info(">>> [Batch] MERGE SUCCESS for {}: {} records.", code, count);
+                });
+                
+                Thread.sleep(300); // KIS API TPS 보호
             } catch (Exception e) {
-                log.error(">>> [Batch] Error processing stock {}: {}", code, e.getMessage());
+                log.error(">>> [Batch] Error merging stock {}: {}", code, e.getMessage());
             }
         }
-        log.error(">>> [Batch] Historical Data Collection FINISHED!");
+        log.error(">>> [Batch] High-Precision Collection Process Launched!");
     }
 
-    private void saveDtoToDb(String stockCode, String date, com.stockPlus.domain.InvestorDto.InvestorItem item) {
+    private void saveMergedData(String stockCode, String date, InvestorDto.InvestorItem inv, StockChartDto chart) {
         try {
-            Map<String, Object> dbParams = new HashMap<>();
-            dbParams.put("stockCode", stockCode);
-            dbParams.put("bsopDate", date);
+            Map<String, Object> p = new HashMap<>();
+            p.put("stockCode", stockCode);
+            p.put("bsopDate", date);
             
-            // 데이터 정제 (쉼표 제거 등)
-            String price = item.getPrice().replace(",", "");
-            String ind = item.getRetailNet().replace(",", "");
-            String frg = item.getForeignNet().replace(",", "");
-            String inst = item.getInstitutionNet().replace(",", "");
+            // 수급 데이터 (inv)
+            p.put("individualNetBuy", Long.parseLong(inv.getRetailNet().replace(",", "")));
+            p.put("foreignNetBuy", Long.parseLong(inv.getForeignNet().replace(",", "")));
+            p.put("institutionNetBuy", Long.parseLong(inv.getInstitutionNet().replace(",", "")));
             
-            dbParams.put("closePrice", Double.parseDouble(price));
-            dbParams.put("individualNetBuy", Long.parseLong(ind));
-            dbParams.put("foreignNetBuy", Long.parseLong(frg));
-            dbParams.put("institutionNetBuy", Long.parseLong(inst));
-            dbParams.put("volume", 0L); 
+            // 일봉 데이터 (chart) - 더 정확한 종가와 거래량 사용
+            p.put("closePrice", Double.parseDouble(chart.getClose().replace(",", "")));
+            p.put("volume", Long.parseLong(chart.getVolume().replace(",", "")));
 
-            dailyInvestorMapper.insertOrUpdateDailyInvestor(dbParams);
+            dailyInvestorMapper.insertOrUpdateDailyInvestor(p);
         } catch (Exception e) {
-            log.error(">>> [Batch] DB Save Error for {}: {}", stockCode, e.getMessage());
+            // 파싱 에러 등 무시
         }
     }
 }

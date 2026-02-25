@@ -16,10 +16,8 @@ DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
 
-# 내부 백엔드 주소 (host 모드이므로 localhost 사용)
 BACKEND_API_URL = "http://localhost:8080/api/dashboard"
 
-# --- 1. 메가 수집기 (업종/테마/지수) ---
 class MegaCollector:
     def __init__(self):
         self.tz = pytz.timezone('Asia/Seoul')
@@ -40,7 +38,6 @@ class MegaCollector:
         finally: conn.close()
 
     def update_stats(self, count):
-        # 0건이라도 사이클이 돌았음을 표시하기 위해 기록 (기존 return 제거)
         conn = self.get_db_connection()
         try:
             with conn.cursor() as cursor:
@@ -113,24 +110,26 @@ class MegaCollector:
         sects, themes, sc_cnt = [], [], 0
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
                 context = browser.new_context(user_agent=self.user_agent)
-                page = context.new_page()
-                if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
-                sects, themes = self.scrape_lists(page)
-                indices = self.fetch_market_indices()
-                sc_cnt = len(sects) + len(themes) + len(indices)
-                conn = self.get_db_connection()
                 try:
-                    with conn.cursor() as cursor:
-                        for idx in indices: cursor.execute("INSERT INTO market_index_history (index_name, index_value, change_val, change_rate, captured_at) VALUES (%s, %s, %s, %s, NOW())", (idx['name'], idx['val'], idx['change'], idx['rate']))
-                        for s in sects: cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, detail_url, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, detail_url=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['link'], s['rate'], s['amt'], s['link']))
-                        for t in themes: cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
-                        conn.commit()
-                        self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
-                finally: conn.close()
-                browser.close()
-        except: pass
+                    page = context.new_page()
+                    if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                    sects, themes = self.scrape_lists(page)
+                    indices = self.fetch_market_indices()
+                    sc_cnt = len(sects) + len(themes) + len(indices)
+                    conn = self.get_db_connection()
+                    try:
+                        with conn.cursor() as cursor:
+                            for idx in indices: cursor.execute("INSERT INTO market_index_history (index_name, index_value, change_val, change_rate, captured_at) VALUES (%s, %s, %s, %s, NOW())", (idx['name'], idx['val'], idx['change'], idx['rate']))
+                            for s in sects: cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, detail_url, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, detail_url=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['link'], s['rate'], s['amt'], s['link']))
+                            for t in themes: cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
+                            conn.commit()
+                            self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
+                    finally: conn.close()
+                finally:
+                    context.close(); browser.close()
+        except Exception as e: print(f">>> [Quick Sync Error] {e}")
         return sects, themes, sc_cnt
 
     def run_deep_analysis(self, sects, themes):
@@ -141,39 +140,41 @@ class MegaCollector:
                 chunk = sects[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
                         context = browser.new_context(user_agent=self.user_agent)
-                        page = context.new_page()
-                        if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
-                        conn = self.get_db_connection()
                         try:
-                            with conn.cursor() as cursor:
-                                for s in chunk:
-                                    if not s.get('link'): continue
-                                    try:
-                                        url = "https://finance.daum.net" + s['link'] if not s['link'].startswith('http') else s['link']
-                                        page.goto(url, timeout=15000, wait_until="commit")
-                                        time.sleep(1); rows = page.locator("tr").all()
-                                        stock_items = []
-                                        for row in rows:
-                                            try:
-                                                parts = [pt.strip() for pt in re.split(r'[\n\t]', row.inner_text()) if pt.strip()]
-                                                if len(parts) >= 3:
-                                                    name = parts[0]
-                                                    rate_str = next((p for p in parts if '%' in p), "")
-                                                    rate_m = re.search(r'([-+]?\d*\.?\d+)', rate_str)
-                                                    if name and rate_m and name != '종목명':
-                                                        raw_val = float(rate_m.group(1))
-                                                        sign = "+" if raw_val > 0 else ""
-                                                        stock_items.append(f"{name}({sign}{raw_val:.2f}%)")
-                                            except: continue
-                                            if len(stock_items) >= 5: break
-                                        if stock_items:
-                                            cursor.execute("UPDATE industry_quotes SET lead_stocks = %s WHERE industry_name = %s", (", ".join(stock_items), s['name']))
-                                            upd_cnt += 1
-                                    except: continue
-                                conn.commit()
-                        finally: conn.close(); browser.close()
+                            page = context.new_page()
+                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                            conn = self.get_db_connection()
+                            try:
+                                with conn.cursor() as cursor:
+                                    for s in chunk:
+                                        if not s.get('link'): continue
+                                        try:
+                                            url = "https://finance.daum.net" + s['link'] if not s['link'].startswith('http') else s['link']
+                                            page.goto(url, timeout=15000, wait_until="commit")
+                                            time.sleep(1); rows = page.locator("tr").all()
+                                            stock_items = []
+                                            for row in rows:
+                                                try:
+                                                    parts = [pt.strip() for pt in re.split(r'[\n\t]', row.inner_text()) if pt.strip()]
+                                                    if len(parts) >= 3:
+                                                        name = parts[0]
+                                                        rate_str = next((p for p in parts if '%' in p), "")
+                                                        rate_m = re.search(r'([-+]?\d*\.?\d+)', rate_str)
+                                                        if name and rate_m and name != '종목명':
+                                                            raw_val = float(rate_m.group(1))
+                                                            sign = "+" if raw_val > 0 else ""
+                                                            stock_items.append(f"{name}({sign}{raw_val:.2f}%)")
+                                                except: continue
+                                                if len(stock_items) >= 5: break
+                                            if stock_items:
+                                                cursor.execute("UPDATE industry_quotes SET lead_stocks = %s WHERE industry_name = %s", (", ".join(stock_items), s['name']))
+                                                upd_cnt += 1
+                                        except: continue
+                                    conn.commit()
+                            finally: conn.close()
+                        finally: context.close(); browser.close()
                 except: continue
 
         if themes:
@@ -183,26 +184,28 @@ class MegaCollector:
                 chunk = themes_sorted[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
                         context = browser.new_context(user_agent=self.user_agent)
-                        page = context.new_page()
-                        if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
-                        conn = self.get_db_connection()
                         try:
-                            with conn.cursor() as cursor:
-                                for t in chunk:
-                                    if not t.get('link'): continue
-                                    try:
-                                        page.goto("https://finance.naver.com" + t['link'], timeout=15000, wait_until="commit")
-                                        page.wait_for_selector("table.type_5", timeout=5000)
-                                        raw_stocks = page.locator("td.name a").all_inner_texts()
-                                        valid = ", ".join([s.strip() for s in raw_stocks if s and len(s.strip()) > 1][:3])
-                                        if valid:
-                                            cursor.execute("UPDATE market_themes SET lead_stocks = %s WHERE theme_name = %s", (valid, t['name']))
-                                            upd_cnt += 1
-                                    except: continue
-                                conn.commit()
-                        finally: conn.close(); browser.close()
+                            page = context.new_page()
+                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                            conn = self.get_db_connection()
+                            try:
+                                with conn.cursor() as cursor:
+                                    for t in chunk:
+                                        if not t.get('link'): continue
+                                        try:
+                                            page.goto("https://finance.naver.com" + t['link'], timeout=15000, wait_until="commit")
+                                            page.wait_for_selector("table.type_5", timeout=5000)
+                                            raw_stocks = page.locator("td.name a").all_inner_texts()
+                                            valid = ", ".join([s.strip() for s in raw_stocks if s and len(s.strip()) > 1][:3])
+                                            if valid:
+                                                cursor.execute("UPDATE market_themes SET lead_stocks = %s WHERE theme_name = %s", (valid, t['name']))
+                                                upd_cnt += 1
+                                        except: continue
+                                    conn.commit()
+                            finally: conn.close()
+                        finally: context.close(); browser.close()
                 except: continue
         self.log_to_db("INFO", f"[메가수집] (테마/업종)주도주 전수 갱신 완료")
         return upd_cnt
@@ -274,21 +277,22 @@ class DaumTraderScraper:
                 chunk = queue[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
                         context = browser.new_context(user_agent=self.user_agent)
-                        page = context.new_page()
-                        if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
-                        for item in chunk:
-                            try:
-                                if page.is_closed(): break 
-                                res = self.scrape_daum_trader(page, item['stock_code'])
-                                if res:
-                                    with conn.cursor() as cursor:
-                                        cursor.execute("INSERT INTO stock_supply_demand (stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers) VALUES (%s, %s, %s, %s, %s, %s)", (item['stock_code'], res['price'], res['volume'], res['f_net'], 0, res['brokers']))
-                                    conn.commit(); total_sc_cnt += 1
-                            except: continue
-                            time.sleep(random.uniform(0.3, 0.7))
-                        browser.close()
+                        try:
+                            page = context.new_page()
+                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                            for item in chunk:
+                                try:
+                                    if page.is_closed(): break 
+                                    res = self.scrape_daum_trader(page, item['stock_code'])
+                                    if res:
+                                        with conn.cursor() as cursor:
+                                            cursor.execute("INSERT INTO stock_supply_demand (stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers) VALUES (%s, %s, %s, %s, %s, %s)", (item['stock_code'], res['price'], res['volume'], res['f_net'], 0, res['brokers']))
+                                        conn.commit(); total_sc_cnt += 1
+                                except: continue
+                                time.sleep(random.uniform(0.3, 0.7))
+                        finally: context.close(); browser.close()
                 except: continue
             mega.log_to_db("INFO", f"[거래원수집] 실시간 종목수급 {total_sc_cnt}건 완료")
         finally: conn.close()
@@ -306,53 +310,47 @@ def main():
                     if res: interval = int(res['collect_interval'])
             finally: conn.close()
 
-            now_hour = datetime.now(mega.tz).hour
-            if 8 <= now_hour < 20: 
+            now = datetime.now(mega.tz)
+            now_hour = now.hour
+            now_weekday = now.weekday() # 0:월, 1:화, ..., 5:토, 6:일
+
+            # 월~금(0~4) & 08:00~16:00 에만 가동
+            if now_weekday < 5 and 8 <= now_hour < 16: 
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 total_collected = 0
                 
-                # 1. 메가 수집 (Quick) - 에러 격리
                 try:
                     sects, themes, q_cnt = mega.run_quick_sync()
                     total_collected += (q_cnt if q_cnt else 0)
                     print(f">>> [Step 1] Quick Sync: {q_cnt} items")
-                except Exception as e:
-                    print(f">>> [Quick Sync Error] {e}")
+                except Exception as e: print(f">>> [Quick Sync Error] {e}")
                 
-                # 2. 거래원 수집 - 에러 격리
                 try:
                     t_cnt = trader.run_relay_cycle(mega)
                     total_collected += (t_cnt if t_cnt else 0)
                     print(f">>> [Step 2] Trader Relay: {t_cnt} items")
-                except Exception as e:
-                    print(f">>> [Trader Relay Error] {e}")
+                except Exception as e: print(f">>> [Trader Relay Error] {e}")
                 
-                # 3. 메가 수집 (Deep) - 에러 격리
                 try:
                     if 'sects' not in locals(): sects = []
                     if 'themes' not in locals(): themes = []
                     d_cnt = mega.run_deep_analysis(sects, themes)
                     total_collected += (d_cnt if d_cnt else 0)
                     print(f">>> [Step 3] Deep Analysis: {d_cnt} items")
-                except Exception as e:
-                    print(f">>> [Deep Analysis Error] {e}")
+                except Exception as e: print(f">>> [Deep Analysis Error] {e}")
 
-                # 4. 통계 저장 및 완료 로그 (AI 분석 전 즉시 실행)
                 try:
                     duration = (datetime.now() - start_time).seconds
                     print(f">>> [Cycle Result] Total Collected: {total_collected}")
                     mega.update_stats(total_collected)
                     mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
-                    print(f">>> Cycle Count Updated: {total_collected} items recorded.")
                     
-                    # 5. AI 분석 (무거울 수 있으므로 마지막에 배치)
                     print(">>> Starting AI Engine Analysis...")
                     engine.analyze_market()
                     print(f">>> AI Engine Analysis Finished.")
                 except Exception as e:
                     print(f">>> [Post-Collection Error] {e}")
-                    # 에러가 나도 건수 누락을 막기 위해 한 번 더 시도
                     try: mega.update_stats(total_collected)
                     except: pass
             
