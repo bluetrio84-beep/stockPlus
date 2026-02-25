@@ -14,28 +14,29 @@ export const getAuthHeader = () => {
 
 // API 요청을 안전하게 수행하는 래퍼 함수 (공통 에러 처리 및 URL 보정)
 async function safeFetch(url, options = {}) {
+    const fullUrl = url.startsWith('/') ? url : `/stockPlus/${url}`;
+    const headers = { ...getAuthHeader(), ...options.headers };
+    
+    console.log(`>>> [API CALL] ${options.method || 'GET'} ${fullUrl}`);
+    // console.log(">>> [API HEADERS]", headers); // 보안상 필요 시에만 주석 해제
+
     try {
-        const fullUrl = url.startsWith('/') ? url : `/stockPlus/${url}`;
-        console.log(`[API Request] ${options.method || 'GET'} ${fullUrl}`, options.body ? JSON.parse(options.body) : '');
-        
-        const response = await fetch(fullUrl, {
-            ...options,
-            headers: { ...getAuthHeader(), ...options.headers } // 인증 헤더 자동 추가
-        });
+        const response = await fetch(fullUrl, { ...options, headers });
 
         if (!response.ok) {
-            console.error(`API Error (${response.status}): ${fullUrl}`);
+            console.error(`>>> [API ERROR] ${response.status} ${fullUrl}`);
             return null;
         }
 
-        // 응답 타입에 따라 JSON 또는 텍스트로 파싱
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
-            return await response.json();
+            const data = await response.json();
+            // console.log(`>>> [API SUCCESS] ${fullUrl}`, data);
+            return data;
         }
         return await response.text();
     } catch (error) {
-        console.error(`Fetch error: ${url}`, error);
+        console.error(`>>> [FETCH EXCEPTION] ${fullUrl}`, error);
         return null;
     }
 }

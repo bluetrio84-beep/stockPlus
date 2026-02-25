@@ -46,9 +46,7 @@ public class KisStockService {
                 .header("custtype", "P")
                 .retrieve()
                 .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class).flatMap(body -> {
-                    if (body.contains("EGW00201")) {
-                        return Mono.error(new RuntimeException("TPS_LIMIT"));
-                    }
+                    if (body.contains("EGW00201")) return Mono.error(new RuntimeException("TPS_LIMIT"));
                     return Mono.error(new RuntimeException("API_ERROR: " + body));
                 }))
                 .bodyToMono(String.class)
@@ -58,15 +56,11 @@ public class KisStockService {
                 .map(json -> {
                     try {
                         JsonNode out = objectMapper.readTree(json).path("output");
-                        // [v13.2] 시장 및 지수 구분 로직 최종 수정
                         String korName = getField(out, "rprs_mrkt_kor_name", "RPRS_MRKT_KOR_NAME", "");
-                        String marketName = "KOSPI"; // 기본값
-                        String indexName = null;
-
+                        String marketName = "KOSPI"; String indexName = null;
                         if (korName.contains("200")) { indexName = "KOSPI 200"; marketName = "KOSPI"; }
                         else if (korName.contains("150")) { indexName = "KOSDAQ 150"; marketName = "KOSDAQ"; }
                         else if (korName.contains("KOSDAQ") || korName.contains("코스닥")) { marketName = "KOSDAQ"; }
-
                         return StockPriceDto.builder().stockCode(stockCode).marketName(marketName)
                                 .currentPrice(getField(out, "stck_prpr", "STCK_PRPR", "0")).change(getField(out, "prdy_vrss", "PRDY_VRSS", "0"))
                                 .changeRate(getField(out, "prdy_ctrt", "PRDY_CTRT", "0.00")).priceSign(getField(out, "prdy_vrss_sign", "PRDY_VRSS_SIGN", "3"))
@@ -78,10 +72,7 @@ public class KisStockService {
                                 .exchangeCode(requestExchange).build();
                     } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
                 })
-                .onErrorResume(e -> {
-                    log.error(">>> [KIS API] Final Failure for {}: {}", stockCode, e.getMessage());
-                    return Mono.just(StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build());
-                });
+                .onErrorResume(e -> Mono.just(StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build()));
     }
 
     private Mono<StockPriceDto> fetchIndexCurrentPrice(String indexCode) {
@@ -98,12 +89,88 @@ public class KisStockService {
 
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
         if ("IDX".equals(exchangeCode)) return fetchIndexHistoryChart(stockCode, period);
+        
+        // [v1.13] 5분봉 개별 조회 후 병합 (zip 제거로 안정성 확보)
+        if ("5m".equals(period)) {
+            String marketDiv = "NX".equals(exchangeCode) ? "NX" : "J";
+            
+            return fetchHistory5MinChart(stockCode, marketDiv)
+                .flatMap(historyList -> {
+                    log.info(">>> [Step 1] History 5Min Loaded: {} items", historyList.size());
+                    return fetchToday5MinChart(stockCode, marketDiv)
+                        .map(todayList -> {
+                            log.info(">>> [Step 2] Today 5Min Loaded: {} items", todayList.size());
+                            
+                            // 병합 및 정렬
+                            Map<Long, StockChartDto> mergedMap = new TreeMap<>();
+                            for (StockChartDto h : historyList) mergedMap.put(h.getTime(), h);
+                            for (StockChartDto t : todayList) mergedMap.put(t.getTime(), t);
+                            
+                            List<StockChartDto> finalResult = new ArrayList<>(mergedMap.values());
+                            log.info(">>> [Step 3] Final Merged 5Min: {} items", finalResult.size());
+                            return finalResult;
+                        });
+                });
+        }
+
         if ("UN".equals(exchangeCode)) {
             return fetchHistoryChart(stockCode, "UN", period)
                     .flatMap(list -> list.isEmpty() ? fetchHistoryChart(stockCode, "J", period) : Mono.just(list));
         }
-        String targetMarket = "NX".equals(exchangeCode) ? "NX" : "J";
-        return fetchHistoryChart(stockCode, targetMarket, period);
+        return fetchHistoryChart(stockCode, "NX".equals(exchangeCode) ? "NX" : "J", period);
+    }
+
+    private Mono<List<StockChartDto>> fetchToday5MinChart(String stockCode, String marketDiv) {
+        log.info(">>> [KIS API] Fetching Today 5Min for {}", stockCode);
+        String token = kisAuthService.getAccessToken();
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-time-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_INPUT_HOUR_1=&FID_PW_DATA_INCU_YN=N&FID_ETC_CLS_CODE=";
+        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010200").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parse5MinResponse(res, "output2")).onErrorResume(e -> Mono.just(Collections.emptyList()));
+    }
+
+    private Mono<List<StockChartDto>> fetchHistory5MinChart(String stockCode, String marketDiv) {
+        log.info(">>> [KIS API] Fetching History 5Min for {}", stockCode);
+        String token = kisAuthService.getAccessToken();
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-time-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_INPUT_HOUR_1=153000&FID_INPUT_DATE_1=" + today + "&FID_PW_DATA_INCU_YN=Y&FID_FAKE_TICK_INCU_YN=N";
+        // [수정] 일별 분봉도 명세에 따라 output2 노드 사용
+        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010230").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parse5MinResponse(res, "output2")).onErrorResume(e -> Mono.just(Collections.emptyList()));
+    }
+
+    private List<StockChartDto> parse5MinResponse(String response, String outputKey) {
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            String msg = root.path("msg1").asText("");
+            log.info(">>> [KIS API] 5Min Response Msg: {}, Node: {}", msg, outputKey);
+            
+            if (!root.has(outputKey)) {
+                log.warn(">>> [KIS API] Missing node: {}. Available: {}", outputKey, root.fieldNames());
+                return Collections.emptyList();
+            }
+
+            List<StockChartDto> list = new ArrayList<>();
+            String commonDate = root.path("output1").path("stck_bsop_date").asText("");
+            if (commonDate.isEmpty()) commonDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            
+            JsonNode dataNode = root.path(outputKey);
+            ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+            DateTimeFormatter fullFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+            if (dataNode.isArray()) {
+                for (JsonNode n : dataNode) {
+                    try {
+                        String d = n.path("stck_bsop_date").asText("");
+                        if (d.isEmpty()) d = commonDate;
+                        String t = n.path("stck_cntg_hour").asText("");
+                        if (t.isEmpty()) continue;
+                        if (t.length() < 6) t = "0".repeat(6 - t.length()) + t;
+                        long ts = java.time.LocalDateTime.parse(d + t, fullFormatter).atZone(seoulZone).toInstant().getEpochSecond();
+                        list.add(StockChartDto.builder().time(ts).date(d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8)).open(n.path("stck_oprc").asText("0")).high(n.path("stck_hgpr").asText("0")).low(n.path("stck_lwpr").asText("0")).close(n.path("stck_prpr").asText("0")).volume(n.path("cntg_vol").asText("0")).build());
+                    } catch (Exception inner) {}
+                }
+            }
+            log.info(">>> [KIS API] Successfully parsed {} items from {}", list.size(), outputKey);
+            return list;
+        } catch (Exception e) { return Collections.emptyList(); }
     }
 
     private Mono<List<StockChartDto>> fetchHistoryChart(String stockCode, String marketDiv, String period) {
@@ -149,13 +216,9 @@ public class KisStockService {
         } catch (Exception e) { return Collections.emptyList(); }
     }
 
-    /**
-     * 투자자별 매매동향 조회 (단일 호출로 원복)
-     */
     public Mono<InvestorDto> fetchInvestors(String stockCode, String exchangeCode) {
         String marketDiv = "NX".equals(exchangeCode) ? "NX" : "J";
-        return fetchInvestorsInternal(stockCode, marketDiv)
-                .map(items -> InvestorDto.builder().stockCode(stockCode).items(items).build());
+        return fetchInvestorsInternal(stockCode, marketDiv).map(items -> InvestorDto.builder().stockCode(stockCode).items(items).build());
     }
 
     private Mono<List<InvestorDto.InvestorItem>> fetchInvestorsInternal(String stockCode, String marketDiv) {
@@ -168,11 +231,7 @@ public class KisStockService {
                 for (JsonNode n : outArr) {
                     String rawDate = n.path("stck_bsop_date").asText("");
                     if (rawDate.length() < 8) continue;
-                    String date = rawDate.substring(4, 6) + "." + rawDate.substring(6, 8);
-                    items.add(InvestorDto.InvestorItem.builder()
-                            .date(date).price(n.path("stck_clpr").asText("0")).change(n.path("prdy_vrss").asText("0"))
-                            .retailNet(n.path("prsn_ntby_qty").asText("0")).foreignNet(n.path("frgn_ntby_qty").asText("0")).institutionNet(n.path("orgn_ntby_qty").asText("0"))
-                            .build());
+                    items.add(InvestorDto.InvestorItem.builder().date(rawDate.substring(4, 6) + "." + rawDate.substring(6, 8)).price(n.path("stck_clpr").asText("0")).change(n.path("prdy_vrss").asText("0")).retailNet(n.path("prsn_ntby_qty").asText("0")).foreignNet(n.path("frgn_ntby_qty").asText("0")).institutionNet(n.path("orgn_ntby_qty").asText("0")).build());
                 }
             }
             return items;
@@ -183,10 +242,5 @@ public class KisStockService {
         if (node.has(lower)) return node.path(lower).asText(defaultVal);
         if (node.has(upper)) return node.path(upper).asText(defaultVal);
         return defaultVal;
-    }
-
-    private long parseLongSafe(String val) {
-        if (val == null || val.isEmpty() || "null".equals(val)) return 0L;
-        try { return (long) Double.parseDouble(val.replace(",", "")); } catch (Exception e) { return 0L; }
     }
 }

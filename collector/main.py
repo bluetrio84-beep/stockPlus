@@ -310,16 +310,43 @@ def main():
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 total_collected = 0
-                sects, themes, q_cnt = mega.run_quick_sync()
-                total_collected += q_cnt
-                t_cnt = trader.run_relay_cycle(mega)
-                total_collected += t_cnt
-                d_cnt = mega.run_deep_analysis(sects, themes)
-                total_collected += d_cnt
-                engine.analyze_market()
-                mega.update_stats(total_collected)
-                duration = (datetime.now() - start_time).seconds
-                mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
+                
+                # 1. 메가 수집 (Quick) - 에러 격리
+                try:
+                    sects, themes, q_cnt = mega.run_quick_sync()
+                    total_collected += q_cnt
+                except Exception as e:
+                    print(f">>> [Quick Sync Error] {e}")
+                
+                # 2. 거래원 수집 - 에러 격리
+                try:
+                    t_cnt = trader.run_relay_cycle(mega)
+                    total_collected += t_cnt
+                except Exception as e:
+                    print(f">>> [Trader Relay Error] {e}")
+                
+                # 3. 메가 수집 (Deep) - 에러 격리
+                try:
+                    # sects, themes가 이전 단계 실패로 없을 경우 대비
+                    if 'sects' not in locals(): sects = []
+                    if 'themes' not in locals(): themes = []
+                    d_cnt = mega.run_deep_analysis(sects, themes)
+                    total_collected += d_cnt
+                except Exception as e:
+                    print(f">>> [Deep Analysis Error] {e}")
+
+                # 4. 분석 및 통계 저장 (어떤 에러가 나도 실행 보장)
+                try:
+                    print(">>> Starting AI Engine Analysis...")
+                    engine.analyze_market()
+                    mega.update_stats(total_collected)
+                    
+                    duration = (datetime.now() - start_time).seconds
+                    mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
+                    print(f">>> Cycle Finished Successfully. Total: {total_collected}")
+                except Exception as e:
+                    print(f">>> [Stats/AI Error] {e}")
+            
             time.sleep(interval)
         except Exception as e:
             mega.log_to_db("ERROR", f"[치명적오류] {str(e)}")

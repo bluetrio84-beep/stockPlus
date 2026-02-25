@@ -199,6 +199,9 @@ public class StockDashboardController {
             @PathVariable String stockCode,
             @RequestParam(defaultValue = "J") String exchangeCode,
             @RequestParam(defaultValue = "1D") String period) {
+        // [강력 디버깅] 로그 라이브러리를 우회하여 표준 출력으로 직접 찍음
+        System.out.println(">>> [CRITICAL DEBUG] Chart Request Recieved !! Code: " + stockCode + ", Period: " + period);
+        log.info(">>> [Chart Request] Code: {}, Exchange: {}, Period: {}", stockCode, exchangeCode, period);
         return kisStockService.fetchUnifiedChart(stockCode, exchangeCode, period);
     }
 
