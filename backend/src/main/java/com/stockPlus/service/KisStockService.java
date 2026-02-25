@@ -282,6 +282,54 @@ public class KisStockService {
         }).onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
+    /**
+     * 시가총액 순위 조회 (FHPST01740000) - 정석 API
+     */
+    public Mono<List<Map<String, Object>>> fetchMarketCapRanking(String marketDiv, int startRank) {
+        String token = kisAuthService.getAccessToken();
+        // [수정] 사용자 제공 정석 API 경로 및 파라미터 적용
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/ranking/market-cap"
+                + "?fid_cond_mrkt_div_code=" + marketDiv
+                + "&fid_cond_scr_div_code=20174"
+                + "&fid_div_cls_code=0"
+                + "&fid_input_iscd=0000"
+                + "&fid_trgt_cls_code=0"
+                + "&fid_trgt_exls_cls_code=0"
+                + "&fid_input_price_1=0"
+                + "&fid_input_price_2=0"
+                + "&fid_vol_cnt=0";
+
+        return webClientBuilder.build().get().uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "FHPST01740000") // [수정] 정석 TR_ID
+                .header("content-type", "application/json")
+                .header("custtype", "P")
+                .retrieve().bodyToMono(String.class)
+                .map(res -> {
+                    try {
+                        log.info(">>> [KIS API] MarketCapRanking Raw: {}", res.length() > 500 ? res.substring(0, 500) + "..." : res);
+                        JsonNode root = objectMapper.readTree(res);
+                        List<Map<String, Object>> list = new ArrayList<>();
+                        JsonNode outArr = root.path("output");
+                        if (outArr.isArray()) {
+                            for (JsonNode n : outArr) {
+                                Map<String, Object> m = new HashMap<>();
+                                m.put("code", n.path("mksc_shrn_iscd").asText()); // 종목코드
+                                m.put("price", n.path("stck_prpr").asText());      // 현재가
+                                m.put("volume", n.path("acml_vol").asText());     // 누적거래량
+                                m.put("market_cap", n.path("hts_avls").asText()); // 시가총액
+                                list.add(m);
+                            }
+                        }
+                        return list;
+                    } catch (Exception e) {
+                        return Collections.<Map<String, Object>>emptyList();
+                    }
+                }).onErrorResume(e -> Mono.just(Collections.emptyList()));
+    }
+
     private String getField(JsonNode node, String lower, String upper, String defaultVal) {
         if (node.has(lower)) return node.path(lower).asText(defaultVal);
         if (node.has(upper)) return node.path(upper).asText(defaultVal);

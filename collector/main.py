@@ -49,6 +49,34 @@ class MegaCollector:
         except Exception as e: print(f">>> [Stats Update Error] {e}")
         finally: conn.close()
 
+    # [신규 추가] 매일 밤 전 종목 시가총액 갱신 메서드
+    def sync_market_cap(self):
+        self.log_to_db("INFO", "[마스터갱신] 전 종목 시가총액 업데이트 시작")
+        conn = self.get_db_connection()
+        try:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT stock_code FROM stock_master")
+                stocks = cursor.fetchall()
+            
+            total = len(stocks)
+            print(f">>> [Sync] Updating Market Cap for {total} stocks...")
+            
+            for i, s in enumerate(stocks):
+                code = s['stock_code']
+                try:
+                    res = requests.get(f"{BACKEND_API_URL}/stocks/{code}/price?exchangeCode=UN", timeout=5).json()
+                    m_cap = int(float(str(res.get('marketCap', '0')).replace(',', '')))
+                    if m_cap > 0:
+                        with conn.cursor() as cursor:
+                            cursor.execute("UPDATE stock_master SET market_cap = %s WHERE stock_code = %s", (m_cap, code))
+                        conn.commit()
+                except: continue
+                if (i+1) % 100 == 0: print(f">>> [Sync] Progress: {i+1}/{total}")
+                time.sleep(0.1)
+            
+            self.log_to_db("INFO", f"[마스터갱신] {total}개 종목 시가총액 업데이트 완료")
+        finally: conn.close()
+
     def fetch_market_indices(self):
         indices = []
         try:
@@ -89,7 +117,6 @@ class MegaCollector:
                                 all_sects.append({'name': name, 'rate': rate_val, 'amt': int(txt[6].replace(',','')), 'link': href})
                     except: continue
         except: pass
-
         try:
             for p_idx in range(1, 10):
                 page.goto(f"https://finance.naver.com/sise/theme.naver?&page={p_idx}", timeout=20000)
@@ -127,8 +154,7 @@ class MegaCollector:
                             conn.commit()
                             self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
                     finally: conn.close()
-                finally:
-                    context.close(); browser.close()
+                finally: context.close(); browser.close()
         except Exception as e: print(f">>> [Quick Sync Error] {e}")
         return sects, themes, sc_cnt
 
@@ -159,12 +185,10 @@ class MegaCollector:
                                                 try:
                                                     parts = [pt.strip() for pt in re.split(r'[\n\t]', row.inner_text()) if pt.strip()]
                                                     if len(parts) >= 3:
-                                                        name = parts[0]
-                                                        rate_str = next((p for p in parts if '%' in p), "")
+                                                        name = parts[0]; rate_str = next((p for p in parts if '%' in p), "")
                                                         rate_m = re.search(r'([-+]?\d*\.?\d+)', rate_str)
                                                         if name and rate_m and name != '종목명':
-                                                            raw_val = float(rate_m.group(1))
-                                                            sign = "+" if raw_val > 0 else ""
+                                                            raw_val = float(rate_m.group(1)); sign = "+" if raw_val > 0 else ""
                                                             stock_items.append(f"{name}({sign}{raw_val:.2f}%)")
                                                 except: continue
                                                 if len(stock_items) >= 5: break
@@ -176,7 +200,6 @@ class MegaCollector:
                             finally: conn.close()
                         finally: context.close(); browser.close()
                 except: continue
-
         if themes:
             themes_sorted = sorted(themes, key=lambda x: x['rate'], reverse=True)[:100]
             chunk_size = 25
@@ -300,22 +323,29 @@ class DaumTraderScraper:
 
 def main():
     mega = MegaCollector(); trader = DaumTraderScraper(); engine = AIEngine()
+    last_sync_date = ""
     while True:
         try:
-            conn = mega.get_db_connection(); interval = 300
-            try:
-                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute('SELECT collect_interval FROM collector_config WHERE id = 1')
-                    res = cursor.fetchone()
-                    if res: interval = int(res['collect_interval'])
-            finally: conn.close()
-
             now = datetime.now(mega.tz)
-            now_hour = now.hour
-            now_weekday = now.weekday() # 0:월, 1:화, ..., 5:토, 6:일
+            now_str = now.strftime('%Y-%m-%d')
+            now_hour, now_min, now_weekday = now.hour, now.minute, now.weekday()
 
-            # 월~금(0~4) & 08:00~16:00 에만 가동
-            if now_weekday < 5 and 8 <= now_hour < 16: 
+            # 1. 매일 밤 20:30 시총 갱신 (하루 1회)
+            if now_hour == 20 and now_min == 30 and last_sync_date != now_str:
+                mega.sync_market_cap()
+                last_sync_date = now_str
+
+            # 2. 실시간 수집 (평일 08~16시)
+            if now_weekday < 5 and 8 <= now_hour < 16:
+                # interval 조회 로직 보존
+                conn = mega.get_db_connection(); interval = 300
+                try:
+                    with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                        cursor.execute('SELECT collect_interval FROM collector_config WHERE id = 1')
+                        res = cursor.fetchone()
+                        if res: interval = int(res['collect_interval'])
+                finally: conn.close()
+
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 total_collected = 0
@@ -323,38 +353,31 @@ def main():
                 try:
                     sects, themes, q_cnt = mega.run_quick_sync()
                     total_collected += (q_cnt if q_cnt else 0)
-                    print(f">>> [Step 1] Quick Sync: {q_cnt} items")
-                except Exception as e: print(f">>> [Quick Sync Error] {e}")
+                except: pass
                 
                 try:
                     t_cnt = trader.run_relay_cycle(mega)
                     total_collected += (t_cnt if t_cnt else 0)
-                    print(f">>> [Step 2] Trader Relay: {t_cnt} items")
-                except Exception as e: print(f">>> [Trader Relay Error] {e}")
+                except: pass
                 
                 try:
                     if 'sects' not in locals(): sects = []
                     if 'themes' not in locals(): themes = []
                     d_cnt = mega.run_deep_analysis(sects, themes)
                     total_collected += (d_cnt if d_cnt else 0)
-                    print(f">>> [Step 3] Deep Analysis: {d_cnt} items")
-                except Exception as e: print(f">>> [Deep Analysis Error] {e}")
+                except: pass
 
                 try:
                     duration = (datetime.now() - start_time).seconds
-                    print(f">>> [Cycle Result] Total Collected: {total_collected}")
                     mega.update_stats(total_collected)
                     mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
-                    
                     print(">>> Starting AI Engine Analysis...")
                     engine.analyze_market()
-                    print(f">>> AI Engine Analysis Finished.")
-                except Exception as e:
-                    print(f">>> [Post-Collection Error] {e}")
-                    try: mega.update_stats(total_collected)
-                    except: pass
-            
-            time.sleep(interval)
+                except: pass
+                
+                time.sleep(interval)
+            else:
+                time.sleep(60) # 비가동 시간대 대기
         except Exception as e:
             mega.log_to_db("ERROR", f"[치명적오류] {str(e)}")
             time.sleep(60)
