@@ -35,36 +35,53 @@ public class KisStockService {
     private Mono<StockPriceDto> fetchCurrentPriceInternal(String stockCode, String marketDiv, String requestExchange) {
         String token = kisAuthService.getAccessToken();
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-price?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode;
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST01010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(json -> {
-            try {
-                JsonNode out = objectMapper.readTree(json).path("output");
-                // [v13.2] 시장 및 지수 구분 로직 최종 수정
-                String korName = getField(out, "rprs_mrkt_kor_name", "RPRS_MRKT_KOR_NAME", "");
-                String marketName = "KOSPI"; // 기본값
-                String indexName = null;
+        
+        return webClientBuilder.build().get()
+                .uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "FHKST01010100")
+                .header("content-type", "application/json")
+                .header("custtype", "P")
+                .retrieve()
+                .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class).flatMap(body -> {
+                    if (body.contains("EGW00201")) {
+                        return Mono.error(new RuntimeException("TPS_LIMIT"));
+                    }
+                    return Mono.error(new RuntimeException("API_ERROR: " + body));
+                }))
+                .bodyToMono(String.class)
+                .retryWhen(reactor.util.retry.Retry.fixedDelay(3, java.time.Duration.ofMillis(500))
+                        .filter(ex -> "TPS_LIMIT".equals(ex.getMessage()))
+                        .doBeforeRetry(retrySignal -> log.warn(">>> [KIS API] TPS Limit reached. Retrying... ({}/3)", retrySignal.totalRetries() + 1)))
+                .map(json -> {
+                    try {
+                        JsonNode out = objectMapper.readTree(json).path("output");
+                        // [v13.2] 시장 및 지수 구분 로직 최종 수정
+                        String korName = getField(out, "rprs_mrkt_kor_name", "RPRS_MRKT_KOR_NAME", "");
+                        String marketName = "KOSPI"; // 기본값
+                        String indexName = null;
 
-                // 지수 편입 여부 확인
-                if (korName.contains("200")) {
-                    indexName = "KOSPI 200";
-                    marketName = "KOSPI";
-                } else if (korName.contains("150")) {
-                    indexName = "KOSDAQ 150";
-                    marketName = "KOSDAQ";
-                } else if (korName.contains("KOSDAQ") || korName.contains("코스닥")) {
-                    marketName = "KOSDAQ";
-                }
+                        if (korName.contains("200")) { indexName = "KOSPI 200"; marketName = "KOSPI"; }
+                        else if (korName.contains("150")) { indexName = "KOSDAQ 150"; marketName = "KOSDAQ"; }
+                        else if (korName.contains("KOSDAQ") || korName.contains("코스닥")) { marketName = "KOSDAQ"; }
 
-                return StockPriceDto.builder().stockCode(stockCode).marketName(marketName)
-                        .currentPrice(getField(out, "stck_prpr", "STCK_PRPR", "0")).change(getField(out, "prdy_vrss", "PRDY_VRSS", "0"))
-                        .changeRate(getField(out, "prdy_ctrt", "PRDY_CTRT", "0.00")).priceSign(getField(out, "prdy_vrss_sign", "PRDY_VRSS_SIGN", "3"))
-                        .volume(getField(out, "acml_vol", "ACML_VOL", "0")).open(getField(out, "stck_oprc", "STCK_OPRC", "0"))
-                        .high(getField(out, "stck_hgpr", "STCK_HGPR", "0")).low(getField(out, "stck_lwpr", "STCK_LWPR", "0"))
-                        .prevClose(getField(out, "stck_sdpr", "STCK_SDPR", "0")).marketCap(getField(out, "hts_avls", "HTS_AVLS", "0"))
-                        .listedShares(getField(out, "lstn_stcn", "LSTN_STCN", "0")).high52w(getField(out, "w52_hgpr", "W52_HGPR", "0"))
-                        .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(indexName)
-                        .exchangeCode(requestExchange).build();
-            } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
-        });
+                        return StockPriceDto.builder().stockCode(stockCode).marketName(marketName)
+                                .currentPrice(getField(out, "stck_prpr", "STCK_PRPR", "0")).change(getField(out, "prdy_vrss", "PRDY_VRSS", "0"))
+                                .changeRate(getField(out, "prdy_ctrt", "PRDY_CTRT", "0.00")).priceSign(getField(out, "prdy_vrss_sign", "PRDY_VRSS_SIGN", "3"))
+                                .volume(getField(out, "acml_vol", "ACML_VOL", "0")).open(getField(out, "stck_oprc", "STCK_OPRC", "0"))
+                                .high(getField(out, "stck_hgpr", "STCK_HGPR", "0")).low(getField(out, "stck_lwpr", "STCK_LWPR", "0"))
+                                .prevClose(getField(out, "stck_sdpr", "STCK_SDPR", "0")).marketCap(getField(out, "hts_avls", "HTS_AVLS", "0"))
+                                .listedShares(getField(out, "lstn_stcn", "LSTN_STCN", "0")).high52w(getField(out, "w52_hgpr", "W52_HGPR", "0"))
+                                .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(indexName)
+                                .exchangeCode(requestExchange).build();
+                    } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
+                })
+                .onErrorResume(e -> {
+                    log.error(">>> [KIS API] Final Failure for {}: {}", stockCode, e.getMessage());
+                    return Mono.just(StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build());
+                });
     }
 
     private Mono<StockPriceDto> fetchIndexCurrentPrice(String indexCode) {
