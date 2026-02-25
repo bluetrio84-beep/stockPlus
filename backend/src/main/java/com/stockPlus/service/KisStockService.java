@@ -159,10 +159,9 @@ public class KisStockService {
                     String t = n.path("stck_cntg_hour").asText("");
                     if (t.isEmpty()) continue;
                     if (t.length() < 6) t = "0".repeat(6 - t.length()) + t;
-                    // [수정] 타임존 오차 해결을 위해 명시적으로 Asia/Seoul 적용
+                    // [수정] 브라우저 환경에 상관없이 한국 시간 숫자가 그대로 보이도록 UTC 오프셋으로 강제 생성
                     long ts = java.time.LocalDateTime.parse(d + t, fullFormatter)
-                            .atZone(ZoneId.of("Asia/Seoul"))
-                            .toEpochSecond();
+                            .toEpochSecond(java.time.ZoneOffset.UTC);
                     
                     oneMinList.add(StockChartDto.builder()
                             .time(ts)
