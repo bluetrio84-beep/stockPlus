@@ -165,7 +165,7 @@ const AdminDashboard = () => {
             {activeTab === 'data' && (
                 <div className="flex-1 flex flex-col gap-4 animate-in fade-in duration-300 overflow-hidden">
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        {[{ id: 'supply', name: '수급/거래원', icon: TrendingUp }, { id: 'rank', name: '랭킹', icon: Activity }, { id: 'theme', name: '테마', icon: Layers }, { id: 'industry', name: '업종', icon: Briefcase }].map(cat => (
+                        {[{ id: 'supply', name: '수급/거래원', icon: TrendingUp }, { id: 'theme', name: '테마', icon: Layers }, { id: 'industry', name: '업종', icon: Briefcase }].map(cat => (
                             <button key={cat.id} onClick={() => setDataCategory(cat.id)} className={classNames("px-3 py-2 rounded-xl text-[10px] font-black whitespace-nowrap transition-all border flex items-center gap-1.5", dataCategory === cat.id ? "bg-cyan-600 border-cyan-500 text-white" : "bg-slate-900 border-slate-800 text-slate-500")}><cat.icon size={12} /> {cat.name}</button>
                         ))}
                     </div>

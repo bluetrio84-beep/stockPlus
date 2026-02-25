@@ -133,6 +133,7 @@ const LayoutDesktop = ({ logic }) => {
                             ))}
                         </div>
 
+                        {/* [v13.5] Live Ranking 섹션 제거 (주석 처리)
                         {rankings && rankings.length > 0 && (
                             <div className="flex items-center gap-6 overflow-hidden border-l border-slate-800 pl-8 ml-2">
                                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter shrink-0 animate-pulse">Live Ranking</span>
@@ -152,6 +153,7 @@ const LayoutDesktop = ({ logic }) => {
                                 </div>
                             </div>
                         )}
+                        */}
                     </div>
                     <main className="flex-1 overflow-hidden relative"><Outlet /></main>
                 </div>

@@ -1,7 +1,7 @@
 import pymysql
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import re
 import torch
@@ -42,7 +42,7 @@ class AIEngine:
             self.scaler = joblib.load('stock_scaler.gz')
             print(">>> [AI Engine] LSTM Model & Scaler Loaded.")
         except:
-            print(">>> [AI Engine] Model not found. Running with Quant & Supply only.")
+            print(">>> [AI Engine] Model not found.")
 
     def connect(self):
         try: self.conn = pymysql.connect(**DB_CONFIG)
@@ -65,7 +65,6 @@ class AIEngine:
         if ma5.iloc[-1] > ma20.iloc[-1] > ma60.iloc[-1]: t_score += 10
         if macd.iloc[-1] > macd_signal.iloc[-1]: t_score += 10
         if rsi.iloc[-1] < 35: t_score += 15 
-        
         if last_price < ma20.iloc[-1]: t_score -= 15 
         if rsi.iloc[-1] > 70: t_score -= 20 
         return max(0, min(100, t_score))
@@ -88,6 +87,43 @@ class AIEngine:
                 return max(0, min(100, 50 + (diff * 500)))
         except: return 50
 
+    # [v1.11] 정밀 적중률 산출 로직 (최근 7일 사후 검증)
+    def calculate_ai_hit_rate(self):
+        try:
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 1. 최근 7일간 발생한 주요 매수 신호 가져오기
+                cursor.execute("""
+                    SELECT target_name, signal_type, created_at 
+                    FROM ai_prediction 
+                    WHERE signal_type IN ('MEGA_FOREIGN_BOMB', 'FOREIGN_POWER_BUY', 'FOREIGN_SMART_ENTRY', 'BULL_ENTRY')
+                    AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    ORDER BY created_at ASC
+                """)
+                signals = cursor.fetchall()
+                if not signals: return 0.0
+
+                success_count = 0
+                for sig in signals:
+                    code = sig['target_name'].replace("STOCK_", "")
+                    # 신호 발생 시점의 가격 조회 (가까운 시간대의 가격)
+                    cursor.execute("SELECT current_price FROM stock_supply_demand WHERE stock_code = %s AND captured_at <= %s ORDER BY captured_at DESC LIMIT 1", (code, sig['created_at']))
+                    start_res = cursor.fetchone()
+                    
+                    # 현재 최신 가격 조회
+                    cursor.execute("SELECT current_price FROM stock_supply_demand WHERE stock_code = %s ORDER BY captured_at DESC LIMIT 1", (code,))
+                    curr_res = cursor.fetchone()
+
+                    if start_res and curr_res:
+                        # 가격이 상승했으면 성공으로 간주
+                        if float(curr_res['current_price']) > float(start_res['current_price']):
+                            success_count += 1
+                
+                hit_rate = (success_count / len(signals)) * 100
+                return round(hit_rate, 1)
+        except Exception as e:
+            print(f">>> [HitRate Error] {e}")
+            return 0.0
+
     def analyze_market(self):
         if not self.conn: self.connect()
         try:
@@ -96,32 +132,24 @@ class AIEngine:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 predictions = []
                 
-                # --- 1. [복구] 업종 순환매 분석 & 마켓 게이지 ---
-                cursor.execute("SELECT industry_name, change_rate, trade_amount FROM industry_quotes ORDER BY updated_at DESC")
-                industries = cursor.fetchall()
-                market_scores = []
-                
+                # 1. 업종 분석 및 마켓 게이지
+                cursor.execute("SELECT industry_name, change_rate FROM industry_quotes")
+                industries = cursor.fetchall(); market_scores = []
                 if industries:
                     for ind in industries:
-                        name = ind['industry_name']
-                        change = float(ind['change_rate'] or 0)
-                        # 단순 등락률 기반 점수 산출 (바닥 탈출 감지 로직 강화 필요)
-                        ind_score = 50 + (change * 10) 
-                        ind_score = max(0, min(100, ind_score))
+                        name = ind['industry_name']; change = float(ind['change_rate'] or 0)
+                        ind_score = max(0, min(100, 50 + (change * 10)))
                         market_scores.append(ind_score)
-                        
-                        signal = 'WAIT'
-                        if ind_score >= 80: signal = 'BUY'
-                        elif ind_score <= 20: signal = 'SELL'
-                        
-                        predictions.append((name, ind_score, signal))
-                    
-                    # 마켓 게이지 산출 (업종 전체 평균)
-                    avg_market_score = sum(market_scores) / len(market_scores)
-                    predictions.append(('MARKET_GAUGE', avg_market_score, 'SYSTEM'))
+                        predictions.append((name, ind_score, 'BUY' if ind_score >= 80 else 'WAIT'))
+                    avg_gauge = sum(market_scores) / len(market_scores)
+                    predictions.append(('MARKET_GAUGE', avg_gauge, 'SYSTEM'))
 
-                # --- 2. 종목별 분석 (기존 유지) ---
-                cursor.execute("SELECT stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
+                # 2. [추가] AI 적중률 산출 및 저장
+                hit_rate = self.calculate_ai_hit_rate()
+                predictions.append(('AI_HIT_RATE', hit_rate, 'SYSTEM'))
+
+                # 3. 종목별 분석
+                cursor.execute("SELECT stock_code, current_price, volume, foreign_net_buy, top_brokers FROM stock_supply_demand WHERE captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) ORDER BY captured_at ASC")
                 supply_rows = cursor.fetchall()
                 if supply_rows:
                     sdf = pd.DataFrame(supply_rows)
@@ -151,7 +179,6 @@ class AIEngine:
                             elif val_f >= 300_000_000: signal = 'FOREIGN_WINDOW_PICK'; final_score = 85
                             elif val_f >= 100_000_000: signal = 'FOREIGN_BULL_RIDE'; final_score = max(final_score, 80)
                             elif final_score >= 80: signal = 'FOREIGN_BULL_RIDE'
-                        
                         predictions.append((f"STOCK_{code}", final_score, signal))
 
                 if predictions:

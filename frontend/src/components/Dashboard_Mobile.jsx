@@ -29,7 +29,7 @@ const Dashboard_Mobile = ({
                         </div>
                         {watchlistSubTab === 'list' ? (
                             <div className="h-full p-4 overflow-y-auto custom-scrollbar">
-                                {/* [v13.5] 실시간 시장 주도주 랭킹 칩 (Top 5 한정) */}
+                                {/* [v13.5] 실시간 시장 주도주 랭킹 칩 (주석 처리)
                                 {rankings && rankings.length > 0 && (
                                     <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
                                         {rankings.map((r, i) => (
@@ -42,6 +42,7 @@ const Dashboard_Mobile = ({
                                         ))}
                                     </div>
                                 )}
+                                */}
 
                                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6">
                                     <h3 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-2"><Sparkles size={14} className="text-yellow-500"/> AI Market Insight</h3>
