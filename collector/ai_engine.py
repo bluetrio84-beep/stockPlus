@@ -132,17 +132,41 @@ class AIEngine:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 predictions = []
                 
-                # 1. 업종 분석 및 마켓 게이지
-                cursor.execute("SELECT industry_name, change_rate FROM industry_quotes")
+                # 1. [고도화] 3일 누적 업종 순환매 분석 & 마켓 게이지
+                # 최근 3일간의 업종별 평균 등락률과 거래대금 합계를 가져옴
+                cursor.execute("""
+                    SELECT industry_name, 
+                           SUM(change_rate) as total_change, 
+                           AVG(trade_amount) as avg_amount,
+                           COUNT(*) as data_points
+                    FROM industry_quotes 
+                    WHERE updated_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+                    GROUP BY industry_name
+                """)
                 industries = cursor.fetchall(); market_scores = []
+                
                 if industries:
                     for ind in industries:
-                        name = ind['industry_name']; change = float(ind['change_rate'] or 0)
-                        ind_score = max(0, min(100, 50 + (change * 10)))
+                        name = ind['industry_name']
+                        # 3일간의 등락 합계 (추세 지속성)
+                        total_change = float(ind['total_change'] or 0)
+                        # 3일간의 평균 거래대금 (에너지 크기)
+                        avg_amt = float(ind['avg_amount'] or 0)
+                        
+                        # [3일 누적 산식] 기본 50 + (3일 등락합 * 4) + (평균 거래대금 보너스: 1000억당 1점, 최대 20점)
+                        # 단순히 하루 튀는 것보다 3일 연속 오르는 섹터에 더 높은 가중치
+                        vol_bonus = min(20, avg_amt / 100000)
+                        ind_score = 50 + (total_change * 4) + vol_bonus
+                        
+                        ind_score = max(0, min(100, ind_score))
                         market_scores.append(ind_score)
-                        predictions.append((name, ind_score, 'BUY' if ind_score >= 80 else 'WAIT'))
-                    avg_gauge = sum(market_scores) / len(market_scores)
-                    predictions.append(('MARKET_GAUGE', avg_gauge, 'SYSTEM'))
+                        
+                        # 업종별 최종 점수 및 시그널 저장
+                        predictions.append((name, ind_score, 'BUY' if ind_score >= 85 else 'WAIT'))
+                    
+                    if market_scores:
+                        avg_gauge = sum(market_scores) / len(market_scores)
+                        predictions.append(('MARKET_GAUGE', avg_gauge, 'SYSTEM'))
 
                 # 2. [추가] AI 적중률 산출 및 저장
                 hit_rate = self.calculate_ai_hit_rate()
