@@ -119,16 +119,18 @@ class MegaCollector:
         sects, themes, ranks = self.scrape_lists(page)
         indices = self.fetch_market_indices()
         conn = self.get_db_connection()
+        sc_cnt = len(sects) + len(themes) + len(indices) + len(ranks)
         try:
             with conn.cursor() as cursor:
                 for idx in indices: cursor.execute("INSERT INTO market_index_history (index_name, index_value, change_val, change_rate, captured_at) VALUES (%s, %s, %s, %s, NOW())", (idx['name'], idx['val'], idx['change'], idx['rate']))
                 for s in sects: cursor.execute("INSERT INTO industry_quotes (industry_name, change_rate, trade_amount, detail_url, updated_at) VALUES (%s, %s, %s, %s, NOW()) ON DUPLICATE KEY UPDATE change_rate=%s, trade_amount=%s, detail_url=%s, updated_at=NOW()", (s['name'], s['rate'], s['amt'], s['link'], s['rate'], s['amt'], s['link']))
                 for t in themes: cursor.execute("INSERT INTO market_themes (theme_name, avg_change_rate, updated_at) VALUES (%s, %s, NOW()) ON DUPLICATE KEY UPDATE avg_change_rate=%s, updated_at=NOW()", (t['name'], t['rate'], t['rate']))
-                for r in ranks: cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
+                for r in ranks:
+                    cursor.execute("INSERT INTO stock_rankings (ranking_type, rank_val, stock_code, stock_name, captured_at) VALUES (%s, %s, %s, %s, NOW())", (r['type'], r['rank'], r['code'], r['name']))
                 conn.commit()
                 self.log_to_db("INFO", f"[메가수집] WICS({len(sects)})/테마({len(themes)})/지수({len(indices)}) 반영 완료")
         finally: conn.close()
-        return sects, themes, (len(sects) + len(themes) + len(indices))
+        return sects, themes, sc_cnt
 
     def run_deep_analysis(self, page, sects, themes):
         if not sects: return 0
@@ -136,7 +138,7 @@ class MegaCollector:
         upd_cnt = 0
         try:
             with conn.cursor() as cursor:
-                for s in sects[:50]: # 주요 업종 우선 분석
+                for s in sects[:50]:
                     if not s.get('link'): continue
                     try:
                         url = "https://finance.daum.net" + s['link'] if not s['link'].startswith('http') else s['link']
@@ -219,23 +221,42 @@ class DaumTraderScraper:
             return {'f_net': f_buy - f_sell, 'brokers': brokers, 'price': pv['price'], 'volume': pv['volume']}
         except: return None
 
-    def run_cycle(self, page, mega):
+    # [v1.10] 30개 단위 릴레이 수집 및 건수 합산 로직
+    def run_relay_cycle(self, browser_context, mega):
         conn = self.get_db_connection()
-        sc_cnt = 0
+        total_sc_cnt = 0
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("SELECT DISTINCT stock_code FROM watchlist")
                 queue = cursor.fetchall()
-            for item in queue:
-                res = self.scrape_daum_trader(page, item['stock_code'])
-                if res:
-                    with conn.cursor() as cursor:
-                        cursor.execute("INSERT INTO stock_supply_demand (stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers) VALUES (%s, %s, %s, %s, %s, %s)", (item['stock_code'], res['price'], res['volume'], res['f_net'], 0, res['brokers']))
-                    conn.commit(); sc_cnt += 1
-                time.sleep(random.uniform(0.3, 0.7))
-            mega.log_to_db("INFO", f"[거래원수집] 실시간 종목수급 {sc_cnt}건 포착 완료")
+            
+            if not queue: return 0
+            
+            # 30개씩 묶어서 처리 (Chunking)
+            chunk_size = 30
+            for i in range(0, len(queue), chunk_size):
+                chunk = queue[i:i + chunk_size]
+                page = browser_context.new_page() # 30개마다 새 페이지 활성화
+                try:
+                    if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
+                    for item in chunk:
+                        code = item['stock_code']
+                        try:
+                            res = self.scrape_daum_trader(page, code)
+                            if res:
+                                with conn.cursor() as cursor:
+                                    sql = "INSERT INTO stock_supply_demand (stock_code, current_price, volume, foreign_net_buy, institution_net_buy, top_brokers) VALUES (%s, %s, %s, %s, %s, %s)"
+                                    cursor.execute(sql, (code, res['price'], res['volume'], res['f_net'], 0, res['brokers']))
+                                conn.commit(); total_sc_cnt += 1
+                        except Exception as e:
+                            print(f">>> [Relay Error] Stock {code}: {e}")
+                        time.sleep(random.uniform(0.3, 0.7))
+                finally:
+                    page.close() # 30개 수집 후 페이지 닫기 (메모리 확보)
+            
+            mega.log_to_db("INFO", f"[거래원수집] 실시간 종목수급 {total_sc_cnt}건 포착 완료")
         finally: conn.close()
-        return sc_cnt
+        return total_sc_cnt
 
 def main():
     mega = MegaCollector(); trader = DaumTraderScraper(); engine = AIEngine()
@@ -258,18 +279,27 @@ def main():
                 with sync_playwright() as p:
                     browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
                     context = browser.new_context(user_agent=mega.user_agent)
-                    page = context.new_page()
-                    try:
-                        if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
-                        elif hasattr(ps, 'stealth') and hasattr(ps.stealth, 'stealth'): ps.stealth.stealth.stealth(page)
-                    except: pass
-                    sects, themes, q_cnt = mega.run_quick_sync(page)
+                    
+                    # 1. 메가 수집 (Quick)
+                    q_page = context.new_page(); 
+                    if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(q_page)
+                    sects, themes, q_cnt = mega.run_quick_sync(q_page)
                     total_collected += q_cnt
-                    t_cnt = trader.run_cycle(page, mega)
+                    q_page.close()
+                    
+                    # 2. 거래원 수집 (30개 단위 릴레이)
+                    t_cnt = trader.run_relay_cycle(context, mega)
                     total_collected += t_cnt
-                    d_cnt = mega.run_deep_analysis(page, sects, themes)
+                    
+                    # 3. 메가 수집 (Deep)
+                    d_page = context.new_page(); 
+                    if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(d_page)
+                    d_cnt = mega.run_deep_analysis(d_page, sects, themes)
                     total_collected += d_cnt
+                    d_page.close()
+                    
                     browser.close()
+
                 engine.analyze_market()
                 mega.update_stats(total_collected)
                 duration = (datetime.now() - start_time).seconds
