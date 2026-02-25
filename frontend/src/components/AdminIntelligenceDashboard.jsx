@@ -69,24 +69,24 @@ const AdminIntelligenceDashboard = () => {
                 </div>
                 <div className="space-y-4">
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400">MEGA SURGE (초강력)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외인과 기관이 동시에 평소 3배 이상의 자금을 쏟아붓는 역대급 폭발 신호입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400">MEGA FOREIGN BOMB (압도적 폭격)</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인이 단독으로 20억 이상의 자금을 한꺼번에 쏟아붓는 주도주 확정 신호입니다.</p>
                     </div>
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400">SURGE (수급폭발)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외인이든 기관이든 한 주체가 압도적인 물량을 쓸어 담고 있는 '대세 상승' 신호입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400">FOREIGN POWER BUY (강력 매수)</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 순매수가 10억을 돌파하며 딥러닝 패턴상 강력한 상승 에너지가 분출된 상태입니다.</p>
                     </div>
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-yellow-500 text-slate-900 px-1.5 py-0.5 rounded">90%</span><span className="text-sm font-bold text-yellow-400">SMART MONEY (양매수)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외인/기관이 서로 눈치 보며 함께 담기 시작한 '상승 전조'의 핵심 타점입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-yellow-500 text-slate-900 px-1.5 py-0.5 rounded">90%</span><span className="text-sm font-bold text-yellow-400">FOREIGN SMART ENTRY (스마트 진입)</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국계 자금이 5억 이상 유입되며 고도의 퀀트 지표가 골든크로스를 완성한 시점입니다.</p>
                     </div>
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-fuchsia-500 text-white px-1.5 py-0.5 rounded">85%</span><span className="text-sm font-bold text-fuchsia-400">FOREIGN BITE (외인입질)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">JP모간 등 메이저 외국계 창구가 매수 상위에 포착되어 '낚시찌'가 흔들린 상태입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-fuchsia-500 text-white px-1.5 py-0.5 rounded">85%</span><span className="text-sm font-bold text-fuchsia-400">FOREIGN WINDOW PICK (창구 포착)</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">JP모간 등 메이저 외국계 창구에서 3억 이상의 입질이 실시간으로 감지된 상태입니다.</p>
                     </div>
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded">80%</span><span className="text-sm font-bold text-orange-400">BULL ENTRY (황소진입)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">하락을 멈추고 본격적인 상승 추세로 방향을 튼 황소의 뿔이 포착된 시점입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded">80%</span><span className="text-sm font-bold text-orange-400">FOREIGN BULL RIDE (상승 편입)</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 자금이 1억 이상 들어오며 하락을 멈추고 우상향 추세로의 전환이 확인되었습니다.</p>
                     </div>
                 </div>
             </div>
