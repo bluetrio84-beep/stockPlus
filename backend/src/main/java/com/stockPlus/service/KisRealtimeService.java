@@ -157,6 +157,9 @@ public class KisRealtimeService {
         
         // 코스피(J) 종목인 경우, 야간 시장(NX) 데이터도 함께 구독 시도
         if ("J".equals(item.getExchangeCode()) || item.getExchangeCode() == null) {
+            // [추가] 정규장 예상체결(H0STANC0) 구독 추가
+            subscriptionSink.tryEmitNext(Map.entry(item, "ANC"));
+
             Watchlist nxItem = new Watchlist();
             nxItem.setStockCode(item.getStockCode());
             nxItem.setExchangeCode("NX");
@@ -251,6 +254,7 @@ public class KisRealtimeService {
                     Watchlist nxItem = new Watchlist(); nxItem.setStockCode(item.getStockCode()); nxItem.setExchangeCode("NX");
                     return Flux.just(
                         Map.entry(krxItem, "CNT"), 
+                        Map.entry(krxItem, "ANC"), // [추가] 정규장 예상체결
                         Map.entry(unItem, "CNT"), 
                         Map.entry(unItem, "ANC"),
                         Map.entry(nxItem, "CNT"),
