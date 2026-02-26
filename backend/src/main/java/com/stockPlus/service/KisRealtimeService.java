@@ -1,67 +1,34 @@
 package com.stockPlus.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stockPlus.domain.StockPriceDto;
 import com.stockPlus.domain.Watchlist;
 import com.stockPlus.mapper.WatchlistMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
-import org.springframework.web.reactive.socket.client.WebSocketClient;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
-import jakarta.annotation.PostConstruct;
 import java.net.URI;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-/**
- * 한국투자증권(KIS) 웹소켓 API를 통해 실시간 주가 데이터를 수신하는 서비스입니다.
- * 웹소켓 연결 관리, 구독(Subscription) 처리, 수신 메시지 파싱 및 전파를 담당합니다.
- */
 @Service
 @Slf4j
 public class KisRealtimeService {
-
     private final KisAuthService kisAuthService;
-    private final Sinks.Many<StockPriceDto> stockPriceSink; // 전역 주가 데이터 브로드캐스팅 채널
-    private final WatchlistMapper watchlistMapper; // 초기 구독 목록 로딩용
+    private final Sinks.Many<StockPriceDto> stockPriceSink;
+    private final WatchlistMapper watchlistMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private Disposable webSocketSession; // 웹소켓 세션 구독 관리
-    private long lastConnectTime = 0; // [추가] 마지막 연결 시도 시간 체크용
-    
-    // 동적 구독 추가/삭제를 처리하는 Sink (멀티캐스트 지원, 자동 종료 방지 설정)
-    private final Sinks.Many<Map.Entry<Watchlist, String>> subscriptionSink = Sinks.many().multicast().onBackpressureBuffer(256, false);
-
-    /**
-     * 애플리케이션 종료 시 호출되어 KIS 웹소켓 연결을 안전하게 닫습니다.
-     * 유령 세션 방지를 위한 핵심 재발 방지 코드입니다.
-     */
-    @jakarta.annotation.PreDestroy
-    public void shutdown() {
-        log.info(">>> Graceful Shutdown: Closing KIS WebSocket session to prevent ghost sessions.");
-        disconnect();
-    }
-
-    /**
-     * 세션이 완전히 꼬였을 때 호출하여 토큰부터 새로 받고 다시 연결합니다.
-     */
-    public void fullResetAndReconnect() {
-        log.warn(">>> Full Reset Requested: Revoking current auth and reconnecting...");
-        disconnect();
-        kisAuthService.fullResetAuth().subscribe(newKey -> {
-            log.info(">>> Reset Complete. Reconnecting with fresh credentials.");
-            connect();
-        });
-    }
+    private final Set<String> subscribedCodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private reactor.core.Disposable connectionDisposable;
 
     public KisRealtimeService(KisAuthService kisAuthService, Sinks.Many<StockPriceDto> stockPriceSink, WatchlistMapper watchlistMapper) {
         this.kisAuthService = kisAuthService;
@@ -69,460 +36,150 @@ public class KisRealtimeService {
         this.watchlistMapper = watchlistMapper;
     }
 
-    /**
-     * 서비스 시작 시 초기화 및 웹소켓 연결 시도
-     */
     @PostConstruct
     public void init() {
-        log.error("Initializing KisRealtimeService... (Force Log)");
-        if (isMarketOpen()) {
-            connect();
-        } else {
-            log.info("Market is closed today. Skipping initial connection.");
-        }
+        if (isMarketOpen()) connect();
     }
 
-    /**
-     * 평일 오전 8시에 웹소켓 연결 (스케줄러)
-     */
     @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
     public void start() {
-        log.info("Scheduled start check of KisRealtimeService");
-        if (isMarketOpen()) {
-            connect();
-        } else {
-            log.info("Today is a holiday. Connection skipped.");
-        }
+        if (isMarketOpen()) connect();
     }
 
-    /**
-     * 휴장일 여부를 확인합니다. (주말 및 2026년 지정된 공휴일)
-     */
-    private boolean isMarketOpen() {
-        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
-        java.time.DayOfWeek dayOfWeek = today.getDayOfWeek();
-
-        // 1. 주말 체크
-        if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
-            log.info("Market Closed: Weekend ({})", dayOfWeek);
-            return false;
-        }
-
-        // 2. 2026년 지정된 휴장일 체크 (YYYY-MM-DD)
-        List<String> holidays = java.util.Arrays.asList(
-            "2026-02-16", "2026-02-17", "2026-02-18", // 설날 연휴
-            "2026-03-02", // 삼일절 대체공휴일
-            "2026-05-01", // 근로자의 날
-            "2026-05-05", // 어린이날
-            "2026-05-25", // 석가탄신일
-            "2026-06-03", // 지방선거
-            "2026-07-17", // 제헌절
-            "2026-08-17", // 광복절 대체공휴일
-            "2026-09-24", "2026-09-25", // 추석 연휴
-            "2026-10-05", // 개천절 대체공휴일
-            "2026-10-09", // 한글날
-            "2026-12-25", // 크리스마스
-            "2026-12-31"  // 연말 휴장일
-        );
-
-        String todayStr = today.toString();
-        for (String holiday : holidays) {
-            if (todayStr.equals(holiday)) {
-                log.info("Market Closed: Holiday ({})", holiday);
-                return false;
-            }
-        }
-
-        log.info("Market is OPEN today ({})", todayStr);
-        return true;
-    }
-
-    /**
-     * 평일 오후 8시에 웹소켓 연결 종료 (스케줄러)
-     */
     @Scheduled(cron = "0 0 20 * * MON-FRI", zone = "Asia/Seoul")
     public void stop() {
-        log.info("Scheduled stop of KisRealtimeService");
         disconnect();
     }
-    
-    /**
-     * 실시간으로 관심 종목 구독을 추가합니다.
-     * @param item 구독할 관심 종목 정보
-     */
+
+    public synchronized void connect() {
+        if (connectionDisposable != null && !connectionDisposable.isDisposed()) return;
+        
+        String approvalKey = kisAuthService.getApprovalKey();
+        if (approvalKey == null) return;
+
+        ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
+        connectionDisposable = client.execute(URI.create("ws://ops.koreainvestment.com:21000"), session -> {
+            List<String> subMsgs = watchlistMapper.findAllGlobal().stream()
+                .flatMap(item -> Arrays.asList(
+                    buildSubMsg(approvalKey, item.getStockCode(), "CNT"), // 실시간 체결
+                    buildSubMsg(approvalKey, item.getStockCode(), "ANC"), // 정규장 예상체결
+                    buildSubMsg(approvalKey, item.getStockCode(), "UN_ANC") // 통합 예상체결 (NXT 대응) [추가]
+                ).stream())
+                .collect(Collectors.toList());
+
+            return session.send(reactor.core.publisher.Flux.fromIterable(subMsgs).map(session::textMessage))
+                .thenMany(session.receive()
+                    .map(WebSocketMessage::getPayloadAsText)
+                    .doOnNext(this::handleMessage))
+                .then();
+        }).subscribeOn(Schedulers.boundedElastic()).subscribe();
+        
+        log.info(">>> KIS WebSocket Connected.");
+    }
+
+    public void disconnect() {
+        if (connectionDisposable != null) {
+            connectionDisposable.dispose();
+            log.info(">>> KIS WebSocket Disconnected.");
+        }
+    }
+
+    public void fullResetAndReconnect() {
+        disconnect();
+        kisAuthService.forceRefreshApprovalKey().subscribe(k -> connect());
+    }
+
     public void addSubscription(Watchlist item) {
-        log.info("Adding dynamic subscription for: {}", item.getStockCode());
-        // '1'은 구독 추가(Add)를 의미하는 내부 플래그
-        subscriptionSink.tryEmitNext(Map.entry(item, "1"));
-        
-        // 코스피(J) 종목인 경우, 야간 시장(NX) 데이터도 함께 구독 시도
-        if ("J".equals(item.getExchangeCode()) || item.getExchangeCode() == null) {
-            // [추가] 정규장 예상체결(H0STANC0) 구독 추가
-            subscriptionSink.tryEmitNext(Map.entry(item, "ANC"));
-
-            Watchlist nxItem = new Watchlist();
-            nxItem.setStockCode(item.getStockCode());
-            nxItem.setExchangeCode("NX");
-            subscriptionSink.tryEmitNext(Map.entry(nxItem, "1"));   // NX 체결
-            subscriptionSink.tryEmitNext(Map.entry(nxItem, "ANC")); // NX 호가/예상체결
-        }
+        // 기존 연결 유지하며 추가 (실제 구현은 세션 관리 필요하나 현재는 전체 재연결로 처리)
+        fullResetAndReconnect();
     }
-    
-    /**
-     * 실시간으로 관심 종목 구독을 해제합니다.
-     * @param item 구독 해제할 관심 종목 정보
-     */
+
     public void removeSubscription(Watchlist item) {
-        log.info("Removing subscription for: {}", item.getStockCode());
-        // '2'는 구독 삭제(Remove)를 의미하는 내부 플래그
-        subscriptionSink.tryEmitNext(Map.entry(item, "2"));
-        
-        if ("J".equals(item.getExchangeCode()) || item.getExchangeCode() == null) {
-            Watchlist nxItem = new Watchlist();
-            nxItem.setStockCode(item.getStockCode());
-            nxItem.setExchangeCode("NX");
-            subscriptionSink.tryEmitNext(Map.entry(nxItem, "2"));   // NX 체결 해제
-            
-            // ANC 해제는 tr_type=2로 직접 구성해야 함. resolveTrId와 buildSubscriptionMessageWithTrId 연동 고려
-            // 현재 buildSubscriptionMessageWithTrId는 entry.getValue()가 "2"면 tr_type=2로 설정함.
-            // "NXANC_DEL" 같은 임시 플래그를 사용하여 resolveTrId에서는 ANC를 반환하고, build...에서는 2를 반환하게 할 수 있음.
-            Watchlist nxAncDel = new Watchlist();
-            nxAncDel.setStockCode(item.getStockCode());
-            nxAncDel.setExchangeCode("NX");
-            subscriptionSink.tryEmitNext(Map.entry(nxAncDel, "NXANC_DEL"));
-        }
+        fullResetAndReconnect();
     }
 
-    /**
-     * KIS 웹소켓 서버에 연결합니다.
-     * 접속키(Approval Key)를 먼저 발급받은 후 연결을 진행합니다.
-     */
-    public void connect() {
-        // [보안] 연결 간격 최소 1초 보장 (한투 가이드 준수)
-        long now = System.currentTimeMillis();
-        if (now - lastConnectTime < 1000) {
-            long delay = 1000 - (now - lastConnectTime);
-            Mono.delay(Duration.ofMillis(delay)).subscribe(v -> connect());
+    private void handleMessage(String message) {
+        if (message.contains("PINGPONG")) return;
+        if (message.startsWith("{")) {
+            if (message.contains("invalid approval")) fullResetAndReconnect();
             return;
         }
-        lastConnectTime = now;
 
-        log.error("Attempting to connect to KIS WebSocket with FRESH Approval Key...");
-        
-        kisAuthService.forceRefreshApprovalKey()
-            .doOnNext(key -> log.info("Received FRESH Approval Key: {}", key != null ? "YES" : "NO"))
-            .retryWhen(reactor.util.retry.Retry.fixedDelay(3, java.time.Duration.ofSeconds(10))) // 최대 3회 재시도
-            .subscribe(
-                this::connectWebSocket,
-                error -> log.error("Fatal error fetching approval key: ", error)
-            );
+        try {
+            String[] segments = message.split("\\|");
+            if (segments.length < 4) return;
+            String trId = segments[1];
+            String combinedData = segments[3];
+            int recordCount = Math.max(1, Integer.parseInt(segments[2]));
+            String exchangeCode = trId.contains("H0NX") ? "NX" : (trId.contains("H0UN") ? "UN" : "J");
+
+            if (trId.contains("CNT0") || trId.contains("ANC0")) {
+                parseAndEmit(combinedData, recordCount, trId.contains("ANC0"), exchangeCode, trId);
+            }
+        } catch (Exception e) {}
     }
 
-    // 실제 웹소켓 클라이언트 생성 및 핸들러 등록
-    private void connectWebSocket(String approvalKey) {
-        if (webSocketSession != null && !webSocketSession.isDisposed()) {
-            log.warn("WebSocket session already exists. Disconnecting previous session.");
-            disconnect();
-        }
+    private void parseAndEmit(String combinedData, int recordCount, boolean isExpected, String exchangeCode, String trId) {
+        try {
+            String[] allParts = combinedData.split("\\^", -1);
+            int fieldsPerRecord = allParts.length / recordCount;
 
-        WebSocketClient client = new ReactorNettyWebSocketClient();
-        URI uri = URI.create("ws://ops.koreainvestment.com:21000"); 
+            for (int i = 0; i < recordCount; i++) {
+                int offset = i * fieldsPerRecord;
+                if (offset + 5 >= allParts.length) break;
 
-        log.info("Connecting to KIS WebSocket: {}", uri);
+                StockPriceDto dto;
+                if (isExpected) {
+                    if (allParts.length < offset + 48) continue;
+                    String rawPrice = allParts[offset + 47];
+                    if (rawPrice == null || rawPrice.isEmpty() || "0".equals(rawPrice)) continue;
 
-        webSocketSession = client.execute(uri, session -> {
-            log.info("WebSocket connected. Session id: {}", session.getId());
-
-            // 1. 구독 목록 구성 로직 (기존 동일)
-            List<Watchlist> allFavorites = watchlistMapper.findAllGlobal().stream()
-                    .filter(w -> Boolean.TRUE.equals(w.getIsFavorite()))
-                    .collect(java.util.stream.Collectors.toList());
-
-            Map<String, Watchlist> uniqueMap = new HashMap<>();
-            for (Watchlist w : allFavorites) uniqueMap.putIfAbsent(w.getStockCode(), w);
-            List<Watchlist> favoriteStocks = new ArrayList<>(uniqueMap.values());
-            
-            Watchlist kospi = new Watchlist(); kospi.setStockCode("0001"); kospi.setExchangeCode("IDX");
-            Watchlist kosdaq = new Watchlist(); kosdaq.setStockCode("1001"); kosdaq.setExchangeCode("IDX");
-            List<Watchlist> indices = java.util.Arrays.asList(kospi, kosdaq);
-            
-            Flux<Map.Entry<Watchlist, String>> initialSubs = Flux.concat(
-                Flux.fromIterable(indices).map(idx -> Map.entry(idx, "CNT")),
-                Flux.fromIterable(favoriteStocks).flatMap(item -> {
-                    Watchlist krxItem = new Watchlist(); krxItem.setStockCode(item.getStockCode()); krxItem.setExchangeCode("J");
-                    Watchlist unItem = new Watchlist(); unItem.setStockCode(item.getStockCode()); unItem.setExchangeCode("UN");
-                    Watchlist nxItem = new Watchlist(); nxItem.setStockCode(item.getStockCode()); nxItem.setExchangeCode("NX");
-                    return Flux.just(
-                        Map.entry(krxItem, "CNT"), 
-                        Map.entry(krxItem, "ANC"), // [추가] 정규장 예상체결
-                        Map.entry(unItem, "CNT"), 
-                        Map.entry(unItem, "ANC"),
-                        Map.entry(nxItem, "CNT"),
-                        Map.entry(nxItem, "ANC")
-                    );
-                })
-            );            
-
-            // 초기 구독 + 동적 구독 병합 (간격 100ms로 확대하여 안정성 확보)
-            Flux<Map.Entry<Watchlist, String>> allSubs = Flux.concat(initialSubs, subscriptionSink.asFlux())
-                    .delayElements(java.time.Duration.ofMillis(100));
-
-            // 2. 메시지 수신 처리
-            Mono<Void> receive = session.receive()
-                    .map(WebSocketMessage::getPayloadAsText)
-                    .doOnNext(this::handleMessage)
-                    .doOnError(e -> log.error("WebSocket Receive Error: ", e))
-                    .then();
-
-            // 3. 구독 요청 전송 및 세션 유지 (Keep-Alive)
-            // [중요] Flux.never()를 merge하여 세션이 스스로 종료되지 않도록 함
-            Mono<Void> send = session.send(
-                Flux.merge(
-                    allSubs.delaySubscription(java.time.Duration.ofSeconds(2)) // 접속 확인 후 2초 대기 (가이드 준수)
-                        .map(entry -> {
-                            String trId = resolveTrId(entry.getKey().getExchangeCode(), entry.getValue().equals("1") || entry.getValue().equals("2") ? "CNT" : entry.getValue());
-                            if (trId == null) return session.textMessage("");
-                            String msg = buildSubscriptionMessageWithTrId(approvalKey, entry.getKey(), entry.getValue(), trId);
-                            log.info("Subscription Request: {} ({})", entry.getKey().getStockCode(), trId);
-                            return session.textMessage(msg);
-                        })
-                        .filter(msg -> !msg.getPayloadAsText().isEmpty()),
-                    Flux.never() // 스트림이 완료되지 않도록 무한 대기
-                )
-            ).doOnError(e -> log.error("WebSocket Send Error: ", e));
-
-            return Mono.zip(receive, send).then();
-        }).subscribe(
-                null,
-                error -> {
-                    log.error("WebSocket runtime error: {}. Reconnecting in 60s...", error.getMessage());
-                    Mono.delay(java.time.Duration.ofSeconds(60)).subscribe(v -> connect());
-                },
-                () -> {
-                    log.info("WebSocket connection closed. Reconnecting in 30s...");
-                    Mono.delay(java.time.Duration.ofSeconds(30)).subscribe(v -> connect());
+                    dto = StockPriceDto.builder()
+                            .stockCode(allParts[offset])
+                            .currentPrice(rawPrice)
+                            .change(allParts.length > offset + 48 ? allParts[offset + 48] : "0")
+                            .changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00")
+                            .isExpected(true).exchangeCode(exchangeCode).build();
+                } else {
+                    dto = StockPriceDto.builder()
+                            .stockCode(allParts[offset])
+                            .currentPrice(allParts[offset + 2])
+                            .change(allParts[offset + 4])
+                            .changeRate(allParts[offset + 5])
+                            .volume(allParts[offset + 13])
+                            .isExpected(false).exchangeCode(exchangeCode).build();
                 }
-        );
-    }
-    
-    private void disconnect() {
-        if (webSocketSession != null && !webSocketSession.isDisposed()) {
-            webSocketSession.dispose();
-            log.info("WebSocket disconnected.");
-        }
+                stockPriceSink.tryEmitNext(dto);
+            }
+        } catch (Exception e) {}
     }
 
-    // 시장 구분과 데이터 타입에 따른 TR ID 결정
-    private String resolveTrId(String exchangeCode, String type) {
-        if ("UPANC".equals(type)) return "H0UPANC0"; // 업종 지수
-        if ("J".equals(exchangeCode) || exchangeCode == null) {
-            if ("CNT".equals(type)) return "H0STCNT0"; // 국내주식 체결
-            if ("ANC".equals(type)) return "H0STANC0"; // 국내주식 호가/예상체결
-        }
-        else if ("UN".equals(exchangeCode)) {
-            if ("CNT".equals(type)) return "H0UNCNT0"; // [수정] 국내주식 통합체결
-            if ("ANC".equals(type)) return "H0UNANC0"; // [수정] 국내주식 통합호가
-        }
-        else if ("NX".equals(exchangeCode)) {
-            if ("CNT".equals(type)) return "H0NXCNT0"; // 야간시장 체결
-            if ("ANC".equals(type) || "NXANC_DEL".equals(type)) return "H0NXANC0";
-        }
-        return "H0STCNT0";
-    }
-
-    // 구독 요청 JSON 메시지 생성
-    private String buildSubscriptionMessageWithTrId(String approvalKey, Watchlist item, String trType, String trId) {
+    private String buildSubMsg(String key, String code, String type) {
         try {
             Map<String, Object> header = new HashMap<>();
-            header.put("approval_key", approvalKey);
-            header.put("custtype", "P"); // 개인
-            
-            // trType이 직접 "1" 또는 "2"로 오지 않는 경우(예: ANC, NXANC_DEL) 처리
-            String finalTrType = trType;
-            if ("NXANC_DEL".equals(trType)) finalTrType = "2";
-            else if (!"1".equals(trType) && !"2".equals(trType)) finalTrType = "1";
-            
-            header.put("tr_type", finalTrType); // 1: 등록, 2: 해제
+            header.put("approval_key", key);
+            header.put("custtype", "P");
+            header.put("tr_type", "1");
             header.put("content-type", "utf-8");
 
             Map<String, Object> body = new HashMap<>();
             Map<String, Object> input = new HashMap<>();
+            String trId = "CNT".equals(type) ? "H0STCNT0" : 
+                         ("ANC".equals(type) ? "H0STANC0" : "H0UNANC0");
             input.put("tr_id", trId);
-            input.put("tr_key", item.getStockCode());
             body.put("input", input);
 
-            Map<String, Object> messageMap = new HashMap<>();
-            messageMap.put("header", header);
-            messageMap.put("body", body);
-
-            return objectMapper.writeValueAsString(messageMap);
-        } catch (Exception e) {
-            log.error("Error building subscription message", e);
-            return "";
-        }
+            Map<String, Object> msg = new HashMap<>();
+            msg.put("header", header);
+            msg.put("body", body);
+            return objectMapper.writeValueAsString(msg);
+        } catch (Exception e) { return ""; }
     }
 
-    // 수신 메시지 핸들러
-    private void handleMessage(String message) {
-        if (message.contains("PINGPONG")) {
-            log.debug("Received PINGPONG");
-            return;
-        }
-
-        // 구독 응답과 같은 JSON 제어 메시지 처리
-        if (message.startsWith("{") && message.contains("header")) {
-            log.info("WebSocket Control Message: {}", message);
-            
-            // 승인키 오류 감지 시 재발급 및 재연결 (2초 지연 추가로 무한 루프 방지)
-            if (message.contains("invalid approval") || message.contains("OPSP0011")) {
-                log.error("Invalid Approval Key detected! Forcing refresh and reconnecting in 2s...");
-                kisAuthService.forceRefreshApprovalKey()
-                    .delaySubscription(java.time.Duration.ofSeconds(2))
-                    .subscribe(newKey -> connect());
-            }
-            return;
-        }
-
-        // [중요] 실시간 데이터 수신 로그
-        log.debug(">>> KIS Realtime Data Received: {}", message);
-        
-        try {
-            // 실시간 데이터 포맷: 0(암호화여부)|TR_ID|데이터개수|데이터...
-            if (message.startsWith("0|") || message.startsWith("1|")) {
-                String[] segments = message.split("\\|");
-                if (segments.length < 4) return;
-                
-                String trId = segments[1];
-                String combinedData = segments[3];
-
-                // [수정] segments[2]는 연속구분값이며 실시간 데이터에서는 레코드 개수가 0으로 올 수 있음.
-                // CNT0(체결), ANC0(예상체결)의 경우 데이터가 있으면 최소 1개 레코드로 처리.
-                int recordCount = Integer.parseInt(segments[2]);
-                if (recordCount <= 0 && (trId.contains("CNT0") || trId.contains("ANC0"))) {
-                    recordCount = 1;
-                }
-                
-                if (recordCount <= 0) return;
-                
-                // 시장 구분 식별
-                String exchangeCode = "J";
-                if (trId.contains("H0NX")) exchangeCode = "NX";
-                else if (trId.contains("H0UN")) exchangeCode = "UN";
-
-                if (trId.contains("CNT0") || trId.contains("ANC0")) {
-                    parseAndEmitMultiRow(combinedData, recordCount, trId.contains("ANC0"), exchangeCode, trId);
-                }
-                else if (trId.contains("UPANC0")) {
-                    parseAndEmitIndex(message); // 지수 파싱
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error handling WebSocket message: {}", e.getMessage());
-        }
-    }
-
-    // 주식 데이터 파싱 및 Sink 방출
-    private void parseAndEmitMultiRow(String combinedData, int recordCount, boolean isExpected, String exchangeCode, String trId) {
-        try {
-            String[] allParts = combinedData.split("\\^", -1); // 빈 필드 유지
-            
-            // 데이터 필드 개수 계산 (레코드 수에 따른 분할)
-            // recordCount가 0이거나 데이터가 부족할 경우 1개로 간주하거나 안전 처리
-            int effectiveRecordCount = Math.max(1, recordCount);
-            int fieldsPerRecord = allParts.length / effectiveRecordCount;
-            
-            for (int i = 0; i < effectiveRecordCount; i++) {
-                int offset = i * fieldsPerRecord;
-                if (offset + 5 >= allParts.length) break;
-                
-                StockPriceDto dto;
-                if (trId.contains("ANC0")) {
-                    // 호가/예상체결 데이터 파싱 (Index 47~50)
-                    if (allParts.length < offset + 51) continue; 
-                    
-                    String rawPrice = allParts[offset + 47]; // 예상체결가
-                    
-                    // [방어] 야간장/통합 호가 비정상 가격 필터링 (삼성전자 8억 방지)
-                    try {
-                        long priceValue = Long.parseLong(rawPrice);
-                        if (priceValue > 100000000) { 
-                            log.error(">>> [Abnormal Expected Price Detected] Code: {}, Price: {}, TR: {}. Skipping.", allParts[offset], rawPrice, trId);
-                            continue;
-                        }
-                    } catch (Exception e) {}
-
-                    dto = StockPriceDto.builder()
-                            .stockCode(allParts[offset])
-                            .exchangeCode(exchangeCode)
-                            .time(allParts[offset + 1])
-                            .currentPrice(rawPrice)
-                            .change(allParts[offset + 48])
-                            .priceSign(allParts[offset + 49])
-                            .changeRate(allParts[offset + 50])
-                            .volume(allParts.length > offset + 51 ? allParts[offset + 51] : "0")
-                            .isExpected(true)
-                            .build();
-                } else {
-                    // 체결 데이터 파싱 (Index 2:현재가, 3:부호, 4:전일대비, 5:등락율, 13:누적거래량)
-                    String rawPrice = allParts[offset + 2];
-                    
-                    // [재발 방지] 가격 이상치 필터링 (삼성전자가 8억으로 나오는 현상 방어)
-                    // 현재가가 전일 종가 정보가 없어 비교가 어렵다면, 최소한 비현실적인 크기 체크
-                    try {
-                        long priceValue = Long.parseLong(rawPrice);
-                        if (priceValue > 100000000) { // 1억 이상이면 파싱 오류로 간주 (삼성전자 8억 방지)
-                            log.error(">>> [Abnormal Price Detected] Code: {}, Price: {}, TR: {}. Skipping update.", allParts[offset], rawPrice, trId);
-                            continue;
-                        }
-                    } catch (Exception e) {}
-
-                    dto = StockPriceDto.builder()
-                            .stockCode(allParts[offset]) 
-                            .exchangeCode(exchangeCode)
-                            .time(allParts[offset + 1])
-                            .currentPrice(rawPrice)
-                            .priceSign(allParts[offset + 3])
-                            .change(allParts[offset + 4])
-                            .changeRate(allParts[offset + 5])
-                            .volume(allParts.length > offset + 13 ? allParts[offset + 13] : "0")
-                            .isExpected(false)
-                            .build();
-                }
-                            
-                if (i == 0 && dto != null) {
-                    log.debug("[SSE Emit] Code: {}, Price: {}, TR: {}", dto.getStockCode(), dto.getCurrentPrice(), trId);
-                }
-                if (dto != null && !"0".equals(dto.getCurrentPrice()) && !dto.getCurrentPrice().isEmpty()) {
-                    stockPriceSink.tryEmitNext(dto);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error parsing multi-row stock data: {}", e.getMessage());
-        }
-    }
-
-    // 지수 데이터 파싱
-    private void parseAndEmitIndex(String data) {
-        try {
-             String content = data.substring(data.lastIndexOf('|') + 1);
-             String[] contentParts = content.split("\\^");
-             if (contentParts.length < 6) return;
-
-             StockPriceDto dto = StockPriceDto.builder()
-                     .stockCode(contentParts[0])
-                     .exchangeCode("IDX") // Index market code
-                     .time(contentParts[1])
-                     .currentPrice(contentParts[2])
-                     .priceSign(contentParts[3])
-                     .change(contentParts[4])
-                     .changeRate(contentParts[5])
-                     .volume(contentParts.length > 8 ? contentParts[8] : "0")
-                     .build();
-            
-             log.debug("Emitting index update: {}-{} -> {}", dto.getStockCode(), dto.getExchangeCode(), dto.getCurrentPrice());
-             stockPriceSink.tryEmitNext(dto);
-        } catch (Exception e) {
-             log.error("Error parsing index data", e);
-        }
+    private boolean isMarketOpen() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        if (today.getDayOfWeek().getValue() > 5) return false;
+        List<String> holidays = java.util.Arrays.asList("2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-01", "2026-05-05", "2026-05-25", "2026-06-03", "2026-07-17", "2026-08-17", "2026-09-24", "2026-09-25", "2026-10-05", "2026-10-09", "2026-12-25", "2026-12-31");
+        return !holidays.contains(today.toString());
     }
 }
