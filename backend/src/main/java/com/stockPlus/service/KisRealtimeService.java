@@ -42,6 +42,14 @@ public class KisRealtimeService {
         if (isMarketOpen()) connect();
     }
 
+    @Scheduled(cron = "0 39 15 * * MON-FRI", zone = "Asia/Seoul")
+    public void resetForNightMarket() {
+        if (isMarketOpen()) {
+            log.info(">>> [WebSocket] Refreshing for NXT Night Market...");
+            connect();
+        }
+    }
+
     @Scheduled(cron = "0 0 20 * * MON-FRI", zone = "Asia/Seoul")
     public void stop() {
         disconnect();
@@ -50,20 +58,23 @@ public class KisRealtimeService {
     public synchronized void connect() {
         disconnect();
         String approvalKey = kisAuthService.getApprovalKey();
-        if (approvalKey == null) return;
+        if (approvalKey == null) {
+            log.error(">>> [WebSocket] Failed to get Approval Key.");
+            return;
+        }
 
-        log.info(">>> [WebSocket] Connecting to KIS...");
+        log.info(">>> [WebSocket] Standard Connecting to KIS (UN Mode)...");
         ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
         connectionDisposable = client.execute(URI.create("ws://ops.koreainvestment.com:21000"), session -> {
             List<String> subMsgs = watchlistMapper.findAllGlobal().stream()
                 .filter(item -> Boolean.TRUE.equals(item.getIsFavorite()))
                 .flatMap(item -> Arrays.asList(
-                    buildMsg(approvalKey, item.getStockCode(), "H0STCNT0"),
-                    buildMsg(approvalKey, item.getStockCode(), "H0STANC0")
+                    buildMsg(approvalKey, item.getStockCode(), "H0UNCNT0"),
+                    buildMsg(approvalKey, item.getStockCode(), "H0UNANC0")
                 ).stream())
                 .collect(Collectors.toList());
 
-            log.info(">>> [WebSocket] Subscribing to {} favorite stocks.", subMsgs.size() / 2);
+            log.info(">>> [WebSocket] Sending {} UN subscription messages.", subMsgs.size());
 
             return session.send(reactor.core.publisher.Flux.fromIterable(subMsgs).map(session::textMessage))
                 .thenMany(session.receive()
@@ -92,7 +103,11 @@ public class KisRealtimeService {
 
     private void handleMessage(String message) {
         if (message.startsWith("{")) {
-            if (message.contains("invalid approval")) fullResetAndReconnect();
+            // [v14.6] 승인키 만료 시 자동 복구 로직
+            if (message.contains("invalid approval") || message.contains("OPSP0011")) {
+                log.error(">>> [WebSocket] Invalid Approval detected. Forcing Refresh...");
+                kisAuthService.forceRefreshApprovalKey().subscribe(newKey -> connect());
+            }
             return;
         }
         try {
@@ -101,43 +116,28 @@ public class KisRealtimeService {
             String trId = segments[1];
             String combinedData = segments[3];
             int recordCount = Math.max(1, Integer.parseInt(segments[2]));
-            String exchangeCode = trId.contains("H0NX") ? "NX" : (trId.contains("H0UN") ? "UN" : "J");
-            if (trId.contains("CNT0") || trId.contains("ANC0")) {
-                parseAndEmit(combinedData, recordCount, trId.contains("ANC0"), exchangeCode);
+            if (trId.endsWith("CNT0") || trId.endsWith("ANC0")) {
+                parseAndEmit(combinedData, recordCount, trId.endsWith("ANC0"));
             }
         } catch (Exception e) {}
     }
 
-    private void parseAndEmit(String combinedData, int recordCount, boolean isExpected, String exchangeCode) {
+    private void parseAndEmit(String combinedData, int recordCount, boolean isExpected) {
         try {
             String[] allParts = combinedData.split("\\^", -1);
             int fieldsPerRecord = allParts.length / recordCount;
             for (int i = 0; i < recordCount; i++) {
                 int offset = i * fieldsPerRecord;
                 if (offset + 5 >= allParts.length) break;
-                
                 StockPriceDto dto;
                 if (isExpected) {
                     if (allParts.length < offset + 48) continue;
                     String rawPrice = allParts[offset + 47];
                     if (rawPrice == null || rawPrice.isEmpty() || "0".equals(rawPrice)) continue;
-                    
-                    // 실시간 부호 계산 (1:상한, 2:상승, 3:보합, 4:하한, 5:하락)
                     String changeStr = allParts.length > offset + 48 ? allParts[offset + 48] : "0";
-                    String sign = calculateSign(changeStr);
-
-                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(rawPrice)
-                            .change(changeStr)
-                            .changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00")
-                            .priceSign(sign).isExpected(true).exchangeCode(exchangeCode).build();
+                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(rawPrice).change(changeStr).changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00").priceSign(calculateSign(changeStr)).isExpected(true).exchangeCode("UN").build();
                 } else {
-                    dto = StockPriceDto.builder().stockCode(allParts[offset])
-                            .currentPrice(allParts[offset + 2])
-                            .priceSign(allParts[offset + 3]) // 실시간 부호 반영
-                            .change(allParts[offset + 4])
-                            .changeRate(allParts[offset + 5])
-                            .volume(allParts[offset + 13])
-                            .isExpected(false).exchangeCode(exchangeCode).build();
+                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(allParts[offset + 2]).priceSign(allParts[offset + 3]).change(allParts[offset + 4]).changeRate(allParts[offset + 5]).volume(allParts[offset + 13]).isExpected(false).exchangeCode("UN").build();
                 }
                 stockPriceSink.tryEmitNext(dto);
             }
@@ -149,7 +149,7 @@ public class KisRealtimeService {
             double c = Double.parseDouble(change.replace(",", ""));
             if (c > 0) return "2";
             if (c < 0) return "5";
-            return "3"; // 보합
+            return "3";
         } catch (Exception e) { return "3"; }
     }
 
@@ -173,10 +173,8 @@ public class KisRealtimeService {
     }
 
     public void disconnect() {
-        if (connectionDisposable != null) {
-            connectionDisposable.dispose();
-            log.info(">>> [WebSocket] Disconnected.");
-        }
+        if (connectionDisposable != null) { connectionDisposable.dispose(); connectionDisposable = null; }
+        log.info(">>> [WebSocket] Disconnected.");
     }
 
     private boolean isMarketOpen() {
