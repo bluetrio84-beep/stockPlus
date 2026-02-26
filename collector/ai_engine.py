@@ -160,7 +160,13 @@ class AIEngine:
                         
                         ind_score = max(0, min(100, ind_score))
                         market_scores.append(ind_score)
-                        predictions.append((name, ind_score, 'BUY' if ind_score >= 80 else 'WAIT'))
+                        
+                        # [v14.1] BUY/SELL 신호 판정 기준 정밀화
+                        signal = 'WAIT'
+                        if ind_score >= 85: signal = 'BUY'
+                        elif ind_score <= 35: signal = 'SELL'
+                        
+                        predictions.append((name, ind_score, signal))
                     
                     if market_scores:
                         avg_gauge = sum(market_scores) / len(market_scores)

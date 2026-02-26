@@ -22,7 +22,8 @@ const AdminChartDashboard = () => {
                         x: parseFloat(item.change_rate || 0),
                         y: parseInt(item.ai_score || 50),
                         z: parseInt(item.trade_amount || 0) / 100, // 백만 -> 억 단위 변환
-                        raw_amount: parseInt(item.trade_amount || 0)
+                        raw_amount: parseInt(item.trade_amount || 0),
+                        signal: item.ai_signal || 'WAIT'
                     })).filter(d => d.z > 0);
                     setData(processed);
                     setLastUpdated(new Date());
@@ -50,6 +51,7 @@ const AdminChartDashboard = () => {
                     <div className="space-y-0.5 text-xs text-slate-300">
                         <p>등락률: <span className={d.x > 0 ? "text-rose-400 font-bold" : "text-blue-400 font-bold"}>{d.x}%</span></p>
                         <p>AI 점수: <span className="text-indigo-400 font-bold">{d.y}점</span></p>
+                        <p>AI 신호: <span className={classNames("font-black", d.signal === 'BUY' ? 'text-rose-400' : (d.signal === 'SELL' ? 'text-blue-400' : 'text-slate-500'))}>{d.signal}</span></p>
                         <p>거래대금: <span className="text-white font-mono">{Math.round(d.z).toLocaleString()}억</span></p>
                     </div>
                 </div>
@@ -109,9 +111,18 @@ const AdminChartDashboard = () => {
                                 <ReferenceLine x={0} stroke="#475569" strokeDasharray="3 3" />
                                 <ReferenceLine y={50} stroke="#475569" strokeDasharray="3 3" />
                                 <Scatter name="Sectors" data={data}>
-                                    {data.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.x > 0 ? '#f43f5e' : '#3b82f6'} fillOpacity={0.6} stroke={entry.x > 0 ? '#fb7185' : '#60a5fa'} strokeWidth={1} />
-                                    ))}
+                                    {data.map((entry, index) => {
+                                        const isSignal = entry.signal === 'BUY' || entry.signal === 'SELL';
+                                        return (
+                                            <Cell 
+                                                key={`cell-${index}`} 
+                                                fill={entry.x > 0 ? '#f43f5e' : '#3b82f6'} 
+                                                fillOpacity={isSignal ? 0.9 : 0.4} 
+                                                stroke={entry.x > 0 ? '#fb7185' : '#60a5fa'} 
+                                                strokeWidth={isSignal ? 3 : 1}
+                                            />
+                                        );
+                                    })}
                                 </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
