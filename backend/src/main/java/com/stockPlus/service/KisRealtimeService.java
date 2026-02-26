@@ -63,7 +63,7 @@ public class KisRealtimeService {
                 ).stream())
                 .collect(Collectors.toList());
 
-            log.info(">>> [WebSocket] Sending {} subscription messages.", subMsgs.size());
+            log.info(">>> [WebSocket] Subscribing to {} favorite stocks.", subMsgs.size() / 2);
 
             return session.send(reactor.core.publisher.Flux.fromIterable(subMsgs).map(session::textMessage))
                 .thenMany(session.receive()
@@ -115,17 +115,42 @@ public class KisRealtimeService {
             for (int i = 0; i < recordCount; i++) {
                 int offset = i * fieldsPerRecord;
                 if (offset + 5 >= allParts.length) break;
+                
                 StockPriceDto dto;
                 if (isExpected) {
+                    if (allParts.length < offset + 48) continue;
                     String rawPrice = allParts[offset + 47];
                     if (rawPrice == null || rawPrice.isEmpty() || "0".equals(rawPrice)) continue;
-                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(rawPrice).change(allParts.length > offset + 48 ? allParts[offset + 48] : "0").changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00").isExpected(true).exchangeCode(exchangeCode).build();
+                    
+                    // 실시간 부호 계산 (1:상한, 2:상승, 3:보합, 4:하한, 5:하락)
+                    String changeStr = allParts.length > offset + 48 ? allParts[offset + 48] : "0";
+                    String sign = calculateSign(changeStr);
+
+                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(rawPrice)
+                            .change(changeStr)
+                            .changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00")
+                            .priceSign(sign).isExpected(true).exchangeCode(exchangeCode).build();
                 } else {
-                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(allParts[offset + 2]).change(allParts[offset + 4]).changeRate(allParts[offset + 5]).volume(allParts[offset + 13]).isExpected(false).exchangeCode(exchangeCode).build();
+                    dto = StockPriceDto.builder().stockCode(allParts[offset])
+                            .currentPrice(allParts[offset + 2])
+                            .priceSign(allParts[offset + 3]) // 실시간 부호 반영
+                            .change(allParts[offset + 4])
+                            .changeRate(allParts[offset + 5])
+                            .volume(allParts[offset + 13])
+                            .isExpected(false).exchangeCode(exchangeCode).build();
                 }
                 stockPriceSink.tryEmitNext(dto);
             }
         } catch (Exception e) {}
+    }
+
+    private String calculateSign(String change) {
+        try {
+            double c = Double.parseDouble(change.replace(",", ""));
+            if (c > 0) return "2";
+            if (c < 0) return "5";
+            return "3"; // 보합
+        } catch (Exception e) { return "3"; }
     }
 
     private String buildMsg(String key, String code, String trId) {

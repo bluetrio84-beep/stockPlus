@@ -41,11 +41,11 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-0.5">
-                <div className={classNames("text-xl font-bold tracking-tight", getColorClass(sign))}>
+                <div className={classNames("text-xl font-bold tracking-tight", getColorClass(sign, stock.change))}>
                     {stock.isExpected ? '*' : ''}{stock.price ? stock.price.toLocaleString() : '-'}
                 </div>
-                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5", getColorClass(sign))}>
-                     {getSignSymbol(sign)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
+                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5", getColorClass(sign, stock.change))}>
+                     {getSignSymbol(sign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
                 </div>
             </div>
         </div>

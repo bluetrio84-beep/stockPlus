@@ -137,9 +137,9 @@ const ChartWidgetDesktop = (props) => {
                         )}
                     </span>
                 </h2>
-                <div className={classNames("text-2xl font-bold mt-1", getColorClass(stock.priceSign))}>
+                <div className={classNames("text-2xl font-bold mt-1", getColorClass(stock.priceSign, stock.change))}>
                     {stock.price ? stock.price.toLocaleString() : '-'}
-                    <span className="text-sm ml-2 font-medium">{getSignSymbol(stock.priceSign)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
+                    <span className="text-sm ml-2 font-medium">{getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-2 text-[11px]">

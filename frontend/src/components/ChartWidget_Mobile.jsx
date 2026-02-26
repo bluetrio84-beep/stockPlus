@@ -114,9 +114,9 @@ const ChartWidgetMobile = (props) => {
                         )}
                     </span>
                 </h2>
-                <div className={classNames("text-xl font-bold mt-0.5", getColorClass(stock.priceSign))}>
+                <div className={classNames("text-xl font-bold mt-0.5", getColorClass(stock.priceSign, stock.change))}>
                     {stock.price ? stock.price.toLocaleString() : '-'}
-                    <span className="text-xs ml-2 font-medium">{getSignSymbol(stock.priceSign)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
+                    <span className="text-xs ml-2 font-medium">{getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
                 </div>
             </div>
       </div>

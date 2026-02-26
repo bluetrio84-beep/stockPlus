@@ -62,7 +62,14 @@ const Dashboard_Mobile = ({
                                                     </div>
                                                     <div className="text-[10px] text-slate-500">{stock.code} | {stock.exchangeName}</div>
                                                 </div>
-                                                <div className="flex flex-col items-end"><div className={classNames("text-xl font-bold", getColorClass(stock.priceSign))}>{stock.price.toLocaleString()}</div><div className={classNames("text-xs font-medium", getColorClass(stock.priceSign))}>{getSignSymbol(stock.priceSign)} {Math.abs(stock.changeRate).toFixed(2)}%</div></div>
+                                                <div className="flex flex-col items-end">
+                                                    <div className={classNames("text-xl font-bold", getColorClass(stock.priceSign, stock.change))}>
+                                                        {stock.price.toLocaleString()}
+                                                    </div>
+                                                    <div className={classNames("text-xs font-medium", getColorClass(stock.priceSign, stock.change))}>
+                                                        {getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.changeRate).toFixed(2)}%
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     }) : <div className="flex flex-col items-center justify-center py-10 text-slate-600 bg-slate-900/50 rounded-xl border border-dashed border-slate-800"><Star size={32} className="mb-2 opacity-10" /><p className="text-xs">즐겨찾기한 종목이 없습니다.</p></div>}

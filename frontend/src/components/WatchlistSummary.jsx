@@ -246,9 +246,9 @@ const WatchlistSummary = () => {
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
                     <div className="p-5 text-center bg-gradient-to-b from-slate-800/20 to-transparent border-b border-slate-800/30">
-                        <div className={classNames("text-3xl font-black tracking-tight mb-0.5", getColorClass(selectedStock.priceSign))}>{selectedStock.price?.toLocaleString()}</div>
-                        <div className={classNames("text-xs font-bold flex justify-center gap-1 items-center", getColorClass(selectedStock.priceSign))}>
-                            <span>{getSignSymbol(selectedStock.priceSign)}</span>
+                        <div className={classNames("text-3xl font-black tracking-tight mb-0.5", getColorClass(selectedStock.priceSign, selectedStock.change))}>{selectedStock.price?.toLocaleString()}</div>
+                        <div className={classNames("text-xs font-bold flex justify-center gap-1 items-center", getColorClass(selectedStock.priceSign, selectedStock.change))}>
+                            <span>{getSignSymbol(selectedStock.priceSign, selectedStock.change)}</span>
                             <span>{Math.abs(selectedStock.change).toLocaleString()}</span>
                             <span>({selectedStock.changeRate?.toFixed(2)}%)</span>
                         </div>
@@ -375,9 +375,9 @@ const WatchlistSummary = () => {
                                                         )}
                                                     </div>
                                                     <div className="text-right shrink-0">
-                                                        <div className={classNames("text-lg font-black tabular-nums tracking-tight", getColorClass(stock.priceSign))}>{stock.price ? stock.price.toLocaleString() : '-'}</div>
-                                                        <div className={classNames("text-xs font-bold mt-0.5 inline-flex items-center gap-1", getColorClass(stock.priceSign))}>
-                                                            {getSignSymbol(stock.priceSign)} {Math.abs(stock.change || 0).toLocaleString()} ({stock.changeRate?.toFixed(2) || '0.00'}%)
+                                                        <div className={classNames("text-lg font-black tabular-nums tracking-tight", getColorClass(stock.priceSign, stock.change))}>{stock.price ? stock.price.toLocaleString() : '-'}</div>
+                                                        <div className={classNames("text-xs font-bold mt-0.5 inline-flex items-center gap-1", getColorClass(stock.priceSign, stock.change))}>
+                                                            {getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({stock.changeRate?.toFixed(2) || '0.00'}%)
                                                         </div>
                                                     </div>
                                                 </div>
