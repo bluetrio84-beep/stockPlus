@@ -156,6 +156,21 @@ public class StockDashboardService {
     @Transactional
     public void toggleFavorite(String stockCode, int groupId, boolean isFavorite) {
         watchlistMapper.updateFavorite(getCurrentUsrId(), stockCode, groupId, isFavorite);
+        
+        // [수정] 전체 재연결 대신 개별 종목만 구독/해제 트리거
+        try {
+            Watchlist item = new Watchlist();
+            item.setStockCode(stockCode);
+            item.setIsFavorite(isFavorite);
+            
+            if (isFavorite) {
+                kisRealtimeService.addSubscription(item);
+            } else {
+                kisRealtimeService.removeSubscription(item);
+            }
+        } catch (Exception e) {
+            log.error("Failed to update incremental subscription", e);
+        }
     }
 
     // --- User Notes (사용자 메모 관리) ---
