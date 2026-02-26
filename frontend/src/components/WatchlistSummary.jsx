@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom'; // [v13.9] URL 파라미터 확인용 추가
 import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory } from '../api/stockApi';
 import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import classNames from 'classnames';
 import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
 const WatchlistSummary = () => {
+    const location = useLocation(); // [v13.9] 추가
     const [displayStocks, setDisplayStocks] = useState([]); 
     const [holdings, setHoldings] = useState([]); 
     const [aiReport, setAiReport] = useState(''); 
@@ -12,6 +14,14 @@ const WatchlistSummary = () => {
     const [globalMarketMode, setGlobalMarketMode] = useState('UN'); 
     const [activeSubTab, setActiveSubTab] = useState('list'); 
     
+    // [v13.9] URL 파라미터 기반 탭 설정 로직 추가
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        if (queryParams.get('tab') === 'ai') {
+            setActiveSubTab('ai');
+        }
+    }, [location]);
+
     const [selectedStock, setSelectedStock] = useState(null); 
     const [tradeHistory, setTradeHistory] = useState([]); 
     const [isTradeFormOpen, setIsTradeFormOpen] = useState(false); 

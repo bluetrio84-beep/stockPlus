@@ -126,7 +126,31 @@ const AdminDashboard = () => {
                         <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...stats].reverse()}><CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} /><XAxis dataKey="hour" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.split(' ')[1] + '시'} /><YAxis stroke="#64748b" fontSize={10} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }} /><Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
                     </div>
                     <div className="col-span-12 lg:col-span-4 space-y-6">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl"><h3 className="text-white font-bold mb-4 flex items-center gap-2"><Clock className="text-indigo-400" size={18}/> 주기: {config.collect_interval}s</h3><div className="grid grid-cols-2 gap-2">{[180, 300, 420, 600].map(v => (<button key={v} onClick={() => handleIntervalChange(v)} className={classNames( "py-3 rounded-xl text-[10px] font-black border transition-all", config.collect_interval === v ? "bg-indigo-600/20 border-indigo-500 text-indigo-400" : "bg-slate-800/50 border-slate-700 text-slate-500")}>{v / 60}분</button>))}</div></div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                <Clock className="text-indigo-400" size={18}/> 주기: {config.collect_interval}s
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    {v: 30, l: '30초'}, {v: 60, l: '1분'}, 
+                                    {v: 180, l: '3분'}, {v: 300, l: '5분'}, 
+                                    {v: 420, l: '7분'}, {v: 600, l: '10분'}
+                                ].map(item => (
+                                    <button 
+                                        key={item.v} 
+                                        onClick={() => handleIntervalChange(item.v)} 
+                                        className={classNames(
+                                            "py-3 rounded-xl text-[10px] font-black border transition-all",
+                                            config.collect_interval === item.v 
+                                                ? "bg-indigo-600/20 border-indigo-500 text-indigo-400" 
+                                                : "bg-slate-800/50 border-slate-700 text-slate-500"
+                                        )}
+                                    >
+                                        {item.l}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center"><RefreshCw className="text-indigo-400 animate-spin-slow mb-3" size={32} /><p className="text-indigo-400 font-mono text-xl font-black">{new Date().toLocaleTimeString()}</p></div>
                     </div>
                 </div>

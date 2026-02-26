@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, fetchSpecialReport, toggleFavorite, fetchTopRankings } from '../api/stockApi';
 import classNames from 'classnames';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
 import Dashboard_Desktop from './Dashboard_Desktop';
@@ -9,6 +9,7 @@ import Dashboard_Mobile from './Dashboard_Mobile';
 
 function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation(); // [v13.9] URL 파라미터 확인용 추가
   const { stockCode: stockCodeFromUrl } = useParams();
 
   const [displayStocks, setDisplayStocks] = useState([]);
@@ -18,6 +19,18 @@ function Dashboard() {
   const [rankings, setRankings] = useState([]); // [v13.5] 랭킹 상태 추가
   const [selectedStock, setSelectedStock] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); 
+  
+  // [v13.9] URL 파라미터 기반 탭 설정 로직
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const tab = queryParams.get('tab');
+    if (tab === 'ai') {
+      setActiveTab('ai');
+    } else if (tab === 'watchlist') {
+      setActiveTab('watchlist');
+    }
+  }, [location]);
+
   const [watchlistSubTab, setWatchlistSubTab] = useState('list');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);

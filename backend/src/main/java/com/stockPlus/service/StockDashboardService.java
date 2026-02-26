@@ -221,9 +221,9 @@ public class StockDashboardService {
         return report != null ? report : "전담 AI 분석 리포트가 준비 중입니다. (08:55 / 15:55)";
     }
 
-    // [1] 종합 시장 분석 스케줄러 (하루 4회 실행: 08:05, 12:05, 16:05, 20:05)
+    // [1] 종합 시장 분석 스케줄러 (하루 6회 실행: 08:05, 10:05, 12:05, 14:05, 16:05, 20:05)
     // 공통된 주요 키워드 또는 사용자 맞춤 키워드로 뉴스를 검색하여 시장 전체 분위기를 요약합니다.
-    @Scheduled(cron = "0 5 8,12,16,20 * * *")
+    @Scheduled(cron = "0 5 8,10,12,14,16,20 * * *")
     @Transactional
     public void updateGeneralInsightScheduled() {
         log.info("[Scheduler] General Market Insight Start...");

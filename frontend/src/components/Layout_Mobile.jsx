@@ -24,6 +24,18 @@ const LayoutMobile = ({ logic }) => {
         navItems.push({ name: 'ADMIN CHART', path: '/admin/chart', icon: BarChart2 });
     }
 
+    const handleNotificationClick = (notif) => {
+        const msg = notif.message || "";
+        if (msg.includes("시장 요약")) {
+            navigate('/');
+        } else if (msg.includes("전담 AI 분석가")) {
+            navigate('/summary?tab=ai');
+        } else if (msg.includes("외인 집중 수급")) {
+            navigate('/admin/intel');
+        }
+        logic.setIsNotificationOpen(false);
+    };
+
     return (
         <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-200 font-sans overflow-hidden select-none">
             <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-40 relative shadow-lg">
@@ -31,7 +43,7 @@ const LayoutMobile = ({ logic }) => {
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 active:bg-slate-800 rounded-full transition-colors">
                         <Menu size={24} />
                     </button>
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
                         <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-600/30">
                             <BarChart2 size={20} className="text-white" />
                         </div>
@@ -58,7 +70,7 @@ const LayoutMobile = ({ logic }) => {
                                         const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
                                         const timeStr = date && !isNaN(date) ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}` : '';
                                         return (
-                                            <div key={idx} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors">
+                                            <div key={idx} onClick={() => handleNotificationClick(notif)} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors cursor-pointer hover:bg-slate-800/50">
                                                 <div className="flex gap-3 items-start text-white">
                                                     <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-700")}></div>
                                                     <div className="flex-1">
