@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.preprocessing import MinMaxScaler
 import joblib
-from ai_engine import StockLSTM 
+import xgboost as xgb
+from ai_engine import StockLSTM, StockTCN 
 
 # DB 설정
 DB_CONFIG = {
@@ -61,29 +62,60 @@ def train():
     y_tensor = torch.FloatTensor(y).view(-1, 1)
 
     input_size = 5
-    model = StockLSTM(input_size=input_size, hidden_size=64, num_layers=2, output_size=1)
-    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
     X_tensor, y_tensor = X_tensor.to(device), y_tensor.to(device)
 
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    print(f">>> [Train] Starting HIGH-QUALITY Training with {len(X)} samples...")
+    print(f">>> [Train] Starting 3-Model Ensemble Training with {len(X)} samples...")
     epochs = 100
+    criterion = nn.MSELoss()
+
+    # --- 1. LSTM Training ---
+    print("--- [1/3] Training LSTM ---")
+    lstm_model = StockLSTM(input_size=input_size, hidden_size=64, num_layers=2, output_size=1).to(device)
+    optimizer_lstm = optim.Adam(lstm_model.parameters(), lr=0.001)
+
     for epoch in range(epochs):
-        model.train()
-        optimizer.zero_grad()
-        outputs = model(X_tensor)
+        lstm_model.train()
+        optimizer_lstm.zero_grad()
+        outputs = lstm_model(X_tensor)
         loss = criterion(outputs, y_tensor)
         loss.backward()
-        optimizer.step()
-        if (epoch + 1) % 20 == 0:
-            print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.6f}")
+        optimizer_lstm.step()
+        if (epoch + 1) % 50 == 0:
+            print(f"LSTM Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.6f}")
 
-    torch.save(model.state_dict(), "stock_lstm_v1.pth")
-    print(">>> [Success] Smart Model saved as 'stock_lstm_v1.pth'")
+    torch.save(lstm_model.state_dict(), "stock_lstm_v1.pth")
+    print(">>> [Success] LSTM saved as 'stock_lstm_v1.pth'")
+
+    # --- 2. TCN Training ---
+    print("\n--- [2/3] Training TCN ---")
+    tcn_model = StockTCN(input_size=input_size).to(device)
+    optimizer_tcn = optim.Adam(tcn_model.parameters(), lr=0.001)
+
+    for epoch in range(epochs):
+        tcn_model.train()
+        optimizer_tcn.zero_grad()
+        outputs = tcn_model(X_tensor)
+        loss = criterion(outputs, y_tensor)
+        loss.backward()
+        optimizer_tcn.step()
+        if (epoch + 1) % 50 == 0:
+            print(f"TCN Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.6f}")
+
+    torch.save(tcn_model.state_dict(), "stock_tcn_v1.pth")
+    print(">>> [Success] TCN saved as 'stock_tcn_v1.pth'")
+
+    # --- 3. XGBoost Training ---
+    print("\n--- [3/3] Training XGBoost ---")
+    # XGBoost는 2D 입력이 필요하므로 (샘플수, 시퀀스길이 * 피처수)로 변환
+    X_xgb = X.reshape(X.shape[0], -1)
+    xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=4, learning_rate=0.05, objective='reg:squarederror')
+    xgb_model.fit(X_xgb, y)
+    
+    xgb_model.save_model("stock_xgb_v1.json")
+    print(">>> [Success] XGBoost saved as 'stock_xgb_v1.json'")
+
+    print("\n>>> [Success] All Ensemble Models Trained Successfully!")
 
 if __name__ == "__main__":
     train()

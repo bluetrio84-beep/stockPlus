@@ -37,6 +37,7 @@ RUN pip install --no-cache-dir \
     pandas \
     numpy \
     scikit-learn \
+    xgboost \
     torch --extra-index-url https://download.pytorch.org/whl/cpu
 
 # 5. 브라우저 엔진 설치

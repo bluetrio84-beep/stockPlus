@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import joblib
 
+import xgboost as xgb
+
 # DB 설정
 DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
@@ -29,20 +31,63 @@ class StockLSTM(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
+# [v15.0] TCN (Temporal Convolutional Network) 모델 정의
+class StockTCN(nn.Module):
+    def __init__(self, input_size=5, num_channels=[32, 64], kernel_size=2, dropout=0.2):
+        super(StockTCN, self).__init__()
+        layers = []
+        in_channels = input_size
+        for out_channels in num_channels:
+            layers.append(nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size-1))
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(dropout))
+            in_channels = out_channels
+        self.network = nn.Sequential(*layers)
+        self.fc = nn.Linear(num_channels[-1], 1)
+
+    def forward(self, x):
+        # x shape: (batch, seq_len, input_size) -> conv1d needs (batch, input_size, seq_len)
+        x = x.transpose(1, 2)
+        out = self.network(x)
+        out = out[:, :, -1] # 마지막 타임스텝의 출력 사용
+        return self.fc(out)
+
 class AIEngine:
     def __init__(self):
         self.conn = None
         self.tz = pytz.timezone('Asia/Seoul')
-        self.model = None
+        
+        # 3대 앙상블 모델
+        self.lstm_model = None
+        self.tcn_model = None
+        self.xgb_model = None
         self.scaler = None
+        
         try:
-            self.model = StockLSTM(input_size=5)
-            self.model.load_state_dict(torch.load("stock_lstm_v1.pth", map_location=torch.device('cpu')))
-            self.model.eval()
+            # 1. Scaler 로드
             self.scaler = joblib.load('stock_scaler.gz')
-            print(">>> [AI Engine] LSTM Model & Scaler Loaded.")
+            
+            # 2. LSTM 로드
+            self.lstm_model = StockLSTM(input_size=5)
+            self.lstm_model.load_state_dict(torch.load("stock_lstm_v1.pth", map_location=torch.device('cpu')))
+            self.lstm_model.eval()
+            
+            # 3. TCN 로드 (없으면 패스)
+            try:
+                self.tcn_model = StockTCN(input_size=5)
+                self.tcn_model.load_state_dict(torch.load("stock_tcn_v1.pth", map_location=torch.device('cpu')))
+                self.tcn_model.eval()
+            except: pass
+            
+            # 4. XGBoost 로드 (없으면 패스)
+            try:
+                self.xgb_model = xgb.XGBRegressor()
+                self.xgb_model.load_model("stock_xgb_v1.json")
+            except: pass
+            
+            print(f">>> [AI Engine] Ensemble Ready (LSTM:{self.lstm_model is not None}, TCN:{self.tcn_model is not None}, XGB:{self.xgb_model is not None})")
         except:
-            print(">>> [AI Engine] Model not found.")
+            print(">>> [AI Engine] Scaler or LSTM not found. Ensemble disabled.")
 
     def connect(self):
         try: self.conn = pymysql.connect(**DB_CONFIG)
@@ -69,8 +114,9 @@ class AIEngine:
         if rsi.iloc[-1] > 70: t_score -= 20 
         return max(0, min(100, t_score))
 
-    def get_lstm_score(self, stock_code, curr_price, curr_f, curr_vol):
-        if self.model is None or self.scaler is None: return 50
+    # [v15.0] 3대 모델 하이브리드 앙상블 스코어 산출
+    def get_ensemble_score(self, stock_code, curr_price, curr_f, curr_vol):
+        if self.lstm_model is None or self.scaler is None: return 50
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("SELECT close_price, individual_net_buy, foreign_net_buy, institution_net_buy, volume FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 4", (stock_code,))
@@ -80,10 +126,33 @@ class AIEngine:
                 today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
                 scaled_data = self.scaler.transform(df.values)
+                
                 input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
+                
+                predictions = []
+                
+                # 1. LSTM Prediction
                 with torch.no_grad():
-                    prediction = self.model(input_tensor).item()
-                diff = prediction - scaled_data[-1, 0]
+                    lstm_pred = self.lstm_model(input_tensor).item()
+                    predictions.append(lstm_pred)
+                
+                # 2. TCN Prediction
+                if self.tcn_model is not None:
+                    with torch.no_grad():
+                        tcn_pred = self.tcn_model(input_tensor).item()
+                        predictions.append(tcn_pred)
+                
+                # 3. XGBoost Prediction
+                if self.xgb_model is not None:
+                    # XGBoost는 2D 데이터 (1, seq_len * features) 형태로 변환하여 입력 (시퀀스를 평탄화)
+                    xgb_input = scaled_data.flatten().reshape(1, -1)
+                    xgb_pred = self.xgb_model.predict(xgb_input)[0]
+                    predictions.append(float(xgb_pred))
+                
+                # 앙상블 결합 (단순 평균)
+                final_pred = sum(predictions) / len(predictions) if predictions else scaled_data[-1, 0]
+                
+                diff = final_pred - scaled_data[-1, 0]
                 return max(0, min(100, 50 + (diff * 500)))
         except: return 50
 
@@ -201,7 +270,7 @@ class AIEngine:
                         elif val_f >= 100_000_000: s_score += 10
                         
                         q_score = self.calculate_technical_indicators(stock_df)
-                        l_score = self.get_lstm_score(code, price, f_net, vol)
+                        l_score = self.get_ensemble_score(code, price, f_net, vol)
                         
                         final_score = (s_score * 0.5) + (q_score * 0.2) + (l_score * 0.3)
                         if q_score >= 85 or l_score >= 85: final_score = max(final_score, q_score, l_score)
