@@ -104,12 +104,13 @@ public class KisStockService {
     }
 
     private Mono<List<StockChartDto>> fetchHistory5MinChart(String stockCode, String marketDiv) {
-        log.info(">>> [KIS API] Fetching Weekly 5-Day 5Min Chart for {}", stockCode);
+        log.info(">>> [KIS API] Fetching Extended 10-Day 5Min Chart for {}", stockCode);
         String finalMarketDiv = "UN".equals(marketDiv) ? "J" : marketDiv;
         
+        // [v16.0] 5분봉 데이터 범위 2배 확장 (5일 -> 10일)
         List<String> targetDates = new ArrayList<>();
         LocalDate d = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        while (targetDates.size() < 5) {
+        while (targetDates.size() < 10) {
             if (d.getDayOfWeek().getValue() <= 5) {
                 targetDates.add(d.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
             }
