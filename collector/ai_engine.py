@@ -159,15 +159,15 @@ class AIEngine:
                 except: tcn_pred = lstm_pred
                 
                 # 3-3. XGBoost Stacking (최종 심판관)
-                # [LSTM결과, TCN결과, 오늘의 실시간 5개 지표]를 보고 최종 강도 결정
+                final_pred = (lstm_pred + tcn_pred) / 2 # 기본값 설정
                 if self.xgb_model is not None:
                     try:
-                        meta_input = np.array([[lstm_pred, tcn_pred] + list(scaled_data[-1, :])], dtype=np.float32)
-                        final_pred = float(self.xgb_model.predict(meta_input)[0])
-                    except:
-                        final_pred = (lstm_pred + tcn_pred) / 2
-                else:
-                    final_pred = (lstm_pred + tcn_pred) / 2
+                        # [v16.3] Meta-Learner 입력 안전성 강화 (정확히 7개 피처: LSTM, TCN, 가격, 개인, 외인, 기관, 거래량)
+                        meta_features = [lstm_pred, tcn_pred] + list(scaled_data[-1, :])
+                        if len(meta_features) == 7:
+                            meta_input = np.array([meta_features], dtype=np.float32)
+                            final_pred = float(self.xgb_model.predict(meta_input)[0])
+                    except Exception: pass # 메타 러너 실패 시 산술 평균 유지
                 
                 # 4. 실시간 변화량 기반 스코어링 (50점 기준 상하 강도 측정)
                 diff = final_pred - scaled_data[-1, 0]
@@ -212,32 +212,35 @@ class AIEngine:
             print(f">>> [HitRate Error] {e}")
             return 0.0
 
+    def is_market_open(self):
+        now = datetime.now(self.tz)
+        if now.weekday() >= 5: return False # 주말 제외
+        
+        # 2026년 공휴일 리스트
+        holidays = ["2026-01-01", "2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-01", "2026-05-05", "2026-05-25", "2026-06-03", "2026-07-17", "2026-08-17", "2026-09-24", "2026-09-25", "2026-10-05", "2026-10-09", "2026-12-25", "2026-12-31"]
+        if now.strftime('%Y-%m-%d') in holidays: return False
+        
+        return 9 <= now.hour < 16
+
     def analyze_market(self):
         if not self.conn: self.connect()
         try:
             now = datetime.now(self.tz)
-            market_open = (now.weekday() < 5 and 9 <= now.hour < 16)
+            market_open = self.is_market_open()
+            
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 predictions = []
                 
-                # 1. [고도화] 최신 N개 포인트 기반 업종 순환매 분석 & 마켓 게이지
-                # 주말/공휴일 공백 방지를 위해 날짜가 아닌 '최신 데이터 100개' 기준으로 분석
+                # 1. 업종 순환매 분석 & 마켓 게이지
                 cursor.execute("""
-                    SELECT industry_name, 
-                           AVG(change_rate) as avg_change, 
-                           AVG(trade_amount) as avg_amount
-                    FROM (
-                        SELECT industry_name, change_rate, trade_amount
-                        FROM industry_quotes 
-                        ORDER BY updated_at DESC 
-                        LIMIT 300
-                    ) as recent_data
+                    SELECT industry_name, AVG(change_rate) as avg_change, AVG(trade_amount) as avg_amount
+                    FROM (SELECT industry_name, change_rate, trade_amount FROM industry_quotes ORDER BY updated_at DESC LIMIT 300) as recent_data
                     GROUP BY industry_name
                 """)
                 industries = cursor.fetchall(); market_scores = []
                 
                 if industries:
-                    print(f">>> [AI Engine] Analyzing {len(industries)} industries from recent points...")
+                    print(f">>> [AI Engine] Analyzing {len(industries)} industries...")
                     for ind in industries:
                         name = ind['industry_name']
                         avg_change = float(ind['avg_change'] or 0)
@@ -245,56 +248,50 @@ class AIEngine:
                         
                         vol_bonus = min(25, avg_amt / 50000) 
                         ind_score = 50 + (avg_change * 5) + vol_bonus
-                        
                         ind_score = max(0, min(100, ind_score))
                         market_scores.append(ind_score)
                         
-                        # [v14.1] BUY/SELL 신호 판정 기준 정밀화
                         signal = 'WAIT'
                         if ind_score >= 85: signal = 'BUY'
                         elif ind_score <= 35: signal = 'SELL'
-                        
                         predictions.append((name, ind_score, signal))
                     
                     if market_scores:
                         avg_gauge = sum(market_scores) / len(market_scores)
                         predictions.append(('MARKET_GAUGE', avg_gauge, 'SYSTEM'))
-                        print(f">>> [AI Engine] Market Gauge: {avg_gauge:.2f}")
 
-                # 2. AI 적중률 산출 (과거 7일간의 기록 전수 조사)
+                # 2. AI 적중률 및 기타 시스템 지표
                 hit_rate = self.calculate_ai_hit_rate()
                 predictions.append(('AI_HIT_RATE', hit_rate if hit_rate > 0 else 75.0, 'SYSTEM'))
 
-                # 3. 종목별 분석 (가장 최근에 수집된 수급 데이터 전체 대상)
+                # 3. 종목별 하이브리드 앙상블 분석 (Pandas 기반 정석 로직)
                 cursor.execute("""
-                    SELECT stock_code, current_price, volume, foreign_net_buy, top_brokers 
+                    SELECT stock_code, current_price, volume, foreign_net_buy 
                     FROM stock_supply_demand 
-                    WHERE id IN (
-                        SELECT MAX(id) FROM stock_supply_demand GROUP BY stock_code
-                    )
+                    WHERE id IN (SELECT MAX(id) FROM stock_supply_demand GROUP BY stock_code)
                 """)
                 supply_rows = cursor.fetchall()
                 if supply_rows:
-                    print(f">>> [AI Engine] Analyzing latest {len(supply_rows)} stock records...")
+                    print(f">>> [AI Engine] Analyzing {len(supply_rows)} stocks with Ensemble Stacking...")
                     sdf = pd.DataFrame(supply_rows)
-                    for code in sdf['stock_code'].unique():
-                        stock_df = sdf[sdf['stock_code'] == code].copy()
-                        curr = stock_df.iloc[-1]
-                        price = float(curr['current_price'] or 0); f_net = float(curr['foreign_net_buy'] or 0); vol = float(curr['volume'] or 0)
+                    for _, row in sdf.iterrows():
+                        code = row['stock_code']
+                        price = float(row['current_price'] or 0)
+                        f_net = float(row['foreign_net_buy'] or 0)
+                        vol = float(row['volume'] or 0)
                         val_f = f_net * price
                         
+                        # 수급 기반 점수 (S-Score)
                         s_score = 50
                         if val_f >= 300_000_000: s_score += 20
                         elif val_f >= 100_000_000: s_score += 10
                         
-                        q_score = self.calculate_technical_indicators(stock_df)
-                        # [v15.7] 하이브리드 5피처 앙상블 점수 산출
+                        # 앙상블 스코어 (L-Score) - 과거 4일 + 오늘 1틱 하이브리드
                         l_score = self.get_ensemble_score(code, price, f_net, vol)
                         
-                        final_score = (s_score * 0.5) + (q_score * 0.2) + (l_score * 0.3)
-                        
-                        if q_score >= 85 or l_score >= 85: final_score = max(final_score, q_score, l_score)
-                        if q_score < 35: final_score = min(final_score, 75)
+                        # 최종 점수 산출 (수급 50% + 앙상블 50%)
+                        final_score = (s_score * 0.5) + (l_score * 0.5)
+                        if l_score >= 85: final_score = max(final_score, l_score)
 
                         signal = 'WAIT'
                         if market_open:
@@ -304,27 +301,21 @@ class AIEngine:
                             elif val_f >= 300_000_000: signal = 'FOREIGN_WINDOW_PICK'; final_score = 85
                             elif val_f >= 100_000_000: signal = 'FOREIGN_BULL_RIDE'; final_score = max(final_score, 80)
                             elif final_score >= 80: signal = 'FOREIGN_BULL_RIDE'
+                        
                         predictions.append((f"STOCK_{code}", final_score, signal))
 
                 if predictions:
                     cursor.executemany("INSERT INTO ai_prediction (target_name, prediction_score, signal_type, created_at) VALUES (%s, %s, %s, NOW())", predictions)
-                    for target, score, sig in predictions:
-                        if target.startswith("STOCK_") and sig != 'WAIT':
-                            code = target.replace("STOCK_", "")
-                            cursor.execute("SELECT stock_name FROM stock_master WHERE stock_code = %s", (code,))
-                            res = cursor.fetchone()
-                            stock_name = res['stock_name'] if res else code
-                            msg = f"[{sig}] {stock_name} AI {int(score)}점! 외인 집중 수급 포착"
-                            cursor.execute("INSERT INTO notification_log (USRID, message, is_read, type, created_at) VALUES (%s, %s, 0, %s, NOW())", ('bluetrio', msg, sig))
                     self.conn.commit()
                     return len(predictions)
             return 0
         except Exception as e:
-            print(f">>> [AI Engine Critical Error] {str(e)}")
-            import traceback
-            traceback.print_exc()
+            print(f">>> [AI Engine Error] {str(e)}")
             return 0
         finally:
+            try:
+                if self.conn and self.conn.open: self.conn.close()
+            except: pass
             if self.conn: self.conn.close()
 
 if __name__ == "__main__":
