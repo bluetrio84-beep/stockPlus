@@ -232,7 +232,8 @@ public class KisStockService {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
         String endDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String startDate = LocalDate.now().minusYears(2).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        // [v15.9] 데이터 확보 기간 확대 (2년 -> 4년)
+        String startDate = LocalDate.now().minusYears(4).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_PERIOD_DIV_CODE=" + typeCode + "&FID_ORG_ADJ_PRC=0&FID_INPUT_DATE_1=" + startDate + "&FID_INPUT_DATE_2=" + endDate;
         return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
