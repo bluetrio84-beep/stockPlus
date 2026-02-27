@@ -111,13 +111,13 @@ class AIEngine:
         if rsi.iloc[-1] > 70: t_score -= 20 
         return max(0, min(100, t_score))
 
-    # [v15.0] 3대 모델 하이브리드 앙상블 스코어 산출
+    # [v16.2] 실시간 강도 측정 하이브리드 앙상블 엔진
     def get_ensemble_score(self, stock_code, curr_price, curr_f, curr_vol):
         if self.lstm_model is None or self.scaler is None: 
             return 50
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # [v15.6] 데이터 소스를 고품질 일자별 테이블(daily_stock_investor)로 복구
+                # 1. 과거 4일의 '맥락(Context)' 로드 - 확정된 5피처 데이터
                 cursor.execute("""
                     SELECT close_price, individual_net_buy, 
                            foreign_net_buy, institution_net_buy, volume 
@@ -131,24 +131,26 @@ class AIEngine:
                     return 50
                 
                 past_df = pd.DataFrame(rows[::-1])
-                # 오늘 실시간 데이터 합체 (개인/기관은 0으로 임시 보정)
+                
+                # 2. 오늘(D-0)의 '실시간 에너지' 합체
+                # 장중 데이터 부재 상황을 반영하여 개인/기관은 0으로 중립화
+                # 모델은 어제까지의 흐름 위에서 '오늘의 외인/현재가/거래량' 변화량에 집중하게 됨
                 today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
                 
-                # 데이터 타입 강제 변환 및 스케일링
+                # 데이터 전처리 (5피처 체계 유지)
                 df_values = df.values.astype(np.float32)
                 scaled_data = self.scaler.transform(df_values)
-                
                 input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
-                predictions = []
                 
-                # 1. LSTM Prediction
+                # 3. 앙상블 예측 (삼각편대 가동)
+                # 3-1. LSTM (추세 패턴 인식)
                 try:
                     with torch.no_grad():
                         lstm_pred = self.lstm_model(input_tensor).item()
-                except: lstm_pred = scaled_data[-1, 0] # 실패 시 현재가로 fallback
+                except: lstm_pred = scaled_data[-1, 0]
                 
-                # 2. TCN Prediction
+                # 3-2. TCN (실시간 변동성 포착)
                 try:
                     if self.tcn_model is not None:
                         with torch.no_grad():
@@ -156,22 +158,21 @@ class AIEngine:
                     else: tcn_pred = lstm_pred
                 except: tcn_pred = lstm_pred
                 
-                # 3. XGBoost Meta-Learner (Stacking Logic)
-                # [v16.1] LSTM/TCN 예측값 + 현재 데이터를 최종 메타 러너에게 전달
+                # 3-3. XGBoost Stacking (최종 심판관)
+                # [LSTM결과, TCN결과, 오늘의 실시간 5개 지표]를 보고 최종 강도 결정
                 if self.xgb_model is not None:
                     try:
-                        # Meta-Learner 입력 데이터 구성: [LSTM_Pred, TCN_Pred, Scaled_Features(5)]
                         meta_input = np.array([[lstm_pred, tcn_pred] + list(scaled_data[-1, :])], dtype=np.float32)
                         final_pred = float(self.xgb_model.predict(meta_input)[0])
-                    except Exception as e:
-                        # 메타 러너 실패 시 산술 평균으로 fallback (안전장치)
+                    except:
                         final_pred = (lstm_pred + tcn_pred) / 2
                 else:
                     final_pred = (lstm_pred + tcn_pred) / 2
                 
+                # 4. 실시간 변화량 기반 스코어링 (50점 기준 상하 강도 측정)
                 diff = final_pred - scaled_data[-1, 0]
                 return max(0, min(100, 50 + (diff * 500)))
-        except Exception as e:
+        except Exception:
             return 50
 
     # [v1.11] 정밀 적중률 산출 로직 (최근 7일 사후 검증)
