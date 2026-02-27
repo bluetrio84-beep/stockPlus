@@ -229,13 +229,56 @@ public class KisStockService {
     }
 
     private Mono<List<StockChartDto>> fetchHistoryChart(String stockCode, String marketDiv, String period) {
+        if ("1M".equals(period)) {
+            // 월봉은 1회 호출로도 수년 치가 나오므로 기존 로직 유지
+            return fetchSingleHistoryChart(stockCode, marketDiv, period, null);
+        }
+
+        // 일봉(D), 주봉(W)은 2회 호출하여 데이터 보강 (*2 멀티패치)
+        return fetchSingleHistoryChart(stockCode, marketDiv, period, null)
+            .flatMap(firstList -> {
+                if (firstList.size() < 50) return Mono.just(firstList); // 데이터가 적으면 2차 호출 생략
+                
+                // 1차 리스트의 가장 과거 날짜(첫 번째 아이템)를 기준으로 2차 호출 범위 설정
+                // parseChartResponse에서 reverse를 하므로 firstList[0]이 가장 과거임
+                String earliestDate = firstList.get(0).getDate().replace("-", "");
+                LocalDate endDate2 = LocalDate.parse(earliestDate, DateTimeFormatter.ofPattern("yyyyMMdd")).minusDays(1);
+                
+                return fetchSingleHistoryChart(stockCode, marketDiv, period, endDate2.format(DateTimeFormatter.ofPattern("yyyyMMdd")))
+                    .map(secondList -> {
+                        Map<Long, StockChartDto> mergedMap = new TreeMap<>();
+                        for (StockChartDto s : secondList) mergedMap.put(s.getTime(), s);
+                        for (StockChartDto f : firstList) mergedMap.put(f.getTime(), f);
+                        return new ArrayList<>(mergedMap.values());
+                    });
+            });
+    }
+
+    private Mono<List<StockChartDto>> fetchSingleHistoryChart(String stockCode, String marketDiv, String period, String customEndDate) {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
-        String endDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        // [v15.9] 데이터 확보 기간 확대 (2년 -> 4년)
+        String endDate = (customEndDate != null) ? customEndDate : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String startDate = LocalDate.now().minusYears(4).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?FID_COND_MRKT_DIV_CODE=" + marketDiv + "&FID_INPUT_ISCD=" + stockCode + "&FID_PERIOD_DIV_CODE=" + typeCode + "&FID_ORG_ADJ_PRC=0&FID_INPUT_DATE_1=" + startDate + "&FID_INPUT_DATE_2=" + endDate;
-        return webClientBuilder.build().get().uri(uri).header("authorization", "Bearer " + token).header("appkey", kisAuthService.getAppKey()).header("appsecret", kisAuthService.getAppSecret()).header("tr_id", "FHKST03010100").header("content-type", "application/json").header("custtype", "P").retrieve().bodyToMono(String.class).map(res -> parseChartResponse(res, false)).onErrorResume(e -> Mono.just(Collections.emptyList()));
+        
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"
+                + "?FID_COND_MRKT_DIV_CODE=" + marketDiv
+                + "&FID_INPUT_ISCD=" + stockCode
+                + "&FID_PERIOD_DIV_CODE=" + typeCode
+                + "&FID_ORG_ADJ_PRC=0"
+                + "&FID_INPUT_DATE_1=" + startDate
+                + "&FID_INPUT_DATE_2=" + endDate;
+
+        return webClientBuilder.build().get().uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "FHKST03010100")
+                .header("content-type", "application/json")
+                .header("custtype", "P")
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(res -> parseChartResponse(res, false))
+                .onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
     private Mono<List<StockChartDto>> fetchIndexHistoryChart(String indexCode, String period) {
