@@ -88,4 +88,14 @@ public class AdminController {
         response.put("leadStocks", leadStocks != null ? leadStocks : "");
         return response;
     }
+
+    /**
+     * [v17.0] AI 브리핑: 날짜별 Next Leaders Top 20 조회
+     */
+    @GetMapping("/intelligence/next-leaders")
+    public List<Map<String, Object>> getNextLeaders(@RequestParam(required = false) String date) {
+        String targetDate = (date != null) ? date : java.time.LocalDate.now().toString();
+        log.info(">>> [AI Briefing] Fetching Next Leaders for date: {}", targetDate);
+        return adminMapper.getNextLeadersByDate(targetDate);
+    }
 }

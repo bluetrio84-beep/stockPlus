@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import re
 import requests
 from ai_engine import AIEngine
+from next_leader_engine import NextLeaderEngine
 
 # DB 설정
 DB_CONFIG = {
@@ -329,12 +330,22 @@ class DaumTraderScraper:
 
 def main():
     mega = MegaCollector(); trader = DaumTraderScraper(); engine = AIEngine()
+    next_engine = NextLeaderEngine() # [v17.0] 추가
     last_sync_date = ""
+    last_next_leader_date = "" # [v17.0] 추가
+    
     while True:
         try:
             now = datetime.now(mega.tz)
             now_str = now.strftime('%Y-%m-%d')
             now_hour, now_min, now_weekday = now.hour, now.minute, now.weekday()
+
+            # 0. 매일 아침 08:45 Next Leaders 분석 (하루 1회)
+            if now_weekday < 5 and now_hour == 8 and 45 <= now_min <= 55 and last_next_leader_date != now_str:
+                try:
+                    next_engine.analyze_next_leaders()
+                    last_next_leader_date = now_str
+                except: pass
 
             # 1. 매일 밤 20:30 시총 갱신 (하루 1회)
             if now_hour == 20 and now_min == 30 and last_sync_date != now_str:

@@ -34,11 +34,11 @@ public class NextLeaderDataScheduler {
     }
 
     private void executeFullSnapshot() {
-        log.info(">>> [NextLeaders] Starting 1,400 Stocks Analysis Snapshot...");
-        List<String> kospi700 = getTopStocks("KOSPI", 700);
-        List<String> kosdaq700 = getTopStocks("KOSDAQ", 700);
-        processStockBatch(kospi700, "J");
-        processStockBatch(kosdaq700, "W");
+        log.info(">>> [NextLeaders] Starting 1,600 Stocks Analysis Snapshot...");
+        List<String> kospi800 = getTopStocks("KOSPI", 800);
+        List<String> kosdaq800 = getTopStocks("KOSDAQ", 800);
+        processStockBatch(kospi800, "J");
+        processStockBatch(kosdaq800, "W");
     }
 
     private List<String> getTopStocks(String marketType, int limit) {
@@ -59,7 +59,7 @@ public class NextLeaderDataScheduler {
                     success++;
                 }
                 if (success % 100 == 0) log.info(">>> [NextLeaders] Progress: {}/{}", success, codes.size());
-                Thread.sleep(150);
+                Thread.sleep(120); // 120ms로 최적화
             } catch (Exception e) {}
         }
         log.info(">>> [NextLeaders] Batch finished. Saved: {}", success);

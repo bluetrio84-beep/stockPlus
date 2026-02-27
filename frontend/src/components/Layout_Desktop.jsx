@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart } from 'lucide-react';
+import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart, Award } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -20,8 +20,8 @@ const LayoutDesktop = ({ logic }) => {
     if (isAdmin()) {
         navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
         navItems.push({ name: 'ADMIN 대시보드', path: '/admin/intel', icon: LayoutDashboard });
-        // [v2.0] ADMIN CHART 메뉴 신설
-        navItems.push({ name: 'ADMIN CHART', path: '/admin/chart', icon: BarChart2 });
+        navItems.push({ name: 'NEXT LEADERS', path: '/admin/next-leaders', icon: Award });
+        navItems.push({ name: 'MARKET BUBBLE', path: '/admin/chart', icon: BarChart2 });
     }
 
     return (

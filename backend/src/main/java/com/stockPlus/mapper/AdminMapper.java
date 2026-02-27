@@ -142,4 +142,7 @@ public interface AdminMapper {
             "ORDER BY m.market_cap DESC" +
             "</script>")
     List<Map<String, Object>> getStocksByNames(@Param("names") List<String> names);
+
+    @Select("SELECT * FROM ai_next_leaders WHERE DATE(captured_at) = #{date} ORDER BY total_score DESC")
+    List<Map<String, Object>> getNextLeadersByDate(@Param("date") String date);
 }
