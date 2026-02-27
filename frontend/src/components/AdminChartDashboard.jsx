@@ -138,7 +138,7 @@ const AdminChartDashboard = () => {
     };
 
     return (
-        <div className="flex-1 bg-slate-950 p-2 lg:p-8 h-full flex flex-col gap-4 lg:gap-6 overflow-hidden relative pb-20 lg:pb-8">
+        <div className="flex-1 bg-slate-950 p-2 lg:p-8 h-full flex flex-col gap-4 lg:gap-6 overflow-hidden relative pb-20 lg:pb-5">
             <header className="flex justify-between items-end shrink-0">
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">

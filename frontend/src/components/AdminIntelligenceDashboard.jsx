@@ -10,7 +10,7 @@ const AdminIntelligenceDashboard = () => {
     const [mobileTab, setMobileTab] = useState('overview'); 
     const [pollInterval, setPollInterval] = useState(180000);
     const [selectedSector, setSelectedSector] = useState(null);
-    const [helpModal, setHelpModal] = useState(null); // 'supply' or 'rotation' or 'gauge' or null
+    const [helpModal, setHelpModal] = useState(null); 
     
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
@@ -58,7 +58,6 @@ const AdminIntelligenceDashboard = () => {
         return 'bg-slate-700';
     };
 
-    // [v1.2.6] AI 수급 점수 가이드 팝업
     const renderSupplyHelp = () => (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
@@ -69,65 +68,12 @@ const AdminIntelligenceDashboard = () => {
                 </div>
                 <div className="space-y-4">
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400">MEGA FOREIGN BOMB (압도적 폭격)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인이 단독으로 20억 이상의 자금을 한꺼번에 쏟아붓는 주도주 확정 신호입니다.</p>
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400">MEGA FOREIGN BOMB</span></div>
+                        <p className="text-[11px] text-slate-400">외국인이 단독으로 20억 이상의 자금을 쏟아붓는 주도주 신호입니다.</p>
                     </div>
                     <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400">FOREIGN POWER BUY (강력 매수)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 순매수가 10억을 돌파하며 딥러닝 패턴상 강력한 상승 에너지가 분출된 상태입니다.</p>
-                    </div>
-                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-yellow-500 text-slate-900 px-1.5 py-0.5 rounded">90%</span><span className="text-sm font-bold text-yellow-400">FOREIGN SMART ENTRY (스마트 진입)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외국계 자금이 5억 이상 유입되며 고도의 퀀트 지표가 골든크로스를 완성한 시점입니다.</p>
-                    </div>
-                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-fuchsia-500 text-white px-1.5 py-0.5 rounded">85%</span><span className="text-sm font-bold text-fuchsia-400">FOREIGN WINDOW PICK (창구 포착)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">JP모간 등 메이저 외국계 창구에서 3억 이상의 입질이 실시간으로 감지된 상태입니다.</p>
-                    </div>
-                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded">80%</span><span className="text-sm font-bold text-orange-400">FOREIGN BULL RIDE (상승 편입)</span></div>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 자금이 1억 이상 들어오며 하락을 멈추고 우상향 추세로의 전환이 확인되었습니다.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    // [v1.2.6] 순환매 예측 점수 가이드 팝업
-    const renderRotationHelp = () => (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
-            <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-black text-white flex items-center gap-2"><Target className="text-yellow-400" size={20} /> 순환매 예측 가이드</h3>
-                    <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
-                </div>
-                <div className="space-y-4 text-[12px] text-slate-300 leading-relaxed">
-                    <p><strong className="text-white">AI Score (0~100)</strong>: 해당 업종의 상승 에너지를 수치화한 것입니다. 90점 이상은 현재 시장을 지배하는 '대장 섹터'임을 뜻합니다.</p>
-                    <p><strong className="text-rose-400">변동폭 (▲/▼)</strong>: 24시간 전 점수와 비교한 수치입니다. 이 숫자가 <span className="text-rose-400 font-bold">플러스(+)로 크게 튈 때</span>가 바로 돈이 이 섹터로 이사 오는 '순환매 타점'입니다.</p>
-                    <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 italic">
-                        "어제보다 점수가 급상승한 업종 내의 주도주를 선취매하는 것이 LSTM 모델의 핵심 전략입니다."
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    // [v1.2.6] 마켓 인텔리전스 게이지 도움말
-    const renderGaugeHelp = () => (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
-            <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-black text-white flex items-center gap-2"><Brain className="text-indigo-400" size={20} /> Market Gauge 가이드</h3>
-                    <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
-                </div>
-                <div className="space-y-4 text-[12px] text-slate-300 leading-relaxed">
-                    <p><strong className="text-white font-bold">50% (NEUTRAL)</strong>: 시장의 매수와 매도 에너지가 팽팽하게 맞서고 있는 중립 상태입니다.</p>
-                    <p><strong className="text-rose-400 font-bold">60% 이상 (GREED)</strong>: 시장 전체적으로 상승 에너지가 강하며, 적극적인 매수세가 우위에 있는 탐욕 구간입니다.</p>
-                    <p><strong className="text-blue-400 font-bold">40% 이하 (FEAR)</strong>: 시장의 체력이 약해지고 자금이 이탈하고 있는 공포 구간입니다.</p>
-                    <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 text-slate-400 italic">
-                        "마켓 게이지는 전체 업종의 AI 점수를 합산한 지표로, 개별 종목 매매 시 시장의 기본 방향성을 판단하는 척도가 됩니다."
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400">FOREIGN POWER BUY</span></div>
+                        <p className="text-[11px] text-slate-400">외국인 순매수가 10억을 돌파하며 강력한 상승 에너지가 분출된 상태입니다.</p>
                     </div>
                 </div>
             </div>
@@ -150,12 +96,7 @@ const AdminIntelligenceDashboard = () => {
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-[11px] font-black text-white group-hover:text-indigo-300 transition-colors">{sig.stock_name}</span>
                                 <div className="flex items-center gap-1.5">
-                                    {sig.signal_type === 'MEGA_SURGE' && <span className="text-[8px] font-black text-rose-400 bg-rose-400/10 px-1 rounded border border-rose-400/20">🚀 초강력수급</span>}
-                                    {sig.signal_type === 'SURGE_F' && <span className="text-[8px] font-black text-cyan-400 bg-cyan-400/10 px-1 rounded border border-cyan-400/20">⚡ 외인폭발</span>}
-                                    {sig.signal_type === 'SURGE_I' && <span className="text-[8px] font-black text-amber-400 bg-amber-400/10 px-1 rounded border border-amber-400/20">🏛️ 기관폭발</span>}
-                                    {sig.signal_type === 'SMART_MONEY' && <span className="text-[8px] font-black text-yellow-400 bg-yellow-400/10 px-1 rounded border border-yellow-400/20">💰 스마트머니</span>}
-                                    {sig.signal_type === 'FOREIGN_BITE' && <span className="text-[8px] font-black text-fuchsia-400 bg-fuchsia-400/10 px-1 rounded border border-fuchsia-400/20">🎣 외인입질</span>}
-                                    {sig.signal_type === 'BULL_ENTRY' && <span className="text-[8px] font-black text-orange-400 bg-orange-400/10 px-1 rounded border border-orange-400/20">🐂 황소진입</span>}
+                                    <span className="text-[8px] font-black text-indigo-400 bg-indigo-400/10 px-1 rounded border border-indigo-400/20 uppercase">{sig.signal_type.replace(/_/g, ' ')}</span>
                                     <span className="text-[8px] text-slate-500 font-mono italic">{new Date(sig.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                 </div>
                             </div>
@@ -203,7 +144,6 @@ const AdminIntelligenceDashboard = () => {
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-rose-500 opacity-50"></div>
                     <div className="flex items-center gap-2 mb-8">
                         <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2"><Brain size={14} className="text-indigo-500" /> Market Intelligence Gauge</h2>
-                        <button onClick={() => setHelpModal('gauge')} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={14} /></button>
                     </div>
                     <div className="relative w-64 h-32 overflow-hidden">
                         <div className="absolute inset-0 border-[18px] border-slate-800 rounded-t-full"></div>
@@ -216,8 +156,7 @@ const AdminIntelligenceDashboard = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-800/50">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-black text-white flex items-center gap-2"><Target size={18} className="text-yellow-400" /> 순환매 예측 (Next Leaders)</h2>
-                            <button onClick={() => setHelpModal('rotation')} className="text-slate-600 hover:text-yellow-400 transition-colors"><HelpCircle size={14} /></button>
+                            <h2 className="text-sm font-black text-white flex items-center gap-2"><Target size={18} className="text-yellow-400" /> 순환매 예측</h2>
                         </div>
                         <span className="text-[10px] text-slate-500 font-mono">LSTM v1 Model</span>
                     </div>
@@ -226,14 +165,7 @@ const AdminIntelligenceDashboard = () => {
                             <div key={i} className="bg-slate-950/50 border border-slate-800 hover:border-indigo-500/50 rounded-xl p-4 flex items-center justify-between group transition-all">
                                 <div className="flex items-center gap-4"><span className="text-lg font-black text-slate-700 italic group-hover:text-indigo-500 transition-colors">#{i+1}</span><div><div className="text-sm font-bold text-white mb-0.5">{sect.industry_name}</div><div className="flex items-center gap-2"><span className="text-[10px] text-slate-500">현재 등락</span><span className={classNames("text-[10px] font-bold", parseFloat(sect.change_rate) > 0 ? "text-rose-400" : "text-blue-400")}>{sect.change_rate}%</span></div></div></div>
                                 <div className="text-right">
-                                    <div className="text-[10px] text-slate-500 uppercase mb-1 flex items-center justify-end gap-1">
-                                        AI Score 
-                                        {sect.score_diff !== undefined && Math.abs(parseFloat(sect.score_diff)) > 0.1 && (
-                                            <span className={classNames("font-bold", parseFloat(sect.score_diff) > 0 ? "text-rose-400" : "text-blue-400")}>
-                                                ({parseFloat(sect.score_diff) > 0 ? '▲' : '▼'} {Math.abs(Math.round(sect.score_diff))})
-                                            </span>
-                                        )}
-                                    </div>
+                                    <div className="text-[10px] text-slate-500 uppercase mb-1">AI Score</div>
                                     <div className="flex items-center gap-2"><div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${sect.ai_score || 50}%` }}></div></div><span className="text-sm font-black text-indigo-400">{parseInt(sect.ai_score || 50)}</span></div></div>
                             </div>
                         )) : <div className="text-center py-8 text-slate-500 text-xs">뚜렷한 상승 주도 업종이 포착되지 않았습니다.</div>}
@@ -260,17 +192,9 @@ const AdminIntelligenceDashboard = () => {
                     <div className="flex justify-between items-center mb-4 lg:mb-6 shrink-0"><h2 className="text-sm lg:text-lg font-bold text-white flex items-center gap-2"><PieChart size={18} className="text-indigo-400" /> 업종 등락 히트맵</h2><span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">Top 50</span></div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-2.5 overflow-y-auto custom-scrollbar-thin pr-1 flex-1 pb-2 content-start">
                         {data.heatmap?.map((item, idx) => (
-                            <div key={idx} onClick={() => setSelectedSector(item)} className={classNames("relative aspect-[1.2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-1.5 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left", getHeatmapColor(item.change_rate))}>
-                                {item.ai_signal === 'BUY' && (
-                                    <div className="absolute top-1 right-1 flex items-center justify-center">
-                                        <ArrowUpCircle className="text-white fill-rose-500 animate-pulse" size={14} />
-                                    </div>
-                                )}
-                                {item.ai_signal === 'SELL' && (
-                                    <div className="absolute top-1 right-1 flex items-center justify-center">
-                                        <ArrowDownCircle className="text-white fill-blue-500" size={14} />
-                                    </div>
-                                )}
+                            <div key={idx} className={classNames("relative aspect-[1.2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-1.5 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left", getHeatmapColor(item.change_rate))}>
+                                {item.ai_signal === 'BUY' && <div className="absolute top-1 right-1 flex items-center justify-center"><ArrowUpCircle className="text-white fill-rose-500 animate-pulse" size={14} /></div>}
+                                {item.ai_signal === 'SELL' && <div className="absolute top-1 right-1 flex items-center justify-center"><ArrowDownCircle className="text-white fill-blue-500" size={14} /></div>}
                                 <span className="text-[9px] lg:text-[11px] font-black text-white leading-tight drop-shadow-md truncate w-full px-1">{item.industry_name}</span>
                                 <div className="mt-0.5 lg:mt-0 lg:text-right w-full"><span className="text-[10px] lg:text-sm font-black text-white drop-shadow-md">{parseFloat(item.change_rate) > 0 ? '+' : ''}{item.change_rate}%</span></div>
                             </div>
@@ -295,7 +219,7 @@ const AdminIntelligenceDashboard = () => {
     );
 
     return (
-        <div className="flex-1 bg-slate-950 p-3 lg:p-8 overflow-y-auto custom-scrollbar h-full flex flex-col gap-4 lg:gap-6 relative pb-20 lg:pb-8">
+        <div className="flex-1 bg-slate-950 p-3 lg:p-8 overflow-y-auto custom-scrollbar h-full flex flex-col gap-4 lg:gap-6 relative pb-20 lg:pb-5">
             <header className="flex justify-between items-end shrink-0">
                 <div><div className="flex items-center gap-3 mb-1"><div className="p-1.5 bg-indigo-600/20 rounded-lg border border-indigo-500/30"><LayoutDashboard className="text-indigo-400" size={20} /></div><h1 className="text-lg lg:text-2xl font-black text-white tracking-tight uppercase italic">Intelligence</h1></div><p className="text-slate-500 text-[9px] lg:text-xs font-bold uppercase tracking-widest opacity-80">v1 Advanced Engine</p></div>
                 <div className="hidden lg:flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
