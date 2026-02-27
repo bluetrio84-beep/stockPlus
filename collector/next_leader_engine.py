@@ -21,9 +21,10 @@ class NextLeaderEngine(AIEngine):
     def calculate_turnaround_score(self, row, prev_row):
         """
         바닥 탈출 알고리즘 (Q-Score)
-        1. RSI 35 이하 탈출 (40점)
-        2. 이평선 수렴도 (30점)
-        3. 거래량 스파이크 (30점)
+        1. RSI 35 이하 탈출 (20점)
+        2. 이평선 수렴도 (10점)
+        3. 거래량 스파이크 (15점)
+        4. 골든크로스 (10점)
         """
         score = 50.0
         reasons = []
@@ -32,29 +33,29 @@ class NextLeaderEngine(AIEngine):
         rsi = float(row['rsi'] or 50)
         prev_rsi = float(prev_row['rsi'] or 50) if prev_row is not None else 50
         if prev_rsi <= 35 and rsi > prev_rsi:
-            score += 25
+            score += 20 # 25 -> 20 하향
             reasons.append("RSI바닥탈출")
         elif rsi <= 30:
             score += 10
             reasons.append("과매도진입")
 
-        # 2. 이평선 수렴도 (MA5, MA20, MA60)
+        # 2. 이평선 수렴도 (MA5, MA20)
         ma5 = float(row['ma5'] or 0)
         ma20 = float(row['ma20'] or 0)
         if ma5 > 0 and ma20 > 0:
             gap = abs(ma5 - ma20) / ma20
             if gap < 0.02: # 2% 이내 수렴
-                score += 15
+                score += 10 # 15 -> 10 하향
                 reasons.append("이평선수렴")
             if ma5 > ma20 and (prev_row is None or float(prev_row['ma5'] or 0) <= float(prev_row['ma20'] or 0)):
-                score += 10
+                score += 10 # 10 유지
                 reasons.append("골든크로스")
 
         # 3. 거래량 스파이크 (관심 집중)
         vol = float(row['volume'] or 0)
         prev_vol = float(prev_row['volume'] or 1) if prev_row is not None else 1
         if vol > prev_vol * 2.5: # 거래량 250% 이상 폭발
-            score += 20
+            score += 15 # 20 -> 15 하향
             reasons.append("거래량폭발")
 
         return min(100, score), ", ".join(reasons)
