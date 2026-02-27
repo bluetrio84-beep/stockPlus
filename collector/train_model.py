@@ -15,20 +15,25 @@ DB_CONFIG = {
 }
 
 def load_and_preprocess_data():
-    print(">>> [Train] Loading Daily Investor Data from DB...")
+    print(">>> [Train] Loading High-Quality Daily Investor Data from DB...")
     conn = pymysql.connect(**DB_CONFIG)
     try:
-        # stock_code순, bsop_date순으로 정렬해서 가져옴
-        query = "SELECT stock_code, close_price, individual_net_buy, foreign_net_buy, institution_net_buy, volume FROM daily_stock_investor ORDER BY stock_code, bsop_date ASC"
+        # [v15.6] 일자별 수급 테이블 기반으로 5피처 학습 데이터 원복
+        query = """
+            SELECT stock_code, close_price, 
+                   individual_net_buy, foreign_net_buy, institution_net_buy, volume 
+            FROM daily_stock_investor 
+            ORDER BY stock_code, bsop_date ASC
+        """
         df = pd.read_sql(query, conn)
         
-        if len(df) < 100:
-            print(">>> [Error] Not enough data to train.")
+        if len(df) < 500:
+            print(">>> [Error] Not enough data in daily_stock_investor to train.")
             return None, None, None
 
+        # 5개 피처 (개인 순매수 포함)
         features = ['close_price', 'individual_net_buy', 'foreign_net_buy', 'institution_net_buy', 'volume']
         
-        # 전체 데이터에 대한 스케일러 학습 및 저장
         scaler = MinMaxScaler()
         scaler.fit(df[features].values.astype(float))
         joblib.dump(scaler, 'stock_scaler.gz')
@@ -36,17 +41,15 @@ def load_and_preprocess_data():
         window_size = 5
         X, y = [], []
 
-        # [핵심 개선] 종목별로 루프를 돌며 시퀀스 생성 (데이터 섞임 방지)
         for code in df['stock_code'].unique():
             stock_data = df[df['stock_code'] == code][features].values.astype(float)
             if len(stock_data) <= window_size: continue
             
-            # 해당 종목 데이터만 정규화
             scaled_stock_data = scaler.transform(stock_data)
             
             for i in range(len(scaled_stock_data) - window_size):
                 X.append(scaled_stock_data[i:i + window_size])
-                y.append(scaled_stock_data[i + window_size, 0]) # 다음날 종가 예측
+                y.append(scaled_stock_data[i + window_size, 0])
 
         return np.array(X), np.array(y), scaler
     finally:
@@ -61,6 +64,7 @@ def train():
     X_tensor = torch.FloatTensor(X)
     y_tensor = torch.FloatTensor(y).view(-1, 1)
 
+    # 피처 수가 5개로 원복됨
     input_size = 5
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     X_tensor, y_tensor = X_tensor.to(device), y_tensor.to(device)

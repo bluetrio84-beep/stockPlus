@@ -129,15 +129,36 @@ public class KisRealtimeService {
             for (int i = 0; i < recordCount; i++) {
                 int offset = i * fieldsPerRecord;
                 if (offset + 5 >= allParts.length) break;
+                
+                String rawPrice = allParts[offset + 2];
+                if (rawPrice == null || rawPrice.isEmpty() || "0".equals(rawPrice)) continue;
+
+                // [v14.7] 비정상적인 필드(소수점 포함 등)가 가격에 들어오는 경우 방어
+                if (rawPrice.contains(".")) continue;
+
                 StockPriceDto dto;
                 if (isExpected) {
-                    if (allParts.length < offset + 48) continue;
-                    String rawPrice = allParts[offset + 47];
-                    if (rawPrice == null || rawPrice.isEmpty() || "0".equals(rawPrice)) continue;
-                    String changeStr = allParts.length > offset + 48 ? allParts[offset + 48] : "0";
-                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(rawPrice).change(changeStr).changeRate(allParts.length > offset + 50 ? allParts[offset + 50] : "0.00").priceSign(calculateSign(changeStr)).isExpected(true).exchangeCode("UN").build();
+                    String changeStr = allParts[offset + 4];
+                    dto = StockPriceDto.builder()
+                        .stockCode(allParts[offset])
+                        .currentPrice(rawPrice)
+                        .change(changeStr)
+                        .changeRate(allParts[offset + 5])
+                        .priceSign(calculateSign(changeStr))
+                        .isExpected(true)
+                        .exchangeCode("UN")
+                        .build();
                 } else {
-                    dto = StockPriceDto.builder().stockCode(allParts[offset]).currentPrice(allParts[offset + 2]).priceSign(allParts[offset + 3]).change(allParts[offset + 4]).changeRate(allParts[offset + 5]).volume(allParts[offset + 13]).isExpected(false).exchangeCode("UN").build();
+                    dto = StockPriceDto.builder()
+                        .stockCode(allParts[offset])
+                        .currentPrice(rawPrice)
+                        .priceSign(allParts[offset + 3])
+                        .change(allParts[offset + 4])
+                        .changeRate(allParts[offset + 5])
+                        .volume(allParts[offset + 13])
+                        .isExpected(false)
+                        .exchangeCode("UN")
+                        .build();
                 }
                 stockPriceSink.tryEmitNext(dto);
             }

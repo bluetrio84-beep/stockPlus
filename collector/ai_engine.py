@@ -46,10 +46,9 @@ class StockTCN(nn.Module):
         self.fc = nn.Linear(num_channels[-1], 1)
 
     def forward(self, x):
-        # x shape: (batch, seq_len, input_size) -> conv1d needs (batch, input_size, seq_len)
         x = x.transpose(1, 2)
         out = self.network(x)
-        out = out[:, :, -1] # 마지막 타임스텝의 출력 사용
+        out = out[:, :, -1] 
         return self.fc(out)
 
 class AIEngine:
@@ -64,15 +63,13 @@ class AIEngine:
         self.scaler = None
         
         try:
-            # 1. Scaler 로드
             self.scaler = joblib.load('stock_scaler.gz')
             
-            # 2. LSTM 로드
+            # [v15.6] 5개 피처 체계로 로드
             self.lstm_model = StockLSTM(input_size=5)
             self.lstm_model.load_state_dict(torch.load("stock_lstm_v1.pth", map_location=torch.device('cpu')))
             self.lstm_model.eval()
             
-            # 3. TCN 로드 (없으면 패스)
             try:
                 self.tcn_model = StockTCN(input_size=5)
                 self.tcn_model.load_state_dict(torch.load("stock_tcn_v1.pth", map_location=torch.device('cpu')))
@@ -116,45 +113,68 @@ class AIEngine:
 
     # [v15.0] 3대 모델 하이브리드 앙상블 스코어 산출
     def get_ensemble_score(self, stock_code, curr_price, curr_f, curr_vol):
-        if self.lstm_model is None or self.scaler is None: return 50
+        if self.lstm_model is None or self.scaler is None: 
+            return 50
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute("SELECT close_price, individual_net_buy, foreign_net_buy, institution_net_buy, volume FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 4", (stock_code,))
+                # [v15.6] 데이터 소스를 고품질 일자별 테이블(daily_stock_investor)로 복구
+                cursor.execute("""
+                    SELECT close_price, individual_net_buy, 
+                           foreign_net_buy, institution_net_buy, volume 
+                    FROM daily_stock_investor 
+                    WHERE stock_code = %s 
+                    ORDER BY bsop_date DESC LIMIT 4
+                """, (stock_code,))
                 rows = cursor.fetchall()
-                if len(rows) < 4: return 50
+                
+                if len(rows) < 4:
+                    return 50
+                
                 past_df = pd.DataFrame(rows[::-1])
+                # 오늘 실시간 데이터 합체 (개인/기관은 0으로 임시 보정)
                 today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
-                scaled_data = self.scaler.transform(df.values)
+                
+                # 데이터 타입 강제 변환 및 스케일링
+                df_values = df.values.astype(np.float32)
+                scaled_data = self.scaler.transform(df_values)
                 
                 input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
-                
                 predictions = []
                 
                 # 1. LSTM Prediction
-                with torch.no_grad():
-                    lstm_pred = self.lstm_model(input_tensor).item()
-                    predictions.append(lstm_pred)
+                try:
+                    with torch.no_grad():
+                        lstm_pred = self.lstm_model(input_tensor).item()
+                        predictions.append(lstm_pred)
+                except: pass
                 
                 # 2. TCN Prediction
                 if self.tcn_model is not None:
-                    with torch.no_grad():
-                        tcn_pred = self.tcn_model(input_tensor).item()
-                        predictions.append(tcn_pred)
+                    try:
+                        with torch.no_grad():
+                            tcn_pred = self.tcn_model(input_tensor).item()
+                            predictions.append(tcn_pred)
+                    except: pass
                 
                 # 3. XGBoost Prediction
                 if self.xgb_model is not None:
-                    # XGBoost는 2D 데이터 (1, seq_len * features) 형태로 변환하여 입력 (시퀀스를 평탄화)
-                    xgb_input = scaled_data.flatten().reshape(1, -1)
-                    xgb_pred = self.xgb_model.predict(xgb_input)[0]
-                    predictions.append(float(xgb_pred))
+                    try:
+                        xgb_input = scaled_data.reshape(1, -1)
+                        xgb_pred = self.xgb_model.predict(xgb_input)[0]
+                        predictions.append(float(xgb_pred))
+                    except: pass
+                
+                if not predictions:
+                    return 50
                 
                 # 앙상블 결합 (단순 평균)
-                final_pred = sum(predictions) / len(predictions) if predictions else scaled_data[-1, 0]
-                
+                final_pred = sum(predictions) / len(predictions)
                 diff = final_pred - scaled_data[-1, 0]
+                
                 return max(0, min(100, 50 + (diff * 500)))
-        except: return 50
+        except Exception as e:
+            return 50
 
     # [v1.11] 정밀 적중률 산출 로직 (최근 7일 사후 검증)
     def calculate_ai_hit_rate(self):
@@ -260,7 +280,6 @@ class AIEngine:
                     sdf = pd.DataFrame(supply_rows)
                     for code in sdf['stock_code'].unique():
                         stock_df = sdf[sdf['stock_code'] == code].copy()
-                        if len(stock_df) < 2: continue
                         curr = stock_df.iloc[-1]
                         price = float(curr['current_price'] or 0); f_net = float(curr['foreign_net_buy'] or 0); vol = float(curr['volume'] or 0)
                         val_f = f_net * price
@@ -270,9 +289,11 @@ class AIEngine:
                         elif val_f >= 100_000_000: s_score += 10
                         
                         q_score = self.calculate_technical_indicators(stock_df)
+                        # [v15.7] 하이브리드 5피처 앙상블 점수 산출
                         l_score = self.get_ensemble_score(code, price, f_net, vol)
                         
                         final_score = (s_score * 0.5) + (q_score * 0.2) + (l_score * 0.3)
+                        
                         if q_score >= 85 or l_score >= 85: final_score = max(final_score, q_score, l_score)
                         if q_score < 35: final_score = min(final_score, 75)
 
@@ -300,7 +321,10 @@ class AIEngine:
                     return len(predictions)
             return 0
         except Exception as e:
-            print(f"AI Engine Error: {e}"); return 0
+            print(f">>> [AI Engine Critical Error] {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return 0
         finally:
             if self.conn: self.conn.close()
 
