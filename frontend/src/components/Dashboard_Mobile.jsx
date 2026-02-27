@@ -21,7 +21,7 @@ const Dashboard_Mobile = ({
         <div className="lg:hidden flex-1 overflow-hidden relative h-full"> 
             <div className={classNames("transition-transform duration-300 absolute inset-0 bottom-[56px] bg-slate-950 z-10 h-full", { "translate-x-0": !stockCodeFromUrl, "-translate-x-full": !!stockCodeFromUrl })}>
                  {/* 1. 관심종목요약 탭 (home) */}
-                 {activeTab === 'home' && <div className="h-full p-1.5 pb-20 flex flex-col relative">
+                 {activeTab === 'home' && <div className="h-full p-1.5 pb-15 flex flex-col relative">
                      <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl mb-0">
                         <div className="flex border-b border-slate-800 bg-slate-900">
                             <button onClick={() => setWatchlistSubTab('list')} className={classNames("flex-1 py-3 text-sm font-bold transition-all border-b-2", { "border-indigo-500 text-white bg-slate-800/50": watchlistSubTab === 'list', "border-transparent text-slate-500": watchlistSubTab !== 'list' })}>관심종목시세</button>
@@ -85,7 +85,7 @@ const Dashboard_Mobile = ({
                  </div>}
 
                  {/* 2. 종목검색 탭 (watchlist) */}
-                 {activeTab === 'watchlist' && <div className="h-full p-1.5 pb-20 flex flex-col relative">
+                 {activeTab === 'watchlist' && <div className="h-full p-1.5 pb-15 flex flex-col relative">
                      <div className="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
                         <div className="p-3 bg-slate-850 flex items-center justify-between border-b border-slate-800">
                             <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ const Dashboard_Mobile = ({
                         </div>
                      </div>
                  </div>}
-                 {activeTab === 'news' && <div className="h-full p-1.5 pb-20 flex flex-col bg-slate-950"><NewsFeed news={news} /></div>}
+                 {activeTab === 'news' && <div className="h-full p-1.5 pb-15 flex flex-col bg-slate-950"><NewsFeed news={news} /></div>}
             </div>
 
             {/* Mobile Detail View */}
