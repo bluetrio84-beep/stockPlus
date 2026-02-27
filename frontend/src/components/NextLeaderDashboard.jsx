@@ -66,9 +66,8 @@ const NextLeaderDashboard = () => {
     };
 
     return (
-        // [v17.5] 레이아웃 최적화: pb-16으로 모바일 메뉴바 영역만 피하고 테이블 크기를 최대로 키움
-        <div className="flex-1 bg-slate-950 p-1 lg:p-6 h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-16 lg:pb-6">
-            <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-3 shrink-0 px-1 pt-1">
+        <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-0 lg:pb-8">
+            <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1">
                 <div className="flex items-center gap-2">
                     <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30">
                         <Award className="text-indigo-400" size={20} />
@@ -81,7 +80,7 @@ const NextLeaderDashboard = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 w-full lg:w-auto mt-1 lg:mt-0 pr-1">
+                <div className="flex items-center justify-end gap-2 w-full lg:w-auto pr-1">
                     <div className="relative w-[130px] lg:w-[160px] shrink-0">
                         <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input 
@@ -112,11 +111,11 @@ const NextLeaderDashboard = () => {
                     <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead className="sticky top-0 z-10 bg-slate-900 shadow-sm">
                             <tr>
-                                <th className="px-3 lg:px-6 py-2.5 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
-                                <th className="px-3 lg:px-6 py-2.5 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
-                                <th className="px-3 lg:px-6 py-2.5 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Score</th>
-                                <th className="px-3 lg:px-6 py-2.5 text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Breakdown</th>
-                                <th className="px-3 lg:px-6 py-2.5 text-[9px] font-black text-slate-500 uppercase tracking-widest min-w-[180px] bg-slate-900">Reason</th>
+                                <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
+                                <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
+                                <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Score</th>
+                                <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Breakdown</th>
+                                <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[180px] bg-slate-900">Reason</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
@@ -125,42 +124,39 @@ const NextLeaderDashboard = () => {
                             ) : nextLeaders.length > 0 ? (
                                 <>{nextLeaders.map((item, idx) => (
                                     <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
-                                        <td className="px-3 lg:px-6 py-1.5 lg:py-2">
+                                        <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                             <div className={classNames(
-                                                "w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-[10px] lg:text-sm shadow-inner",
+                                                "w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner",
                                                 idx < 3 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"
                                             )}>{idx + 1}</div>
                                         </td>
-                                        <td className="px-3 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40">
-                                            <div className="flex flex-col"><span className="text-white font-black text-xs lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[9px] lg:text-[10px]">{item.stock_code}</span></div>
+                                        <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40">
+                                            <div className="flex flex-col"><span className="text-white font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px]">{item.stock_code}</span></div>
                                         </td>
-                                        <td className="px-3 lg:px-6 py-1.5 lg:py-2 text-center">
-                                            <div className="inline-block px-2 lg:px-3 py-0.5 lg:py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-xs lg:text-base">{item.total_score.toFixed(1)}</span></div>
+                                        <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center">
+                                            <div className="inline-block px-3 py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-sm lg:text-base">{item.total_score.toFixed(1)}</span></div>
                                         </td>
-                                        <td className="px-3 lg:px-6 py-1.5 lg:py-2">
-                                            <div className="flex items-center gap-3 lg:gap-4">
-                                                <div className="flex flex-col gap-0.5 w-14 lg:w-24">
-                                                    <div className="flex justify-between text-[8px] lg:text-[9px] font-bold text-slate-500 uppercase"><span>Algo</span><span>{item.algo_score.toFixed(0)}</span></div>
+                                        <td className="px-4 lg:px-6 py-1.5 lg:py-2">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex flex-col gap-0.5 w-16 lg:w-24">
+                                                    <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase"><span>Algo</span><span>{item.algo_score.toFixed(0)}</span></div>
                                                     <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.algo_score}%`}}></div></div>
                                                 </div>
-                                                <div className="flex flex-col gap-0.5 w-14 lg:w-24">
-                                                    <div className="flex justify-between text-[8px] lg:text-[9px] font-bold text-slate-500 uppercase"><span>AI</span><span>{item.ensemble_score.toFixed(0)}</span></div>
+                                                <div className="flex flex-col gap-0.5 w-16 lg:w-24">
+                                                    <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase"><span>AI</span><span>{item.ensemble_score.toFixed(0)}</span></div>
                                                     <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{width: `${item.ensemble_score}%`}}></div></div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-3 lg:px-6 py-1.5 lg:py-2">
+                                        <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                             <div className="flex flex-wrap gap-1">
                                                 {item.reason.split(',').map((r, i) => (
-                                                    <span key={i} className="px-1.5 lg:px-2 py-0.5 bg-slate-800 text-slate-300 text-[8px] lg:text-[11px] font-bold rounded border border-slate-700/50">{r.trim()}</span>
+                                                    <span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] lg:text-[11px] font-bold rounded border border-slate-700/50">{r.trim()}</span>
                                                 ))}
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
-                                {/* [v17.5] 억지 여백 제거, 숨구멍용 초소형 패딩만 남김 */}
-                                <tr className="h-2"><td></td></tr>
-                                </>
+                                ))}<tr className="h-4"><td></td></tr></>
                             ) : (
                                 <tr><td colSpan="5" className="py-20 text-center text-slate-600 font-bold italic text-xs uppercase tracking-widest">No Data Available</td></tr>
                             )}
