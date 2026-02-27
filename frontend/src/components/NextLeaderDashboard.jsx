@@ -66,7 +66,7 @@ const NextLeaderDashboard = () => {
     };
 
     return (
-        <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-0 lg:pb-8">
+        <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-20 lg:pb-8">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1">
                 <div className="flex items-center gap-2">
                     <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30">
