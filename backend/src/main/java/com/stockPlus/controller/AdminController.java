@@ -4,6 +4,7 @@ import com.stockPlus.mapper.AdminMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import java.util.*; // [v16.5] ArrayList, Collections 사용을 위해 추가
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,18 @@ public class AdminController {
         response.put("aiSignals", adminMapper.getLatestAiSignals());
         Double hitRate = adminMapper.getAiHitRate();
         response.put("hitRate", hitRate != null ? hitRate : 0.0); // [v13.7] AI 적중률 추가
+        return response;
+    }
+
+    /**
+     * [v16.5] 드릴다운 대체: 특정 업종의 주도주(Lead Stocks) 정보 조회
+     */
+    @GetMapping("/intelligence/industry")
+    public Map<String, String> getLeadStocks(@RequestParam String industryName) {
+        log.info(">>> [Sector Info] Fetching lead stocks for: {}", industryName);
+        String leadStocks = adminMapper.getLeadStocksByIndustryName(industryName);
+        Map<String, String> response = new HashMap<>();
+        response.put("leadStocks", leadStocks != null ? leadStocks : "");
         return response;
     }
 }

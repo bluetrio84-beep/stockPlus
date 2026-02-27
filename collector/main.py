@@ -66,9 +66,15 @@ class MegaCollector:
                 try:
                     res = requests.get(f"{BACKEND_API_URL}/stocks/{code}/price?exchangeCode=UN", timeout=5).json()
                     m_cap = int(float(str(res.get('marketCap', '0')).replace(',', '')))
-                    if m_cap > 0:
+                    ind_name = res.get('industryName', '')
+                    
+                    if m_cap > 0 or ind_name:
                         with conn.cursor() as cursor:
-                            cursor.execute("UPDATE stock_master SET market_cap = %s WHERE stock_code = %s", (m_cap, code))
+                            cursor.execute("""
+                                UPDATE stock_master 
+                                SET market_cap = %s, industry_name = %s 
+                                WHERE stock_code = %s
+                            """, (m_cap, ind_name, code))
                         conn.commit()
                 except: continue
                 if (i+1) % 100 == 0: print(f">>> [Sync] Progress: {i+1}/{total}")

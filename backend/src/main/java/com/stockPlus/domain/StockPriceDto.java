@@ -36,6 +36,7 @@ public class StockPriceDto {
     private String stockStatus; 
     private String marketWarning; 
     private String indexName; 
+    private String industryName; // [v16.4] 업종명 추가
     
     // [임시] 모든 응답 필드 확인용
     private Map<String, Object> rawOutput;

@@ -70,6 +70,7 @@ public class KisStockService {
                                 .prevClose(getField(out, "stck_sdpr", "STCK_SDPR", "0")).marketCap(getField(out, "hts_avls", "HTS_AVLS", "0"))
                                 .listedShares(getField(out, "lstn_stcn", "LSTN_STCN", "0")).high52w(getField(out, "w52_hgpr", "W52_HGPR", "0"))
                                 .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(indexName)
+                                .industryName(getField(out, "bstp_kor_isnm", "BSTP_KOR_ISNM", "")) // [v16.4] 업종명 추출
                                 .exchangeCode(requestExchange).build();
                     } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
                 })

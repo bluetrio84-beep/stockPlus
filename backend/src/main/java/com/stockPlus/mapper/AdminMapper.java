@@ -111,4 +111,35 @@ public interface AdminMapper {
             "WHERE ap.signal_type = 'BUY' " +
             "AND ap.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
     Double getAiHitRate();
+
+    // [v16.5] 드릴다운 Step 1: 업종별 주도주 문자열 조회
+    @Select("SELECT lead_stocks FROM industry_quotes WHERE industry_name = #{industryName} ORDER BY updated_at DESC LIMIT 1")
+    String getLeadStocksByIndustryName(@Param("industryName") String industryName);
+
+    // [v16.5] 드릴다운 Step 2: 종목명 목록을 기반으로 실시간 시세 및 AI 점수 조회
+    @Select("<script>" +
+            "SELECT m.stock_name as name, m.stock_code as code, " +
+            "0.0 as x, " + 
+            "COALESCE(p.prediction_score, 50) as y, " +
+            "COALESCE(s.volume, 0) as volume, " +
+            "COALESCE(s.foreign_net_buy * s.current_price, 0) as z, " +
+            "COALESCE(p.signal_type, 'WAIT') as ai_signal " +
+            "FROM stock_master m " +
+            "LEFT JOIN ( " +
+            "  SELECT stock_code, current_price, volume, foreign_net_buy " +
+            "  FROM stock_supply_demand " +
+            "  WHERE id IN (SELECT MAX(id) FROM stock_supply_demand GROUP BY stock_code) " +
+            ") s ON m.stock_code = s.stock_code " +
+            "LEFT JOIN ( " +
+            "  SELECT target_name, prediction_score, signal_type " +
+            "  FROM ai_prediction " +
+            "  WHERE id IN (SELECT MAX(id) FROM ai_prediction GROUP BY target_name) " +
+            ") p ON CONCAT('STOCK_', m.stock_code) = p.target_name " +
+            "WHERE " +
+            "<foreach item='item' collection='names' separator=' OR '>" +
+            "  m.stock_name LIKE CONCAT('%', #{item}, '%') " +
+            "</foreach>" +
+            "ORDER BY m.market_cap DESC" +
+            "</script>")
+    List<Map<String, Object>> getStocksByNames(@Param("names") List<String> names);
 }
