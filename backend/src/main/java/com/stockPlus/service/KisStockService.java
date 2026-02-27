@@ -104,38 +104,57 @@ public class KisStockService {
     }
 
     private Mono<List<StockChartDto>> fetchHistory5MinChart(String stockCode, String marketDiv) {
-        log.info(">>> [KIS API] Fetching 5Min Chart (FHKST03010230) for {}", stockCode);
-        String token = kisAuthService.getAccessToken();
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String nowTime = LocalTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HHmmss"));
-        
-        // [보정] UN 코드가 들어오면 KIS가 거부할 수 있으므로 J로 전환
+        log.info(">>> [KIS API] Fetching Weekly 5-Day 5Min Chart for {}", stockCode);
         String finalMarketDiv = "UN".equals(marketDiv) ? "J" : marketDiv;
+        
+        List<String> targetDates = new ArrayList<>();
+        LocalDate d = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        while (targetDates.size() < 5) {
+            if (d.getDayOfWeek().getValue() <= 5) {
+                targetDates.add(d.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+            }
+            d = d.minusDays(1);
+        }
 
-        // [수정] 정확한 API URL 경로 적용
+        return reactor.core.publisher.Flux.fromIterable(targetDates)
+            .flatMap(date -> fetchRawIntradayForDate(stockCode, finalMarketDiv, date))
+            .collectList()
+            .map(allLists -> {
+                Map<Long, StockChartDto> mergedMap = new TreeMap<>();
+                for (List<StockChartDto> dayList : allLists) {
+                    for (StockChartDto item : dayList) {
+                        mergedMap.put(item.getTime(), item);
+                    }
+                }
+                return new ArrayList<>(mergedMap.values());
+            });
+    }
+
+    private Mono<List<StockChartDto>> fetchRawIntradayForDate(String stockCode, String marketDiv, String date) {
+        String token = kisAuthService.getAccessToken();
+        String todayStr = LocalDate.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String targetTime = date.equals(todayStr) ? LocalTime.now(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HHmmss")) : "160000";
+
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-time-dailychartprice"
-                + "?FID_COND_MRKT_DIV_CODE=" + finalMarketDiv
+                + "?FID_COND_MRKT_DIV_CODE=" + marketDiv
                 + "&FID_INPUT_ISCD=" + stockCode
-                + "&FID_INPUT_HOUR_1=" + nowTime
-                + "&FID_INPUT_DATE_1=" + today
-                + "&FID_ETC_CLS_CODE=2" // 5분봉
+                + "&FID_INPUT_HOUR_1=" + targetTime
+                + "&FID_INPUT_DATE_1=" + date
+                + "&FID_ETC_CLS_CODE=2" 
                 + "&FID_PW_DATA_INCU_YN=Y"
-                + "&FID_FAKE_TICK_INCU_YN="; // 명세서상 공백 필수
+                + "&FID_FAKE_TICK_INCU_YN=";
 
         return webClientBuilder.build().get().uri(uri)
                 .header("authorization", "Bearer " + token)
                 .header("appkey", kisAuthService.getAppKey())
                 .header("appsecret", kisAuthService.getAppSecret())
                 .header("tr_id", "FHKST03010230")
-                .header("content-type", "application/json; charset=utf-8") // [수정] UTF-8 명시
-                .header("custtype", "P") // [수정] 개인 고객 명시
+                .header("content-type", "application/json; charset=utf-8")
+                .header("custtype", "P")
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(res -> parse5MinResponse(res, "output2"))
-                .onErrorResume(e -> {
-                    log.error(">>> [KIS API] 5Min Request Error: {}", e.getMessage());
-                    return Mono.just(Collections.emptyList());
-                });
+                .onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
     private List<StockChartDto> parse5MinResponse(String response, String outputKey) {

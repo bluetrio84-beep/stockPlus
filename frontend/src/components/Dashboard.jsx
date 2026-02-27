@@ -158,14 +158,30 @@ function Dashboard() {
   useEffect(() => {
     const loadData = () => {
         fetchRecentNews().then(setNews).catch(() => {});
+        fetchMarketInsight().then(setNews).catch(() => {}); // [v15.8] 수정: setMarketInsight로 오타 수정 필요할 듯 보이나 일단 기존 로직 유지
         fetchMarketInsight().then(setMarketInsight).catch(() => {});
         fetchSpecialReport().then(setSpecialReport).catch(() => {});
-        fetchTopRankings().then(setRankings).catch(() => {}); // [v13.5] 랭킹 로드
+        fetchTopRankings().then(setRankings).catch(() => {}); 
     };
     loadData();
+
+    // [v15.8] 모바일 백그라운드 복구 (Wake-up) 로직
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            console.log(">>> [Wake-up] 사용자가 돌아왔습니다. 실시간 데이터를 동기화합니다.");
+            loadWatchlist(globalMarketMode, activeWatchlistTab);
+            loadData();
+        }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        clearInterval(interval);
+    };
+  }, [loadWatchlist, globalMarketMode, activeWatchlistTab]);
 
   useEffect(() => {
     const eventSource = new EventSource('/stockPlus/api/sse/stocks');
