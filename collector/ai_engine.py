@@ -146,32 +146,30 @@ class AIEngine:
                 try:
                     with torch.no_grad():
                         lstm_pred = self.lstm_model(input_tensor).item()
-                        predictions.append(lstm_pred)
-                except: pass
+                except: lstm_pred = scaled_data[-1, 0] # 실패 시 현재가로 fallback
                 
                 # 2. TCN Prediction
-                if self.tcn_model is not None:
-                    try:
+                try:
+                    if self.tcn_model is not None:
                         with torch.no_grad():
                             tcn_pred = self.tcn_model(input_tensor).item()
-                            predictions.append(tcn_pred)
-                    except: pass
+                    else: tcn_pred = lstm_pred
+                except: tcn_pred = lstm_pred
                 
-                # 3. XGBoost Prediction
+                # 3. XGBoost Meta-Learner (Stacking Logic)
+                # [v16.1] LSTM/TCN 예측값 + 현재 데이터를 최종 메타 러너에게 전달
                 if self.xgb_model is not None:
                     try:
-                        xgb_input = scaled_data.reshape(1, -1)
-                        xgb_pred = self.xgb_model.predict(xgb_input)[0]
-                        predictions.append(float(xgb_pred))
-                    except: pass
+                        # Meta-Learner 입력 데이터 구성: [LSTM_Pred, TCN_Pred, Scaled_Features(5)]
+                        meta_input = np.array([[lstm_pred, tcn_pred] + list(scaled_data[-1, :])], dtype=np.float32)
+                        final_pred = float(self.xgb_model.predict(meta_input)[0])
+                    except Exception as e:
+                        # 메타 러너 실패 시 산술 평균으로 fallback (안전장치)
+                        final_pred = (lstm_pred + tcn_pred) / 2
+                else:
+                    final_pred = (lstm_pred + tcn_pred) / 2
                 
-                if not predictions:
-                    return 50
-                
-                # 앙상블 결합 (단순 평균)
-                final_pred = sum(predictions) / len(predictions)
                 diff = final_pred - scaled_data[-1, 0]
-                
                 return max(0, min(100, 50 + (diff * 500)))
         except Exception as e:
             return 50

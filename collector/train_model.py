@@ -109,17 +109,38 @@ def train():
     torch.save(tcn_model.state_dict(), "stock_tcn_v1.pth")
     print(">>> [Success] TCN saved as 'stock_tcn_v1.pth'")
 
-    # --- 3. XGBoost Training ---
-    print("\n--- [3/3] Training XGBoost ---")
-    # XGBoost는 2D 입력이 필요하므로 (샘플수, 시퀀스길이 * 피처수)로 변환
-    X_xgb = X.reshape(X.shape[0], -1)
-    xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=4, learning_rate=0.05, objective='reg:squarederror')
-    xgb_model.fit(X_xgb, y)
+    # --- 3. XGBoost Stacking (Meta-Learner) Training ---
+    print("\n--- [3/3] Training XGBoost Meta-Learner (Stacking) ---")
+    lstm_model.eval()
+    tcn_model.eval()
     
-    xgb_model.save_model("stock_xgb_v1.json")
-    print(">>> [Success] XGBoost saved as 'stock_xgb_v1.json'")
+    with torch.no_grad():
+        # LSTM과 TCN의 예측값(Meta-Features) 생성
+        meta_lstm = lstm_model(X_tensor).cpu().numpy()
+        meta_tcn = tcn_model(X_tensor).cpu().numpy()
+    
+    # [v16.1] Meta-Learner 입력 구성: [LSTM예측, TCN예측, 현재가, 개인, 외인, 기관, 거래량]
+    # XGBoost는 스케일링에 강하므로 원본 피처의 특징을 그대로 반영하도록 스태킹 구성
+    X_meta = np.column_stack([
+        meta_lstm, 
+        meta_tcn, 
+        X[:, -1, :] # 시퀀스의 마지막 날 데이터 (5개 피처)
+    ])
+    
+    # Meta-Learner 학습 (LSTM/TCN의 예측 습관을 학습)
+    xgb_meta_model = xgb.XGBRegressor(
+        n_estimators=100, 
+        max_depth=5, 
+        learning_rate=0.05, 
+        objective='reg:squarederror',
+        subsample=0.8
+    )
+    xgb_meta_model.fit(X_meta, y)
+    
+    xgb_meta_model.save_model("stock_xgb_v1.json")
+    print(">>> [Success] XGBoost Meta-Learner saved as 'stock_xgb_v1.json'")
 
-    print("\n>>> [Success] All Ensemble Models Trained Successfully!")
+    print("\n>>> [Success] Stacking Ensemble System Built Successfully!")
 
 if __name__ == "__main__":
     train()
