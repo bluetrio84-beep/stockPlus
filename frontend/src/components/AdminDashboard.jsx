@@ -111,7 +111,7 @@ const AdminDashboard = () => {
     return (
         <div className="flex-1 bg-slate-950 p-4 lg:p-6 overflow-y-auto custom-scrollbar relative h-full flex flex-col">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-                <div><h1 className="text-2xl font-black text-white flex items-center gap-3"><Settings className="text-indigo-500" /> 시스템 관리</h1><p className="text-slate-500 text-sm mt-1 font-medium">데이터 수집 모니터링</p></div>
+                <div><h1 className="text-2xl font-black text-white flex items-center gap-3"><Settings className="text-indigo-500" /> 데이터 수집 관리</h1><p className="text-slate-500 text-sm mt-1 font-medium">데이터 수집 모니터링</p></div>
                 <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-stretch lg:self-auto shadow-lg">
                     {[{ id: 'overview', name: '현황', icon: Activity }, { id: 'logs', name: '로그', icon: List }, { id: 'data', name: '데이터', icon: Database }].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2", activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><tab.icon size={14} /> {tab.name}</button>

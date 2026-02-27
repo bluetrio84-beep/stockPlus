@@ -18,10 +18,10 @@ const LayoutDesktop = ({ logic }) => {
     ];
 
     if (isAdmin()) {
-        navItems.push({ name: '시스템 관리', path: '/admin', icon: Settings });
         navItems.push({ name: 'ADMIN 대시보드', path: '/admin/intel', icon: LayoutDashboard });
         navItems.push({ name: 'NEXT LEADERS', path: '/admin/next-leaders', icon: Award });
-        navItems.push({ name: 'MARKET BUBBLE', path: '/admin/chart', icon: BarChart2 });
+        navItems.push({ name: 'MARKET BUBBLE CHART', path: '/admin/chart', icon: BarChart2 });
+        navItems.push({ name: '데이터 수집 관리', path: '/admin', icon: Settings });
     }
 
     return (

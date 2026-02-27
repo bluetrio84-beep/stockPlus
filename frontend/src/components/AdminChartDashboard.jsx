@@ -145,7 +145,7 @@ const AdminChartDashboard = () => {
                         <div className="p-1.5 bg-rose-600/20 rounded-lg border border-rose-500/30">
                             <BarChart2 className="text-rose-400" size={20} />
                         </div>
-                        <h1 className="text-xl lg:text-2xl font-black text-white tracking-tight uppercase italic">Market Bubble</h1>
+                        <h1 className="text-xl lg:text-2xl font-black text-white tracking-tight uppercase italic">Market Bubble Chart</h1>
                     </div>
                     <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-widest opacity-80 italic">Sector Intelligence</p>
                 </div>
