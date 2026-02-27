@@ -106,7 +106,7 @@ const LayoutMobile = ({ logic }) => {
                         <div key={index.name} className="flex items-center gap-2">
                             <span className="text-[10px] font-black text-slate-500">{index.name}</span>
                             <span className="text-[11px] font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
-                            <span className={classNames("text-[10px] font-bold font-mono flex items-center gap-0.5", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
+                            <span className={classNames("text-[9px] font-bold font-mono flex items-center gap-0.5", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                 {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                             </span>
                         </div>
