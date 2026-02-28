@@ -18,6 +18,36 @@ public class AdminController {
 
     private final AdminMapper adminMapper;
     private final com.stockPlus.scheduler.DailyInvestorScheduler dailyInvestorScheduler;
+    private final com.stockPlus.service.StockMasterService stockMasterService;
+
+    // --- 0. 상장종목 관리 (CRUD) ---
+    @GetMapping("/stocks")
+    public List<com.stockPlus.domain.StockMaster> getAllStocks(
+            @RequestParam(defaultValue = "100") int limit, 
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) String marketType) {
+        // [v17.7] marketType 필터링 로직 추가
+        if (marketType != null && !marketType.equals("ALL")) {
+            // 이 부분은 Service/Mapper에 필터링 쿼리를 추가해야 함
+            return stockMasterService.getStocksByMarket(marketType, limit, offset);
+        }
+        return stockMasterService.getAllStocks(limit, offset);
+    }
+
+    @PostMapping("/stocks")
+    public void addStock(@RequestBody com.stockPlus.domain.StockMaster master) {
+        stockMasterService.createStock(master);
+    }
+
+    @PutMapping("/stocks")
+    public void updateStock(@RequestBody com.stockPlus.domain.StockMaster master) {
+        stockMasterService.updateStock(master);
+    }
+
+    @DeleteMapping("/stocks/{stockCode}")
+    public void deleteStock(@PathVariable String stockCode) {
+        stockMasterService.deleteStock(stockCode);
+    }
 
     @PostMapping("/dump-investor")
     public String triggerInvestorDump() {

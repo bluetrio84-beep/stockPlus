@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
-const AdminDashboard = () => {
+const AdminDataCollection = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [dataCategory, setDataCategory] = useState('supply');
     const [config, setConfig] = useState({ collect_interval: 180 });
@@ -13,7 +13,6 @@ const AdminDashboard = () => {
     const [allData, setAllData] = useState({ supply: [], rank: [], theme: [], industry: [] });
     const [selectedLog, setSelectedLog] = useState(null);
 
-    // [개선] 초정밀 콤팩트 시간 포맷 (26.02.20 19:59)
     const formatTimeCompact = (dateStr) => {
         if (!dateStr) return '-';
         try {
@@ -212,4 +211,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default AdminDataCollection;

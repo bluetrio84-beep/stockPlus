@@ -24,4 +24,24 @@ public class StockMasterService {
     public List<StockMaster> searchStocks(String keyword) {
         return stockMasterMapper.searchStocks(keyword);
     }
+
+    public List<StockMaster> getAllStocks(int limit, int offset) {
+        return stockMasterMapper.findAllPaged(limit, offset);
+    }
+
+    public List<StockMaster> getStocksByMarket(String marketType, int limit, int offset) {
+        return stockMasterMapper.findByMarketPaged(marketType, limit, offset);
+    }
+
+    public void createStock(StockMaster master) {
+        stockMasterMapper.insert(master);
+    }
+
+    public void updateStock(StockMaster master) {
+        stockMasterMapper.update(master);
+    }
+
+    public void deleteStock(String stockCode) {
+        stockMasterMapper.delete(stockCode);
+    }
 }

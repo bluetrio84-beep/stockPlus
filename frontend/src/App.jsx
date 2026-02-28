@@ -3,7 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import WatchlistSummary from './components/WatchlistSummary';
 import AiKeywordManager from './components/AiKeywordManager';
-import AdminDashboard from "./components/AdminDashboard";
+import AdminDataCollection from "./components/AdminDataCollection";
+import AdminSystemManagement from "./components/AdminSystemManagement";
 import AdminIntelligenceDashboard from "./components/AdminIntelligenceDashboard";
 import NextLeaderDashboard from "./components/NextLeaderDashboard";
 import AdminChartDashboard from "./components/AdminChartDashboard";
@@ -42,10 +43,11 @@ function App() {
         <Route path="/keywords" element={<ProtectedRoute><AiKeywordManager /></ProtectedRoute>} />
         
         {/* 관리자 전용 라우트 */}
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDataCollection /></AdminRoute>} />
         <Route path="/admin/intel" element={<AdminRoute><AdminIntelligenceDashboard /></AdminRoute>} />
         <Route path="/admin/next-leaders" element={<AdminRoute><NextLeaderDashboard /></AdminRoute>} />
         <Route path="/admin/chart" element={<AdminRoute><AdminChartDashboard /></AdminRoute>} />
+        <Route path="/admin/system" element={<AdminRoute><AdminSystemManagement /></AdminRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
