@@ -21,6 +21,7 @@ const AdminSystemManagement = () => {
 
     // --- User Management [v17.8] ---
     const [users, setUsers] = useState([]);
+    const [userSearchKeyword, setUserSearchKeyword] = useState(''); // [v17.9] 사용자 검색어 추가
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [userFormData, setUserFormData] = useState({ usrId: '', usrName: '', email: '', phoneNumber: '', role: 'USER', useyn: 'Y', password: '' });
@@ -38,10 +39,11 @@ const AdminSystemManagement = () => {
         finally { setIsLoading(false); }
     };
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (keyword = '') => {
         try {
             setIsLoading(true);
-            const res = await fetch('/stockPlus/api/admin/users', { headers: getAuthHeader() });
+            const url = keyword ? `/stockPlus/api/admin/users?keyword=${encodeURIComponent(keyword)}` : '/stockPlus/api/admin/users';
+            const res = await fetch(url, { headers: getAuthHeader() });
             if (res.ok) {
                 const data = await res.json();
                 setUsers(data);
@@ -52,7 +54,7 @@ const AdminSystemManagement = () => {
 
     useEffect(() => {
         if (activeTab === 'stocks' && !searchKeyword) fetchStocks(0);
-        if (activeTab === 'users') fetchUsers();
+        if (activeTab === 'users' && !userSearchKeyword) fetchUsers();
     }, [activeTab, isMobile, marketFilter]);
 
     const handleSearch = async () => {
@@ -72,6 +74,10 @@ const AdminSystemManagement = () => {
         finally { setIsLoading(false); }
     };
 
+    const handleUserSearch = () => {
+        fetchUsers(userSearchKeyword);
+    };
+
     const handleSaveStock = async () => {
         const method = editingStock ? 'PUT' : 'POST';
         try {
@@ -88,7 +94,7 @@ const AdminSystemManagement = () => {
     };
 
     const handleSaveUser = async () => {
-        const method = editingUser ? 'PUT' : 'POST'; // [v17.9] 신규/수정 분기
+        const method = editingUser ? 'PUT' : 'POST';
         try {
             const res = await fetch('/stockPlus/api/admin/users', {
                 method,
@@ -97,7 +103,7 @@ const AdminSystemManagement = () => {
             });
             if (res.ok) {
                 setIsUserModalOpen(false);
-                fetchUsers();
+                fetchUsers(userSearchKeyword);
             } else {
                 const errData = await res.json();
                 alert(`저장 실패: ${errData.message || '알 수 없는 오류'}`);
@@ -146,7 +152,7 @@ const AdminSystemManagement = () => {
     };
 
     const openUserAddModal = () => {
-        setEditingUser(null); // 신규 등록 모드
+        setEditingUser(null);
         setUserFormData({ 
             usrId: '', 
             usrName: '', 
@@ -188,7 +194,7 @@ const AdminSystemManagement = () => {
                                     type="text" placeholder="종목명/코드..." 
                                     value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs lg:text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs lg:text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-inner"
                                 />
                             </div>
                             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2 lg:px-3">
@@ -204,8 +210,8 @@ const AdminSystemManagement = () => {
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={handleSearch} className="flex-1 lg:flex-none bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg">검색</button>
-                            <button onClick={openAddModal} className="flex-1 lg:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg">
+                            <button onClick={handleSearch} className="flex-1 lg:flex-none bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg active:scale-95">검색</button>
+                            <button onClick={openAddModal} className="flex-1 lg:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
                                 <Plus size={16} /> 신규
                             </button>
                         </div>
@@ -258,17 +264,24 @@ const AdminSystemManagement = () => {
                 </div>
             ) : (
                 <div className="flex-1 min-h-0 flex flex-col gap-3 lg:gap-4 animate-in fade-in duration-300">
-                    <div className="flex justify-between items-center shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center"><Users className="text-rose-500" size={18} /></div>
-                            <div>
-                                <h2 className="text-sm lg:text-lg font-black text-white uppercase tracking-tighter">사용자 관리</h2>
-                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Platform User Control</p>
+                    <div className="flex flex-col lg:flex-row gap-2 shrink-0">
+                        <div className="flex-1 flex gap-2">
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input 
+                                    type="text" placeholder="ID / Name 검색..." 
+                                    value={userSearchKeyword} onChange={(e) => setUserSearchKeyword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleUserSearch()}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs lg:text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 shadow-inner"
+                                />
                             </div>
                         </div>
-                        <button onClick={openUserAddModal} className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg active:scale-95">
-                            <Plus size={16} /> 신규
-                        </button>
+                        <div className="flex gap-2">
+                            <button onClick={handleUserSearch} className="flex-1 lg:flex-none bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg active:scale-95">검색</button>
+                            <button onClick={openUserAddModal} className="flex-1 lg:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
+                                <Plus size={16} /> 신규
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl">

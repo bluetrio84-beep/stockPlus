@@ -53,7 +53,10 @@ public class AdminController {
 
     // --- 0.1 사용자 관리 ---
     @GetMapping("/users")
-    public List<com.stockPlus.domain.User> getAllUsers() {
+    public List<com.stockPlus.domain.User> getAllUsers(@RequestParam(required = false) String keyword) {
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            return userMapper.searchUsers(keyword);
+        }
         return userMapper.findAll();
     }
 

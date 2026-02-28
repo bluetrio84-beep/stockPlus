@@ -17,4 +17,7 @@ public interface UserMapper {
     
     // 모든 사용자 ID 목록 조회
     List<String> findAllUserIds();
+    
+    // [v17.9] 사용자 검색 (ID 또는 이름)
+    List<User> searchUsers(@org.apache.ibatis.annotations.Param("keyword") String keyword);
 }

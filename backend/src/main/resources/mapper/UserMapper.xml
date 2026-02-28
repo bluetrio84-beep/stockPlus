@@ -54,4 +54,18 @@
         WHERE USRID = #{usrId}
     </update>
 
+    <select id="searchUsers" resultType="com.stockPlus.domain.User">
+        SELECT 
+            USRID as usrId, 
+            USRNAME as usrName, 
+            email, 
+            phone_number as phoneNumber, 
+            role,
+            useyn,
+            created_at as createdAt 
+        FROM users
+        WHERE USRID LIKE CONCAT('%', #{keyword}, '%') 
+           OR USRNAME LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
 </mapper>
