@@ -48,6 +48,9 @@
             phone_number = #{phoneNumber},
             role = #{role},
             useyn = #{useyn}
+            <if test="password != null">
+                , password = #{password}
+            </if>
         WHERE USRID = #{usrId}
     </update>
 

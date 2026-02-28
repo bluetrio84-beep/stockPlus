@@ -23,7 +23,7 @@ const AdminSystemManagement = () => {
     const [users, setUsers] = useState([]);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [userFormData, setUserFormData] = useState({ usrId: '', usrName: '', email: '', phoneNumber: '', role: 'USER', useyn: 'Y' });
+    const [userFormData, setUserFormData] = useState({ usrId: '', usrName: '', email: '', phoneNumber: '', role: 'USER', useyn: 'Y', password: '' });
 
     const fetchStocks = async (p = 0) => {
         try {
@@ -88,15 +88,19 @@ const AdminSystemManagement = () => {
     };
 
     const handleSaveUser = async () => {
+        const method = editingUser ? 'PUT' : 'POST'; // [v17.9] 신규/수정 분기
         try {
             const res = await fetch('/stockPlus/api/admin/users', {
-                method: 'PUT',
+                method,
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(userFormData)
             });
             if (res.ok) {
                 setIsUserModalOpen(false);
                 fetchUsers();
+            } else {
+                const errData = await res.json();
+                alert(`저장 실패: ${errData.message || '알 수 없는 오류'}`);
             }
         } catch (e) { console.error(e); }
     };
@@ -135,7 +139,22 @@ const AdminSystemManagement = () => {
             email: user.email, 
             phoneNumber: user.phoneNumber, 
             role: user.role || 'USER', 
-            useyn: user.useyn || 'Y' 
+            useyn: user.useyn || 'Y',
+            password: '' 
+        });
+        setIsUserModalOpen(true);
+    };
+
+    const openUserAddModal = () => {
+        setEditingUser(null); // 신규 등록 모드
+        setUserFormData({ 
+            usrId: '', 
+            usrName: '', 
+            email: '', 
+            phoneNumber: '', 
+            role: 'USER', 
+            useyn: 'Y',
+            password: '' 
         });
         setIsUserModalOpen(true);
     };
@@ -247,6 +266,9 @@ const AdminSystemManagement = () => {
                                 <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Platform User Control</p>
                             </div>
                         </div>
+                        <button onClick={openUserAddModal} className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg active:scale-95">
+                            <Plus size={16} /> 신규
+                        </button>
                     </div>
 
                     <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
@@ -290,7 +312,7 @@ const AdminSystemManagement = () => {
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="5" className="py-20 text-center text-slate-600 font-bold italic uppercase tracking-widest text-[10px]">No users found</td></tr>
+                                        <tr><td colSpan="4" className="py-20 text-center text-slate-600 font-bold italic uppercase tracking-widest text-[10px]">No users found</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -334,17 +356,34 @@ const AdminSystemManagement = () => {
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsUserModalOpen(false)}></div>
                     <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-5 lg:p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white">
-                            <h3 className="text-base font-black uppercase italic">사용자 정보 수정</h3>
+                            <h3 className="text-base font-black uppercase italic">{editingUser ? '사용자 정보 수정' : '신규 사용자 등록'}</h3>
                             <button onClick={() => setIsUserModalOpen(false)}><X size={20}/></button>
                         </div>
                         <div className="p-6 lg:p-8 space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-[9px] font-black text-slate-500 uppercase">User ID (ReadOnly)</label>
-                                <input type="text" value={userFormData.usrId} readOnly className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-400 font-mono" />
+                                <label className="text-[9px] font-black text-slate-500 uppercase">User ID {editingUser && '(ReadOnly)'}</label>
+                                <input 
+                                    type="text" 
+                                    value={userFormData.usrId} 
+                                    readOnly={!!editingUser} 
+                                    placeholder="아이디를 입력하세요"
+                                    onChange={(e) => setUserFormData({...userFormData, usrId: e.target.value})} 
+                                    className={classNames("w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-mono", editingUser ? "text-slate-400" : "text-white")} 
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[9px] font-black text-slate-500 uppercase">User Name</label>
                                 <input type="text" value={userFormData.usrName} onChange={(e) => setUserFormData({...userFormData, usrName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-black" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-slate-500 uppercase">{editingUser ? 'Change Password (Option)' : 'Password'}</label>
+                                <input 
+                                    type="password" 
+                                    value={userFormData.password} 
+                                    placeholder={editingUser ? "변경 시에만 입력하세요" : "비밀번호를 입력하세요"} 
+                                    onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} 
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono" 
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">

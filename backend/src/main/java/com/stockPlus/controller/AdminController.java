@@ -18,6 +18,7 @@ public class AdminController {
 
     private final AdminMapper adminMapper;
     private final com.stockPlus.mapper.UserMapper userMapper; // [추가] 사용자 관리용 매퍼
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder; // [v17.9] 비밀번호 암호화용
     private final com.stockPlus.scheduler.DailyInvestorScheduler dailyInvestorScheduler;
     private final com.stockPlus.service.StockMasterService stockMasterService;
 
@@ -56,8 +57,25 @@ public class AdminController {
         return userMapper.findAll();
     }
 
+    @PostMapping("/users")
+    public void createUser(@RequestBody com.stockPlus.domain.User user) {
+        // [v17.9] 신규 등록 시 비밀번호 암호화 필수
+        if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        userMapper.insert(user);
+    }
+
     @PutMapping("/users")
     public void updateUser(@RequestBody com.stockPlus.domain.User user) {
+        // [v17.9] 비밀번호가 입력된 경우 암호화하여 저장
+        if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
+            log.info(">>> [Admin] Changing password for user: {}", user.getUsrId());
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        } else {
+            // 입력 안 됐으면 null로 세팅하여 MyBatis에서 업데이트 안 되게 함
+            user.setPassword(null);
+        }
         userMapper.update(user);
     }
 
