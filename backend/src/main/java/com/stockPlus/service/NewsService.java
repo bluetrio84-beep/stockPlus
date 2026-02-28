@@ -58,16 +58,15 @@ public class NewsService {
         for (String usrId : allUserIds) {
             int userSavedThisCycle = 0;
             int userSummarizedThisCycle = 0;
-            final int MAX_NEWS_TO_SAVE = 4;  // 시간당 최대 4개 수집
-            final int MAX_AI_SUMMARIES = 2;  // 그중 딱 2개만 AI 요약
+            final int MAX_NEWS_TO_SAVE = 4;  // [v17.9] 시간당 최대 4개 수집
+            final int MAX_AI_SUMMARIES = 3;  // [v17.9] 그중 최소/최대 3개 AI 요약
 
             try {
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
-                
-                // 중요 뉴스 판별 키워드
-                List<String> importantKeywords = Arrays.asList("실적", "계약", "공시", "M&A", "인수", "합병", "신공장", "체결", "특허", "임상", "공개", "상장", "수주");
+                // RSS 가중치 판단을 위한 중요 단어들
+                List<String> importantKeywords = Arrays.asList("실적", "계약", "공시", "M&A", "인수", "합병", "신공장", "체결", "특허", "임상", "공개", "상장", "수주", "속보", "발표");
 
-                // 1. 키워드 뉴스 수집 (최대 4개)
+                // 1. [가중치 1순위] 사용자 키워드 뉴스 수집 및 즉시 요약
                 if (!keywords.isEmpty()) {
                     for (String keyword : keywords) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
@@ -77,9 +76,8 @@ public class NewsService {
                             if (isNotJunk(item.getTitle(), item.getDescription())) {
                                 item.setUsrId(usrId);
                                 
-                                // 중요 키워드 우선 요약 (최대 2개)
-                                boolean isImportant = importantKeywords.stream().anyMatch(k -> item.getTitle().contains(k));
-                                if (userSummarizedThisCycle < MAX_AI_SUMMARIES && isImportant) {
+                                // 키워드 뉴스는 3개 채울 때까지 무조건 요약 시도
+                                if (userSummarizedThisCycle < MAX_AI_SUMMARIES) {
                                     String summary = geminiService.summarizeNews(item.getTitle(), item.getDescription());
                                     if (summary != null) {
                                         item.setAiSummary(summary);
@@ -97,7 +95,7 @@ public class NewsService {
                     }
                 }
                 
-                // 2. RSS 피드 뉴스 수집 (4개를 다 못 채운 경우 실행)
+                // 2. [가중치 2순위] RSS 피드 뉴스 수집 및 중요 뉴스 요약
                 if (userSavedThisCycle < MAX_NEWS_TO_SAVE) {
                     for (String feedUrl : RSS_FEED_URLS) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
@@ -111,7 +109,7 @@ public class NewsService {
                                     NewsItem newsItem = convertToNewsItem(entry);
                                     newsItem.setUsrId(usrId);
 
-                                    // 요약이 아직 2개 안 채워졌다면 RSS 중요 뉴스도 요약
+                                    // RSS는 중요 키워드가 포함된 경우에만 우선 요약
                                     boolean isImportant = importantKeywords.stream().anyMatch(k -> newsItem.getTitle().contains(k));
                                     if (userSummarizedThisCycle < MAX_AI_SUMMARIES && isImportant) {
                                         String summary = geminiService.summarizeNews(newsItem.getTitle(), newsItem.getDescription());
@@ -132,18 +130,17 @@ public class NewsService {
                     }
                 }
 
-                // 3. [보강] 만약 2개의 요약을 다 못 채웠다면, 방금 저장한 뉴스들 중 요약 없는 것을 골라 강제 요약 수행
+                // 3. [가중치 3순위] 강제 보충: 요약이 3개 미만이면 방금 저장한 뉴스 중 무작위 요약
                 if (userSummarizedThisCycle < MAX_AI_SUMMARIES && userSavedThisCycle > userSummarizedThisCycle) {
-                    // DB에서 방금 저장된 요약 안 된 뉴스 가져오기
-                    List<NewsItem> recentNoSummary = newsMapper.findRecentNews(usrId, 10);
-                    for (NewsItem n : recentNoSummary) {
+                    List<NewsItem> recentSaved = newsMapper.findRecentNews(usrId, MAX_NEWS_TO_SAVE);
+                    for (NewsItem n : recentSaved) {
                         if (userSummarizedThisCycle >= MAX_AI_SUMMARIES) break;
                         if (!n.isAiSummarized()) {
                             String summary = geminiService.summarizeNews(n.getTitle(), n.getDescription());
                             if (summary != null) {
                                 n.setAiSummary(summary);
                                 n.setAiSummarized(true);
-                                newsMapper.updateAiSummary(n); // NewsItem 객체 전달
+                                newsMapper.updateAiSummary(n);
                                 userSummarizedThisCycle++;
                             }
                         }
