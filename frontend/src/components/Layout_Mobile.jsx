@@ -124,14 +124,30 @@ const LayoutMobile = ({ logic }) => {
                             <button onClick={() => setIsMenuOpen(false)}><X size={20} className="text-slate-500" /></button>
                         </div>
                         <div className="space-y-1.5 px-3">
-                            {navItems.map((item) => {
-                                const isActive = location.pathname === item.path;
-                                return (
-                                    <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-4 text-base flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 active:bg-slate-800")}>
-                                        <item.icon size={20} className={isActive ? "text-white" : "text-slate-500"} />{item.name}
-                                    </button>
-                                );
-                            })}
+                            <div className="flex-1 space-y-1.5">
+                                {navItems.filter(item => !['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                    const isActive = location.pathname === item.path;
+                                    return (
+                                        <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-4 text-base flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 active:bg-slate-800")}>
+                                            <item.icon size={20} className={isActive ? "text-white" : "text-slate-500"} />{item.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {isAdmin() && (
+                                <div className="mt-6 pt-6 border-t border-slate-800/60 space-y-1.5">
+                                    <div className="px-4 pb-2"><span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
+                                    {navItems.filter(item => ['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-4 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" : "text-slate-500 active:bg-slate-800")}>
+                                                <item.icon size={18} className={classNames(isActive ? "text-indigo-400" : "text-slate-600")} />{item.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </>

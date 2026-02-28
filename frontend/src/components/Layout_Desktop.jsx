@@ -108,15 +108,31 @@ const LayoutDesktop = ({ logic }) => {
             <div className="flex flex-1 overflow-hidden relative">
                 <aside className={classNames("bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-30 shadow-xl", isMenuOpen ? "w-64 opacity-100 p-4" : "w-0 opacity-0 p-0 border-none")}>
                     <div className="px-2 py-3 mb-4 whitespace-nowrap"><span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span></div>
-                    <nav className="space-y-1.5 min-w-[224px]">
-                        {navItems.map((item) => {
-                            const isActive = location.pathname === item.path;
-                            return (
-                                <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200")}>
-                                    <item.icon size={18} className={classNames(isActive ? "text-white" : "text-slate-500")} />{item.name}
-                                </button>
-                            );
-                        })}
+                    <nav className="flex-1 flex flex-col min-w-[224px]">
+                        <div className="space-y-1.5 flex-1">
+                            {navItems.filter(item => !['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                const isActive = location.pathname === item.path;
+                                return (
+                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200")}>
+                                        <item.icon size={18} className={classNames(isActive ? "text-white" : "text-slate-500")} />{item.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {isAdmin() && (
+                            <div className="mt-4 pt-4 border-t border-slate-800/60 space-y-1.5">
+                                <div className="px-2 pb-2"><span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
+                                {navItems.filter(item => ['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                    const isActive = location.pathname === item.path;
+                                    return (
+                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" : "text-slate-500 hover:bg-slate-800 hover:text-slate-300")}>
+                                            <item.icon size={16} className={classNames(isActive ? "text-indigo-400" : "text-slate-600")} />{item.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </nav>
                 </aside>
 
