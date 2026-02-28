@@ -17,5 +17,6 @@ public class User {
     private String phoneNumber;
     private String email;
     private String role; // [추가] 권한 필드
+    private String useyn; // [추가] 사용 여부 (Y/N)
     private LocalDateTime createdAt;
 }

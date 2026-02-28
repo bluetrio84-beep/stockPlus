@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter } from 'lucide-react';
+import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter, UserCheck, UserX, Shield, User } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
@@ -19,6 +19,12 @@ const AdminSystemManagement = () => {
     const [formData, setFormData] = useState({ stockCode: '', stockName: '', exchangeCode: 'J', marketType: 'KOSPI' });
     const [deleteTarget, setDeleteConfirm] = useState(null); 
 
+    // --- User Management [v17.8] ---
+    const [users, setUsers] = useState([]);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
+    const [userFormData, setUserFormData] = useState({ usrId: '', usrName: '', email: '', phoneNumber: '', role: 'USER', useyn: 'Y' });
+
     const fetchStocks = async (p = 0) => {
         try {
             setIsLoading(true);
@@ -32,8 +38,21 @@ const AdminSystemManagement = () => {
         finally { setIsLoading(false); }
     };
 
+    const fetchUsers = async () => {
+        try {
+            setIsLoading(true);
+            const res = await fetch('/stockPlus/api/admin/users', { headers: getAuthHeader() });
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (e) { console.error(e); }
+        finally { setIsLoading(false); }
+    };
+
     useEffect(() => {
         if (activeTab === 'stocks' && !searchKeyword) fetchStocks(0);
+        if (activeTab === 'users') fetchUsers();
     }, [activeTab, isMobile, marketFilter]);
 
     const handleSearch = async () => {
@@ -68,6 +87,20 @@ const AdminSystemManagement = () => {
         } catch (e) { console.error(e); }
     };
 
+    const handleSaveUser = async () => {
+        try {
+            const res = await fetch('/stockPlus/api/admin/users', {
+                method: 'PUT',
+                headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(userFormData)
+            });
+            if (res.ok) {
+                setIsUserModalOpen(false);
+                fetchUsers();
+            }
+        } catch (e) { console.error(e); }
+    };
+
     const confirmDelete = async () => {
         if (!deleteTarget) return;
         try {
@@ -92,6 +125,19 @@ const AdminSystemManagement = () => {
         setEditingStock(null);
         setFormData({ stockCode: '', stockName: '', exchangeCode: 'J', marketType: 'KOSPI' });
         setIsModalOpen(true);
+    };
+
+    const openUserEditModal = (user) => {
+        setEditingUser(user);
+        setUserFormData({ 
+            usrId: user.usrId, 
+            usrName: user.usrName, 
+            email: user.email, 
+            phoneNumber: user.phoneNumber, 
+            role: user.role || 'USER', 
+            useyn: user.useyn || 'Y' 
+        });
+        setIsUserModalOpen(true);
     };
 
     return (
@@ -192,11 +238,64 @@ const AdminSystemManagement = () => {
                     </div>
                 </div>
             ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-10 bg-slate-900/50 border border-dashed border-slate-800 rounded-3xl animate-in zoom-in-95 duration-300">
-                    <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4"><Users className="text-slate-600" size={32} /></div>
-                    <h2 className="text-lg font-black text-white mb-1 uppercase tracking-tighter">User Management</h2>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-6">Under development</p>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-400 rounded-full border border-rose-500/20 text-[9px] font-black"><AlertTriangle size={12} /> 추후 업데이트 예정</div>
+                <div className="flex-1 min-h-0 flex flex-col gap-3 lg:gap-4 animate-in fade-in duration-300">
+                    <div className="flex justify-between items-center shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center"><Users className="text-rose-500" size={18} /></div>
+                            <div>
+                                <h2 className="text-sm lg:text-lg font-black text-white uppercase tracking-tighter">사용자 관리</h2>
+                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Platform User Control</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+                        <div className="overflow-auto custom-scrollbar flex-1">
+                            <table className="w-full text-left border-collapse min-w-full">
+                                <thead className="bg-slate-950/50 sticky top-0 z-10 shadow-sm">
+                                    <tr className="text-[9px] lg:text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        <th className="px-2 lg:px-6 py-3 lg:py-4 whitespace-nowrap">ID / Name</th>
+                                        <th className="px-2 lg:px-6 py-3 lg:py-4">Role</th>
+                                        <th className="px-2 lg:px-6 py-3 lg:py-4">Status</th>
+                                        <th className="px-2 lg:px-6 py-3 lg:py-4 text-right">Acts</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800/50">
+                                    {isLoading ? (
+                                        <tr><td colSpan="4" className="py-20 text-center"><Loader2 className="animate-spin text-rose-500 mx-auto mb-2" /><p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Loading Users...</p></td></tr>
+                                    ) : users.length > 0 ? (
+                                        users.map(u => (
+                                            <tr key={u.usrId} className="hover:bg-rose-600/5 transition-colors group">
+                                                <td className="px-2 lg:px-6 py-2.5 lg:py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-white font-black text-[11px] lg:text-sm">{u.usrName}</span>
+                                                        <span className="text-slate-500 font-mono text-[9px] lg:text-[10px]">{u.usrId}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-2 lg:px-6 py-2.5 lg:py-4">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Shield size={12} className={u.role === 'ADMIN' ? 'text-amber-500' : 'text-slate-500'} />
+                                                        <span className={classNames("text-[10px] font-black uppercase tracking-tighter", u.role === 'ADMIN' ? "text-amber-500" : "text-slate-400")}>{u.role}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-2 lg:px-6 py-2.5 lg:py-4">
+                                                    <span className={classNames("px-2 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1 w-fit", u.useyn === 'Y' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20")}>
+                                                        {u.useyn === 'Y' ? <UserCheck size={10} /> : <UserX size={10} />}
+                                                        {u.useyn === 'Y' ? 'ACTIVE' : 'BLOCKED'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-2 lg:px-6 py-2.5 lg:py-4 text-right">
+                                                    <button onClick={() => openUserEditModal(u)} className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg transition-all"><Edit2 size={14} /></button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr><td colSpan="5" className="py-20 text-center text-slate-600 font-bold italic uppercase tracking-widest text-[10px]">No users found</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -230,10 +329,57 @@ const AdminSystemManagement = () => {
                 </div>
             )}
 
+            {isUserModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsUserModalOpen(false)}></div>
+                    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-5 lg:p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white">
+                            <h3 className="text-base font-black uppercase italic">사용자 정보 수정</h3>
+                            <button onClick={() => setIsUserModalOpen(false)}><X size={20}/></button>
+                        </div>
+                        <div className="p-6 lg:p-8 space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-slate-500 uppercase">User ID (ReadOnly)</label>
+                                <input type="text" value={userFormData.usrId} readOnly className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-400 font-mono" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-slate-500 uppercase">User Name</label>
+                                <input type="text" value={userFormData.usrName} onChange={(e) => setUserFormData({...userFormData, usrName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-black" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase">Role</label>
+                                    <select value={userFormData.role} onChange={(e) => setUserFormData({...userFormData, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none font-bold">
+                                        <option value="USER">USER</option>
+                                        <option value="ADMIN">ADMIN</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase">Status</label>
+                                    <select value={userFormData.useyn} onChange={(e) => setUserFormData({...userFormData, useyn: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none font-bold">
+                                        <option value="Y">ACTIVE</option>
+                                        <option value="N">BLOCKED</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-slate-500 uppercase">Email</label>
+                                <input type="email" value={userFormData.email} onChange={(e) => setUserFormData({...userFormData, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black text-slate-500 uppercase">Phone</label>
+                                <input type="text" value={userFormData.phoneNumber} onChange={(e) => setUserFormData({...userFormData, phoneNumber: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" />
+                            </div>
+                        </div>
+                        <div className="p-5 bg-slate-850 flex gap-3"><button onClick={() => setIsUserModalOpen(false)} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">취소</button><button onClick={handleSaveUser} className="flex-1 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2"><Save size={16} /> 저장</button></div>
+                    </div>
+                </div>
+            )}
+
             {deleteTarget && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}></div>
-                    <div className="relative w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="relative w-full max-sm bg-slate-900 border border-rose-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-6 flex flex-col items-center text-center gap-3">
                             <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center"><AlertCircle className="text-rose-500" size={24} /></div>
                             <div><h3 className="text-lg font-black text-white mb-1">삭제 확인</h3><p className="text-slate-400 text-xs">[{deleteTarget.stockName}] 종목을 삭제할까요?</p></div>

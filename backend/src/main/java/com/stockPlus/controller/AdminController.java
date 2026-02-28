@@ -17,6 +17,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminMapper adminMapper;
+    private final com.stockPlus.mapper.UserMapper userMapper; // [추가] 사용자 관리용 매퍼
     private final com.stockPlus.scheduler.DailyInvestorScheduler dailyInvestorScheduler;
     private final com.stockPlus.service.StockMasterService stockMasterService;
 
@@ -47,6 +48,17 @@ public class AdminController {
     @DeleteMapping("/stocks/{stockCode}")
     public void deleteStock(@PathVariable String stockCode) {
         stockMasterService.deleteStock(stockCode);
+    }
+
+    // --- 0.1 사용자 관리 ---
+    @GetMapping("/users")
+    public List<com.stockPlus.domain.User> getAllUsers() {
+        return userMapper.findAll();
+    }
+
+    @PutMapping("/users")
+    public void updateUser(@RequestBody com.stockPlus.domain.User user) {
+        userMapper.update(user);
     }
 
     @PostMapping("/dump-investor")

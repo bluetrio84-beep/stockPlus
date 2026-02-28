@@ -40,10 +40,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         // 2. UserDetails 객체 생성 및 반환
         // 역할(Role)이 있으면 'ROLE_' 접두사를 붙여 권한 설정
         String role = user.getRole() != null ? user.getRole() : "USER";
+        boolean isEnabled = "Y".equals(user.getUseyn()); // useyn이 'Y'일 때만 활성화
         
         return new org.springframework.security.core.userdetails.User(
                 user.getUsrId(), 
                 user.getPassword(), 
+                isEnabled, // [수정] 계정 활성화 여부 체크 (useyn)
+                true, // accountNonExpired
+                true, // credentialsNonExpired
+                true, // accountNonLocked
                 org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_" + role)
         );
     }

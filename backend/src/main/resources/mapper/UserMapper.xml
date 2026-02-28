@@ -8,18 +8,20 @@
             USRNAME as usrName, 
             email, 
             phone_number as phoneNumber, 
+            role,
+            useyn,
             created_at as createdAt 
         FROM users
     </select>
 
     <select id="findByUsrId" resultType="com.stockPlus.domain.User">
-        SELECT USRID as usrId, USRNAME as usrName, password, phone_number as phoneNumber, email, role, created_at as createdAt 
+        SELECT USRID as usrId, USRNAME as usrName, password, phone_number as phoneNumber, email, role, useyn, created_at as createdAt 
         FROM users WHERE USRID = #{usrId}
     </select>
 
     <insert id="insert" parameterType="com.stockPlus.domain.User">
-        INSERT INTO users (USRID, USRNAME, password, phone_number, email, role, created_at)
-        VALUES (#{usrId}, #{usrName}, #{password}, #{phoneNumber}, #{email}, #{role}, NOW())
+        INSERT INTO users (USRID, USRNAME, password, phone_number, email, role, useyn, created_at)
+        VALUES (#{usrId}, #{usrName}, #{password}, #{phoneNumber}, #{email}, #{role}, COALESCE(#{useyn}, 'Y'), NOW())
     </insert>
 
     <select id="existsByUsrId" resultType="boolean">
@@ -36,6 +38,17 @@
 
     <update id="updatePassword">
         UPDATE users SET password = #{password} WHERE USRID = #{usrId}
+    </update>
+
+    <update id="update" parameterType="com.stockPlus.domain.User">
+        UPDATE users 
+        SET 
+            USRNAME = #{usrName},
+            email = #{email},
+            phone_number = #{phoneNumber},
+            role = #{role},
+            useyn = #{useyn}
+        WHERE USRID = #{usrId}
     </update>
 
 </mapper>

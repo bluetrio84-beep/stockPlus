@@ -13,6 +13,7 @@ public interface UserMapper {
     boolean existsByUsrId(String usrId);
     boolean existsByPhoneNumber(String phoneNumber);
     void updatePassword(@org.apache.ibatis.annotations.Param("usrId") String usrId, @org.apache.ibatis.annotations.Param("password") String password);
+    void update(User user); // [추가] 사용자 정보 수정 (usrName, email, phone_number, role, useyn)
     
     // 모든 사용자 ID 목록 조회
     List<String> findAllUserIds();
