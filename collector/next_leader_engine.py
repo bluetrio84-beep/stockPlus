@@ -100,6 +100,7 @@ class NextLeaderEngine(AIEngine):
                 total_score = (algo_score * 0.6) + (e_score * 0.4)
                 
                 if algo_score > 60 or e_score > 70:
+                    current_price = float(curr['price']) if curr['price'] is not None else 0.0
                     results.append({
                         'code': code,
                         'name': curr['stock_name'],
@@ -109,7 +110,7 @@ class NextLeaderEngine(AIEngine):
                         'tcn': e_data['tcn'],
                         'xgb': e_data['xgb'],
                         'ensemble': e_score,
-                        'price_at': float(curr['price']),
+                        'price_at': current_price,
                         'reason': reason if reason else "수급안정"
                     })
 

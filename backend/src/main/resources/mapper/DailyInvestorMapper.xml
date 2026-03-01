@@ -23,7 +23,14 @@
         SELECT id, stock_code as stockCode, price_at_recom as priceAtRecom 
         FROM ai_next_leaders 
         WHERE hit_result = 'PENDING' 
-        AND captured_at &lt;= DATE_SUB(NOW(), INTERVAL 3 DAY)
+        AND DATE(captured_at) &lt;= (
+            SELECT st_date FROM (
+                SELECT DISTINCT bsop_date as st_date 
+                FROM daily_stock_investor 
+                ORDER BY bsop_date DESC 
+                LIMIT 1 OFFSET 3
+            ) AS t
+        )
     </select>
 
     <update id="updateLeaderHitResult">

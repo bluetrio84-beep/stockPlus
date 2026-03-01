@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthHeader } from '../api/stockApi';
-import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity } from 'lucide-react';
+import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import classNames from 'classnames';
 
 const NextLeaderDashboard = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [nextLeaders, setNextLeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('ranking'); // 'ranking' or 'review'
+    const [activeTab, setActiveTab] = useState('ranking'); 
+
+    // [v17.9] AI 리뷰 데이터 상태 추가
+    const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [] });
 
     const fetchNextLeaders = async (date) => {
         try {
@@ -26,9 +29,30 @@ const NextLeaderDashboard = () => {
         }
     };
 
+    const fetchReviewData = async () => {
+        try {
+            setIsLoading(true);
+            const res = await fetch(`/stockPlus/api/admin/intelligence/ai-review`, {
+                headers: getAuthHeader()
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setReviewData(json);
+            }
+        } catch (e) {
+            console.error("Review Data Fetch Error:", e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        fetchNextLeaders(selectedDate);
-    }, [selectedDate]);
+        if (activeTab === 'ranking') {
+            fetchNextLeaders(selectedDate);
+        } else {
+            fetchReviewData();
+        }
+    }, [selectedDate, activeTab]);
 
     const downloadExcel = () => {
         if (nextLeaders.length === 0) return;
@@ -48,12 +72,14 @@ const NextLeaderDashboard = () => {
                 "종목코드": item.stock_code,
                 "총점": parseFloat(item.total_score.toFixed(1)),
                 "알고리즘": parseFloat(item.algo_score.toFixed(1)),
-                "AI앙상블": parseFloat(item.ensemble_score.toFixed(1)),
+                "LSTM": parseFloat((item.lstm_score || 0).toFixed(1)),
+                "TCN": parseFloat((item.tcn_score || 0).toFixed(1)),
+                "XGB": parseFloat((item.xgb_score || 0).toFixed(1)),
                 "선발사유": item.reason,
                 "분석시간": formatDate(item.captured_at)
             }));
             const worksheet = XLSX.utils.json_to_sheet(excelData);
-            worksheet['!cols'] = [{ wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 50 }, { wch: 20 }];
+            worksheet['!cols'] = [{ wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 50 }, { wch: 20 }];
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "NextLeaders");
             XLSX.writeFile(workbook, `StockPlus_NextLeaders_${selectedDate.replace(/-/g, '')}.xlsx`);
@@ -71,13 +97,13 @@ const NextLeaderDashboard = () => {
             </div>
 
             <div className="flex-1 overflow-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse min-w-[600px]">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="sticky top-0 z-10 bg-slate-900 shadow-sm">
                         <tr>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Score</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Breakdown</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">AI Breakdown (L/T/X)</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[180px] bg-slate-900">Reason</th>
                         </tr>
                     </thead>
@@ -100,14 +126,18 @@ const NextLeaderDashboard = () => {
                                         <div className="inline-block px-3 py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-sm lg:text-base">{item.total_score.toFixed(1)}</span></div>
                                     </td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex flex-col gap-0.5 w-16 lg:w-24">
-                                                <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase"><span>Algo</span><span>{item.algo_score.toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.algo_score}%`}}></div></div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>L</span><span>{(item.lstm_score || 0).toFixed(0)}</span></div>
+                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{width: `${item.lstm_score || 0}%`}}></div></div>
                                             </div>
-                                            <div className="flex flex-col gap-0.5 w-16 lg:w-24">
-                                                <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase"><span>AI</span><span>{item.ensemble_score.toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{width: `${item.ensemble_score}%`}}></div></div>
+                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>T</span><span>{(item.tcn_score || 0).toFixed(0)}</span></div>
+                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.tcn_score || 0}%`}}></div></div>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>X</span><span>{(item.xgb_score || 0).toFixed(0)}</span></div>
+                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-cyan-500" style={{width: `${item.xgb_score || 0}%`}}></div></div>
                                             </div>
                                         </div>
                                     </td>
@@ -130,65 +160,73 @@ const NextLeaderDashboard = () => {
     );
 
     const renderReviewTab = () => (
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10">
-            {/* 1. 전문가별 적중률 & 가중치 현황 */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 px-1">
+            {/* 1. 전문가별 적중률 & 가중치 현황 (Real Data) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {[
-                    { name: 'LSTM (추세)', hit: 78, weight: 30, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-                    { name: 'TCN (변동성)', hit: 85, weight: 40, color: 'text-rose-400', bg: 'bg-rose-500/10' },
-                    { name: 'XGB (통계)', hit: 82, weight: 30, color: 'text-cyan-400', bg: 'bg-cyan-500/10' }
-                ].map((m, i) => (
+                {reviewData.modelPerformance.length > 0 ? reviewData.modelPerformance.map((m, i) => (
                     <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-                        <div className={`absolute top-0 left-0 w-1 h-full ${m.bg.replace('/10', '')}`}></div>
+                        <div className={classNames("absolute top-0 left-0 w-1 h-full", 
+                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
+                        )}></div>
                         <div className="flex justify-between items-start mb-4">
-                            <div><h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.name}</h4><p className={`text-xl font-black ${m.color}`}>{m.hit}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p></div>
+                            <div><h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4><p className={classNames("text-xl font-black", 
+                                m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400')
+                            )}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p></div>
                             <div className="text-right"><span className="text-[9px] text-slate-500 font-bold block mb-1 uppercase">Weight</span><span className="text-sm font-black text-white">{m.weight}%</span></div>
                         </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className={`h-full ${m.bg.replace('/10', '')} transition-all duration-1000`} style={{ width: `${m.hit}%` }}></div></div>
+                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full transition-all duration-1000", 
+                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
+                        )} style={{ width: `${m.hit_rate}%` }}></div></div>
                     </div>
-                ))}
+                )) : [1,2,3].map(i => <div key={i} className="h-24 bg-slate-900/50 border border-slate-800 rounded-2xl animate-pulse"></div>)}
             </div>
 
-            {/* 2. 사후 복기 리포트 (과거 추천주의 실제 결과) */}
+            {/* 2. 사후 복기 리포트 (Real Data) */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                     <h3 className="text-white font-black flex items-center gap-2 uppercase tracking-tighter"><CheckCircle2 className="text-emerald-500" size={20} /> AI 사후 복기 리포트</h3>
-                    <span className="text-[10px] text-slate-500 font-mono">Based on D+3 Performance</span>
+                    <span className="text-[10px] text-slate-500 font-mono italic">Past 10 Validated Results</span>
                 </div>
                 
-                <div className="space-y-4">
-                    {/* 데이터 축적 안내 메시지 (베타 버전용) */}
-                    <div className="p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl flex flex-col items-center text-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center"><Activity className="text-indigo-400 animate-pulse" size={24} /></div>
-                        <div>
-                            <h4 className="text-white font-bold text-sm mb-1">AI 모델 정밀 복기 중...</h4>
-                            <p className="text-slate-400 text-[11px] leading-relaxed">1,600개 종목에 대한 시계열 데이터가 축적되고 있습니다.<br/>다음 주부터 모델별 상세 오차율 및 가중치 최적화 내역이 공개됩니다.</p>
-                        </div>
-                    </div>
-
-                    {/* 샘플 구조 (나중에 실제 데이터로 교체) */}
-                    <div className="opacity-30 pointer-events-none grayscale">
-                        <div className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 mb-2">
+                <div className="space-y-3">
+                    {reviewData.pastRecommendations.length > 0 ? reviewData.pastRecommendations.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
                             <div className="flex items-center gap-4">
-                                <div className="text-xs font-black text-slate-500">02.24</div>
-                                <div><div className="text-sm font-bold text-white">삼성전자</div><div className="text-[10px] text-slate-500">AI Score: 92.5</div></div>
+                                <div className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">{item.date}</div>
+                                <div><div className="text-sm font-bold text-white">{item.stock_name}</div><div className="text-[9px] text-indigo-400 font-mono">Score: {item.total_score.toFixed(1)}</div></div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-sm font-black text-rose-400">+4.2%</div>
-                                <div className="text-[9px] font-bold text-emerald-500 uppercase">Success</div>
+                            <div className="flex items-center gap-6">
+                                <div className="text-right hidden sm:block"><div className="text-[9px] text-slate-500 uppercase font-bold">Price Change</div><div className="text-xs text-white font-black">{item.price_at_recom.toLocaleString()} → {item.price_after_3d.toLocaleString()}</div></div>
+                                <div className="text-right w-20">
+                                    <div className={classNames("text-sm font-black flex items-center justify-end gap-1", item.hit_result === 'SUCCESS' ? 'text-rose-400' : 'text-blue-400')}>
+                                        {item.hit_result === 'SUCCESS' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                        {((item.price_after_3d - item.price_at_recom) / item.price_at_recom * 100).toFixed(1)}%
+                                    </div>
+                                    <div className={classNames("text-[9px] font-bold uppercase", item.hit_result === 'SUCCESS' ? 'text-emerald-500' : 'text-slate-500')}>{item.hit_result}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )) : (
+                        <div className="p-10 flex flex-col items-center text-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center"><Activity className="text-indigo-400 animate-pulse" size={24} /></div>
+                            <div>
+                                <h4 className="text-white font-bold text-sm mb-1">데이터 분석 및 검증 중...</h4>
+                                <p className="text-slate-400 text-[11px] leading-relaxed">최초 분석 후 3일이 경과한 종목부터 순차적으로 성적표가 공개됩니다.<br/>수요일 아침부터 실제 복기 데이터가 노출될 예정입니다.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* 3. AI의 한마디 (Insight) */}
+            {/* 3. AI Insights (Dynamic Text Based on Data) */}
             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 flex items-start gap-4">
                 <Brain className="text-indigo-400 shrink-0 mt-1" size={24} />
                 <div>
-                    <h4 className="text-indigo-400 font-black text-xs uppercase tracking-widest mb-2">AI Insights</h4>
+                    <h4 className="text-indigo-400 font-black text-xs uppercase tracking-widest mb-2">AI Performance Insight</h4>
                     <p className="text-slate-300 text-[12px] leading-relaxed font-medium">
-                        "현재 시장은 기술적 지표(Algo)보다 **변동성 모델(TCN)**의 예측이 더 정확하게 들어맞고 있습니다. 일시적인 낙폭 과대 종목보다는 거래량이 동반된 돌파 매매 형식을 취하는 종목들이 높은 승률을 기록 중입니다."
+                        {reviewData.modelPerformance.length > 0 
+                            ? `현재 ${reviewData.modelPerformance.reduce((prev, curr) => prev.hit_rate > curr.hit_rate ? prev : curr).model_name} 모델이 가장 높은 적중률을 보이고 있습니다. 시장의 흐름에 따라 매주 주말 가중치(Weight)가 자동 최적화되어 다음 주 분석에 반영됩니다.`
+                            : "시계열 데이터가 축적됨에 따라 AI 모델별 강점과 약점을 스스로 분석하여 인사이트를 제공합니다. 현재는 초기 학습 데이터를 수집하는 단계입니다."}
                     </p>
                 </div>
             </div>
@@ -229,27 +267,10 @@ const NextLeaderDashboard = () => {
                 </div>
             </header>
 
-            {/* 탭 내비게이션: ADMIN 대시보드와 스타일 동기화 및 PC 우측 정렬 */}
             <div className="flex justify-end lg:mt-[-8px] shrink-0">
                 <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl w-full lg:w-fit shadow-lg">
-                    <button 
-                        onClick={() => setActiveTab('ranking')} 
-                        className={classNames(
-                            "flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2",
-                            activeTab === 'ranking' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                        )}
-                    >
-                        <TrendingUp size={12} /> RANKING
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('review')} 
-                        className={classNames(
-                            "flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2",
-                            activeTab === 'review' ? "bg-rose-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                        )}
-                    >
-                        <Brain size={12} /> AI REVIEW
-                    </button>
+                    <button onClick={() => setActiveTab('ranking')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2", activeTab === 'ranking' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><TrendingUp size={12} /> RANKING</button>
+                    <button onClick={() => setActiveTab('review')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2", activeTab === 'review' ? "bg-rose-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><Brain size={12} /> AI REVIEW</button>
                 </div>
             </div>
 
