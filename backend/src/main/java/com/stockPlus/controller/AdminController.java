@@ -96,6 +96,11 @@ public class AdminController {
         adminMapper.updateCollectInterval(payload.get("interval"));
     }
 
+    @PostMapping("/collector/strategy")
+    public void updateStrategy(@RequestBody Map<String, String> payload) {
+        adminMapper.updateAiStrategy(payload.get("mode"));
+    }
+
     @GetMapping("/collector/logs")
     public List<Map<String, Object>> getLogs() {
         return adminMapper.getCollectorLogs();

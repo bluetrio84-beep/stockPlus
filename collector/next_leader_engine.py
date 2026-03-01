@@ -78,6 +78,27 @@ class NextLeaderEngine(AIEngine):
             df_raw = pd.read_sql(query, self.conn)
             if df_raw.empty: return 0
 
+            # 0. AI 분석 전략 모드 로드 (v17.9 동적 전략 적용)
+            strategy_mode = 'STABLE'
+            with self.conn.cursor() as cursor:
+                cursor.execute("SELECT ai_strategy_mode FROM collector_config WHERE id = 1")
+                row = cursor.fetchone()
+                if row and row[0]: strategy_mode = row[0]
+            
+            # 모드별 파라미터 설정
+            if strategy_mode == 'AGGRESSIVE':
+                weight_algo, weight_ai = 0.4, 0.6
+                min_threshold = 55.0
+                print(">>> [Strategy] Running in AGGRESSIVE mode (Algo 0.4 : AI 0.6, Min 55pt)")
+            elif strategy_mode == 'BALANCED':
+                weight_algo, weight_ai = 0.6, 0.4
+                min_threshold = 65.0
+                print(">>> [Strategy] Running in BALANCED mode (Algo 0.6 : AI 0.4, Min 65pt)")
+            else:
+                weight_algo, weight_ai = 0.7, 0.3
+                min_threshold = 80.0
+                print(">>> [Strategy] Running in STABLE mode (Algo 0.7 : AI 0.3, Min 80pt)")
+
             results = []
             codes = df_raw['stock_code'].unique()
             print(f">>> [NextLeader] Scrutinizing {len(codes)} stocks for the next big move...")
@@ -96,10 +117,10 @@ class NextLeaderEngine(AIEngine):
                 e_data = self.get_ensemble_score_details(code, float(curr['price']), 0, float(curr['volume']))
                 e_score = e_data['total']
                 
-                # C. 최종 하이브리드 점수
-                total_score = (algo_score * 0.6) + (e_score * 0.4)
+                # C. 최종 하이브리드 점수 (동적 가중치 적용)
+                total_score = (algo_score * weight_algo) + (e_score * weight_ai)
                 
-                if algo_score > 60 or e_score > 70:
+                if total_score >= min_threshold:
                     current_price = float(curr['price']) if curr['price'] is not None else 0.0
                     results.append({
                         'code': code,

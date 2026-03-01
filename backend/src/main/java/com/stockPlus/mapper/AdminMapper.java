@@ -14,6 +14,9 @@ public interface AdminMapper {
     @Update("UPDATE collector_config SET collect_interval = #{interval} WHERE id = 1")
     void updateCollectInterval(int interval);
 
+    @Update("UPDATE collector_config SET ai_strategy_mode = #{mode} WHERE id = 1")
+    void updateAiStrategy(@Param("mode") String mode);
+
     @Select("SELECT * FROM collector_logs ORDER BY id DESC LIMIT 100")
     List<Map<String, Object>> getCollectorLogs();
 
