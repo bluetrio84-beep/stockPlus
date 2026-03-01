@@ -92,8 +92,9 @@ class NextLeaderEngine(AIEngine):
                 # A. 알고리즘 점수 (Q-Score)
                 algo_score, reason = self.calculate_turnaround_score(curr, prev)
                 
-                # B. 앙상블 점수 (E-Score)
-                e_score = self.get_ensemble_score(code, float(curr['price']), 0, float(curr['volume']))
+                # B. 앙상블 상세 점수 (E-Score Details)
+                e_data = self.get_ensemble_score_details(code, float(curr['price']), 0, float(curr['volume']))
+                e_score = e_data['total']
                 
                 # C. 최종 하이브리드 점수
                 total_score = (algo_score * 0.6) + (e_score * 0.4)
@@ -104,21 +105,31 @@ class NextLeaderEngine(AIEngine):
                         'name': curr['stock_name'],
                         'total': total_score,
                         'algo': algo_score,
+                        'lstm': e_data['lstm'],
+                        'tcn': e_data['tcn'],
+                        'xgb': e_data['xgb'],
                         'ensemble': e_score,
+                        'price_at': float(curr['price']),
                         'reason': reason if reason else "수급안정"
                     })
 
             # 2. 점수 순 정렬 후 Top 20 선별
             top_20 = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
             
-            # 3. DB 저장
+            # 3. DB 저장 (컬럼 확장 반영)
             with self.conn.cursor() as cursor:
-                cursor.execute("DELETE FROM ai_next_leaders WHERE captured_at >= CURDATE()")
+                cursor.execute("DELETE FROM ai_next_leaders WHERE DATE(captured_at) = CURDATE()")
                 for item in top_20:
                     sql = """INSERT INTO ai_next_leaders 
-                             (stock_code, stock_name, total_score, algo_score, ensemble_score, reason, captured_at) 
-                             VALUES (%s, %s, %s, %s, %s, %s, NOW())"""
-                    cursor.execute(sql, (item['code'], item['name'], item['total'], item['algo'], item['ensemble'], item['reason']))
+                             (stock_code, stock_name, total_score, algo_score, 
+                              lstm_score, tcn_score, xgb_score, ensemble_score, 
+                              reason, price_at_recom, captured_at) 
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                    cursor.execute(sql, (
+                        item['code'], item['name'], item['total'], item['algo'], 
+                        item['lstm'], item['tcn'], item['xgb'], item['ensemble'], 
+                        item['reason'], item['price_at']
+                    ))
             
             self.conn.commit()
             print(f">>> [Success] Top 20 Next Leaders identified and stored.")

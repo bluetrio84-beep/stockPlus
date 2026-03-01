@@ -113,11 +113,17 @@ class AIEngine:
 
     # [v16.2] 실시간 강도 측정 하이브리드 앙상블 엔진
     def get_ensemble_score(self, stock_code, curr_price, curr_f, curr_vol):
+        details = self.get_ensemble_score_details(stock_code, curr_price, curr_f, curr_vol)
+        return details['total']
+
+    def get_ensemble_score_details(self, stock_code, curr_price, curr_f, curr_vol):
+        """
+        [v17.7] 각 모델별 개별 점수를 포함한 상세 정보를 반환합니다.
+        """
         if self.lstm_model is None or self.scaler is None: 
-            return 50
+            return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 과거 4일의 '맥락(Context)' 로드 - 확정된 5피처 데이터
                 cursor.execute("""
                     SELECT close_price, individual_net_buy, 
                            foreign_net_buy, institution_net_buy, volume 
@@ -128,29 +134,22 @@ class AIEngine:
                 rows = cursor.fetchall()
                 
                 if len(rows) < 4:
-                    return 50
+                    return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
                 
                 past_df = pd.DataFrame(rows[::-1])
-                
-                # 2. 오늘(D-0)의 '실시간 에너지' 합체
-                # 장중 데이터 부재 상황을 반영하여 개인/기관은 0으로 중립화
-                # 모델은 어제까지의 흐름 위에서 '오늘의 외인/현재가/거래량' 변화량에 집중하게 됨
                 today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
                 
-                # 데이터 전처리 (5피처 체계 유지)
                 df_values = df.values.astype(np.float32)
                 scaled_data = self.scaler.transform(df_values)
                 input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
                 
-                # 3. 앙상블 예측 (삼각편대 가동)
-                # 3-1. LSTM (추세 패턴 인식)
+                # 3. 앙상블 예측 (삼각편대)
                 try:
                     with torch.no_grad():
                         lstm_pred = self.lstm_model(input_tensor).item()
                 except: lstm_pred = scaled_data[-1, 0]
                 
-                # 3-2. TCN (실시간 변동성 포착)
                 try:
                     if self.tcn_model is not None:
                         with torch.no_grad():
@@ -158,22 +157,28 @@ class AIEngine:
                     else: tcn_pred = lstm_pred
                 except: tcn_pred = lstm_pred
                 
-                # 3-3. XGBoost Stacking (최종 심판관)
-                final_pred = (lstm_pred + tcn_pred) / 2 # 기본값 설정
+                final_pred = (lstm_pred + tcn_pred) / 2
                 if self.xgb_model is not None:
                     try:
-                        # [v16.3] Meta-Learner 입력 안전성 강화 (정확히 7개 피처: LSTM, TCN, 가격, 개인, 외인, 기관, 거래량)
                         meta_features = [lstm_pred, tcn_pred] + list(scaled_data[-1, :])
                         if len(meta_features) == 7:
                             meta_input = np.array([meta_features], dtype=np.float32)
                             final_pred = float(self.xgb_model.predict(meta_input)[0])
-                    except Exception: pass # 메타 러너 실패 시 산술 평균 유지
+                    except: pass
                 
-                # 4. 실시간 변화량 기반 스코어링 (50점 기준 상하 강도 측정)
-                diff = final_pred - scaled_data[-1, 0]
-                return max(0, min(100, 50 + (diff * 500)))
+                # 4. 개별 점수화 (50점 기준 강도 측정)
+                def calc_score(pred, base):
+                    return max(0, min(100, 50 + ((pred - base) * 500)))
+
+                base_val = scaled_data[-1, 0]
+                return {
+                    'total': calc_score(final_pred, base_val),
+                    'lstm': calc_score(lstm_pred, base_val),
+                    'tcn': calc_score(tcn_pred, base_val),
+                    'xgb': calc_score(final_pred, base_val) # XGB가 최종 결정자이므로 total과 유사
+                }
         except Exception:
-            return 50
+            return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
 
     # [v1.11] 정밀 적중률 산출 로직 (최근 7일 사후 검증)
     def calculate_ai_hit_rate(self):
@@ -216,9 +221,17 @@ class AIEngine:
         now = datetime.now(self.tz)
         if now.weekday() >= 5: return False # 주말 제외
         
-        # 2026년 공휴일 리스트
-        holidays = ["2026-01-01", "2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-01", "2026-05-05", "2026-05-25", "2026-06-03", "2026-07-17", "2026-08-17", "2026-09-24", "2026-09-25", "2026-10-05", "2026-10-09", "2026-12-25", "2026-12-31"]
-        if now.strftime('%Y-%m-%d') in holidays: return False
+        # [v17.8] DB 기반 공휴일 체크
+        try:
+            if not self.conn or not self.conn.open: self.connect()
+            today_str = now.strftime('%Y-%m-%d')
+            with self.conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM market_holidays WHERE holiday_date = %s", (today_str,))
+                res = cursor.fetchone()
+                if res and res[0] > 0:
+                    print(f">>> [AI Engine] Market Closed Today (DB Identified: {today_str})")
+                    return False
+        except: pass
         
         return 9 <= now.hour < 16
 

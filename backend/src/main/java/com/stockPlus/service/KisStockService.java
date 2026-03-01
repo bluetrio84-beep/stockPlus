@@ -25,6 +25,10 @@ public class KisStockService {
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
 
+    public Mono<StockPriceDto> fetchCurrentPrice(final String stockCode) {
+        return fetchUnifiedCurrentPrice(stockCode, "J");
+    }
+
     public Mono<StockPriceDto> fetchUnifiedCurrentPrice(final String stockCode, final String exchangeCode) {
         if ("IDX".equals(exchangeCode)) return fetchIndexCurrentPrice(stockCode);
         if ("UN".equals(exchangeCode)) {

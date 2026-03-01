@@ -30,6 +30,7 @@ public class DailyInvestorScheduler {
     private final KisStockService kisStockService;
     private final WatchlistMapper watchlistMapper;
     private final DailyInvestorMapper dailyInvestorMapper;
+    private final com.stockPlus.mapper.AdminMapper adminMapper; // [v17.8] 추가
 
     /**
      * 서버 시작 시 덤프 실행 (10초 후)
@@ -126,6 +127,36 @@ public class DailyInvestorScheduler {
         }
     }
 
+    @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
+    public void reviewAiPerformance() {
+        log.error(">>> [Review] Starting AI Performance Post-Verification (08:00)...");
+        List<Map<String, Object>> pendingList = dailyInvestorMapper.getPendingReviewLeaders();
+        if (pendingList == null || pendingList.isEmpty()) {
+            log.info(">>> [Review] No pending AI recommendations to verify.");
+            return;
+        }
+
+        for (Map<String, Object> item : pendingList) {
+            try {
+                Long id = ((Number) item.get("id")).longValue();
+                String code = (String) item.get("stockCode");
+                Double priceAtRecom = ((Number) item.get("priceAtRecom")).doubleValue();
+
+                // 현재가(또는 최근 종가) 조회
+                kisStockService.fetchCurrentPrice(code).subscribe(priceOutput -> {
+                    Double currentPrice = Double.parseDouble(priceOutput.getCurrentPrice());
+                    String result = (currentPrice > priceAtRecom) ? "SUCCESS" : "FAIL";
+                    
+                    dailyInvestorMapper.updateLeaderHitResult(id, result, currentPrice);
+                    log.info(">>> [Review] Stock {}: Recom={}, After3d={}, Result={}", code, priceAtRecom, currentPrice, result);
+                });
+                Thread.sleep(200); // API TPS 보호
+            } catch (Exception e) {
+                log.error(">>> [Review] Error verifying stock: {}", e.getMessage());
+            }
+        }
+    }
+
     /**
      * 휴장일 여부를 확인합니다. (주말 및 2026년 지정된 공휴일)
      */
@@ -138,30 +169,14 @@ public class DailyInvestorScheduler {
             return false;
         }
 
-        // 2. 2026년 지정된 휴장일 체크 (YYYY-MM-DD)
-        List<String> holidays = java.util.Arrays.asList(
-            "2026-02-16", "2026-02-17", "2026-02-18", // 설날 연휴
-            "2026-03-02", // 삼일절 대체공휴일
-            "2026-05-01", // 근로자의 날
-            "2026-05-05", // 어린이날
-            "2026-05-25", // 석가탄신일
-            "2026-06-03", // 지방선거
-            "2026-07-17", // 제헌절
-            "2026-08-17", // 광복절 대체공휴일
-            "2026-09-24", "2026-09-25", // 추석 연휴
-            "2026-10-05", // 개천절 대체공휴일
-            "2026-10-09", // 한글날
-            "2026-12-25", // 크리스마스
-            "2026-12-31"  // 연말 휴장일
-        );
-
+        // 2. DB 공휴일 체크 (v17.8)
         String todayStr = today.toString();
-        for (String holiday : holidays) {
-            if (todayStr.equals(holiday)) {
-                log.info(">>> [Batch] Market Closed Today: Holiday ({})", holiday);
-                return false;
-            }
+        int holidayCount = adminMapper.checkIsHoliday(todayStr);
+        if (holidayCount > 0) {
+            log.info(">>> [Batch] Market Closed Today: Holiday (DB Identified: {})", todayStr);
+            return false;
         }
+        
         return true;
     }
 }

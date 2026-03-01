@@ -145,4 +145,46 @@ public interface AdminMapper {
 
     @Select("SELECT * FROM ai_next_leaders WHERE DATE(captured_at) = #{date} ORDER BY total_score DESC")
     List<Map<String, Object>> getNextLeadersByDate(@Param("date") String date);
+
+    // [v17.7] AI 모델별 성적표 및 사후 복기 데이터 조회
+    @Select("SELECT " +
+            "  'LSTM' as model_name, " +
+            "  COALESCE(ROUND(COUNT(CASE WHEN lstm_score >= 70 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN lstm_score >= 70 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, " +
+            "  30 as weight " +
+            "FROM ai_next_leaders " +
+            "UNION ALL " +
+            "SELECT " +
+            "  'TCN' as model_name, " +
+            "  COALESCE(ROUND(COUNT(CASE WHEN tcn_score >= 70 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN tcn_score >= 70 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, " +
+            "  40 as weight " +
+            "FROM ai_next_leaders " +
+            "UNION ALL " +
+            "SELECT " +
+            "  'XGB' as model_name, " +
+            "  COALESCE(ROUND(COUNT(CASE WHEN xgb_score >= 70 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN xgb_score >= 70 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, " +
+            "  30 as weight " +
+            "FROM ai_next_leaders")
+    List<Map<String, Object>> getAiModelPerformance();
+
+    @Select("SELECT stock_code, stock_name, total_score, price_at_recom, price_after_3d, hit_result, DATE_FORMAT(captured_at, '%m.%d') as date " +
+            "FROM ai_next_leaders " +
+            "WHERE hit_result != 'PENDING' " +
+            "ORDER BY captured_at DESC LIMIT 10")
+    List<Map<String, Object>> getPastRecommendations();
+
+    // [v17.8] 공휴일 관리 (Dynamic Market Schedule)
+    @Select("SELECT * FROM market_holidays WHERE holiday_year = #{year} ORDER BY holiday_date ASC")
+    List<Map<String, Object>> getHolidaysByYear(@Param("year") int year);
+
+    @Insert("INSERT INTO market_holidays (holiday_date, holiday_name, holiday_year) VALUES (#{holiday_date}, #{holiday_name}, #{holiday_year})")
+    void insertHoliday(Map<String, Object> holiday);
+
+    @Update("UPDATE market_holidays SET holiday_date = #{holiday_date}, holiday_name = #{holiday_name}, holiday_year = #{holiday_year} WHERE id = #{id}")
+    void updateHoliday(Map<String, Object> holiday);
+
+    @Delete("DELETE FROM market_holidays WHERE id = #{id}")
+    void deleteHoliday(@Param("id") int id);
+
+    @Select("SELECT COUNT(*) FROM market_holidays WHERE holiday_date = #{date}")
+    int checkIsHoliday(@Param("date") String date);
 }

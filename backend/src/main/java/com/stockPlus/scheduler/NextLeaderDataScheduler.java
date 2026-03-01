@@ -18,6 +18,7 @@ public class NextLeaderDataScheduler {
 
     private final KisStockService kisStockService;
     private final JdbcTemplate jdbcTemplate;
+    private final com.stockPlus.mapper.AdminMapper adminMapper; // [v17.8] 추가
 
     /**
      * 평일 09:10 ~ 15:40 사이 매 30분마다 수집 (10분, 40분 단위)
@@ -135,10 +136,22 @@ public class NextLeaderDataScheduler {
     }
 
     private boolean isMarketOpen() {
-        java.time.LocalDate t = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
-        if (t.getDayOfWeek().getValue() > 5) return false;
-        List<String> h = java.util.Arrays.asList("2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-01", "2026-05-05", "2026-05-25", "2026-06-03", "2026-07-17", "2026-08-17", "2026-09-24", "2026-09-25", "2026-10-05", "2026-10-09", "2026-12-25", "2026-12-31");
-        return !h.contains(t.toString());
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        java.time.DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+        // 1. 주말 체크
+        if (dayOfWeek == java.time.DayOfWeek.SATURDAY || dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+            return false;
+        }
+
+        // 2. DB 공휴일 체크 (v17.8)
+        String todayStr = today.toString();
+        int holidayCount = adminMapper.checkIsHoliday(todayStr);
+        if (holidayCount > 0) {
+            return false;
+        }
+        
+        return true;
     }
 
     @jakarta.annotation.PostConstruct

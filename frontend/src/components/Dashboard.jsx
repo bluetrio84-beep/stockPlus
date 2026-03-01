@@ -157,10 +157,20 @@ function Dashboard() {
 
   useEffect(() => {
     const loadData = () => {
-        fetchRecentNews().then(setNews).catch(() => {});
-        fetchMarketInsight().then(setMarketInsight).catch(() => {});
-        fetchSpecialReport().then(setSpecialReport).catch(() => {});
-        fetchTopRankings().then(setRankings).catch(() => {}); 
+        fetchRecentNews().then(data => {
+            if (data && Array.isArray(data) && data.length > 0) {
+                setNews(data);
+            }
+        }).catch(() => {});
+        fetchMarketInsight().then(data => {
+            if (data) setMarketInsight(data);
+        }).catch(() => {});
+        fetchSpecialReport().then(data => {
+            if (data) setSpecialReport(data);
+        }).catch(() => {});
+        fetchTopRankings().then(data => {
+            if (data && data.length > 0) setRankings(data);
+        }).catch(() => {}); 
     };
     loadData();
 

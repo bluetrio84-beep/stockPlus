@@ -340,8 +340,8 @@ def main():
             now_str = now.strftime('%Y-%m-%d')
             now_hour, now_min, now_weekday = now.hour, now.minute, now.weekday()
 
-            # 0. 매일 아침 08:45 Next Leaders 분석 (하루 1회)
-            if now_weekday < 5 and now_hour == 8 and 45 <= now_min <= 55 and last_next_leader_date != now_str:
+            # 0. 매일 아침 08:00 Next Leaders 분석 (하루 1회)
+            if now_weekday < 5 and now_hour == 8 and 0 <= now_min <= 10 and last_next_leader_date != now_str:
                 try:
                     next_engine.analyze_next_leaders()
                     last_next_leader_date = now_str

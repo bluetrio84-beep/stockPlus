@@ -23,4 +23,7 @@ public interface UserMapper {
     
     // [v17.9] 사용자 검색 (ID 또는 이름)
     List<User> searchUsers(@org.apache.ibatis.annotations.Param("keyword") String keyword);
+
+    @org.apache.ibatis.annotations.Delete("DELETE FROM users WHERE usr_id = #{usrId}")
+    void deleteByUsrId(@org.apache.ibatis.annotations.Param("usrId") String usrId);
 }
