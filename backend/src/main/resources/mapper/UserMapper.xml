@@ -36,6 +36,10 @@
         SELECT USRID FROM users
     </select>
 
+    <select id="findAllActiveUserIds" resultType="string">
+        SELECT USRID FROM users WHERE useyn = 'Y'
+    </select>
+
     <update id="updatePassword">
         UPDATE users SET password = #{password} WHERE USRID = #{usrId}
     </update>

@@ -228,11 +228,9 @@ public class StockDashboardService {
     public void updateGeneralInsightScheduled() {
         log.info("[Scheduler] General Market Insight Start...");
         
-        List<com.stockPlus.domain.User> allUsers = userMapper.findAll(); 
-        for (com.stockPlus.domain.User user : allUsers) {
+        List<String> activeUserIds = userMapper.findAllActiveUserIds(); // [v17.9] 활성 사용자만 처리 
+        for (String usrId : activeUserIds) {
             try {
-                String usrId = user.getUsrId();
-                
                 // 1. 키워드 수집 (사용자 맞춤 키워드 우선, 없으면 기본 시황 키워드 사용)
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
                 if (keywords.isEmpty()) {
@@ -260,7 +258,7 @@ public class StockDashboardService {
                     log.info("[Scheduler] General Insight updated (Forced) for {}", usrId);
                 // }
             } catch (Exception e) {
-                log.error("[Scheduler] Error updating insight for {}: {}", user.getUsrId(), e.getMessage());
+                log.error("[Scheduler] Error updating insight for {}: {}", usrId, e.getMessage());
             }
         }
         log.info("[Scheduler] General Market Insight Batch Completed.");
@@ -273,13 +271,12 @@ public class StockDashboardService {
     public void updateSpecializedAnalysisScheduled() {
         log.info("[Scheduler] Specialized AI Analysis Start...");
         
-        List<com.stockPlus.domain.User> allUsers = userMapper.findAll();
+        List<String> activeUserIds = userMapper.findAllActiveUserIds(); // [v17.9] 활성 사용자만 처리
         // [수정] 특정 지역 대신 전반적인 부동산 흐름을 파악할 수 있는 키워드로 변경
         List<String> commonKeywords = Arrays.asList("부동산 시장 시황", "아파트 매매 가격 동향", "금리 부동산 영향");
         
-        for (com.stockPlus.domain.User user : allUsers) {
+        for (String usrId : activeUserIds) {
             try {
-                String usrId = user.getUsrId();
                 Set<String> headlines = new LinkedHashSet<>();
                 
                 // 1. 사용자 관심 종목 뉴스 수집 (즐겨찾기 종목만)
@@ -317,7 +314,7 @@ public class StockDashboardService {
                     }
                 }
             } catch (Exception e) {
-                log.error("[Scheduler] Error creating report for {}: {}", user.getUsrId(), e.getMessage());
+                log.error("[Scheduler] Error creating report for {}: {}", usrId, e.getMessage());
             }
         }
         log.info("[Scheduler] Specialized AI Analysis Completed.");

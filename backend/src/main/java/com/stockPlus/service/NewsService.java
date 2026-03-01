@@ -50,23 +50,24 @@ public class NewsService {
     @Scheduled(cron = "0 5 8-23 * * *") 
     @Transactional
     public void fetchAndSaveNews() {
-        log.info("Starting personalized news fetch with immediate AI Summary (Min 3, Max 5)...");
+        log.info(">>> [News Pipeline] Starting personalized news fetch & summary...");
         int totalSavedOverall = 0;
         
-        List<String> allUserIds = userMapper.findAllUserIds();
+        List<String> allUserIds = userMapper.findAllActiveUserIds(); // [v17.9] 활성 사용자만 처리
+        log.info(">>> [News Pipeline] Found {} active users to process.", allUserIds.size());
         
         for (String usrId : allUserIds) {
+            log.info(">>> [News Pipeline] Processing start for user: {}", usrId);
             int userSavedThisCycle = 0;
             int userSummarizedThisCycle = 0;
-            final int MAX_NEWS_TO_SAVE = 4;  // [v17.9] 시간당 최대 4개 수집
-            final int MAX_AI_SUMMARIES = 3;  // [v17.9] 그중 최소/최대 3개 AI 요약
+            final int MAX_NEWS_TO_SAVE = 4;
+            final int MAX_AI_SUMMARIES = 3;
 
             try {
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
-                // RSS 가중치 판단을 위한 중요 단어들
                 List<String> importantKeywords = Arrays.asList("실적", "계약", "공시", "M&A", "인수", "합병", "신공장", "체결", "특허", "임상", "공개", "상장", "수주", "속보", "발표");
 
-                // 1. [가중치 1순위] 사용자 키워드 뉴스 수집 및 즉시 요약
+                // 1. [가중치 1순위] 키워드 뉴스 수집
                 if (!keywords.isEmpty()) {
                     for (String keyword : keywords) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
@@ -75,27 +76,13 @@ public class NewsService {
                             if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
                             if (isNotJunk(item.getTitle(), item.getDescription())) {
                                 item.setUsrId(usrId);
-                                
-                                // 키워드 뉴스는 3개 채울 때까지 무조건 요약 시도
-                                if (userSummarizedThisCycle < MAX_AI_SUMMARIES) {
-                                    String summary = geminiService.summarizeNews(item.getTitle(), item.getDescription());
-                                    if (summary != null) {
-                                        item.setAiSummary(summary);
-                                        item.setAiSummarized(true);
-                                        userSummarizedThisCycle++;
-                                    }
-                                }
-
-                                if (newsMapper.saveNews(item) > 0) {
-                                    userSavedThisCycle++;
-                                    totalSavedOverall++;
-                                }
+                                if (newsMapper.saveNews(item) > 0) userSavedThisCycle++;
                             }
                         }
                     }
                 }
                 
-                // 2. [가중치 2순위] RSS 피드 뉴스 수집 및 중요 뉴스 요약
+                // 2. [가중치 2순위] RSS 피드 보충
                 if (userSavedThisCycle < MAX_NEWS_TO_SAVE) {
                     for (String feedUrl : RSS_FEED_URLS) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
@@ -108,52 +95,40 @@ public class NewsService {
                                 if (isNotJunk(entry.getTitle(), "")) {
                                     NewsItem newsItem = convertToNewsItem(entry);
                                     newsItem.setUsrId(usrId);
-
-                                    // RSS는 중요 키워드가 포함된 경우에만 우선 요약
-                                    boolean isImportant = importantKeywords.stream().anyMatch(k -> newsItem.getTitle().contains(k));
-                                    if (userSummarizedThisCycle < MAX_AI_SUMMARIES && isImportant) {
-                                        String summary = geminiService.summarizeNews(newsItem.getTitle(), newsItem.getDescription());
-                                        if (summary != null) {
-                                            newsItem.setAiSummary(summary);
-                                            newsItem.setAiSummarized(true);
-                                            userSummarizedThisCycle++;
-                                        }
-                                    }
-
-                                    if (newsMapper.saveNews(newsItem) > 0) {
-                                        userSavedThisCycle++;
-                                        totalSavedOverall++;
-                                    }
+                                    if (newsMapper.saveNews(newsItem) > 0) userSavedThisCycle++;
                                 }
                             }
-                        } catch (Exception e) {}
-                    }
-                }
-
-                // 3. [가중치 3순위] 강제 보충: 요약이 3개 미만이면 방금 저장한 뉴스 중 무작위 요약
-                if (userSummarizedThisCycle < MAX_AI_SUMMARIES && userSavedThisCycle > userSummarizedThisCycle) {
-                    List<NewsItem> recentSaved = newsMapper.findRecentNews(usrId, MAX_NEWS_TO_SAVE);
-                    for (NewsItem n : recentSaved) {
-                        if (userSummarizedThisCycle >= MAX_AI_SUMMARIES) break;
-                        if (!n.isAiSummarized()) {
-                            String summary = geminiService.summarizeNews(n.getTitle(), n.getDescription());
-                            if (summary != null) {
-                                n.setAiSummary(summary);
-                                n.setAiSummarized(true);
-                                newsMapper.updateAiSummary(n);
-                                userSummarizedThisCycle++;
-                            }
+                        } catch (Exception e) {
+                            log.error(">>> [News Pipeline] RSS Fetch Error: {}", e.getMessage());
                         }
                     }
                 }
+
+                // 3. [핵심] 사용자별 AI 요약 생성 (최근 10개 중 요약 안 된 것 3개 채우기)
+                List<NewsItem> recentNews = newsMapper.findRecentNews(usrId, 10);
+                for (NewsItem n : recentNews) {
+                    if (userSummarizedThisCycle >= MAX_AI_SUMMARIES) break;
+                    if (!n.isAiSummarized()) {
+                        log.info(">>> [AI Summary] Summarizing for {}: {}", usrId, n.getTitle());
+                        String summary = geminiService.summarizeNews(n.getTitle(), n.getDescription());
+                        if (summary != null && !summary.contains("실패") && !summary.isEmpty()) {
+                            n.setAiSummary(summary);
+                            n.setAiSummarized(true);
+                            newsMapper.updateAiSummary(n);
+                            userSummarizedThisCycle++;
+                        }
+                    } else {
+                        userSummarizedThisCycle++;
+                    }
+                }
+                totalSavedOverall += userSavedThisCycle;
+                log.info(">>> [News Pipeline] Completed for user: {}. (Saved: {}, Summarized Today: {})", usrId, userSavedThisCycle, userSummarizedThisCycle);
             } catch (Exception e) {
-                log.error("Error fetching news for user {}: {}", usrId, e.getMessage());
+                log.error(">>> [News Pipeline] Error for user {}: {}", usrId, e.getMessage());
             }
         }
-        log.info("Personalized news fetch & summary completed. Total items: {}", totalSavedOverall);
+        log.info(">>> [News Pipeline] Entire process finished. Total new items: {}", totalSavedOverall);
     }
-
-    // 기존 runAiSummaryBatch 제거 (fetchAndSaveNews에 통합됨)
 
     private boolean isNotJunk(String title, String desc) {
         if (title == null) return false;

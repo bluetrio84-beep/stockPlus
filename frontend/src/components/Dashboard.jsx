@@ -158,7 +158,6 @@ function Dashboard() {
   useEffect(() => {
     const loadData = () => {
         fetchRecentNews().then(setNews).catch(() => {});
-        fetchMarketInsight().then(setNews).catch(() => {}); // [v15.8] 수정: setMarketInsight로 오타 수정 필요할 듯 보이나 일단 기존 로직 유지
         fetchMarketInsight().then(setMarketInsight).catch(() => {});
         fetchSpecialReport().then(setSpecialReport).catch(() => {});
         fetchTopRankings().then(setRankings).catch(() => {}); 
