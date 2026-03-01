@@ -1,5 +1,19 @@
 # StockPlus Project Intelligence & Roadmap
 
+## 🚀 v18.0 "Morning Intelligence PDF" (2026-03-02 착수 예정)
+*작성자: 43세 베테랑 개발자 & Gemini CLI*
+
+### 1. 데이터 고체화: 07:55 AM 스냅샷 엔진
+- **데이터 유실 방지**: 08:00 AM 초기화 직전, 전날의 최종 **업종 등락 히트맵**과 **마켓 버블 좌표**를 `briefing_snapshot` 테이블에 영구 박제.
+- **연속성 확보**: 장 시작 전(08:50)에도 어제의 마감 상황과 오늘의 분석 결과(Next Leaders)를 동시에 조회할 수 있는 데이터 구조 구축.
+
+### 2. PDF 자동 생성 시스템 (The Daily Magazine)
+- **PDF 전용 레이아웃**: 웹 화면의 복잡한 버튼을 제거하고, **[어제의 히트맵 + 오늘의 TOP 5 + Gemini 전략 제언]**이 조화롭게 배치된 잡지 스타일의 리포트 설계.
+- **One-Click Generation**: 'PDF 브리핑 생성' 버튼 클릭 시 `jspdf`와 `html2canvas`를 활용하여 고해상도 투자 지침서 즉시 발행.
+- **Gemini Intelligence 연동**: 박제된 데이터를 기반으로 Gemini가 오늘의 관전 포인트(박달동/안양 호재 등)를 텍스트로 요약하여 리포트에 포함.
+
+---
+
 ## 🚀 v16.8 "Smart Sector Tooltip" (2026-02-27 완료)
 *작성자: 43세 베테랑 개발자 & Gemini CLI*
 
