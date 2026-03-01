@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthHeader } from '../api/stockApi';
-import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info } from 'lucide-react';
 import classNames from 'classnames';
 
 const NextLeaderDashboard = () => {
@@ -8,8 +8,8 @@ const NextLeaderDashboard = () => {
     const [nextLeaders, setNextLeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('ranking'); 
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); // 도움말 모달 상태
 
-    // [v17.9] AI 리뷰 데이터 상태 추가
     const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [] });
 
     const fetchNextLeaders = async (date) => {
@@ -71,10 +71,10 @@ const NextLeaderDashboard = () => {
                 "종목명": item.stock_name,
                 "종목코드": item.stock_code,
                 "총점": parseFloat(item.total_score.toFixed(1)),
-                "알고리즘": parseFloat(item.algo_score.toFixed(1)),
-                "LSTM": parseFloat((item.lstm_score || 0).toFixed(1)),
-                "TCN": parseFloat((item.tcn_score || 0).toFixed(1)),
-                "XGB": parseFloat((item.xgb_score || 0).toFixed(1)),
+                "알고리즘(Q)": parseFloat(item.algo_score.toFixed(1)),
+                "LSTM(L)": parseFloat((item.lstm_score || 0).toFixed(1)),
+                "TCN(T)": parseFloat((item.tcn_score || 0).toFixed(1)),
+                "XGB(X)": parseFloat((item.xgb_score || 0).toFixed(1)),
                 "선발사유": item.reason,
                 "분석시간": formatDate(item.captured_at)
             }));
@@ -90,9 +90,17 @@ const NextLeaderDashboard = () => {
     const renderRankingTab = () => (
         <div className="flex-1 min-h-0 bg-slate-900/50 border border-slate-800 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
             <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 shrink-0">
-                <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">
-                    <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 20
-                </h3>
+                <div className="flex items-center gap-2">
+                    <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">
+                        <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 20
+                    </h3>
+                    <button 
+                        onClick={() => setIsHelpModalOpen(true)}
+                        className="text-slate-500 hover:text-indigo-400 transition-colors"
+                    >
+                        <HelpCircle size={16} />
+                    </button>
+                </div>
                 <span className="text-[9px] text-slate-500 font-mono italic">1,600 Stocks Analysis</span>
             </div>
 
@@ -103,7 +111,7 @@ const NextLeaderDashboard = () => {
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">AI Breakdown (L/T/X)</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X)</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[180px] bg-slate-900">Reason</th>
                         </tr>
                     </thead>
@@ -127,15 +135,19 @@ const NextLeaderDashboard = () => {
                                     </td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
+                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>Q</span><span>{item.algo_score.toFixed(0)}</span></div>
+                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.algo_score}%`}}></div></div>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
                                                 <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>L</span><span>{(item.lstm_score || 0).toFixed(0)}</span></div>
                                                 <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{width: `${item.lstm_score || 0}%`}}></div></div>
                                             </div>
-                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
                                                 <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>T</span><span>{(item.tcn_score || 0).toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.tcn_score || 0}%`}}></div></div>
+                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-pink-500" style={{width: `${item.tcn_score || 0}%`}}></div></div>
                                             </div>
-                                            <div className="flex flex-col gap-0.5 w-12 lg:w-16">
+                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
                                                 <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>X</span><span>{(item.xgb_score || 0).toFixed(0)}</span></div>
                                                 <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-cyan-500" style={{width: `${item.xgb_score || 0}%`}}></div></div>
                                             </div>
@@ -161,7 +173,6 @@ const NextLeaderDashboard = () => {
 
     const renderReviewTab = () => (
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 px-1">
-            {/* 1. 전문가별 적중률 & 가중치 현황 (Real Data) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {reviewData.modelPerformance.length > 0 ? reviewData.modelPerformance.map((m, i) => (
                     <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
@@ -181,7 +192,6 @@ const NextLeaderDashboard = () => {
                 )) : [1,2,3].map(i => <div key={i} className="h-24 bg-slate-900/50 border border-slate-800 rounded-2xl animate-pulse"></div>)}
             </div>
 
-            {/* 2. 사후 복기 리포트 (Real Data) */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                     <h3 className="text-white font-black flex items-center gap-2 uppercase tracking-tighter"><CheckCircle2 className="text-emerald-500" size={20} /> AI 사후 복기 리포트</h3>
@@ -200,7 +210,7 @@ const NextLeaderDashboard = () => {
                                 <div className="text-right w-20">
                                     <div className={classNames("text-sm font-black flex items-center justify-end gap-1", item.hit_result === 'SUCCESS' ? 'text-rose-400' : 'text-blue-400')}>
                                         {item.hit_result === 'SUCCESS' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                        {((item.price_after_3d - item.price_at_recom) / item.price_at_recom * 100).toFixed(1)}%
+                                        {item.price_at_recom > 0 ? (((item.price_after_3d - item.price_at_recom) / item.price_at_recom) * 100).toFixed(1) : '0.0'}%
                                     </div>
                                     <div className={classNames("text-[9px] font-bold uppercase", item.hit_result === 'SUCCESS' ? 'text-emerald-500' : 'text-slate-500')}>{item.hit_result}</div>
                                 </div>
@@ -218,7 +228,6 @@ const NextLeaderDashboard = () => {
                 </div>
             </div>
 
-            {/* 3. AI Insights (Dynamic Text Based on Data) */}
             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 flex items-start gap-4">
                 <Brain className="text-indigo-400 shrink-0 mt-1" size={24} />
                 <div>
@@ -275,6 +284,51 @@ const NextLeaderDashboard = () => {
             </div>
 
             {activeTab === 'ranking' ? renderRankingTab() : renderReviewTab()}
+
+            {/* AI Breakdown 도움말 모달 */}
+            {isHelpModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsHelpModalOpen(false)}></div>
+                    <div className="relative w-full max-w-lg bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white">
+                            <h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Info className="text-indigo-400" size={20} /> AI Breakdown Guide</h3>
+                            <button onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0 font-black text-rose-400">Q</div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">Algorithm (Q-Score)</h4><p className="text-slate-400 text-xs leading-relaxed">RSI 과매도 탈출, 이동평균선 수렴, 거래량 스파이크 등 4가지 핵심 기술적 지표를 결합한 수학적 바닥 탐지 엔진입니다.</p></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 font-black text-indigo-400">L</div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">LSTM (Trend Analysis)</h4><p className="text-slate-400 text-xs leading-relaxed">딥러닝 모델이 지난 5일간의 수급 맥락을 분석합니다. 서서히 매집이 이루어지는 '건강한 상승 추세'를 잡아내는 마법사입니다.</p></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center shrink-0 font-black text-pink-400">T</div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">TCN (Volatility Hunt)</h4><p className="text-slate-400 text-xs leading-relaxed">순간적인 거래량 폭발과 미세한 패턴 변화를 포착하는 수색대입니다. 바닥에서 갑자기 머리를 드는 급격한 에너지 변화에 민감합니다.</p></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0 font-black text-cyan-400">X</div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">XGBoost (Statistical Verdict)</h4><p className="text-slate-400 text-xs leading-relaxed">과거 수만 개의 성공/실패 사례를 학습한 냉철한 통계학자입니다. 모든 지표를 종합하여 현재 시장에서의 '성공 확률'을 최종 판정합니다.</p></div>
+                            </div>
+                        </div>
+                        <div className="p-6 bg-slate-850 border-t border-slate-800">
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4">
+                                <h4 className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <Activity size={14} /> Total Score Formula
+                                </h4>
+                                <p className="text-white text-sm font-bold tracking-tight">
+                                    Total = (Q × 0.6) + (AI Ensemble × 0.4)
+                                </p>
+                                <p className="text-slate-500 text-[10px] mt-1 leading-relaxed">
+                                    AI 앙상블은 LSTM(20%), TCN(20%), XGBoost(60%)의 비중으로 결합되어 최종 지능형 점수를 도출합니다.
+                                </p>
+                            </div>
+                            <button onClick={() => setIsHelpModalOpen(false)} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20">이해했습니다</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
