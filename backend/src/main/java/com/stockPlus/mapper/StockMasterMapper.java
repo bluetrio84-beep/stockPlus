@@ -26,4 +26,10 @@ public interface StockMasterMapper {
 
     @org.apache.ibatis.annotations.Select("SELECT * FROM stock_master WHERE market_type = #{marketType} ORDER BY market_cap DESC LIMIT #{limit} OFFSET #{offset}")
     List<StockMaster> findByMarketPaged(@Param("marketType") String marketType, @Param("limit") int limit, @Param("offset") int offset);
+
+    @org.apache.ibatis.annotations.Select("SELECT COUNT(*) FROM stock_master")
+    int countAll();
+
+    @org.apache.ibatis.annotations.Select("SELECT COUNT(*) FROM stock_master WHERE market_type = #{marketType}")
+    int countByMarket(@Param("marketType") String marketType);
 }

@@ -38,8 +38,13 @@ public class AdminController {
     }
 
     @PostMapping("/stocks")
-    public void addStock(@RequestBody StockMaster master) {
-        stockMasterService.createStock(master);
+    public org.springframework.http.ResponseEntity<?> addStock(@RequestBody StockMaster master) {
+        try {
+            stockMasterService.createStock(master);
+            return org.springframework.http.ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/stocks")
@@ -52,6 +57,14 @@ public class AdminController {
         stockMasterService.deleteStock(stockCode);
     }
 
+    @GetMapping("/stocks/count")
+    public int getStockCount(@RequestParam(required = false) String marketType) {
+        if (marketType != null && !marketType.equals("ALL")) {
+            return stockMasterService.countByMarket(marketType);
+        }
+        return stockMasterService.countAll();
+    }
+
     // --- 0.1 사용자 관리 (Full Restore v17.9) ---
     @GetMapping("/users")
     public List<User> getAllUsers(@RequestParam(required = false) String keyword) {
@@ -62,11 +75,16 @@ public class AdminController {
     }
 
     @PostMapping("/users")
-    public void createUser(@RequestBody User user) {
+    public org.springframework.http.ResponseEntity<?> createUser(@RequestBody User user) {
+        // [v17.9] 사용자 ID 중복 체크 (existsByUsrId 사용)
+        if (userMapper.existsByUsrId(user.getUsrId())) {
+            return org.springframework.http.ResponseEntity.badRequest().body(Map.of("message", "이미 존재하는 사용자 ID입니다. 다른 ID를 사용해 주세요."));
+        }
         if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         userMapper.insert(user);
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 
     @PutMapping("/users")
@@ -164,8 +182,13 @@ public class AdminController {
     }
 
     @PostMapping("/holidays")
-    public void addHoliday(@RequestBody Map<String, Object> holiday) {
+    public org.springframework.http.ResponseEntity<?> addHoliday(@RequestBody Map<String, Object> holiday) {
+        String date = (String) holiday.get("holiday_date");
+        if (adminMapper.checkIsHoliday(date) > 0) {
+            return org.springframework.http.ResponseEntity.badRequest().body(Map.of("message", "이미 등록된 공휴일 날짜입니다."));
+        }
         adminMapper.insertHoliday(holiday);
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 
     @PutMapping("/holidays")

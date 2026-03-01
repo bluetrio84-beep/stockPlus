@@ -10,8 +10,9 @@ const AdminSystemManagement = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchKeyword, setSearchKeyword] = useState('');
-    const [userSearchKeyword, setUserSearchKeyword] = useState(''); // [복구] 사용자 검색어
+    const [userSearchKeyword, setUserSearchKeyword] = useState('');
     const [marketFilter, setMarketFilter] = useState('ALL');
+    const [totalStockCount, setTotalStockCount] = useState(0); 
     const [holidayYear, setHolidayYear] = useState(new Date().getFullYear());
     
     const isMobile = window.innerWidth < 1024;
@@ -22,6 +23,7 @@ const AdminSystemManagement = () => {
     const [isModalOpen, setIsModalOpen] = useState(false); 
     const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false); 
     const [isUserModalOpen, setIsUserModalOpen] = useState(false); 
+    const [errorPopup, setErrorPopup] = useState(null);
 
     // 폼 데이터
     const [editingStock, setEditingStock] = useState(null);
@@ -36,7 +38,7 @@ const AdminSystemManagement = () => {
     // 삭제 확인 타겟
     const [deleteTarget, setDeleteConfirm] = useState(null); 
     const [deleteHolidayTarget, setDeleteHolidayConfirm] = useState(null);
-    const [deleteUserTarget, setDeleteUserConfirm] = useState(null); // [복구] 사용자 삭제
+    const [deleteUserTarget, setDeleteUserConfirm] = useState(null);
 
     const fetchStocks = async (p = 0) => {
         try {
@@ -46,6 +48,13 @@ const AdminSystemManagement = () => {
             if (res.ok) { setStocks(await res.json()); setPage(p); }
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
+    };
+
+    const fetchStockCount = async () => {
+        try {
+            const res = await fetch(`/stockPlus/api/admin/stocks/count?marketType=${marketFilter}`, { headers: getAuthHeader() });
+            if (res.ok) setTotalStockCount(await res.json());
+        } catch (e) {}
     };
 
     const fetchHolidays = async (year) => {
@@ -67,13 +76,13 @@ const AdminSystemManagement = () => {
     };
 
     useEffect(() => {
-        if (activeTab === 'stocks' && !searchKeyword) fetchStocks(0);
+        if (activeTab === 'stocks' && !searchKeyword) { fetchStocks(0); fetchStockCount(); }
         if (activeTab === 'holidays') fetchHolidays(holidayYear);
         if (activeTab === 'users' && !userSearchKeyword) fetchUsers();
     }, [activeTab, isMobile, marketFilter, holidayYear]);
 
     const handleSearch = async () => {
-        if (!searchKeyword.trim()) { fetchStocks(0); return; }
+        if (!searchKeyword.trim()) { fetchStocks(0); fetchStockCount(); return; }
         try {
             setIsLoading(true);
             const res = await fetch(`/stockPlus/api/stocks/search?keyword=${encodeURIComponent(searchKeyword)}`, { headers: getAuthHeader() });
@@ -81,17 +90,20 @@ const AdminSystemManagement = () => {
                 let data = await res.json();
                 if (marketFilter !== 'ALL') data = data.filter(s => s.marketType === marketFilter);
                 setStocks(data);
+                setTotalStockCount(data.length);
                 setPage(0);
             }
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
     };
 
-    const handleUserSearch = () => {
-        fetchUsers(userSearchKeyword);
-    };
+    const handleUserSearch = () => { fetchUsers(userSearchKeyword); };
 
     const handleSaveStock = async () => {
+        // [v17.9] 상장종목 필수값 검증
+        if (!formData.stockCode?.trim()) return setErrorPopup("종목 코드를 입력해주세요.");
+        if (!formData.stockName?.trim()) return setErrorPopup("종목 명칭을 입력해주세요.");
+
         const method = editingStock ? 'PUT' : 'POST';
         try {
             const res = await fetch('/stockPlus/api/admin/stocks', {
@@ -99,11 +111,22 @@ const AdminSystemManagement = () => {
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            if (res.ok) { setIsModalOpen(false); fetchStocks(page); }
-        } catch (e) { console.error(e); }
+            if (res.ok) { 
+                setIsModalOpen(false); 
+                fetchStocks(page); 
+                fetchStockCount(); 
+            } else {
+                const err = await res.json();
+                setErrorPopup(err?.message || "오류가 발생했습니다.");
+            }
+        } catch (e) { setErrorPopup("서버 통신 오류가 발생했습니다."); }
     };
 
     const handleSaveHoliday = async () => {
+        // [v17.9] 공휴일 필수값 검증 (SQL 1525 에러 방지)
+        if (!holidayFormData.holiday_date?.trim()) return setErrorPopup("공휴일 날짜를 선택해주세요.");
+        if (!holidayFormData.holiday_name?.trim()) return setErrorPopup("공휴일 명칭을 입력해주세요.");
+
         const method = editingHoliday ? 'PUT' : 'POST';
         try {
             const res = await fetch('/stockPlus/api/admin/holidays', {
@@ -111,11 +134,27 @@ const AdminSystemManagement = () => {
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(holidayFormData)
             });
-            if (res.ok) { setIsHolidayModalOpen(false); fetchHolidays(holidayYear); }
-        } catch (e) { console.error(e); }
+            if (res.ok) { 
+                setIsHolidayModalOpen(false); 
+                fetchHolidays(holidayYear); 
+            } else {
+                const err = await res.json();
+                setErrorPopup(err?.message || "오류가 발생했습니다.");
+            }
+        } catch (e) { setErrorPopup("서버 통신 오류가 발생했습니다."); }
     };
 
     const handleSaveUser = async () => {
+        // [v17.9] 사용자 필수값 검증
+        const { usrId, usrName, email, phoneNumber, password } = userFormData;
+        if (!usrId?.trim()) return setErrorPopup("사용자 ID를 입력해주세요.");
+        if (!usrName?.trim()) return setErrorPopup("이름을 입력해주세요.");
+        if (!email?.trim()) return setErrorPopup("이메일을 입력해주세요.");
+        if (!phoneNumber?.trim()) return setErrorPopup("연락처를 입력해주세요.");
+        if (!editingUser && (!password || !password.trim())) {
+            return setErrorPopup("신규 사용자 등록 시 비밀번호는 필수입니다.");
+        }
+
         const method = editingUser ? 'PUT' : 'POST';
         try {
             const res = await fetch('/stockPlus/api/admin/users', {
@@ -124,15 +163,16 @@ const AdminSystemManagement = () => {
                 body: JSON.stringify(userFormData)
             });
             if (res.ok) { setIsUserModalOpen(false); fetchUsers(userSearchKeyword); }
-        } catch (e) { console.error(e); }
+            else { const err = await res.json(); setErrorPopup(err?.message || "오류가 발생했습니다."); }
+        } catch (e) { setErrorPopup("서버 통신 오류가 발생했습니다."); }
     };
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
         try {
             const res = await fetch(`/stockPlus/api/admin/stocks/${deleteTarget.stockCode}`, { method: 'DELETE', headers: getAuthHeader() });
-            if (res.ok) { setDeleteConfirm(null); fetchStocks(page); }
-        } catch (e) { console.error(e); }
+            if (res.ok) { setDeleteConfirm(null); fetchStocks(page); fetchStockCount(); }
+        } catch (e) {}
     };
 
     const confirmDeleteHoliday = async () => {
@@ -140,7 +180,7 @@ const AdminSystemManagement = () => {
         try {
             const res = await fetch(`/stockPlus/api/admin/holidays/${deleteHolidayTarget.id}`, { method: 'DELETE', headers: getAuthHeader() });
             if (res.ok) { setDeleteHolidayConfirm(null); fetchHolidays(holidayYear); }
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     };
 
     const confirmDeleteUser = async () => {
@@ -148,7 +188,7 @@ const AdminSystemManagement = () => {
         try {
             const res = await fetch(`/stockPlus/api/admin/users/${deleteUserTarget.usrId}`, { method: 'DELETE', headers: getAuthHeader() });
             if (res.ok) { setDeleteUserConfirm(null); fetchUsers(userSearchKeyword); }
-        } catch (e) { console.error(e); }
+        } catch (e) {}
     };
 
     return (
@@ -182,7 +222,15 @@ const AdminSystemManagement = () => {
                                 </tbody>
                             </table>
                         </div>
-                        {!searchKeyword && (<div className="p-3 lg:p-4 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0"><span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">P.{page + 1} ({isMobile ? '10' : '50'})</span><div className="flex gap-1.5"><button disabled={page === 0 || isLoading} onClick={() => fetchStocks(page - 1)} className="p-1.5 bg-slate-800 rounded-lg text-white disabled:opacity-30 active:bg-slate-700"><ChevronLeft size={16} /></button><button disabled={stocks.length < pageSize || isLoading} onClick={() => fetchStocks(page + 1)} className="p-1.5 bg-slate-800 rounded-lg text-white disabled:opacity-30 active:bg-slate-700"><ChevronRight size={16} /></button></div></div>)}
+                        {!searchKeyword && (
+                            <div className="p-3 lg:p-4 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0">
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">P.{page+1} ({isMobile ? '10':'50'}) / <span className="text-indigo-400 font-mono">{marketFilter}: {totalStockCount.toLocaleString()}개</span></span>
+                                <div className="flex gap-1.5">
+                                    <button disabled={page === 0 || isLoading} onClick={() => fetchStocks(page - 1)} className="p-1.5 bg-slate-800 rounded-lg text-white disabled:opacity-30 active:bg-slate-700"><ChevronLeft size={16} /></button>
+                                    <button disabled={stocks.length < pageSize || isLoading} onClick={() => fetchStocks(page + 1)} className="p-1.5 bg-slate-800 rounded-lg text-white disabled:opacity-30 active:bg-slate-700"><ChevronRight size={16} /></button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -190,16 +238,7 @@ const AdminSystemManagement = () => {
             {activeTab === 'holidays' && (
                 <div className="flex-1 min-h-0 flex flex-col gap-3 lg:gap-4 animate-in slide-in-from-bottom-2 duration-300">
                     <div className="flex justify-end items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2 lg:px-3">
-                            <span className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-tighter whitespace-nowrap">Year</span>
-                            <select 
-                                value={holidayYear} 
-                                onChange={(e) => setHolidayYear(parseInt(e.target.value))} 
-                                className="bg-transparent text-[11px] lg:text-sm text-white focus:outline-none font-bold cursor-pointer py-2 min-w-[60px] lg:min-w-[80px]"
-                            >
-                                {[2026, 2027, 2028].map(y => <option key={y} value={y} className="bg-slate-900 text-white">{y}년</option>)}
-                            </select>
-                        </div>
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2 lg:px-3"><span className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-tighter whitespace-nowrap">Year</span><select value={holidayYear} onChange={(e) => setHolidayYear(parseInt(e.target.value))} className="bg-transparent text-[11px] lg:text-sm text-white focus:outline-none font-bold cursor-pointer py-2 min-w-[60px] lg:min-w-[80px]">{[2026, 2027, 2028].map(y => <option key={y} value={y} className="bg-slate-900 text-white">{y}년</option>)}</select></div>
                         <button onClick={() => { setEditingHoliday(null); setHolidayFormData({ holiday_date: '', holiday_name: '', holiday_year: holidayYear }); setIsHolidayModalOpen(true); }} className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg"><Plus size={16} /> 신규 등록</button>
                     </div>
                     <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl">
@@ -221,10 +260,7 @@ const AdminSystemManagement = () => {
                 <div className="flex-1 min-h-0 flex flex-col gap-3 lg:gap-4 animate-in fade-in duration-300">
                     <div className="flex flex-col lg:flex-row gap-2 shrink-0 px-1">
                         <div className="flex-1 flex gap-2">
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="사용자 ID/이름 검색..." value={userSearchKeyword} onChange={(e) => setUserSearchKeyword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleUserSearch()} className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs lg:text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50" />
-                            </div>
+                            <div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} /><input type="text" placeholder="사용자 ID/이름 검색..." value={userSearchKeyword} onChange={(e) => setUserSearchKeyword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleUserSearch()} className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs lg:text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50" /></div>
                             <button onClick={handleUserSearch} className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-lg">검색</button>
                         </div>
                         <button onClick={() => { setEditingUser(null); setUserFormData({ usrId: '', usrName: '', email: '', phoneNumber: '', role: 'USER', useyn: 'Y', password: '' }); setIsUserModalOpen(true); }} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg"><UserPlus size={16} /> 신규 사용자</button>
@@ -244,56 +280,81 @@ const AdminSystemManagement = () => {
                 </div>
             )}
 
-            {/* 사용자 모달 (Full Version) */}
+            {/* 상장종목 모달 */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-5 lg:p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-base font-black uppercase italic">{editingStock ? '종목 수정' : '신규 종목'}</h3><button onClick={() => setIsModalOpen(false)}><X size={20}/></button></div>
+                        <div className="p-6 lg:p-8 space-y-4">
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Code <span className="text-rose-500">*</span></label><input type="text" value={formData.stockCode} readOnly={!!editingStock} onChange={(e) => setFormData({...formData, stockCode: e.target.value})} className={classNames("w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono", editingStock && "opacity-50")} /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Name <span className="text-rose-500">*</span></label><input type="text" value={formData.stockName} onChange={(e) => setFormData({...formData, stockName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Market</label><select value={formData.marketType} onChange={(e) => setFormData({...formData, marketType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none font-bold"><option value="KOSPI" className="bg-slate-900">KOSPI</option><option value="KOSDAQ" className="bg-slate-900">KOSDAQ</option></select></div>
+                        </div>
+                        <div className="p-5 bg-slate-850 flex gap-3"><button onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">취소</button><button onClick={handleSaveStock} className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl text-xs">저장</button></div>
+                    </div>
+                </div>
+            )}
+
+            {/* 사용자 모달 */}
             {isUserModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsUserModalOpen(false)}></div>
                     <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-5 lg:p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-base font-black uppercase italic">{editingUser ? '사용자 정보 수정' : '신규 사용자 등록'}</h3><button onClick={() => setIsUserModalOpen(false)}><X size={20}/></button></div>
                         <div className="p-6 lg:p-8 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">ID</label><input type="text" value={userFormData.usrId} readOnly={!!editingUser} onChange={(e) => setUserFormData({...userFormData, usrId: e.target.value})} className={classNames("w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono", editingUser && "opacity-50")} placeholder="사용자 아이디" /></div>
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-2"><Key size={10} /> {editingUser ? '비밀번호 변경 (필요시)' : '비밀번호'}</label><input type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" placeholder={editingUser ? "변경하지 않으려면 비워두세요" : "비밀번호 입력"} /></div>
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">이름</label><input type="text" value={userFormData.usrName} onChange={(e) => setUserFormData({...userFormData, usrName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-black" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">ID (User Account) <span className="text-rose-500">*</span></label><input type="text" value={userFormData.usrId} readOnly={!!editingUser} onChange={(e) => setUserFormData({...userFormData, usrId: e.target.value})} className={classNames("w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono", editingUser && "opacity-50")} placeholder="사용자 아이디" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-2 tracking-widest"><Key size={10} /> {editingUser ? '비밀번호 변경 (필요시)' : '비밀번호'} {!editingUser && <span className="text-rose-500">*</span>}</label><input type="password" value={userFormData.password} onChange={(e) => setUserFormData({...userFormData, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" placeholder={editingUser ? "변경하지 않으려면 비워두세요" : "비밀번호 입력"} /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">이름 (Full Name) <span className="text-rose-500">*</span></label><input type="text" value={userFormData.usrName} onChange={(e) => setUserFormData({...userFormData, usrName: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white font-black" /></div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">권한</label><select value={userFormData.role} onChange={(e) => setUserFormData({...userFormData, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none font-bold"><option value="USER">USER</option><option value="ADMIN">ADMIN</option></select></div>
                                 <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">상태</label><select value={userFormData.useyn} onChange={(e) => setUserFormData({...userFormData, useyn: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none font-bold"><option value="Y">ACTIVE</option><option value="N">BLOCKED</option></select></div>
                             </div>
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">이메일</label><input type="email" value={userFormData.email} onChange={(e) => setUserFormData({...userFormData, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" /></div>
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">연락처</label><input type="text" value={userFormData.phoneNumber} onChange={(e) => setUserFormData({...userFormData, phoneNumber: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">이메일 <span className="text-rose-500">*</span></label><input type="email" value={userFormData.email} onChange={(e) => setUserFormData({...userFormData, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">연락처 <span className="text-rose-500">*</span></label><input type="text" value={userFormData.phoneNumber} onChange={(e) => setUserFormData({...userFormData, phoneNumber: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white" /></div>
                         </div>
                         <div className="p-5 bg-slate-850 flex gap-3"><button onClick={() => setIsUserModalOpen(false)} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">취소</button><button onClick={handleSaveUser} className="flex-1 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-rose-600/20">저장</button></div>
                     </div>
                 </div>
             )}
 
-            {/* 모든 삭제 확인들 */}
-            {(deleteTarget || deleteHolidayTarget || deleteUserTarget) && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => { setDeleteConfirm(null); setDeleteHolidayConfirm(null); setDeleteUserConfirm(null); }}></div>
-                    <div className="relative w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl shadow-2xl p-6 flex flex-col items-center text-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center"><AlertCircle className="text-rose-500" size={24} /></div>
-                        <div><h3 className="text-lg font-black text-white mb-1">삭제 확인</h3><p className="text-slate-400 text-xs">정말 삭제하시겠습니까?</p></div>
-                        <div className="flex gap-2 w-full mt-2"><button onClick={() => { setDeleteConfirm(null); setDeleteHolidayConfirm(null); setDeleteUserConfirm(null); }} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">아니오</button><button onClick={deleteTarget ? confirmDelete : (deleteHolidayTarget ? confirmDeleteHoliday : confirmDeleteUser)} className="flex-1 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs">삭제</button></div>
-                    </div>
-                </div>
-            )}
-            
-            {/* 공휴일 날짜 선택 개선 (v17.8) */}
+            {/* 공휴일 모달 */}
             {isHolidayModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsHolidayModalOpen(false)}></div>
                     <div className="relative w-full max-w-md bg-slate-900 border border-cyan-500/30 rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-5 lg:p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-base font-black uppercase italic text-cyan-400">{editingHoliday ? '공휴일 수정' : '공휴일 등록'}</h3><button onClick={() => setIsHolidayModalOpen(false)}><X size={20}/></button></div>
                         <div className="p-6 lg:p-8 space-y-4">
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">날짜 선택</label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-500 pointer-events-none" size={16} /><input type="date" value={holidayFormData.holiday_date} onClick={(e) => e.target.showPicker && e.target.showPicker()} onChange={(e) => { const date = e.target.value; setHolidayFormData({...holidayFormData, holiday_date: date, holiday_year: new Date(date).getFullYear()}); }} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-cyan-500 [color-scheme:dark]" /></div></div>
-                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase">공휴일 명칭</label><input type="text" value={holidayFormData.holiday_name} onChange={(e) => setHolidayFormData({...holidayFormData, holiday_name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-cyan-500" placeholder="예: 삼일절" /></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">날짜 선택 <span className="text-rose-500">*</span></label><div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-500 pointer-events-none" size={16} /><input type="date" value={holidayFormData.holiday_date} onClick={(e) => e.target.showPicker && e.target.showPicker()} onChange={(e) => { const date = e.target.value; setHolidayFormData({...holidayFormData, holiday_date: date, holiday_year: new Date(date).getFullYear()}); }} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-cyan-500 [color-scheme:dark]" /></div></div>
+                            <div className="space-y-1.5"><label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">공휴일 명칭 <span className="text-rose-500">*</span></label><input type="text" value={holidayFormData.holiday_name} onChange={(e) => setHolidayFormData({...holidayFormData, holiday_name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-cyan-500" placeholder="예: 삼일절" /></div>
                         </div>
                         <div className="p-5 bg-slate-850 flex gap-3"><button onClick={() => setIsHolidayModalOpen(false)} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">취소</button><button onClick={handleSaveHoliday} className="flex-1 py-2.5 bg-cyan-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-cyan-600/20">{editingHoliday ? '수정완료' : '등록하기'}</button></div>
                     </div>
                 </div>
             )}
 
-            {/* 종목 모달 중복 방어 (윗부분과 통합됨) */}
+            {/* 삭제 확인 모달들 */}
+            {(deleteTarget || deleteHolidayTarget || deleteUserTarget) && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => { setDeleteConfirm(null); setDeleteHolidayConfirm(null); setDeleteUserConfirm(null); }}></div>
+                    <div className="relative w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl shadow-2xl p-6 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-200"><div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center"><AlertCircle className="text-rose-500" size={24} /></div><div><h3 className="text-lg font-black text-white mb-1">삭제 확인</h3><p className="text-slate-400 text-xs">정말 삭제하시겠습니까?</p></div><div className="flex gap-2 w-full mt-2"><button onClick={() => { setDeleteConfirm(null); setDeleteHolidayConfirm(null); setDeleteUserConfirm(null); }} className="flex-1 py-2.5 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">아니오</button><button onClick={deleteTarget ? confirmDelete : (deleteHolidayTarget ? confirmDeleteHoliday : confirmDeleteUser)} className="flex-1 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs">삭제</button></div></div>
+                </div>
+            )}
+
+            {/* 커스텀 에러 팝업 (v17.9) */}
+            {errorPopup && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setErrorPopup(null)}></div>
+                    <div className="relative w-full max-w-sm bg-slate-900 border border-rose-500/30 rounded-3xl shadow-2xl p-6 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center animate-bounce-slow"><AlertTriangle className="text-rose-500" size={32} /></div>
+                        <div>
+                            <h3 className="text-lg font-black text-white mb-1 uppercase tracking-tight">Warning</h3>
+                            <p className="text-slate-300 text-sm font-bold leading-relaxed whitespace-pre-wrap">{errorPopup}</p>
+                        </div>
+                        <button onClick={() => setErrorPopup(null)} className="w-full py-3 bg-rose-600 text-white font-black rounded-xl text-xs shadow-lg shadow-rose-600/20 transition-all hover:bg-rose-500 active:scale-95">확인했습니다</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
