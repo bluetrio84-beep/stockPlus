@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Newspaper, Download, Calendar, TrendingUp, ChevronRight, Brain, Image as ImageIcon, Map, Activity, Clock, FileText, CheckCircle2, Lock, AlertTriangle, Loader2, ListOrdered, Award } from 'lucide-react';
+import { Newspaper, Download, Calendar, TrendingUp, ChevronRight, Brain, Image as ImageIcon, Map, Activity, Clock, FileText, CheckCircle2, Lock, AlertTriangle, Loader2, ListOrdered, Award, X, Maximize2 } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
 
 const AdminTheDailyMagazine = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -17,10 +17,22 @@ const AdminTheDailyMagazine = () => {
         indices: { kospi: '-', kospiRate: '-', kosdaq: '-', kosdaqRate: '-' }
     });
     
+    // 모달 상태
+    const [zoomImage, setZoomImage] = useState(null);
     const magazineRef = useRef();
 
     const checkTime = () => {
-        setIsDownloadable(true);
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const hhmm = hour * 100 + minute;
+        
+        // 평일(1-5) 체크 추가 및 시간 범위 명확화
+        const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+        const canDownload = hhmm >= 830 && hhmm <= 1530;
+        
+        console.log(`[TimeCheck] Current: ${hour}:${minute} (${hhmm}), CanDownload: ${canDownload}`);
+        setIsDownloadable(canDownload);
     };
 
     const parseBriefing = (raw) => {
@@ -81,19 +93,17 @@ const AdminTheDailyMagazine = () => {
                 allowTaint: true,
                 backgroundColor: "#f8f5f0",
                 onclone: (clonedDoc) => {
-                    const allElements = clonedDoc.getElementsByTagName('*');
-                    for (let i = 0; i < allElements.length; i++) {
-                        const el = allElements[i];
-                        el.style.boxShadow = 'none';
-                        el.style.filter = 'none';
-                        const style = window.getComputedStyle(el);
-                        if (style.color.includes('oklch')) el.style.color = '#1e293b';
-                        if (style.backgroundColor.includes('oklch')) el.style.backgroundColor = 'transparent';
-                        if (style.borderColor.includes('oklch')) el.style.borderColor = '#cbd5e1';
-                        
-                        if (['H1', 'H2', 'H3', 'H4', 'P', 'SPAN'].includes(el.tagName)) {
-                            el.style.lineHeight = '1.5';
-                            el.style.paddingBottom = '3px';
+                    const all = clonedDoc.getElementsByTagName('*');
+                    for (let i = 0; i < all.length; i++) {
+                        all[i].style.boxShadow = 'none';
+                        all[i].style.filter = 'none';
+                        const style = window.getComputedStyle(all[i]);
+                        if (style.color.includes('oklch')) all[i].style.color = '#1e293b';
+                        if (style.backgroundColor.includes('oklch')) all[i].style.backgroundColor = 'transparent';
+                        if (style.borderColor.includes('oklch')) all[i].style.borderColor = '#cbd5e1';
+                        if (['H1', 'H2', 'H3', 'H4', 'P', 'SPAN'].includes(all[i].tagName)) {
+                            all[i].style.lineHeight = '1.5';
+                            all[i].style.paddingBottom = '3px';
                         }
                     }
                 }
@@ -134,14 +144,29 @@ const AdminTheDailyMagazine = () => {
         const rest = text.slice(1);
         return (
             <p className="text-lg lg:text-xl leading-relaxed italic break-keep text-[#334155] pb-2">
-                <span style={{ fontSize: '4rem', fontWeight: '900', color: '#4f46e5', float: 'left', lineHeight: '0.8', marginRight: '1rem', marginTop: '0.5rem' }}>{firstChar}</span>
+                <span style={{ fontSize: '5rem', fontWeight: '900', color: '#4f46e5', float: 'left', lineHeight: '0.8', marginRight: '1.2rem', marginTop: '0.8rem' }}>{firstChar}</span>
                 {rest}
             </p>
         );
     };
 
+    // 지표 태그 렌더러 (RSI 바닥탈출 등)
+    const renderReasonTags = (reason) => {
+        if (!reason) return null;
+        const tags = reason.split(',').map(t => t.trim());
+        return (
+            <div className="flex gap-1 items-center">
+                {tags.map((tag, idx) => (
+                    <span key={idx} className="px-1.5 py-0.5 bg-indigo-50 text-[8px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap">
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
     const renderDetailedScores = (stock) => (
-        <div className="flex gap-1 mt-1 flex-wrap">
+        <div className="flex gap-1 mt-1 flex-wrap items-center">
             {[
                 { label: 'Q', val: stock.algo_score, color: '#4f46e5' },
                 { label: 'L', val: stock.lstm_score, color: '#8b5cf6' },
@@ -153,6 +178,10 @@ const AdminTheDailyMagazine = () => {
                     <span className="text-[8px] font-bold text-[#475569]">{Math.round(item.val)}</span>
                 </div>
             ))}
+            {/* [v18.0] 기술적 분석 태그 추가 */}
+            <div className="ml-1 border-l border-slate-200 pl-2">
+                {renderReasonTags(stock.reason)}
+            </div>
         </div>
     );
 
@@ -160,12 +189,25 @@ const AdminTheDailyMagazine = () => {
         <div className="flex-1 bg-[#0f172a] h-full overflow-hidden flex flex-col relative font-sans">
             <div className="h-14 bg-[#1e293b] border-b border-[#334155] flex items-center justify-between px-4 lg:px-6 shrink-0 z-10">
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#10b98120] text-[#10b981] border border-[#10b98130]">
-                        <Activity size={10} className="animate-pulse" /> PREMIUM READY
+                    <div className={classNames(
+                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                        isDownloadable ? "bg-[#10b98120] text-[#10b981] border-[#10b98130]" : "bg-[#f43f5e20] text-[#f43f5e] border-[#f43f5e30]"
+                    )}>
+                        {isDownloadable ? <Activity size={12} className="animate-pulse" /> : <Lock size={12} />}
+                        {isDownloadable ? "PREMIUM READY" : "REPORT WAITING"}
                     </div>
                 </div>
-                <button onClick={handleGeneratePdf} disabled={isLoading} style={{backgroundColor: '#4f46e5'}} className="px-4 lg:px-6 py-2 rounded-xl font-black text-[10px] lg:text-xs text-white flex items-center gap-2 shadow-lg active:scale-95">
-                    {isLoading ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />} PDF 발행
+                <button 
+                    onClick={handleGeneratePdf} 
+                    disabled={!isDownloadable || isLoading} 
+                    style={{ backgroundColor: isDownloadable ? '#4f46e5' : '#334155' }} 
+                    className={classNames(
+                        "px-6 py-2 rounded-xl font-black text-xs text-white flex items-center gap-2 transition-all shadow-lg",
+                        !isDownloadable ? "cursor-not-allowed opacity-50" : "active:scale-95 hover:bg-[#4338ca]"
+                    )}
+                >
+                    {isLoading ? <Loader2 className="animate-spin" size={14} /> : (isDownloadable ? <Download size={14} /> : <Lock size={14} />)} 
+                    {isDownloadable ? "📄 PDF REPORT 발행" : "발행 제한 (08:30~15:30)"}
                 </button>
             </div>
 
@@ -187,12 +229,11 @@ const AdminTheDailyMagazine = () => {
 
                     <section className="mb-16">
                         <div className="border-b border-[#cbd5e1] pb-10 mb-12">
-                            {/* 헤드라인 크기 축소 */}
                             <h2 className="text-2xl lg:text-5xl font-black leading-tight mb-8 break-keep underline underline-offset-8 pb-2" style={{color: '#0f172a', textDecorationColor: 'rgba(79, 70, 229, 0.3)'}}>
                                 "{magazineData.headline}"
                             </h2>
-                            <div className="flex gap-6 items-start">
-                                <div className="hidden sm:flex w-16 h-16 rounded-full items-center justify-center shrink-0 shadow-xl" style={{backgroundColor: '#4f46e5'}}><Brain className="text-white" size={32} /></div>
+                            <div className="flex gap-6 lg:gap-10 items-start">
+                                <div className="hidden lg:flex w-16 h-16 rounded-full items-center justify-center shrink-0 shadow-xl" style={{backgroundColor: '#4f46e5'}}><Brain className="text-white" size={32} /></div>
                                 {renderBriefingWithDropCap(magazineData.marketBrief)}
                             </div>
                         </div>
@@ -206,7 +247,7 @@ const AdminTheDailyMagazine = () => {
                                 <div key={i} className="bg-white p-6 lg:p-8 rounded-r-2xl flex flex-col lg:flex-row justify-between gap-6 shadow-md" style={{borderLeft: '10px solid #4f46e5'}}>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1.5 rounded-full uppercase flex items-center justify-center min-w-[70px] whitespace-nowrap" style={{backgroundColor: '#0f172a'}}>RANK #{i+1}</span>
+                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1.5 rounded-full uppercase flex items-center justify-center min-w-[80px] whitespace-nowrap" style={{backgroundColor: '#0f172a'}}>RANK #{i+1}</span>
                                             <h4 className="font-black text-xl lg:text-3xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight" style={{color: '#0f172a'}}>{stock.stock_name}</h4>
                                             <span style={{color: '#94a3b8'}} className="font-mono text-sm lg:text-base">{stock.stock_code}</span>
                                         </div>
@@ -229,11 +270,11 @@ const AdminTheDailyMagazine = () => {
                             <div className="flex gap-8 lg:gap-16 font-sans justify-end">
                                 <div className="text-right">
                                     <div className="text-[8px] lg:text-[9px] font-black uppercase" style={{color: '#64748b'}}>KOSPI 200</div>
-                                    <div className="text-lg lg:text-2xl font-black text-white">{magazineData.indices.kospi} <span style={{color: '#f43f5e'}} className="text-xs ml-1">{magazineData.indices.kospiRate}</span></div>
+                                    <div className="text-lg lg:text-2xl font-black text-white">{magazineData.indices.kospi} <span style={{color: '#f43f5e'}} className="text-sm ml-1">{magazineData.indices.kospiRate}</span></div>
                                 </div>
                                 <div className="text-right border-l border-[#334155] pl-8 lg:pl-16">
                                     <div className="text-[8px] lg:text-[9px] font-black uppercase" style={{color: '#64748b'}}>KOSDAQ 150</div>
-                                    <div className="text-lg lg:text-2xl font-black text-white">{magazineData.indices.kosdaq} <span style={{color: '#f43f5e'}} className="text-xs ml-1">{magazineData.indices.kosdaqRate}</span></div>
+                                    <div className="text-lg lg:text-2xl font-black text-white">{magazineData.indices.kosdaq} <span style={{color: '#f43f5e'}} className="text-sm ml-1">{magazineData.indices.kosdaqRate}</span></div>
                                 </div>
                             </div>
                         </div>
@@ -244,7 +285,11 @@ const AdminTheDailyMagazine = () => {
                             <Map style={{color: '#4f46e5'}} size={32} />
                             <h3 className="text-xl lg:text-3xl font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Industry Mapping</h3>
                         </div>
-                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10">
+                        {/* 이미지 클릭 시 확대 기능 추가 */}
+                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10 cursor-pointer group relative" onClick={() => setZoomImage('/stockPlus/api/snapshots/heatmap_latest.png')}>
+                            <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
+                                <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={48} />
+                            </div>
                             <div className="flex items-center justify-between px-4 py-3 border-b border-[#f1f5f9] mb-4 font-sans">
                                 <span className="text-[9px] lg:text-[10px] font-black uppercase flex items-center gap-2" style={{color: '#4338ca'}}>Closing Map Snapshot</span>
                                 <span className="text-[8px] lg:text-[9px] font-bold italic tracking-widest uppercase" style={{color: '#94a3b8'}}>23:00 Capture</span>
@@ -283,7 +328,10 @@ const AdminTheDailyMagazine = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-12">
+                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-12 cursor-pointer group relative" onClick={() => setZoomImage('/stockPlus/api/snapshots/ranking_latest.png')}>
+                            <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
+                                <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={48} />
+                            </div>
                             <div className="flex items-center justify-between px-4 py-3 border-b border-[#f1f5f9] mb-4 font-sans">
                                 <span className="text-[9px] lg:text-[10px] font-black uppercase flex items-center gap-2" style={{color: '#4338ca'}}><TrendingUp size={16} /> AI Ensemble Summary</span>
                                 <span className="text-[8px] lg:text-[9px] font-bold italic tracking-widest uppercase" style={{color: '#94a3b8'}}>08:00 Capture</span>
@@ -312,6 +360,17 @@ const AdminTheDailyMagazine = () => {
                     </section>
                 </div>
             </div>
+
+            {/* 이미지 확대 모달 (v18.0) */}
+            {zoomImage && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/95 backdrop-blur-md" onClick={() => setZoomImage(null)}></div>
+                    <div className="relative w-full max-w-6xl max-h-full overflow-auto rounded-2xl shadow-2xl border border-slate-800">
+                        <button onClick={() => setZoomImage(null)} className="absolute top-4 right-4 z-20 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition-all"><X size={24} /></button>
+                        <img src={zoomImage} alt="Zoomed" className="w-full h-auto" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

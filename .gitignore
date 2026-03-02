@@ -14,3 +14,11 @@ frontend/node_modules/
 
 # Logs
 logs/
+
+# Snapshots & Binary Models
+img/snapshots/
+*.png
+*.PNG
+*.gz
+*.pth
+*.json
