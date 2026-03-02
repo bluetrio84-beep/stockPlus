@@ -42,6 +42,16 @@
 ---
 
 ## 🚀 향후 과제 (이번 주 숙제: 3/8 논의)
+- **[개인화 지능] v18.1 박달동 로컬 지능(Regional Intelligence) 추가 계획**:
+    - **로컬 뉴스 특공대 가동 (Collector)**: 
+        - 새벽 06:30: `snapshot_engine.py`에 로컬 뉴스 수집 태그 추가.
+        - 키워드: 안양, 박달동, 광명역, 박달스마트밸리, 박달스마트시티, 위례과천선 안양연장.
+        - 저장: `local_news_history` 테이블을 신설하여 수집된 헤드라인 보관.
+    - **Gemini 에디터 지침 수정 (Backend)**: 
+        - `StockAnalysisService.java` 프롬프트에 "오늘 수집된 박달동 인근 호재" 데이터 주입.
+        - Gemini에게 `[REGIONAL_IMPACT]` 태그로 건설/부동산 섹터 영향력을 한 줄 요약 요청.
+    - **매거진 하단 'Regional Impact' 섹션 신설 (Frontend)**: 
+        - 리포트 맨 마지막, 전문가 총평 위에 `Local Development Intelligence` 섹션 럭셔리하게 추가.
 - **[AI 고도화] 지능형 복기 태그 및 인적 직관 학습(Human-in-the-Loop) 구현**.
 - **[AI 고도화] Stacking 가중치 자동 최적화**.
 - **[UI/UX] 마켓 버블 차트 드릴다운(Drill-down) 구현**.
