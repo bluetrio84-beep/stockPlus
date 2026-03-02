@@ -88,7 +88,7 @@ const NextLeaderDashboard = () => {
     };
 
     const renderRankingTab = () => (
-        <div className="flex-1 min-h-0 bg-slate-900/50 border border-slate-800 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
+        <div id="next-leader-ranking-area" className="flex-1 min-h-0 bg-slate-900/50 border border-slate-800 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
             <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 shrink-0">
                 <div className="flex items-center gap-2">
                     <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">

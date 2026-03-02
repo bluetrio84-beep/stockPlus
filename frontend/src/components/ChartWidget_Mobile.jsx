@@ -82,7 +82,7 @@ const ChartWidgetMobile = (props) => {
   const marketInfo = getMarketDisplay(marketMode);
 
   return (
-    <div className="w-full h-full flex flex-col bg-slate-900 rounded-lg overflow-hidden border border-slate-800 shadow-xl relative min-h-0">
+    <div id="stock-chart-area" className="w-full h-full flex flex-col bg-slate-900 rounded-lg overflow-hidden border border-slate-800 shadow-xl relative min-h-0">
       <div className="p-2.5 border-b border-slate-800 flex justify-between items-center bg-slate-850 shrink-0">
             <div>
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">

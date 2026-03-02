@@ -188,7 +188,7 @@ const AdminIntelligenceDashboard = () => {
             </div>
             <div className="grid grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0 overflow-hidden">
                 <div className="hidden lg:flex lg:col-span-3 flex-col h-full overflow-hidden">{renderAiTracker()}</div>
-                <div className={classNames("col-span-12 lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-4 lg:p-6 shadow-2xl flex flex-col h-full overflow-hidden", mobileTab !== 'heatmap' && 'hidden lg:flex')}>
+                <div id="industry-heatmap-area" className={classNames("col-span-12 lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-4 lg:p-6 shadow-2xl flex flex-col h-full overflow-hidden", mobileTab !== 'heatmap' && 'hidden lg:flex')}>
                     <div className="flex justify-between items-center mb-4 lg:mb-6 shrink-0"><h2 className="text-sm lg:text-lg font-bold text-white flex items-center gap-2"><PieChart size={18} className="text-indigo-400" /> 업종 등락 히트맵</h2><span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">Top 50</span></div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-2.5 overflow-y-auto custom-scrollbar-thin pr-1 flex-1 pb-2 content-start">
                         {data.heatmap?.map((item, idx) => (

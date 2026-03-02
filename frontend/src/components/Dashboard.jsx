@@ -124,9 +124,37 @@ function Dashboard() {
           setDisplayStocks(stocksWithInitialData);
           if (stockCodeFromUrl) {
               const target = stocksWithInitialData.find(s => s.code === stockCodeFromUrl);
-              if (target) setSelectedStock(prev => (prev && prev.code === target.code) ? { ...target, chartData: prev.chartData || target.chartData } : target);
+              if (target) {
+                  setSelectedStock(prev => (prev && prev.code === target.code) ? { ...target, chartData: prev.chartData || target.chartData } : target);
+              } else {
+                  // [v18.0] 관심종목에 없는 종목도 URL이 있으면 직접 로드
+                  fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
+                      if (priceData) {
+                          const tempStock = {
+                              id: stockCodeFromUrl, code: stockCodeFromUrl, name: priceData.stockName || stockCodeFromUrl,
+                              price: parseFloat(priceData.currentPrice) || 0, change: parseFloat(priceData.change) || 0,
+                              changeRate: parseFloat(priceData.changeRate) || 0, volume: priceData.volume || '-',
+                              exchangeCode: market, chartData: [], lastLoadedPeriod: null
+                          };
+                          setSelectedStock(tempStock);
+                      }
+                  });
+              }
           }
-        } else setDisplayStocks([]);
+        } else {
+            setDisplayStocks([]);
+            // [v18.0] 관심종목이 아예 비어있어도 URL 파라미터가 있으면 로드 시도
+            if (stockCodeFromUrl) {
+                fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
+                    if (priceData) {
+                        setSelectedStock({
+                            id: stockCodeFromUrl, code: stockCodeFromUrl, name: priceData.stockName || stockCodeFromUrl,
+                            price: parseFloat(priceData.currentPrice) || 0, exchangeCode: market, chartData: []
+                        });
+                    }
+                });
+            }
+        }
     } catch (e) { console.error("Watchlist load failed", e); }
     setIsLoading(false);
   }, [stockCodeFromUrl, globalMarketMode, activeWatchlistTab]);

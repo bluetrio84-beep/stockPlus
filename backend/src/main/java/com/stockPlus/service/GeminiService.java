@@ -110,7 +110,7 @@ public class GeminiService {
     }
 
     // Gemini API 호출 (일반 응답 - Blocking)
-    private String getCompletion(String prompt) {
+    public String getCompletion(String prompt) {
         try {
             // [v17.9] API 할당량(Rate Limit) 방지를 위한 강제 딜레이 추가
             Thread.sleep(1200); 

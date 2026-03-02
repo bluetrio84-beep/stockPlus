@@ -38,8 +38,8 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
-                // 1. 공용 API 및 대시보드 시세 조회 허용 (로그인 전에도 화면이 뜨게 함)
-                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**").permitAll()
+                // 1. 공용 API 및 대시보드 시세 조회 허용
+                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/snapshots/**").permitAll()
                 
                 // 2. 관리자 전용 API
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

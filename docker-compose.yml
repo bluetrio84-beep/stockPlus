@@ -41,6 +41,7 @@ services:
       - .env
     volumes:
       - ./logs:/app/logs
+      - ./img/snapshots:/app/snapshots
     depends_on:
       mysql:
         condition: service_healthy
@@ -73,6 +74,8 @@ services:
     env_file:
       - .env
     network_mode: "host"
+    volumes:
+      - ./img/snapshots:/app/snapshots
     depends_on:
       mysql:
         condition: service_healthy

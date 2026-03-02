@@ -24,6 +24,7 @@ public class AdminController {
     private final PasswordEncoder passwordEncoder;
     private final DailyInvestorScheduler dailyInvestorScheduler;
     private final StockMasterService stockMasterService;
+    private final com.stockPlus.service.StockAnalysisService stockAnalysisService;
 
     // --- 0. 상장종목 관리 (CRUD) ---
     @GetMapping("/stocks")
@@ -164,7 +165,8 @@ public class AdminController {
     @GetMapping("/intelligence/next-leaders")
     public List<Map<String, Object>> getNextLeaders(@RequestParam(required = false) String date) {
         String targetDate = (date != null) ? date : java.time.LocalDate.now().toString();
-        return adminMapper.getNextLeadersByDate(targetDate);
+        // [v18.0] TOP 10으로 정예화
+        return adminMapper.getNextLeadersByDate(targetDate).stream().limit(10).toList();
     }
 
     @GetMapping("/intelligence/ai-review")
@@ -172,6 +174,29 @@ public class AdminController {
         Map<String, Object> response = new HashMap<>();
         response.put("modelPerformance", adminMapper.getAiModelPerformance());
         response.put("pastRecommendations", adminMapper.getPastRecommendations());
+        return response;
+    }
+
+    @GetMapping("/magazine/data")
+    public Map<String, Object> getMagazineData() {
+        Map<String, Object> response = new HashMap<>();
+        String today = java.time.LocalDate.now().toString();
+        
+        // 1. 히트맵 및 랭킹 조회
+        List<Map<String, Object>> heatmap = adminMapper.getIndustryHeatmap();
+        List<Map<String, Object>> leaders = adminMapper.getNextLeadersByDate(today).stream().limit(10).toList();
+        
+        // 2. 최신 지수 정보 조회 (v18.0 추가)
+        List<Map<String, Object>> indices = adminMapper.getLatestIndices();
+        
+        // 3. Gemini 브리핑 생성
+        String briefing = stockAnalysisService.generateMagazineBriefing(heatmap, leaders);
+        
+        response.put("date", today);
+        response.put("heatmap", heatmap);
+        response.put("leaders", leaders);
+        response.put("indices", indices);
+        response.put("briefing", briefing);
         return response;
     }
 

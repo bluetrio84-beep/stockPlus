@@ -88,7 +88,7 @@ class AIEngine:
 
     def connect(self):
         try: self.conn = pymysql.connect(**DB_CONFIG)
-        except: self.conn = pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+        except: self.conn = pymysql.connect(host='127.0.0.1', port=3306, user='lms', password='cnbas.2015', database='stockplus')
 
     def calculate_technical_indicators(self, df):
         if len(df) < 5: return 50 

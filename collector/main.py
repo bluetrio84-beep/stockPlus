@@ -9,15 +9,16 @@ import pytz
 from bs4 import BeautifulSoup
 import re
 import requests
+import subprocess
 from ai_engine import AIEngine
 from next_leader_engine import NextLeaderEngine
 
-# DB 설정
+# DB 설정 (Host 모드 기준)
 DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
 
-BACKEND_API_URL = "http://localhost:8080/api/dashboard"
+BACKEND_API_URL = "http://127.0.0.1:8080/api/dashboard"
 
 class MegaCollector:
     def __init__(self):
@@ -26,7 +27,7 @@ class MegaCollector:
 
     def get_db_connection(self):
         try: return pymysql.connect(**DB_CONFIG)
-        except: return pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+        except: return pymysql.connect(host='127.0.0.1', port=3306, user='lms', password='cnbas.2015', database='stockplus')
 
     def log_to_db(self, level, message):
         conn = self.get_db_connection()
@@ -50,7 +51,6 @@ class MegaCollector:
         except Exception as e: print(f">>> [Stats Update Error] {e}")
         finally: conn.close()
 
-    # [신규 추가] 매일 밤 전 종목 시가총액 갱신 메서드
     def sync_market_cap(self):
         self.log_to_db("INFO", "[마스터갱신] 전 종목 시가총액 업데이트 시작")
         conn = self.get_db_connection()
@@ -148,7 +148,6 @@ class MegaCollector:
                 context = browser.new_context(user_agent=self.user_agent)
                 try:
                     page = context.new_page()
-                    if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
                     sects, themes = self.scrape_lists(page)
                     indices = self.fetch_market_indices()
                     sc_cnt = len(sects) + len(themes) + len(indices)
@@ -177,7 +176,6 @@ class MegaCollector:
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
-                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
                             conn = self.get_db_connection()
                             try:
                                 with conn.cursor() as cursor:
@@ -218,7 +216,6 @@ class MegaCollector:
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
-                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
                             conn = self.get_db_connection()
                             try:
                                 with conn.cursor() as cursor:
@@ -247,7 +244,7 @@ class DaumTraderScraper:
 
     def get_db_connection(self):
         try: return pymysql.connect(**DB_CONFIG)
-        except: return pymysql.connect(host='localhost', port=3306, user='lms', password='cnbas.2015', database='stockplus')
+        except: return pymysql.connect(host='127.0.0.1', port=3306, user='lms', password='cnbas.2015', database='stockplus')
 
     def fetch_price_and_volume(self, code):
         try:
@@ -311,7 +308,6 @@ class DaumTraderScraper:
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
-                            if hasattr(ps, 'stealth') and callable(ps.stealth): ps.stealth(page)
                             for item in chunk:
                                 try:
                                     if page.is_closed(): break 
@@ -330,9 +326,10 @@ class DaumTraderScraper:
 
 def main():
     mega = MegaCollector(); trader = DaumTraderScraper(); engine = AIEngine()
-    next_engine = NextLeaderEngine() # [v17.0] 추가
+    next_engine = NextLeaderEngine() 
     last_sync_date = ""
-    last_next_leader_date = "" # [v17.0] 추가
+    last_next_leader_date = "" 
+    last_snapshot_date = "" 
     
     while True:
         try:
@@ -340,21 +337,34 @@ def main():
             now_str = now.strftime('%Y-%m-%d')
             now_hour, now_min, now_weekday = now.hour, now.minute, now.weekday()
 
-            # 0. 매일 아침 08:00 Next Leaders 분석 (하루 1회)
-            if now_weekday < 5 and now_hour == 8 and 0 <= now_min <= 10 and last_next_leader_date != now_str:
+            # 1. [23:00] 어제의 잔상 기록 (히트맵)
+            if now_hour == 23 and 0 <= now_min <= 5 and last_snapshot_date != now_str:
+                mega.log_to_db("INFO", "[스냅샷] 히트맵 캡처 시작 (23시)")
+                subprocess.run(["python3", "snapshot_engine.py", "--mode", "heatmap"])
+                last_snapshot_date = now_str
+
+            # 2. [07:00] 오늘의 바닥 탈출 분석
+            if now_weekday < 5 and now_hour == 7 and 0 <= now_min <= 10 and last_next_leader_date != now_str:
                 try:
+                    mega.log_to_db("INFO", "[분석가동] Next Leaders 1,600개 전수조사 시작 (07시)")
                     next_engine.analyze_next_leaders()
                     last_next_leader_date = now_str
-                except: pass
+                except Exception as e:
+                    mega.log_to_db("ERROR", f"[분석실패] {str(e)}")
 
-            # 1. 매일 밤 20:30 시총 갱신 (하루 1회)
+            # 3. [08:00] 오늘의 유망주 랭킹 리스트 스냅샷
+            if now_weekday < 5 and now_hour == 8 and 0 <= now_min <= 5:
+                if last_next_leader_date == now_str:
+                    mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (08시)")
+                    subprocess.run(["python3", "snapshot_engine.py", "--mode", "ranking"])
+
+            # 4. [20:30] 시총 갱신
             if now_hour == 20 and now_min == 30 and last_sync_date != now_str:
                 mega.sync_market_cap()
                 last_sync_date = now_str
 
-            # 2. 실시간 수집 (평일 08~16시)
+            # 5. 실시간 수집 (평일 08~16시)
             if now_weekday < 5 and 8 <= now_hour < 16:
-                # interval 조회 로직 보존
                 conn = mega.get_db_connection(); interval = 300
                 try:
                     with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -366,35 +376,29 @@ def main():
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 total_collected = 0
-                
                 try:
                     sects, themes, q_cnt = mega.run_quick_sync()
                     total_collected += (q_cnt if q_cnt else 0)
                 except: pass
-                
                 try:
                     t_cnt = trader.run_relay_cycle(mega)
                     total_collected += (t_cnt if t_cnt else 0)
                 except: pass
-                
                 try:
-                    if 'sects' not in locals(): sects = []
-                    if 'themes' not in locals(): themes = []
-                    d_cnt = mega.run_deep_analysis(sects, themes)
+                    s_list = sects if 'sects' in locals() else []
+                    t_list = themes if 'themes' in locals() else []
+                    d_cnt = mega.run_deep_analysis(s_list, t_list)
                     total_collected += (d_cnt if d_cnt else 0)
                 except: pass
-
                 try:
                     duration = (datetime.now() - start_time).seconds
                     mega.update_stats(total_collected)
                     mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
-                    print(">>> Starting AI Engine Analysis...")
                     engine.analyze_market()
                 except: pass
-                
                 time.sleep(interval)
             else:
-                time.sleep(60) # 비가동 시간대 대기
+                time.sleep(60) 
         except Exception as e:
             mega.log_to_db("ERROR", f"[치명적오류] {str(e)}")
             time.sleep(60)
