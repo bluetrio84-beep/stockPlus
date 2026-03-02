@@ -157,7 +157,7 @@ const AdminTheDailyMagazine = () => {
         return (
             <div className="flex gap-1 items-center">
                 {tags.map((tag, idx) => (
-                    <span key={idx} className="px-1.5 py-0.5 bg-indigo-50 text-[8px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap">
+                    <span key={idx} className="px-1.5 py-0.5 bg-indigo-50 text-[8px] lg:text-[10px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap">
                         {tag}
                     </span>
                 ))}
@@ -174,8 +174,8 @@ const AdminTheDailyMagazine = () => {
                 { label: 'X', val: stock.xgb_score, color: '#f43f5e' }
             ].map(item => (
                 <div key={item.label} className="flex items-center gap-1 px-1 py-0.5 rounded bg-[#f1f5f9] border border-[#e2e8f0]">
-                    <span className="text-[7px] font-black" style={{ color: item.color }}>{item.label}</span>
-                    <span className="text-[8px] font-bold text-[#475569]">{Math.round(item.val)}</span>
+                    <span className="text-[7px] lg:text-[9px] font-black" style={{ color: item.color }}>{item.label}</span>
+                    <span className="text-[8px] lg:text-[10px] font-bold text-[#475569]">{Math.round(item.val)}</span>
                 </div>
             ))}
             {/* [v18.0] 기술적 분석 태그 추가 */}

@@ -182,15 +182,24 @@ public class AdminController {
         Map<String, Object> response = new HashMap<>();
         String today = java.time.LocalDate.now().toString();
         
-        // 1. 히트맵 및 랭킹 조회
+        // 1. 히트맵 및 랭킹, 지수 조회
         List<Map<String, Object>> heatmap = adminMapper.getIndustryHeatmap();
         List<Map<String, Object>> leaders = adminMapper.getNextLeadersByDate(today).stream().limit(10).toList();
-        
-        // 2. 최신 지수 정보 조회 (v18.0 추가)
         List<Map<String, Object>> indices = adminMapper.getLatestIndices();
         
-        // 3. Gemini 브리핑 생성
-        String briefing = stockAnalysisService.generateMagazineBriefing(heatmap, leaders);
+        // 2. DB에서 오늘의 브리핑 조회 (캐싱 로직 v18.0)
+        String briefing = adminMapper.getDailyReport(today);
+        
+        if (briefing == null || briefing.trim().isEmpty()) {
+            // DB에 없으면 Gemini 호출하여 생성
+            briefing = stockAnalysisService.generateMagazineBriefing(heatmap, leaders);
+            // 생성된 브리핑 DB에 저장
+            try {
+                adminMapper.insertDailyReport(today, briefing);
+            } catch (Exception e) {
+                // 중복 키 에러 등 예외 처리
+            }
+        }
         
         response.put("date", today);
         response.put("heatmap", heatmap);

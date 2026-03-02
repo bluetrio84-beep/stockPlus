@@ -20,6 +20,12 @@ public interface AdminMapper {
     @Select("SELECT index_name, index_value, change_val, change_rate FROM market_index_history WHERE id IN (SELECT MAX(id) FROM market_index_history GROUP BY index_name)")
     List<Map<String, Object>> getLatestIndices();
 
+    @Select("SELECT content FROM ai_daily_report WHERE report_date = #{date}")
+    String getDailyReport(@Param("date") String date);
+
+    @Insert("INSERT INTO ai_daily_report (report_date, content) VALUES (#{date}, #{content})")
+    void insertDailyReport(@Param("date") String date, @Param("content") String content);
+
     @Select("SELECT * FROM collector_logs ORDER BY id DESC LIMIT 100")
     List<Map<String, Object>> getCollectorLogs();
 
