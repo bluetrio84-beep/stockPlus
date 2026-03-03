@@ -1,6 +1,6 @@
 # StockPlus Project Intelligence & Roadmap
 
-## 🚀 v18.0 "Premium Visual Intelligence Magazine" (2026-03-01 완료)
+## 🚀 v18.0 "Premium Visual Intelligence Magazine" (2026-03-03 완료)
 *작성자: 43세 베테랑 개발자 & Gemini CLI*
 
 ### 1. 프리미엄 리포트 시스템: The Daily Magazine (Elite Edition)
@@ -31,7 +31,7 @@
 
 # 📋 StockPlus Task Management
 
-## ✅ 완료된 작업 (2026-03-01)
+## ✅ 완료된 작업 (2026-03-03)
 - **[UI/UX] v18.0 프리미엄 시각적 인텔리전스 리포트 시스템 최종 완결**: 3페이지 무한 슬라이싱 PDF, Gemini 통합 브리핑, 실시간 지수 연동, 모바일 가독성 패치.
 - **[운영 도구] v18.4 동적 수집 가동 정책 제어 시스템 구축**: 주말/공휴일 수집기 가동 여부 실시간 제어 UI 및 백엔드 연동.
 - **[시스템 보완] 설정값 원복 현상 해결 및 데이터 맵핑 정밀화**: 10초 주기 갱신 시에도 관리자 설정이 유지되도록 패치.
