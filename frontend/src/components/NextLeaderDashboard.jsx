@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthHeader } from '../api/stockApi';
-import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown } from 'lucide-react';
+import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown, Sparkles } from 'lucide-react';
 import classNames from 'classnames';
 
 const NextLeaderDashboard = () => {
@@ -176,40 +176,103 @@ const NextLeaderDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {reviewData.modelPerformance.map((m, i) => (
                     <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-                        <div className={classNames("absolute top-0 left-0 w-1 h-full", m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500'))}></div>
+                        <div className={classNames("absolute top-0 left-0 w-1 h-full", 
+                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
+                        )}></div>
                         <div className="flex justify-between items-start mb-4">
-                            <div><h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4><p className={classNames("text-xl font-black", m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400'))}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p></div>
-                            <div className="text-right"><span className="text-[9px] text-slate-500 font-bold block mb-1 uppercase">Weight</span><span className="text-sm font-black text-white">{m.weight}%</span></div>
+                            <div>
+                                <h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4>
+                                <p className={classNames("text-xl font-black", 
+                                    m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400')
+                                )}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[9px] text-slate-500 font-bold block mb-1 uppercase">Weight</span>
+                                <span className="text-sm font-black text-white">{m.weight}%</span>
+                            </div>
                         </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full transition-all duration-1000", m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500'))} style={{ width: `${m.hit_rate}%` }}></div></div>
+                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className={classNames("h-full transition-all duration-1000", 
+                                m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
+                            )} style={{ width: `${m.hit_rate}%` }}></div>
+                        </div>
                     </div>
                 ))}
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                    <h3 className="text-white font-black flex items-center gap-2 uppercase tracking-tighter"><CheckCircle2 className="text-emerald-500" size={20} /> AI 사후 복기 리포트</h3>
-                    <span className="text-[10px] text-slate-500 font-mono italic">Past 10 Validated Results</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                            <CheckCircle2 className="text-emerald-500" size={22} />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-lg uppercase tracking-tighter">AI 사후 복기 리포트</h3>
+                            <p className="text-[10px] text-slate-500 font-mono italic">Past 10 Validated Results</p>
+                        </div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                        <span className="text-[10px] font-black text-slate-500 uppercase block">Verification Window</span>
+                        <span className="text-xs text-indigo-400 font-bold">T+3 Trading Days</span>
+                    </div>
                 </div>
+                
                 <div className="space-y-3">
-                    {reviewData.pastRecommendations.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
+                    {reviewData.pastRecommendations.length > 0 ? reviewData.pastRecommendations.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all group shadow-inner">
                             <div className="flex items-center gap-4">
-                                <div className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">{item.date}</div>
-                                <div><div className="text-sm font-bold text-white">{item.stock_name}</div><div className="text-[9px] text-indigo-400 font-mono">Score: {item.total_score.toFixed(1)}</div></div>
+                                <div className="text-[10px] font-black text-slate-500 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 shadow-sm group-hover:text-indigo-400 transition-colors">{item.date}</div>
+                                <div>
+                                    <div className="text-sm lg:text-base font-black text-white mb-0.5">{item.stock_name}</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] text-indigo-400 font-mono px-1.5 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20 uppercase">Final Score: {item.total_score.toFixed(1)}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-6">
-                                <div className="text-right hidden sm:block"><div className="text-[9px] text-slate-500 uppercase font-bold">Price Change</div><div className="text-xs text-white font-black">{item.price_at_recom.toLocaleString()} → {item.price_after_3d.toLocaleString()}</div></div>
-                                <div className="text-right w-20">
-                                    <div className={classNames("text-sm font-black flex items-center justify-end gap-1", item.hit_result === 'SUCCESS' ? 'text-rose-400' : 'text-blue-400')}>
-                                        {item.hit_result === 'SUCCESS' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                            <div className="flex items-center gap-4 lg:gap-10">
+                                <div className="text-right hidden md:block">
+                                    <div className="text-[9px] text-slate-500 uppercase font-black mb-1">Price Trajectory</div>
+                                    <div className="text-xs text-white font-bold flex items-center gap-2 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
+                                        <span>{item.price_at_recom.toLocaleString()}</span>
+                                        <ArrowUpRight size={12} className="text-slate-600" />
+                                        <span>{item.price_after_3d.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <div className="text-right w-24">
+                                    <div className={classNames("text-base lg:text-xl font-black flex items-center justify-end gap-1 tracking-tighter", 
+                                        item.hit_result === 'SUCCESS' ? 'text-rose-400' : 'text-blue-400'
+                                    )}>
+                                        {item.hit_result === 'SUCCESS' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                                         {item.price_at_recom > 0 ? (((item.price_after_3d - item.price_at_recom) / item.price_at_recom) * 100).toFixed(1) : '0.0'}%
                                     </div>
-                                    <div className={classNames("text-[9px] font-bold uppercase", item.hit_result === 'SUCCESS' ? 'text-emerald-500' : 'text-slate-500')}>{item.hit_result}</div>
+                                    <div className={classNames("text-[10px] font-black uppercase px-2 py-0.5 rounded inline-block mt-1", 
+                                        item.hit_result === 'SUCCESS' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                    )}>{item.hit_result}</div>
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="py-20 flex flex-col items-center text-center gap-4">
+                            <Activity className="text-slate-700 animate-pulse" size={48} />
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Collecting Validation Data...</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl lg:rounded-3xl p-6 lg:p-8 flex items-start gap-5 shadow-inner">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                    <Brain className="text-indigo-400" size={28} />
+                </div>
+                <div>
+                    <h4 className="text-indigo-400 font-black text-xs lg:text-sm uppercase tracking-widest mb-2 flex items-center gap-2">
+                        AI Performance Insight <Sparkles size={14} className="animate-pulse" />
+                    </h4>
+                    <p className="text-slate-300 text-[13px] lg:text-sm leading-relaxed font-medium">
+                        {reviewData.modelPerformance.length > 0 
+                            ? `현재 ${reviewData.modelPerformance.reduce((prev, curr) => prev.hit_rate > curr.hit_rate ? prev : curr).model_name} 모델이 가장 높은 적중률을 보이고 있습니다. 시장의 흐름에 따라 매주 주말 가중치(Weight)가 자동 최적화되어 다음 주 분석에 반영됩니다.`
+                            : "시계열 데이터가 축적됨에 따라 AI 모델별 강점과 약점을 스스로 분석하여 인사이트를 제공합니다. 현재는 초기 학습 데이터를 수집하는 단계입니다."}
+                    </p>
                 </div>
             </div>
         </div>
