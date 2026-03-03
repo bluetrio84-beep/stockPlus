@@ -8,7 +8,7 @@ import java.util.Map;
 public interface AdminMapper {
 
     // --- 1. 수집기 설정 및 로그 ---
-    @Select("SELECT * FROM collector_config WHERE id = 1")
+    @Select("SELECT id, collect_interval, ai_strategy_mode, collect_on_weekend, collect_on_holiday FROM collector_config WHERE id = 1")
     Map<String, Object> getCollectorConfig();
 
     @Update("UPDATE collector_config SET collect_interval = #{interval} WHERE id = 1")

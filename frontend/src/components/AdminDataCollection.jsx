@@ -38,7 +38,14 @@ const AdminDataCollection = () => {
             ]);
             if (configRes.ok) {
                 const conf = await configRes.json();
-                setConfig(conf);
+                // [v18.4 Fix] 서버 데이터(snake_case)를 명시적으로 상태에 저장
+                setConfig({
+                    ...conf,
+                    collect_interval: conf.collect_interval,
+                    ai_strategy_mode: conf.ai_strategy_mode,
+                    collect_on_weekend: conf.collect_on_weekend || 'N',
+                    collect_on_holiday: conf.collect_on_holiday || 'Y'
+                });
                 setAiMode(conf.ai_strategy_mode || 'BALANCED');
             }
             if (logsRes.ok) setLogs(await logsRes.json());
