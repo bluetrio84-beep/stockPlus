@@ -5,6 +5,9 @@ import pymysql
 import sys
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+import requests
+from bs4 import BeautifulSoup
+# import playwright_stealth as ps # 문제 발생 시 주석 해제하여 사용
 
 # DB 설정 (Host 모드 기준)
 DB_CONFIG = {
@@ -13,6 +16,7 @@ DB_CONFIG = {
 
 # 캡처 옵션 (Host 모드 최적화)
 BASE_URL = "http://127.0.0.1:80/stockPlus" 
+BACKEND_API_URL = "http://127.0.0.1:8080/api/dashboard"
 SAVE_DIR = "/app/snapshots"
 
 class SnapshotEngine:
@@ -56,14 +60,14 @@ class SnapshotEngine:
         self.log_to_db("업종 등락 히트맵 1270px 최종 촬영 시작")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-            # 뷰포트를 타겟 높이보다 넉넉하게 설정
             context = browser.new_context(viewport={'width': 1400, 'height': 1600})
             page = context.new_page()
+            # ps.stealth(page) # 자동화 탐지 우회 필요 시 주석 해제
+            
             try:
                 if self.do_login(page):
                     page.goto(f"{BASE_URL}/admin/intel", wait_until="networkidle", timeout=60000)
-                    
-                    # 1. 1270px 높이 강제 및 폰트 10px 조정
+                    # 촬영 전 레이아웃 조정
                     page.evaluate("""() => {
                         const area = document.querySelector('#industry-heatmap-area');
                         if (area) {
@@ -93,20 +97,16 @@ class SnapshotEngine:
                         document.body.style.height = 'auto';
                         document.body.style.overflow = 'visible';
                     }""")
-                    
                     page.wait_for_selector("#industry-heatmap-area", timeout=30000)
                     time.sleep(5) 
-                    
                     target_path = f"{self.save_path}/heatmap_latest.png"
                     heatmap_element = page.locator("#industry-heatmap-area")
-                    
                     box = heatmap_element.bounding_box()
                     if box:
-                        box['height'] = 1270 # 정확히 1270으로 크롭
+                        box['height'] = 1270
                         page.screenshot(path=target_path, clip=box)
                         self.log_to_db(f"1270px 최종 촬영 완료: {target_path}")
-                    else:
-                        heatmap_element.screenshot(path=target_path)
+                    else: heatmap_element.screenshot(path=target_path)
                 else: self.log_to_db("로그인 실패로 촬영을 중단합니다.")
             except Exception as e: self.log_to_db(f"히트맵 촬영 실패: {str(e)}")
             finally: browser.close()
@@ -116,25 +116,22 @@ class SnapshotEngine:
         self.log_to_db("Next Leaders 랭킹 리스트 정밀 촬영 시작")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-            # 10개 항목에 딱 맞는 타이트한 뷰포트
             context = browser.new_context(viewport={'width': 1400, 'height': 1200})
             page = context.new_page()
+            # ps.stealth(page)
+            
             try:
                 if self.do_login(page):
                     page.goto(f"{BASE_URL}/admin/next-leaders", wait_until="networkidle", timeout=60000)
-                    
-                    # [v18.0] 촬영 전 폰트 크기 2px 상향 조정
                     page.evaluate("""() => {
                         const area = document.querySelector('#next-leader-ranking-area');
                         if (area) {
-                            // 모든 텍스트 요소의 폰트 크기를 상대적으로 2px 상향
                             const allText = area.querySelectorAll('span, div, td, th');
                             allText.forEach(el => {
                                 const currentSize = window.getComputedStyle(el).fontSize;
                                 const newSize = (parseFloat(currentSize) + 2) + 'px';
                                 el.style.fontSize = newSize;
                             });
-                            // 테이블 행 높이도 소폭 조정하여 겹침 방지
                             const rows = area.querySelectorAll('tr');
                             rows.forEach(row => {
                                 row.style.height = 'auto';
@@ -143,30 +140,38 @@ class SnapshotEngine:
                             });
                         }
                     }""")
-                    
                     page.wait_for_selector("#next-leader-ranking-area", timeout=30000)
                     time.sleep(5) 
-                    
                     target_path = f"{self.save_path}/ranking_latest.png"
                     ranking_element = page.locator("#next-leader-ranking-area")
-                    
-                    # 실제 테이블 영역만 칼같이 잘라내기 (여백 총 200px 감산)
                     box = ranking_element.bounding_box()
                     if box:
-                        box['height'] -= 200 # 추가 80px 감산 (총 200px 제거)
+                        box['height'] -= 200
                         page.screenshot(path=target_path, clip=box)
                         self.log_to_db(f"랭킹 리스트 정밀 촬영 완료 (Font+2px, Height-200): {target_path}")
-                    else:
-                        ranking_element.screenshot(path=target_path)
+                    else: ranking_element.screenshot(path=target_path)
                 else: self.log_to_db("로그인 실패로 촬영을 중단합니다.")
             except Exception as e: self.log_to_db(f"랭킹 리스트 촬영 실패: {str(e)}")
             finally: browser.close()
 
+    def trigger_magazine_generation(self):
+        """[v18.2] 백엔드에 매거진 선제적 생성 요청 (08:15 최적화)"""
+        self.log_to_db("데일리 매거진 선제적 생성 트리거 시작")
+        try:
+            # 백엔드 API 호출하여 캐시 생성 유도
+            res = requests.get(f"{BACKEND_API_URL.replace('/api/dashboard', '/api/admin')}/magazine/data", timeout=120)
+            if res.ok:
+                self.log_to_db("데일리 매거진 생성 및 캐싱 완료 (08:15)")
+            else:
+                self.log_to_db(f"매거진 생성 트리거 실패: {res.status_code}")
+        except Exception as e:
+            self.log_to_db(f"매거진 생성 트리거 중 오류: {str(e)}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["heatmap", "ranking"], required=True)
+    parser.add_argument("--mode", choices=["heatmap", "ranking", "trigger_report"], required=True)
     args = parser.parse_args()
-
     engine = SnapshotEngine()
     if args.mode == "heatmap": engine.capture_heatmap()
-    else: engine.capture_ranking_list()
+    elif args.mode == "ranking": engine.capture_ranking_list()
+    elif args.mode == "trigger_report": engine.trigger_magazine_generation()

@@ -17,6 +17,9 @@ public interface AdminMapper {
     @Update("UPDATE collector_config SET ai_strategy_mode = #{mode} WHERE id = 1")
     void updateAiStrategy(@Param("mode") String mode);
 
+    @Update("UPDATE collector_config SET collect_on_weekend = #{weekend}, collect_on_holiday = #{holiday} WHERE id = 1")
+    void updateCollectorPolicy(@Param("weekend") String weekend, @Param("holiday") String holiday);
+
     @Select("SELECT index_name, index_value, change_val, change_rate FROM market_index_history WHERE id IN (SELECT MAX(id) FROM market_index_history GROUP BY index_name)")
     List<Map<String, Object>> getLatestIndices();
 

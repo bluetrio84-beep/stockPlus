@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Activity, Database, Clock, RefreshCw, AlertCircle, BarChart3, X, Terminal, List, Table, Filter, TrendingUp, Layers, Briefcase, Award, Brain, Shield, Zap } from 'lucide-react';
+import { Settings, Activity, Database, Clock, RefreshCw, AlertCircle, BarChart3, X, Terminal, List, Table, Filter, TrendingUp, Layers, Briefcase, Award, Brain, Shield, Zap, Lock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
 const AdminDataCollection = () => {
     const [activeTab, setActiveTab] = useState('overview');
-    const [aiMode, setAiMode] = useState('BALANCED'); // 'STABLE', 'BALANCED', 'AGGRESSIVE'
+    const [aiMode, setAiMode] = useState('BALANCED'); 
     const [dataCategory, setDataCategory] = useState('supply');
-    const [config, setConfig] = useState({ collect_interval: 180, ai_strategy_mode: 'BALANCED' });
+    const [config, setConfig] = useState({ collect_interval: 180, ai_strategy_mode: 'BALANCED', collect_on_weekend: 'N', collect_on_holiday: 'Y' });
     const [logs, setLogs] = useState([]);
     const [stats, setStats] = useState([]);
     const [allData, setAllData] = useState({ supply: [], rank: [], theme: [], industry: [] });
@@ -76,6 +76,27 @@ const AdminDataCollection = () => {
         } catch (e) {}
     };
 
+    const handlePolicyChange = async (weekend, holiday) => {
+        try {
+            // [v18.4] UI 즉시 반영 (Optimistic Update)
+            setConfig(prev => ({ ...prev, collect_on_weekend: weekend, collect_on_holiday: holiday }));
+            
+            const res = await fetch('/stockPlus/api/admin/collector/policy', {
+                method: 'POST',
+                headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collectOnWeekend: weekend, collectOnHoliday: holiday })
+            });
+            
+            if (res.ok) {
+                // DB 반영 시간을 위해 500ms 후 최신 데이터 동기화
+                setTimeout(fetchData, 500);
+            }
+        } catch (e) {
+            console.error("Policy Change Error:", e);
+            fetchData(); // 에러 시 원래 상태로 복구
+        }
+    };
+
     const renderDataCard = (item, type) => {
         if (type === 'supply') {
             const parts = item.top_brokers ? item.top_brokers.split(' / ') : ['-', '-'];
@@ -98,15 +119,15 @@ const AdminDataCollection = () => {
     };
 
     return (
-        <div className="flex-1 bg-slate-950 p-4 lg:p-6 overflow-y-auto custom-scrollbar relative h-full flex flex-col">
+        <div className="flex-1 bg-slate-950 p-4 lg:p-6 overflow-y-auto custom-scrollbar relative h-full flex flex-col font-sans">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-                <div><h1 className="text-2xl font-black text-white flex items-center gap-3"><Settings className="text-indigo-500" /> 데이터 수집 관리</h1><p className="text-slate-500 text-sm mt-1 font-medium">데이터 수집 모니터링</p></div>
+                <div><h1 className="text-2xl font-black text-white flex items-center gap-3"><Settings className="text-indigo-500" /> 데이터 수집 관리</h1><p className="text-slate-500 text-sm mt-1 font-medium">동적 가동 정책 및 성능 모니터링</p></div>
                 <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-stretch lg:self-auto shadow-lg overflow-x-auto no-scrollbar">
                     {[
                         { id: 'overview', name: '현황', icon: Activity }, 
                         { id: 'logs', name: '로그', icon: List }, 
                         { id: 'data', name: '데이터', icon: Database },
-                        { id: 'next-leaders', name: 'NEXT LEADERS', icon: Award }
+                        { id: 'next-leaders', name: 'AI 전략', icon: Brain }
                     ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 whitespace-nowrap", activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><tab.icon size={14} /> {tab.name}</button>
                     ))}
@@ -120,8 +141,40 @@ const AdminDataCollection = () => {
                         <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={[...stats].reverse()}><CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} /><XAxis dataKey="hour" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.split(' ')[1] + '시'} /><YAxis stroke="#64748b" fontSize={10} /><Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }} /><Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
                     </div>
                     <div className="col-span-12 lg:col-span-4 space-y-6">
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl"><h3 className="text-white font-bold mb-4 flex items-center gap-2"><Clock className="text-indigo-400" size={18}/> 주기: {config.collect_interval}s</h3><div className="grid grid-cols-2 gap-2">{[{v: 30, l: '30초'}, {v: 60, l: '1분'}, {v: 180, l: '3분'}, {v: 300, l: '5분'}, {v: 420, l: '7분'}, {v: 600, l: '10분'}].map(item => (<button key={item.v} onClick={() => handleIntervalChange(item.v)} className={classNames("py-3 rounded-xl text-[10px] font-black border transition-all", config.collect_interval === item.v ? "bg-indigo-600/20 border-indigo-500 text-indigo-400" : "bg-slate-800/50 border-slate-700 text-slate-500")}>{item.l}</button>))}</div></div>
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center"><RefreshCw className="text-indigo-400 animate-spin-slow mb-3" size={32} /><p className="text-indigo-400 font-mono text-xl font-black">{new Date().toLocaleTimeString()}</p></div>
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Clock className="text-indigo-400" size={18}/> 수집 주기: {config.collect_interval}s</h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[{v: 30, l: '30초'}, {v: 60, l: '1분'}, {v: 180, l: '3분'}, {v: 300, l: '5분'}, {v: 420, l: '7분'}, {v: 600, l: '10분'}].map(item => (
+                                    <button key={item.v} onClick={() => handleIntervalChange(item.v)} className={classNames("py-3 rounded-xl text-[10px] font-black border transition-all", config.collect_interval === item.v ? "bg-indigo-600/20 border-indigo-500 text-indigo-400" : "bg-slate-800/50 border-slate-700 text-slate-500")}>{item.l}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 가동 정책 설정 (v18.4) */}
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Shield className="text-indigo-400" size={18}/> 가동 정책</h3>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center bg-slate-800/30 p-3 rounded-xl border border-slate-800">
+                                    <span className="text-xs font-black text-slate-400">주말 수집 허용</span>
+                                    <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-700">
+                                        <button onClick={() => handlePolicyChange('Y', config.collect_on_holiday)} className={classNames("px-3 py-1 rounded text-[9px] font-black transition-all", config.collect_on_weekend === 'Y' ? "bg-indigo-600 text-white" : "text-slate-500")}>YES</button>
+                                        <button onClick={() => handlePolicyChange('N', config.collect_on_holiday)} className={classNames("px-3 py-1 rounded text-[9px] font-black transition-all", config.collect_on_weekend === 'N' ? "bg-rose-600 text-white" : "text-slate-500")}>NO</button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center bg-slate-800/30 p-3 rounded-xl border border-slate-800">
+                                    <span className="text-xs font-black text-slate-400">공휴일 수집 허용</span>
+                                    <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-700">
+                                        <button onClick={() => handlePolicyChange(config.collect_on_weekend, 'Y')} className={classNames("px-3 py-1 rounded text-[9px] font-black transition-all", config.collect_on_holiday === 'Y' ? "bg-indigo-600 text-white" : "text-slate-500")}>YES</button>
+                                        <button onClick={() => handlePolicyChange(config.collect_on_weekend, 'N')} className={classNames("px-3 py-1 rounded text-[9px] font-black transition-all", config.collect_on_holiday === 'N' ? "bg-rose-600 text-white" : "text-slate-500")}>NO</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center">
+                            <RefreshCw className="text-indigo-400 animate-spin-slow mb-3" size={32} />
+                            <p className="text-indigo-400 font-mono text-xl font-black">{new Date().toLocaleTimeString()}</p>
+                        </div>
                     </div>
                 </div>
             )}

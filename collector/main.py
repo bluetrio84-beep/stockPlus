@@ -337,14 +337,49 @@ def main():
             now_str = now.strftime('%Y-%m-%d')
             now_hour, now_min, now_weekday = now.hour, now.minute, now.weekday()
 
-            # 1. [23:00] 어제의 잔상 기록 (히트맵)
+            # [v18.4] 실시간 정책 조회 (주말/공휴일 가동 여부)
+            policy = {'weekend': 'N', 'holiday': 'Y'}
+            conn = mega.get_db_connection()
+            try:
+                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    cursor.execute("SELECT collect_on_weekend, collect_on_holiday FROM collector_config WHERE id = 1")
+                    res = cursor.fetchone()
+                    if res:
+                        policy['weekend'] = res['collect_on_weekend']
+                        policy['holiday'] = res['collect_on_holiday']
+            finally: conn.close()
+
+            # 1. 주말 체크 (설정이 'N'이면 정지)
+            if now_weekday >= 5 and policy['weekend'] == 'N':
+                if now_min == 0: print(f">>> [Weekend] 주말 휴식 중... (Policy: {policy['weekend']})")
+                time.sleep(60); continue
+
+            # 2. 공휴일 체크 (설정이 'N'이면 정지)
+            is_holiday = False
+            conn = mega.get_db_connection()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT COUNT(*) FROM market_holidays WHERE holiday_date = %s", (now_str,))
+                    is_holiday = cursor.fetchone()[0] > 0
+            finally: conn.close()
+
+            if is_holiday and policy['holiday'] == 'N':
+                if now_min == 0: print(f">>> [Holiday] 공휴일({now_str}) 휴식 중... (Policy: {policy['holiday']})")
+                time.sleep(60); continue
+
+            # [v18.1] 06:30 로컬 뉴스 수집
+            if now_hour == 6 and 30 <= now_min <= 35 and last_snapshot_date != now_str:
+                mega.log_to_db("INFO", "[수집시작] 박달동 로컬 호재 뉴스 수집 (06시 30분)")
+                subprocess.run(["python3", "snapshot_engine.py", "--mode", "local_news"])
+
+            # 3. [23:00] 어제의 잔상 기록 (히트맵)
             if now_hour == 23 and 0 <= now_min <= 5 and last_snapshot_date != now_str:
                 mega.log_to_db("INFO", "[스냅샷] 히트맵 캡처 시작 (23시)")
                 subprocess.run(["python3", "snapshot_engine.py", "--mode", "heatmap"])
                 last_snapshot_date = now_str
 
-            # 2. [07:00] 오늘의 바닥 탈출 분석
-            if now_weekday < 5 and now_hour == 7 and 0 <= now_min <= 10 and last_next_leader_date != now_str:
+            # 4. [07:00] 오늘의 바닥 탈출 분석
+            if now_hour == 7 and 0 <= now_min <= 10 and last_next_leader_date != now_str:
                 try:
                     mega.log_to_db("INFO", "[분석가동] Next Leaders 1,600개 전수조사 시작 (07시)")
                     next_engine.analyze_next_leaders()
@@ -352,19 +387,25 @@ def main():
                 except Exception as e:
                     mega.log_to_db("ERROR", f"[분석실패] {str(e)}")
 
-            # 3. [08:00] 오늘의 유망주 랭킹 리스트 스냅샷
-            if now_weekday < 5 and now_hour == 8 and 0 <= now_min <= 5:
+            # 5. [08:00] 오늘의 유망주 랭킹 리스트 스냅샷
+            if now_hour == 8 and 0 <= now_min <= 5:
                 if last_next_leader_date == now_str:
                     mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (08시)")
                     subprocess.run(["python3", "snapshot_engine.py", "--mode", "ranking"])
 
-            # 4. [20:30] 시총 갱신
+            # 6. [08:15] 데일리 매거진 선제 생성
+            if now_hour == 8 and 15 <= now_min <= 20:
+                if last_next_leader_date == now_str:
+                    mega.log_to_db("INFO", "[리포트] 데일리 매거진 선제적 생성 트리거 (08시 15분)")
+                    subprocess.run(["python3", "snapshot_engine.py", "--mode", "trigger_report"])
+
+            # 7. [20:30] 시총 갱신
             if now_hour == 20 and now_min == 30 and last_sync_date != now_str:
                 mega.sync_market_cap()
                 last_sync_date = now_str
 
-            # 5. 실시간 수집 (평일 08~16시)
-            if now_weekday < 5 and 8 <= now_hour < 16:
+            # 8. 실시간 수집 (정책에 따라 가동)
+            if 8 <= now_hour < 16:
                 conn = mega.get_db_connection(); interval = 300
                 try:
                     with conn.cursor(pymysql.cursors.DictCursor) as cursor:

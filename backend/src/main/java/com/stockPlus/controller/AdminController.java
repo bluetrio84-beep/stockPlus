@@ -120,6 +120,13 @@ public class AdminController {
         adminMapper.updateAiStrategy(payload.get("mode"));
     }
 
+    @PostMapping("/collector/policy")
+    public void updatePolicy(@RequestBody Map<String, String> payload) {
+        String weekend = payload.get("collectOnWeekend");
+        String holiday = payload.get("collectOnHoliday");
+        adminMapper.updateCollectorPolicy(weekend, holiday);
+    }
+
     @GetMapping("/collector/logs")
     public List<Map<String, Object>> getLogs() {
         return adminMapper.getCollectorLogs();
