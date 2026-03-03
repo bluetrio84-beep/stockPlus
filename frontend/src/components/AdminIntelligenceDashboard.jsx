@@ -58,22 +58,44 @@ const AdminIntelligenceDashboard = () => {
         return 'bg-slate-700';
     };
 
+    const getScoreColor = (score) => {
+        const val = parseInt(score);
+        if (val >= 100) return { text: 'text-rose-400', bg: 'bg-rose-500', border: 'border-rose-500/20', lightBg: 'bg-rose-500/10' };
+        if (val >= 95) return { text: 'text-cyan-400', bg: 'bg-cyan-500', border: 'border-cyan-500/20', lightBg: 'bg-cyan-500/10' };
+        if (val >= 90) return { text: 'text-indigo-400', bg: 'bg-indigo-500', border: 'border-indigo-500/20', lightBg: 'bg-indigo-500/10' };
+        if (val >= 85) return { text: 'text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500/20', lightBg: 'bg-amber-500/10' };
+        if (val >= 80) return { text: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500/20', lightBg: 'bg-emerald-500/10' };
+        return { text: 'text-slate-400', bg: 'bg-slate-500', border: 'border-slate-500/20', lightBg: 'bg-slate-500/10' };
+    };
+
     const renderSupplyHelp = () => (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
-            <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-black text-white flex items-center gap-2"><Sparkles className="text-indigo-400" size={20} /> AI 수급 점수 가이드</h3>
                     <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
                 </div>
-                <div className="space-y-4">
-                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400">MEGA FOREIGN BOMB</span></div>
-                        <p className="text-[11px] text-slate-400">외국인이 단독으로 20억 이상의 자금을 쏟아붓는 주도주 신호입니다.</p>
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar-thin pr-1">
+                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-rose-500/20">
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded">100%</span><span className="text-sm font-bold text-rose-400 uppercase">Mega Foreign Bomb</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인이 단독으로 20억 이상의 자금을 쏟아붓는 주도주 신호입니다.</p>
                     </div>
-                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800">
-                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400">FOREIGN POWER BUY</span></div>
-                        <p className="text-[11px] text-slate-400">외국인 순매수가 10억을 돌파하며 강력한 상승 에너지가 분출된 상태입니다.</p>
+                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-cyan-500/20">
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-cyan-500 text-white px-1.5 py-0.5 rounded">95%</span><span className="text-sm font-bold text-cyan-400 uppercase">Foreign Power Buy</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 순매수가 10억을 돌파하며 강력한 상승 에너지가 분출된 상태입니다.</p>
+                    </div>
+                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-indigo-500/20">
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-indigo-500 text-white px-1.5 py-0.5 rounded">90%</span><span className="text-sm font-bold text-indigo-400 uppercase">Foreign Smart Entry</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인의 매집이 5억 이상 포착되어 추세 전환이 기대되는 스마트 수급입니다.</p>
+                    </div>
+                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-amber-500/20">
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-amber-500 text-white px-1.5 py-0.5 rounded">85%</span><span className="text-sm font-bold text-amber-400 uppercase">Foreign Window Pick</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">특정 외국계 창구를 통해 의미 있는 물량이 유입되기 시작한 신호입니다.</p>
+                    </div>
+                    <div className="bg-slate-950/50 p-3 rounded-2xl border border-emerald-500/20">
+                        <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-emerald-500 text-white px-1.5 py-0.5 rounded">80%</span><span className="text-sm font-bold text-emerald-400 uppercase">Foreign Bull Ride</span></div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">외국인 수급과 차트 흐름이 조화를 이루며 안정적인 상승 궤도에 진입한 상태입니다.</p>
                     </div>
                 </div>
             </div>
@@ -91,21 +113,26 @@ const AdminIntelligenceDashboard = () => {
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar-thin space-y-2 pr-1">
                 {data.aiSignals && data.aiSignals.length > 0 ? (
-                    data.aiSignals.map((sig, i) => (
-                        <div key={i} className="bg-slate-950/50 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between group hover:border-indigo-500/50 transition-all animate-in slide-in-from-right-4 duration-300">
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-[11px] font-black text-white group-hover:text-indigo-300 transition-colors">{sig.stock_name}</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[8px] font-black text-indigo-400 bg-indigo-400/10 px-1 rounded border border-indigo-400/20 uppercase">{sig.signal_type.replace(/_/g, ' ')}</span>
-                                    <span className="text-[8px] text-slate-500 font-mono italic">{new Date(sig.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    data.aiSignals.map((sig, i) => {
+                        const colors = getScoreColor(sig.prediction_score);
+                        return (
+                            <div key={i} className={classNames("bg-slate-950/50 border rounded-xl p-2.5 flex items-center justify-between group transition-all animate-in slide-in-from-right-4 duration-300", colors.border, `hover:border-${colors.bg.split('-')[1]}-500/50`)}>
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-[11px] font-black text-white group-hover:text-white transition-colors">{sig.stock_name}</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={classNames("text-[8px] font-black px-1 rounded border uppercase", colors.text, colors.lightBg, colors.border)}>{sig.signal_type.replace(/_/g, ' ')}</span>
+                                        <span className="text-[8px] text-slate-500 font-mono italic">{new Date(sig.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className={classNames("text-[12px] font-black", colors.text)}>{sig.prediction_score}%</span>
+                                    <div className="w-12 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
+                                        <div className={classNames("h-full transition-all duration-1000", colors.bg)} style={{ width: `${sig.prediction_score}%` }}></div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end">
-                                <span className="text-[12px] font-black text-indigo-400">{sig.prediction_score}%</span>
-                                <div className="w-12 h-1 bg-slate-800 rounded-full mt-1 overflow-hidden"><div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${sig.prediction_score}%` }}></div></div>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-600 gap-2 py-8 opacity-50"><Activity size={24} className="animate-pulse" /><p className="text-[10px] font-bold">수급 분석 중입니다...</p></div>
                 )}

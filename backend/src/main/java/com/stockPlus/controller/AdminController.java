@@ -176,6 +176,15 @@ public class AdminController {
         return adminMapper.getNextLeadersByDate(targetDate).stream().limit(10).toList();
     }
 
+    @PostMapping("/intelligence/next-leaders/feedback")
+    public void updateNextLeaderFeedback(@RequestBody Map<String, String> payload) {
+        String stockCode = payload.get("stockCode");
+        String date = payload.get("date");
+        String feedbackTag = payload.get("feedbackTag");
+        log.info(">>> [AI Feedback] Updating feedback for {}: {} on {}", stockCode, feedbackTag, date);
+        adminMapper.updateNextLeaderFeedback(stockCode, date, feedbackTag);
+    }
+
     @GetMapping("/intelligence/ai-review")
     public Map<String, Object> getAiReviewData() {
         Map<String, Object> response = new HashMap<>();

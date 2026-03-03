@@ -158,8 +158,11 @@ public interface AdminMapper {
             "</script>")
     List<Map<String, Object>> getStocksByNames(@Param("names") List<String> names);
 
-    @Select("SELECT * FROM ai_next_leaders WHERE DATE(captured_at) = #{date} ORDER BY total_score DESC")
+    @Select("SELECT * FROM ai_next_leaders WHERE DATE(captured_at) = #{date} ORDER BY total_score DESC LIMIT 10")
     List<Map<String, Object>> getNextLeadersByDate(@Param("date") String date);
+
+    @Update("UPDATE ai_next_leaders SET feedback_tag = #{feedbackTag} WHERE stock_code = #{stockCode} AND DATE(captured_at) = #{date}")
+    void updateNextLeaderFeedback(@Param("stockCode") String stockCode, @Param("date") String date, @Param("feedbackTag") String feedbackTag);
 
     // [v17.7] AI 모델별 성적표 및 사후 복기 데이터 조회
     @Select("SELECT " +

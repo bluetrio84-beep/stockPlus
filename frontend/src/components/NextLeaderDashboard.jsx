@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthHeader } from '../api/stockApi';
-import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info } from 'lucide-react';
+import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown } from 'lucide-react';
 import classNames from 'classnames';
 
 const NextLeaderDashboard = () => {
@@ -8,7 +8,8 @@ const NextLeaderDashboard = () => {
     const [nextLeaders, setNextLeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('ranking'); 
-    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); // 도움말 모달 상태
+    const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); 
+    const [isFeedbackHelpOpen, setIsFeedbackHelpOpen] = useState(false); 
 
     const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [] });
 
@@ -26,6 +27,26 @@ const NextLeaderDashboard = () => {
             console.error("Fetch Error:", e);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleFeedback = async (stockCode, feedbackTag) => {
+        try {
+            setNextLeaders(prev => prev.map(item => 
+                item.stock_code === stockCode ? { ...item, feedback_tag: feedbackTag } : item
+            ));
+
+            const res = await fetch(`/stockPlus/api/admin/intelligence/next-leaders/feedback`, {
+                method: 'POST',
+                headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stockCode, date: selectedDate, feedbackTag })
+            });
+            
+            if (!res.ok) {
+                fetchNextLeaders(selectedDate);
+            }
+        } catch (e) {
+            console.error("Feedback Error:", e);
         }
     };
 
@@ -60,29 +81,18 @@ const NextLeaderDashboard = () => {
         script.src = "https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js";
         script.onload = () => {
             const XLSX = window.XLSX;
-            const formatDate = (dateStr) => {
-                if (!dateStr) return "";
-                const d = new Date(dateStr);
-                const pad = (n) => n.toString().padStart(2, '0');
-                return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-            };
             const excelData = nextLeaders.map((item, idx) => ({
                 "순위": idx + 1,
                 "종목명": item.stock_name,
                 "종목코드": item.stock_code,
                 "총점": parseFloat(item.total_score.toFixed(1)),
-                "알고리즘(Q)": parseFloat(item.algo_score.toFixed(1)),
-                "LSTM(L)": parseFloat((item.lstm_score || 0).toFixed(1)),
-                "TCN(T)": parseFloat((item.tcn_score || 0).toFixed(1)),
-                "XGB(X)": parseFloat((item.xgb_score || 0).toFixed(1)),
-                "선발사유": item.reason,
-                "분석시간": formatDate(item.captured_at)
+                "복기태그": item.feedback_tag || "",
+                "선발사유": item.reason
             }));
             const worksheet = XLSX.utils.json_to_sheet(excelData);
-            worksheet['!cols'] = [{ wch: 5 }, { wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 50 }, { wch: 20 }];
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "NextLeaders");
-            XLSX.writeFile(workbook, `StockPlus_NextLeaders_${selectedDate.replace(/-/g, '')}.xlsx`);
+            XLSX.writeFile(workbook, `StockPlus_NextLeaders_${selectedDate}.xlsx`);
         };
         document.head.appendChild(script);
     };
@@ -92,78 +102,68 @@ const NextLeaderDashboard = () => {
             <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 shrink-0">
                 <div className="flex items-center gap-2">
                     <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">
-                        <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 20
+                        <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 10
                     </h3>
-                    <button 
-                        onClick={() => setIsHelpModalOpen(true)}
-                        className="text-slate-500 hover:text-indigo-400 transition-colors"
-                    >
-                        <HelpCircle size={16} />
-                    </button>
+                    <button onClick={() => setIsHelpModalOpen(true)} className="text-slate-500 hover:text-indigo-400 transition-colors"><HelpCircle size={16} /></button>
                 </div>
-                <span className="text-[9px] text-slate-500 font-mono italic">1,600 Stocks Analysis</span>
+                <span className="text-[9px] text-slate-500 font-mono italic">Daily Top 10 Elite Analysis</span>
             </div>
 
             <div className="flex-1 overflow-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse min-w-[800px]">
+                <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead className="sticky top-0 z-10 bg-slate-900 shadow-sm">
                         <tr>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[180px] bg-slate-900">Reason</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[150px] bg-slate-900">Reason</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900 min-w-[250px]">
+                                <div className="flex items-center justify-center gap-1.5">
+                                    AI Feedback (Review)
+                                    <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={14} /></button>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {isLoading ? (
-                            <tr><td colSpan="5" className="py-20 text-center"><Loader2 size={32} className="animate-spin text-indigo-500 mx-auto mb-4" /><p className="text-slate-500 text-[10px] font-bold uppercase animate-pulse">Analyzing...</p></td></tr>
+                            <tr><td colSpan="6" className="py-20 text-center"><Loader2 size={32} className="animate-spin text-indigo-500 mx-auto mb-4" /><p className="text-slate-500 text-[10px] font-bold uppercase animate-pulse">Analyzing...</p></td></tr>
                         ) : nextLeaders.length > 0 ? (
-                            <>{nextLeaders.map((item, idx) => (
+                            nextLeaders.map((item, idx) => (
                                 <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
-                                        <div className={classNames(
-                                            "w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner",
-                                            idx < 3 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"
-                                        )}>{idx + 1}</div>
-                                    </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40">
-                                        <div className="flex flex-col"><span className="text-white font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px]">{item.stock_code}</span></div>
-                                    </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center">
-                                        <div className="inline-block px-3 py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-sm lg:text-base">{item.total_score.toFixed(1)}</span></div>
-                                    </td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400")}>{idx + 1}</div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40"><div className="flex flex-col"><span className="text-white font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px]">{item.stock_code}</span></div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center"><div className="inline-block px-3 py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-sm lg:text-base">{item.total_score.toFixed(1)}</span></div></td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
-                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>Q</span><span>{item.algo_score.toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{width: `${item.algo_score}%`}}></div></div>
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
-                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>L</span><span>{(item.lstm_score || 0).toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{width: `${item.lstm_score || 0}%`}}></div></div>
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
-                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>T</span><span>{(item.tcn_score || 0).toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-pink-500" style={{width: `${item.tcn_score || 0}%`}}></div></div>
-                                            </div>
-                                            <div className="flex flex-col gap-0.5 w-10 lg:w-14">
-                                                <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>X</span><span>{(item.xgb_score || 0).toFixed(0)}</span></div>
-                                                <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-cyan-500" style={{width: `${item.xgb_score || 0}%`}}></div></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
-                                        <div className="flex flex-wrap gap-1">
-                                            {item.reason.split(',').map((r, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] lg:text-[11px] font-bold rounded border border-slate-700/50">{r.trim()}</span>
+                                            {[ 
+                                                { label: 'Q', score: item.algo_score, color: 'bg-rose-500' },
+                                                { label: 'L', score: item.lstm_score, color: 'bg-indigo-500' },
+                                                { label: 'T', score: item.tcn_score, color: 'bg-pink-500' },
+                                                { label: 'X', score: item.xgb_score, color: 'bg-cyan-500' }
+                                            ].map((m, i) => (
+                                                <div key={i} className="flex flex-col gap-0.5 w-10 lg:w-14">
+                                                    <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>{m.label}</span><span>{(m.score || 0).toFixed(0)}</span></div>
+                                                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full", m.color)} style={{width: `${m.score || 0}%`}}></div></div>
+                                                </div>
                                             ))}
                                         </div>
                                     </td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className="flex flex-wrap gap-1">{item.reason.split(',').map((r, i) => (<span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] lg:text-[11px] font-bold rounded border border-slate-700/50">{r.trim()}</span>))}</div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <button onClick={() => handleFeedback(item.stock_code, '성공')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '성공' ? "bg-emerald-600 text-white border-emerald-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-emerald-400")}><ThumbsUp size={10} /> 성공</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '매집')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '매집' ? "bg-indigo-600 text-white border-indigo-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-indigo-400")}><Package size={10} /> 매집</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '실패')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '실패' ? "bg-rose-600 text-white border-rose-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-rose-400")}><ThumbsDown size={10} /> 실패</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '노이즈')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '노이즈' ? "bg-slate-600 text-white border-slate-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-slate-300")}><Ghost size={10} /> 노이즈</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '시황')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '시황' ? "bg-amber-600 text-white border-amber-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-amber-400")}><CloudRain size={10} /> 시황</button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            ))}<tr className="h-4"><td></td></tr></>
+                            ))
                         ) : (
-                            <tr><td colSpan="5" className="py-20 text-center text-slate-600 font-bold italic text-xs uppercase tracking-widest">No Data Available</td></tr>
+                            <tr><td colSpan="6" className="py-20 text-center text-slate-600 font-bold italic text-xs uppercase tracking-widest">No Data Available</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -174,22 +174,16 @@ const NextLeaderDashboard = () => {
     const renderReviewTab = () => (
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 px-1">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {reviewData.modelPerformance.length > 0 ? reviewData.modelPerformance.map((m, i) => (
+                {reviewData.modelPerformance.map((m, i) => (
                     <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-                        <div className={classNames("absolute top-0 left-0 w-1 h-full", 
-                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
-                        )}></div>
+                        <div className={classNames("absolute top-0 left-0 w-1 h-full", m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500'))}></div>
                         <div className="flex justify-between items-start mb-4">
-                            <div><h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4><p className={classNames("text-xl font-black", 
-                                m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400')
-                            )}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p></div>
+                            <div><h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4><p className={classNames("text-xl font-black", m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400'))}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p></div>
                             <div className="text-right"><span className="text-[9px] text-slate-500 font-bold block mb-1 uppercase">Weight</span><span className="text-sm font-black text-white">{m.weight}%</span></div>
                         </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full transition-all duration-1000", 
-                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
-                        )} style={{ width: `${m.hit_rate}%` }}></div></div>
+                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full transition-all duration-1000", m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500'))} style={{ width: `${m.hit_rate}%` }}></div></div>
                     </div>
-                )) : [1,2,3].map(i => <div key={i} className="h-24 bg-slate-900/50 border border-slate-800 rounded-2xl animate-pulse"></div>)}
+                ))}
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
@@ -197,9 +191,8 @@ const NextLeaderDashboard = () => {
                     <h3 className="text-white font-black flex items-center gap-2 uppercase tracking-tighter"><CheckCircle2 className="text-emerald-500" size={20} /> AI 사후 복기 리포트</h3>
                     <span className="text-[10px] text-slate-500 font-mono italic">Past 10 Validated Results</span>
                 </div>
-                
                 <div className="space-y-3">
-                    {reviewData.pastRecommendations.length > 0 ? reviewData.pastRecommendations.map((item, idx) => (
+                    {reviewData.pastRecommendations.map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
                             <div className="flex items-center gap-4">
                                 <div className="text-[10px] font-black text-slate-500 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">{item.date}</div>
@@ -216,27 +209,7 @@ const NextLeaderDashboard = () => {
                                 </div>
                             </div>
                         </div>
-                    )) : (
-                        <div className="p-10 flex flex-col items-center text-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center"><Activity className="text-indigo-400 animate-pulse" size={24} /></div>
-                            <div>
-                                <h4 className="text-white font-bold text-sm mb-1">데이터 분석 및 검증 중...</h4>
-                                <p className="text-slate-400 text-[11px] leading-relaxed">최초 분석 후 3일이 경과한 종목부터 순차적으로 성적표가 공개됩니다.<br/>수요일 아침부터 실제 복기 데이터가 노출될 예정입니다.</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 flex items-start gap-4">
-                <Brain className="text-indigo-400 shrink-0 mt-1" size={24} />
-                <div>
-                    <h4 className="text-indigo-400 font-black text-xs uppercase tracking-widest mb-2">AI Performance Insight</h4>
-                    <p className="text-slate-300 text-[12px] leading-relaxed font-medium">
-                        {reviewData.modelPerformance.length > 0 
-                            ? `현재 ${reviewData.modelPerformance.reduce((prev, curr) => prev.hit_rate > curr.hit_rate ? prev : curr).model_name} 모델이 가장 높은 적중률을 보이고 있습니다. 시장의 흐름에 따라 매주 주말 가중치(Weight)가 자동 최적화되어 다음 주 분석에 반영됩니다.`
-                            : "시계열 데이터가 축적됨에 따라 AI 모델별 강점과 약점을 스스로 분석하여 인사이트를 제공합니다. 현재는 초기 학습 데이터를 수집하는 단계입니다."}
-                    </p>
+                    ))}
                 </div>
             </div>
         </div>
@@ -246,33 +219,12 @@ const NextLeaderDashboard = () => {
         <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-27 lg:pb-5">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1">
                 <div className="flex items-center gap-3">
-                    <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30">
-                        <Award className="text-indigo-400" size={20} />
-                    </div>
-                    <div>
-                        <h1 className="text-base lg:text-2xl font-black text-white tracking-tight uppercase italic flex items-center gap-1.5">
-                            Next Leaders <span className="text-indigo-500 not-italic font-sans">AI</span>
-                        </h1>
-                        <p className="text-slate-500 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest mt-0.5">Daily Turn-around Briefing</p>
-                    </div>
+                    <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30"><Award className="text-indigo-400" size={20} /></div>
+                    <div><h1 className="text-base lg:text-2xl font-black text-white tracking-tight uppercase italic flex items-center gap-1.5">Next Leaders <span className="text-indigo-500 not-italic font-sans">AI</span></h1><p className="text-slate-500 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest mt-0.5">Daily Turn-around Briefing</p></div>
                 </div>
-
                 <div className="flex items-center justify-end gap-2 w-full lg:w-auto pr-1">
-                    <div className="relative w-[130px] lg:w-[160px] shrink-0">
-                        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input 
-                            type="date" 
-                            value={selectedDate} 
-                            onChange={(e) => setSelectedDate(e.target.value)} 
-                            className="w-full bg-slate-900 border border-slate-700 text-white text-[11px] lg:text-sm rounded-xl pl-8 pr-1 py-1.5 lg:py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer font-bold tracking-tighter" 
-                        />
-                    </div>
-                    <button 
-                        onClick={downloadExcel} 
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 lg:py-2.5 rounded-xl font-black text-[10px] lg:text-sm flex items-center gap-1 shadow-lg transition-all shrink-0"
-                    >
-                        <Download size={14} /> EXCEL
-                    </button>
+                    <div className="relative w-[130px] lg:w-[160px] shrink-0"><Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white text-[11px] lg:text-sm rounded-xl pl-8 pr-1 py-1.5 lg:py-2.5 focus:outline-none cursor-pointer font-bold tracking-tighter" /></div>
+                    <button onClick={downloadExcel} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 lg:py-2.5 rounded-xl font-black text-[10px] lg:text-sm flex items-center gap-1 shadow-lg shrink-0"><Download size={14} /> EXCEL</button>
                 </div>
             </header>
 
@@ -285,15 +237,11 @@ const NextLeaderDashboard = () => {
 
             {activeTab === 'ranking' ? renderRankingTab() : renderReviewTab()}
 
-            {/* AI Breakdown 도움말 모달 */}
             {isHelpModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsHelpModalOpen(false)}></div>
                     <div className="relative w-full max-w-lg bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white">
-                            <h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Info className="text-indigo-400" size={20} /> AI Breakdown Guide</h3>
-                            <button onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button>
-                        </div>
+                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Info className="text-indigo-400" size={20} /> AI Breakdown Guide</h3><button onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
                         <div className="p-8 space-y-6">
                             <div className="flex gap-4">
                                 <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0 font-black text-rose-400">Q</div>
@@ -313,9 +261,9 @@ const NextLeaderDashboard = () => {
                             </div>
                         </div>
                         <div className="p-6 bg-slate-850 border-t border-slate-800">
-                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4">
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4 text-left">
                                 <h4 className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <Activity size={14} /> Total Score Formula
+                                    <Activity size={14} /> 균형분석 Total Score Formula (데이터 수집에서 변경 가능)
                                 </h4>
                                 <p className="text-white text-sm font-bold tracking-tight">
                                     Total = (Q × 0.6) + (AI Ensemble × 0.4)
@@ -326,6 +274,26 @@ const NextLeaderDashboard = () => {
                             </div>
                             <button onClick={() => setIsHelpModalOpen(false)} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20">이해했습니다</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {isFeedbackHelpOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsFeedbackHelpOpen(false)}></div>
+                    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Brain className="text-rose-400" size={20} /> AI Feedback Guide</h3><button onClick={() => setIsFeedbackHelpOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
+                        <div className="p-8 space-y-5">
+                            {[ 
+                                { icon: <ThumbsUp className="text-emerald-400" />, title: '성공 / 매집', desc: '상승 적중 또는 매집 포착. 차기 분석 시 가산점(+5) 부여.' },
+                                { icon: <ThumbsDown className="text-rose-400" />, title: '실패', desc: '의도와 다르게 하락. 차기 분석 시 강력 감점(-15) 및 오답 학습.' },
+                                { icon: <Ghost className="text-slate-400" />, title: '노이즈', desc: '가짜 신호. 차기 분석 시 감점(-10) 처리.' },
+                                { icon: <CloudRain className="text-amber-400" />, title: '시황', desc: '외부 변수(전쟁 등) 영향. AI 재학습 데이터에서 제외.' }
+                            ].map((m, i) => (
+                                <div key={i} className="flex gap-4"><div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/5 flex items-center justify-center shrink-0">{m.icon}</div><div><h4 className="text-white font-bold text-sm mb-1">{m.title}</h4><p className="text-slate-400 text-xs">{m.desc}</p></div></div>
+                            ))}
+                        </div>
+                        <div className="p-6 bg-slate-850 border-t border-slate-800"><button onClick={() => setIsFeedbackHelpOpen(false)} className="w-full py-3 bg-rose-600 text-white font-bold rounded-xl">확인 완료</button></div>
                     </div>
                 </div>
             )}

@@ -99,6 +99,16 @@ class NextLeaderEngine(AIEngine):
                 min_threshold = 80.0
                 print(">>> [Strategy] Running in STABLE mode (Algo 0.7 : AI 0.3, Min 80pt)")
 
+            # 0.1 사용자 피드백(인적 직관) 로드 (v17.9)
+            feedback_map = {}
+            try:
+                with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    cursor.execute("SELECT stock_code, feedback_tag FROM ai_next_leaders WHERE feedback_tag IS NOT NULL AND captured_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+                    f_rows = cursor.fetchall()
+                    for f in f_rows:
+                        feedback_map[f['stock_code']] = f['feedback_tag']
+            except: pass
+
             results = []
             codes = df_raw['stock_code'].unique()
             print(f">>> [NextLeader] Scrutinizing {len(codes)} stocks for the next big move...")
@@ -120,6 +130,21 @@ class NextLeaderEngine(AIEngine):
                 # C. 최종 하이브리드 점수 (동적 가중치 적용)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
                 
+                # D. 인적 직관 가중치 반영 (Human-in-the-Loop) [v17.9]
+                intuition_bonus = 0.0
+                tag = feedback_map.get(code)
+                if tag == '성공' or tag == '매집':
+                    intuition_bonus = 5.0
+                    reason = f"★직관강화, {reason}"
+                elif tag == '노이즈':
+                    intuition_bonus = -10.0
+                    reason = f"⚠노이즈경고, {reason}"
+                elif tag == '실패':
+                    intuition_bonus = -15.0
+                    reason = f"✖판단착오, {reason}"
+                
+                total_score = max(0, min(100, total_score + intuition_bonus))
+
                 if total_score >= min_threshold:
                     current_price = float(curr['price']) if curr['price'] is not None else 0.0
                     results.append({
