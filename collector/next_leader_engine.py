@@ -150,12 +150,12 @@ class NextLeaderEngine(AIEngine):
                     results.append({
                         'code': code,
                         'name': curr['stock_name'],
-                        'total': total_score,
-                        'algo': algo_score,
-                        'lstm': e_data['lstm'],
-                        'tcn': e_data['tcn'],
-                        'xgb': e_data['xgb'],
-                        'ensemble': e_score,
+                        'total': round(total_score, 1),
+                        'algo': round(algo_score, 1),
+                        'lstm': round(e_data['lstm'], 1),
+                        'tcn': round(e_data['tcn'], 1),
+                        'xgb': round(e_data['xgb'], 1),
+                        'ensemble': round(e_score, 1),
                         'price_at': current_price,
                         'reason': reason if reason else "수급안정"
                     })
