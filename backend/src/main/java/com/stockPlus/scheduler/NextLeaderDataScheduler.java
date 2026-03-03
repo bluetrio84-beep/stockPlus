@@ -35,11 +35,11 @@ public class NextLeaderDataScheduler {
     }
 
     private void executeFullSnapshot() {
-        log.info(">>> [NextLeaders] Starting 1,600 Stocks Analysis Snapshot...");
+        log.info(">>> [NextLeaders] Starting 1,800 Stocks Analysis Snapshot...");
         List<String> kospi800 = getTopStocks("KOSPI", 800);
-        List<String> kosdaq800 = getTopStocks("KOSDAQ", 800);
+        List<String> kosdaq1000 = getTopStocks("KOSDAQ", 1000);
         processStockBatch(kospi800, "J");
-        processStockBatch(kosdaq800, "W");
+        processStockBatch(kosdaq1000, "W");
     }
 
     private List<String> getTopStocks(String marketType, int limit) {
