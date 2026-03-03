@@ -25,6 +25,7 @@ public class AdminController {
     private final DailyInvestorScheduler dailyInvestorScheduler;
     private final StockMasterService stockMasterService;
     private final com.stockPlus.service.StockAnalysisService stockAnalysisService;
+    private final com.stockPlus.service.KisStockService kisStockService; // [추가] 실적 수집용 서비스
 
     // --- 0. 상장종목 관리 (CRUD) ---
     @GetMapping("/stocks")
@@ -258,6 +259,22 @@ public class AdminController {
             return "Dump finished.";
         } catch (Exception e) {
             return "Dump failed: " + e.getMessage();
+        }
+    }
+
+    // [v19.0] 개별 종목 실적 동기화 (Python 수집기 호출용)
+    @GetMapping("/intelligence/sync-financials/{stockCode}")
+    public String syncFinancials(@PathVariable String stockCode) {
+        try {
+            kisStockService.fetchFinancials(stockCode)
+                .doOnNext(list -> {
+                    for (Map<String, Object> f : list) {
+                        adminMapper.insertFinancials(f);
+                    }
+                }).block(java.time.Duration.ofSeconds(10));
+            return "SUCCESS";
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
         }
     }
 }

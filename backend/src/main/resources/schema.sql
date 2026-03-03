@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS company_financials;
 DROP TABLE IF EXISTS watchlist;
 DROP TABLE IF EXISTS user_note;
 DROP TABLE IF EXISTS notification_log;
@@ -7,6 +8,7 @@ DROP TABLE IF EXISTS stock_master;
 DROP TABLE IF EXISTS news;
 DROP TABLE IF EXISTS stock_info;
 DROP TABLE IF EXISTS stock_analysis_log;
+DROP TABLE IF EXISTS holdings;
 DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
@@ -18,6 +20,18 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'USER',
     useyn CHAR(1) DEFAULT 'Y',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE company_financials (
+    stock_code VARCHAR(10) NOT NULL,
+    report_year INT NOT NULL,
+    report_code VARCHAR(10) NOT NULL,
+    revenue BIGINT DEFAULT 0,
+    op_profit BIGINT DEFAULT 0,
+    net_income BIGINT DEFAULT 0,
+    roe DECIMAL(10, 2) DEFAULT 0.00,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (stock_code, report_year, report_code)
 );
 
 CREATE TABLE stock_master (

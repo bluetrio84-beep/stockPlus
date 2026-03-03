@@ -52,15 +52,16 @@ class MegaCollector:
         finally: conn.close()
 
     def sync_market_cap(self):
-        self.log_to_db("INFO", "[마스터갱신] 전 종목 시가총액 업데이트 시작")
+        self.log_to_db("INFO", "[마스터갱신] 전 종목 시가총액/실적 업데이트 시작")
         conn = self.get_db_connection()
         try:
             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # [v19.0] 전 종목 대상 업데이트 및 실적 수집
                 cursor.execute("SELECT stock_code FROM stock_master")
                 stocks = cursor.fetchall()
             
             total = len(stocks)
-            print(f">>> [Sync] Updating Market Cap for {total} stocks...")
+            print(f">>> [Sync] Updating Market Cap & Financials for {total} stocks...")
             
             for i, s in enumerate(stocks):
                 code = s['stock_code']
@@ -77,6 +78,11 @@ class MegaCollector:
                                 WHERE stock_code = %s
                             """, (m_cap, ind_name, code))
                         conn.commit()
+                    
+                    # [v19.0] 실적 데이터 동기화 API 호출 추가
+                    try:
+                        requests.get(f"{BACKEND_API_URL.replace('/dashboard', '/admin/intelligence')}/sync-financials/{code}", timeout=10)
+                    except: pass
                 except: continue
                 if (i+1) % 100 == 0: print(f">>> [Sync] Progress: {i+1}/{total}")
                 time.sleep(0.1)

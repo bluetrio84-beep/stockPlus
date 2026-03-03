@@ -399,6 +399,81 @@ public class KisStockService {
                 }).onErrorResume(e -> Mono.just(Collections.emptyList()));
     }
 
+    /**
+     * [v19.0] 기업 실적 및 ROE 병합 수집 (2024년 이후 데이터 한정)
+     */
+    public Mono<List<Map<String, Object>>> fetchFinancials(String stockCode) {
+        String token = kisAuthService.getAccessToken();
+        String baseUrl = kisAuthService.getBaseUrl();
+        String appKey = kisAuthService.getAppKey();
+        String appSecret = kisAuthService.getAppSecret();
+
+        // 1. 손익계산서 (매출, 이익) - FHKST66430200
+        String uriIncome = baseUrl + "/uapi/domestic-stock/v1/finance/income-statement?fid_cond_mrkt_div_code=J&fid_input_iscd=" + stockCode + "&fid_div_cls_code=0";
+        Mono<Map<String, Map<String, Object>>> incomeMono = webClientBuilder.build().get().uri(uriIncome)
+                .header("authorization", "Bearer " + token).header("appkey", appKey).header("appsecret", appSecret)
+                .header("tr_id", "FHKST66430200").header("content-type", "application/json").header("custtype", "P")
+                .retrieve().bodyToMono(JsonNode.class).map(root -> {
+                    Map<String, Map<String, Object>> map = new HashMap<>();
+                    JsonNode outArr = root.path("output");
+                    if (outArr.isArray()) {
+                        for (JsonNode n : outArr) {
+                            String yymm = n.path("stac_yymm").asText("");
+                            if (yymm.length() < 6 || Integer.parseInt(yymm.substring(0, 4)) < 2024) continue;
+                            Map<String, Object> data = new HashMap<>();
+                            // [v19.0] 정밀도 향상: Double로 받아서 1억 미만(0.3억 등) 데이터 유실 방지
+                            data.put("revenue", (long) (n.path("sale_account").asDouble(0.0) * 100000000L));
+                            data.put("op_profit", (long) (n.path("bsop_prti").asDouble(0.0) * 100000000L));
+                            data.put("net_income", (long) (n.path("thtr_ntin").asDouble(0.0) * 100000000L));
+                            map.put(yymm, data);
+                        }
+                    }
+                    return map;
+                }).onErrorResume(e -> Mono.just(Collections.emptyMap()));
+
+        // 2. 재무비율 (ROE) - FHKST66430300
+        String uriRatio = baseUrl + "/uapi/domestic-stock/v1/finance/financial-ratio?fid_cond_mrkt_div_code=J&fid_input_iscd=" + stockCode + "&fid_div_cls_code=0";
+        Mono<Map<String, Double>> ratioMono = webClientBuilder.build().get().uri(uriRatio)
+                .header("authorization", "Bearer " + token).header("appkey", appKey).header("appsecret", appSecret)
+                .header("tr_id", "FHKST66430300").header("content-type", "application/json").header("custtype", "P")
+                .retrieve().bodyToMono(JsonNode.class).map(root -> {
+                    Map<String, Double> map = new HashMap<>();
+                    JsonNode outArr = root.path("output");
+                    if (outArr.isArray()) {
+                        for (JsonNode n : outArr) {
+                            String yymm = n.path("stac_yymm").asText("");
+                            if (yymm.length() < 6 || Integer.parseInt(yymm.substring(0, 4)) < 2024) continue;
+                            map.put(yymm, n.path("roe_val").asDouble(0.0));
+                        }
+                    }
+                    return map;
+                }).onErrorResume(e -> Mono.just(Collections.emptyMap()));
+
+        // 3. 결산월 기준으로 데이터 병합
+        return Mono.zip(incomeMono, ratioMono).map(tuple -> {
+            Map<String, Map<String, Object>> incMap = tuple.getT1();
+            Map<String, Double> rMap = tuple.getT2();
+            List<Map<String, Object>> finalResult = new ArrayList<>();
+            
+            for (String yymm : incMap.keySet()) {
+                Map<String, Object> m = incMap.get(yymm);
+                m.put("stock_code", stockCode);
+                m.put("report_year", Integer.parseInt(yymm.substring(0, 4)));
+                
+                String month = yymm.substring(4, 6);
+                String rCode = "11011"; // 기본 12월
+                if ("03".equals(month)) rCode = "11013";
+                else if ("06".equals(month)) rCode = "11012";
+                else if ("09".equals(month)) rCode = "11014";
+                
+                m.put("report_code", rCode);
+                m.put("roe", rMap.getOrDefault(yymm, 0.0));
+                finalResult.add(m);
+            }
+            return finalResult;
+        });
+    }
+
     private String getField(JsonNode node, String lower, String upper, String defaultVal) {
         if (node.has(lower)) return node.path(lower).asText(defaultVal);
         if (node.has(upper)) return node.path(upper).asText(defaultVal);
