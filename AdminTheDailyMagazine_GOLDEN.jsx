@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Newspaper, Download, Calendar, TrendingUp, ChevronRight, Brain, Image as ImageIcon, Map, Activity, Clock, FileText, CheckCircle2, Lock, AlertTriangle, Loader2, ListOrdered, Award, X, Maximize2 } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
-import html2canvas from 'html2canvas-pro'; 
+import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const AdminTheDailyMagazine = () => {
@@ -17,11 +17,22 @@ const AdminTheDailyMagazine = () => {
         indices: { kospi: '-', kospiRate: '-', kosdaq: '-', kosdaqRate: '-' }
     });
     
+    // 모달 상태
     const [zoomImage, setZoomImage] = useState(null);
     const magazineRef = useRef();
 
     const checkTime = () => {
-        setIsDownloadable(true);
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const hhmm = hour * 100 + minute;
+        
+        // 평일(1-5) 체크 추가 및 시간 범위 명확화
+        const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+        const canDownload = hhmm >= 830 && hhmm <= 1530;
+        
+        console.log(`[TimeCheck] Current: ${hour}:${minute} (${hhmm}), CanDownload: ${canDownload}`);
+        setIsDownloadable(canDownload);
     };
 
     const parseBriefing = (raw) => {
@@ -76,40 +87,25 @@ const AdminTheDailyMagazine = () => {
         try {
             setIsLoading(true);
             const element = magazineRef.current;
-            
-            const images = element.querySelectorAll('img');
-            await Promise.all(Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                    setTimeout(resolve, 3000);
-                });
-            }));
-
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: "#f8f5f0",
                 onclone: (clonedDoc) => {
-                    // [v18.9] 1. 전역 스타일 태그에서 oklch/oklab 정화
-                    const styleTags = clonedDoc.getElementsByTagName('style');
-                    const colorRegex = /(oklch|oklab)\([^)]+\)/g;
-                    for (let i = 0; i < styleTags.length; i++) {
-                        if (styleTags[i].innerHTML) {
-                            styleTags[i].innerHTML = styleTags[i].innerHTML.replace(colorRegex, '#475569');
+                    const all = clonedDoc.getElementsByTagName('*');
+                    for (let i = 0; i < all.length; i++) {
+                        all[i].style.boxShadow = 'none';
+                        all[i].style.filter = 'none';
+                        const style = window.getComputedStyle(all[i]);
+                        if (style.color.includes('oklch')) all[i].style.color = '#1e293b';
+                        if (style.backgroundColor.includes('oklch')) all[i].style.backgroundColor = 'transparent';
+                        if (style.borderColor.includes('oklch')) all[i].style.borderColor = '#cbd5e1';
+                        if (['H1', 'H2', 'H3', 'H4', 'P', 'SPAN'].includes(all[i].tagName)) {
+                            all[i].style.lineHeight = '1.5';
+                            all[i].style.paddingBottom = '3px';
                         }
                     }
-
-                    // [v18.9] 2. 수직 정렬 교정 스타일 강제 주입
-                    const finalStyle = clonedDoc.createElement('style');
-                    finalStyle.innerHTML = `
-                        h1, h2, h3, h4, p, span, td, th { line-height: 1.6 !important; }
-                        .rank-title-row { transform: translateY(-5px) !important; display: flex !important; align-items: center !important; }
-                        .rank-stock-name { padding-bottom: 4px !important; margin-top: -2px !important; }
-                    `;
-                    clonedDoc.head.appendChild(finalStyle);
                 }
             });
 
@@ -135,8 +131,8 @@ const AdminTheDailyMagazine = () => {
 
             pdf.save(`StockPlus_Daily_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (e) {
-            console.error("PDF ERROR:", e);
-            alert("PDF 발행 중 오류가 발생했습니다.");
+            console.error("PDF Error:", e);
+            alert("PDF 생성 실패");
         } finally {
             setIsLoading(false);
         }
@@ -154,6 +150,21 @@ const AdminTheDailyMagazine = () => {
         );
     };
 
+    // 지표 태그 렌더러 (RSI 바닥탈출 등)
+    const renderReasonTags = (reason) => {
+        if (!reason) return null;
+        const tags = reason.split(',').map(t => t.trim());
+        return (
+            <div className="flex gap-1 items-center">
+                {tags.map((tag, idx) => (
+                    <span key={idx} className="px-1.5 py-0.5 bg-indigo-50 text-[8px] lg:text-[10px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap">
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        );
+    };
+
     const renderDetailedScores = (stock) => (
         <div className="flex gap-1 mt-1 flex-wrap items-center">
             {[
@@ -162,15 +173,14 @@ const AdminTheDailyMagazine = () => {
                 { label: 'T', val: stock.tcn_score, color: '#06b6d4' },
                 { label: 'X', val: stock.xgb_score, color: '#f43f5e' }
             ].map(item => (
-                <div key={item.label} className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#f1f5f9] border border-[#e2e8f0]">
+                <div key={item.label} className="flex items-center gap-1 px-1 py-0.5 rounded bg-[#f1f5f9] border border-[#e2e8f0]">
                     <span className="text-[7px] lg:text-[9px] font-black" style={{ color: item.color }}>{item.label}</span>
                     <span className="text-[8px] lg:text-[10px] font-bold text-[#475569]">{Math.round(item.val)}</span>
                 </div>
             ))}
+            {/* [v18.0] 기술적 분석 태그 추가 */}
             <div className="ml-1 border-l border-slate-200 pl-2">
-                {stock.reason?.split(',').map((tag, idx) => (
-                    <span key={idx} className="analysis-tag px-1.5 py-0.5 bg-indigo-50 text-[8px] lg:text-[10px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap ml-1">{tag.trim()}</span>
-                ))}
+                {renderReasonTags(stock.reason)}
             </div>
         </div>
     );
@@ -197,7 +207,7 @@ const AdminTheDailyMagazine = () => {
                     )}
                 >
                     {isLoading ? <Loader2 className="animate-spin" size={14} /> : (isDownloadable ? <Download size={14} /> : <Lock size={14} />)} 
-                    {isDownloadable ? "📄 PDF REPORT 발행" : "발행 제한 해제됨"}
+                    {isDownloadable ? "📄 PDF REPORT 발행" : "발행 제한 (08:30~15:30)"}
                 </button>
             </div>
 
@@ -236,10 +246,10 @@ const AdminTheDailyMagazine = () => {
                             {magazineData.topLeaders.slice(0, 3).map((stock, i) => (
                                 <div key={i} className="bg-white p-6 lg:p-8 rounded-r-2xl flex flex-col lg:flex-row justify-between gap-6 shadow-md" style={{borderLeft: '10px solid #4f46e5'}}>
                                     <div className="flex-1 min-w-0">
-                                        <div className="rank-title-row flex items-center gap-3 mb-2 flex-wrap">
-                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1 rounded-full uppercase flex items-center justify-center min-w-[80px] whitespace-nowrap" style={{backgroundColor: '#0f172a'}}>RANK #{i+1}</span>
-                                            <h4 className="rank-stock-name font-black text-lg lg:text-2xl whitespace-nowrap overflow-hidden text-ellipsis leading-none flex items-center" style={{color: '#0f172a'}}>{stock.stock_name}</h4>
-                                            <span style={{color: '#94a3b8'}} className="font-mono text-sm lg:text-base flex items-center">{stock.stock_code}</span>
+                                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1.5 rounded-full uppercase flex items-center justify-center min-w-[80px] whitespace-nowrap" style={{backgroundColor: '#0f172a'}}>RANK #{i+1}</span>
+                                            <h4 className="font-black text-xl lg:text-3xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight" style={{color: '#0f172a'}}>{stock.stock_name}</h4>
+                                            <span style={{color: '#94a3b8'}} className="font-mono text-sm lg:text-base">{stock.stock_code}</span>
                                         </div>
                                         <p className="text-xs lg:text-base leading-relaxed italic font-sans break-keep text-[#475569]">{magazineData.stockComments[i]}</p>
                                         <div className="mt-1">{renderDetailedScores(stock)}</div>
@@ -275,6 +285,7 @@ const AdminTheDailyMagazine = () => {
                             <Map style={{color: '#4f46e5'}} size={32} />
                             <h3 className="text-xl lg:text-3xl font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Industry Mapping</h3>
                         </div>
+                        {/* 이미지 클릭 시 확대 기능 추가 */}
                         <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10 cursor-pointer group relative" onClick={() => setZoomImage('/stockPlus/api/snapshots/heatmap_latest.png')}>
                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
                                 <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={48} />
@@ -342,7 +353,7 @@ const AdminTheDailyMagazine = () => {
                                 </p>
                             </div>
                         </div>
-                        <div className="mt-20 border-t border-[#e2e8f0] pt-10 flex flex-col items-center opacity-40 font-sans text-center">
+                        <div className="mt-20 border-t border-[#e2e8f0] pt-10 flex flex-col items-center opacity-40 font-sans">
                             <div className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em] mb-2 text-center" style={{color: '#64748b'}}>StockPlus Intelligence Analysis Center</div>
                             <p className="text-[8px] lg:text-[9px] text-center max-w-2xl leading-relaxed pb-8" style={{color: '#64748b'}}>© 2026 StockPlus AI Architecture. All Rights Reserved.</p>
                         </div>
@@ -350,6 +361,7 @@ const AdminTheDailyMagazine = () => {
                 </div>
             </div>
 
+            {/* 이미지 확대 모달 (v18.0) */}
             {zoomImage && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/95 backdrop-blur-md" onClick={() => setZoomImage(null)}></div>

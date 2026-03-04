@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stockPlus.domain.StockPriceDto;
 import com.stockPlus.domain.Watchlist;
 import com.stockPlus.mapper.WatchlistMapper;
+import com.stockPlus.mapper.AdminMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,10 +27,13 @@ public class KisRealtimeService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private reactor.core.Disposable connectionDisposable;
 
-    public KisRealtimeService(KisAuthService kisAuthService, Sinks.Many<StockPriceDto> stockPriceSink, WatchlistMapper watchlistMapper) {
+    private final AdminMapper adminMapper; // [v18.5] DB 공휴일 체크를 위해 추가
+
+    public KisRealtimeService(KisAuthService kisAuthService, Sinks.Many<StockPriceDto> stockPriceSink, WatchlistMapper watchlistMapper, AdminMapper adminMapper) {
         this.kisAuthService = kisAuthService;
         this.stockPriceSink = stockPriceSink;
         this.watchlistMapper = watchlistMapper;
+        this.adminMapper = adminMapper;
     }
 
     @PostConstruct
@@ -201,7 +205,7 @@ public class KisRealtimeService {
     private boolean isMarketOpen() {
         java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
         if (today.getDayOfWeek().getValue() > 5) return false;
-        List<String> holidays = java.util.Arrays.asList("2026-02-16", "2026-02-17", "2026-02-18", "2026-03-02", "2026-05-01", "2026-05-05", "2026-05-25", "2026-06-03", "2026-07-17", "2026-08-17", "2026-09-24", "2026-09-25", "2026-10-05", "2026-10-09", "2026-12-25", "2026-12-31");
-        return !holidays.contains(today.toString());
+        // [v18.5] 하드코딩 제거: DB market_holidays 테이블 조회
+        return adminMapper.checkIsHoliday(today.toString()) == 0;
     }
 }
