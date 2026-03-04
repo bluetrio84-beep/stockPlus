@@ -18,12 +18,15 @@ def load_and_preprocess_data():
     print(">>> [Train] Loading High-Quality Daily Investor Data from DB...")
     conn = pymysql.connect(**DB_CONFIG)
     try:
-        # [v15.6] 일자별 수급 테이블 기반으로 5피처 학습 데이터 원복
+        # [v19.1] '실패'나 '노이즈' 피드백을 받은 데이터는 학습에서 원천 배제 (품질 관리)
         query = """
-            SELECT stock_code, close_price, 
-                   individual_net_buy, foreign_net_buy, institution_net_buy, volume 
-            FROM daily_stock_investor 
-            ORDER BY stock_code, bsop_date ASC
+            SELECT d.stock_code, d.close_price, 
+                   d.individual_net_buy, d.foreign_net_buy, d.institution_net_buy, d.volume 
+            FROM daily_stock_investor d
+            LEFT JOIN ai_next_leaders f ON d.stock_code = f.stock_code 
+                 AND DATE(d.bsop_date) = DATE(f.captured_at)
+            WHERE (f.feedback_tag IS NULL OR f.feedback_tag NOT IN ('실패', '노이즈'))
+            ORDER BY d.stock_code, d.bsop_date ASC
         """
         df = pd.read_sql(query, conn)
         

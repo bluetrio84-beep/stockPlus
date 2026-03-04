@@ -18,52 +18,67 @@ class NextLeaderEngine(AIEngine):
         super().__init__()
         print(">>> [NextLeader Engine] Initialization Complete.")
 
+    def get_financial_boost(self, stock_code):
+        """
+        [v19.0] 실적 데이터를 기반으로 한 가점 산출
+        """
+        try:
+            if not self.conn or not self.conn.open: self.connect()
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                sql = """
+                    SELECT revenue, op_profit, net_income, roe 
+                    FROM company_financials 
+                    WHERE stock_code = %s 
+                    ORDER BY report_year DESC, report_code DESC LIMIT 1
+                """
+                cursor.execute(sql, (stock_code,))
+                row = cursor.fetchone()
+                if not row: return 0.0, ""
+                
+                boost = 0.0
+                reasons = []
+                margin = (float(row['op_profit']) / float(row['revenue'])) * 100 if row['revenue'] > 0 else 0
+                if margin > 10: 
+                    boost += 5.0
+                    reasons.append("고수익")
+                if float(row['roe'] or 0) > 15: 
+                    boost += 5.0
+                    reasons.append("고성장")
+                if row['op_profit'] > 0: boost += 2.0
+                
+                return boost, ",".join(reasons)
+        except: return 0.0, ""
+
     def calculate_turnaround_score(self, row, prev_row):
-        """
-        바닥 탈출 알고리즘 (Q-Score)
-        1. RSI 35 이하 탈출 (20점)
-        2. 이평선 수렴도 (10점)
-        3. 거래량 스파이크 (15점)
-        4. 골든크로스 (10점)
-        """
         score = 50.0
         reasons = []
-
-        # 1. RSI 바닥 탈출 (과매도 구간 탈출 신호)
         rsi = float(row['rsi'] or 50)
         prev_rsi = float(prev_row['rsi'] or 50) if prev_row is not None else 50
         if prev_rsi <= 35 and rsi > prev_rsi:
-            score += 20 # 25 -> 20 하향
+            score += 20
             reasons.append("RSI바닥탈출")
         elif rsi <= 30:
             score += 10
             reasons.append("과매도진입")
-
-        # 2. 이평선 수렴도 (MA5, MA20)
-        ma5 = float(row['ma5'] or 0)
-        ma20 = float(row['ma20'] or 0)
+        ma5 = float(row['ma5'] or 0); ma20 = float(row['ma20'] or 0)
         if ma5 > 0 and ma20 > 0:
             gap = abs(ma5 - ma20) / ma20
-            if gap < 0.02: # 2% 이내 수렴
-                score += 10 # 15 -> 10 하향
+            if gap < 0.02:
+                score += 10
                 reasons.append("이평선수렴")
             if ma5 > ma20 and (prev_row is None or float(prev_row['ma5'] or 0) <= float(prev_row['ma20'] or 0)):
-                score += 10 # 10 유지
+                score += 10
                 reasons.append("골든크로스")
-
-        # 3. 거래량 스파이크 (관심 집중)
-        vol = float(row['volume'] or 0)
-        prev_vol = float(prev_row['volume'] or 1) if prev_row is not None else 1
-        if vol > prev_vol * 2.5: # 거래량 250% 이상 폭발
-            score += 15 # 20 -> 15 하향
+        vol = float(row['volume'] or 0); prev_vol = float(prev_row['volume'] or 1) if prev_row is not None else 1
+        if vol > prev_vol * 2.5:
+            score += 15
             reasons.append("거래량폭발")
-
         return min(100, score), ", ".join(reasons)
 
     def analyze_next_leaders(self):
         if not self.conn or not self.conn.open: self.connect()
         try:
-            # 1. 1,600개 종목의 최신 2틱 데이터 확보 (Collation 충돌 방지 처리)
+            # 1. 원본 데이터 수집
             query = """
                 SELECT h1.*, m.stock_name 
                 FROM stock_intraday_history h1
@@ -78,32 +93,27 @@ class NextLeaderEngine(AIEngine):
             df_raw = pd.read_sql(query, self.conn)
             if df_raw.empty: return 0
 
-            # 0. AI 분석 전략 모드 로드 (v17.9 동적 전략 적용)
+            # 2. 전략 모드 로드
             strategy_mode = 'STABLE'
             with self.conn.cursor() as cursor:
                 cursor.execute("SELECT ai_strategy_mode FROM collector_config WHERE id = 1")
                 row = cursor.fetchone()
                 if row and row[0]: strategy_mode = row[0]
             
-            # 모드별 파라미터 설정
-            if strategy_mode == 'AGGRESSIVE':
-                weight_algo, weight_ai = 0.4, 0.6
-                min_threshold = 55.0
-                print(">>> [Strategy] Running in AGGRESSIVE mode (Algo 0.4 : AI 0.6, Min 55pt)")
-            elif strategy_mode == 'BALANCED':
-                weight_algo, weight_ai = 0.6, 0.4
-                min_threshold = 65.0
-                print(">>> [Strategy] Running in BALANCED mode (Algo 0.6 : AI 0.4, Min 65pt)")
-            else:
-                weight_algo, weight_ai = 0.7, 0.3
-                min_threshold = 80.0
-                print(">>> [Strategy] Running in STABLE mode (Algo 0.7 : AI 0.3, Min 80pt)")
+            if strategy_mode == 'AGGRESSIVE': weight_algo, weight_ai, min_threshold = 0.4, 0.6, 55.0
+            elif strategy_mode == 'BALANCED': weight_algo, weight_ai, min_threshold = 0.6, 0.4, 65.0
+            else: weight_algo, weight_ai, min_threshold = 0.7, 0.3, 80.0
 
-            # 0.1 사용자 피드백(인적 직관) 로드 (v17.9)
+            # 3. [복구] 사용자 피드백(Human 직관) 로드 (v19.0)
             feedback_map = {}
             try:
                 with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute("SELECT stock_code, feedback_tag FROM ai_next_leaders WHERE feedback_tag IS NOT NULL AND captured_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")
+                    cursor.execute("""
+                        SELECT stock_code, feedback_tag 
+                        FROM ai_next_leaders 
+                        WHERE feedback_tag IS NOT NULL 
+                        AND captured_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    """)
                     f_rows = cursor.fetchall()
                     for f in f_rows:
                         feedback_map[f['stock_code']] = f['feedback_tag']
@@ -111,59 +121,58 @@ class NextLeaderEngine(AIEngine):
 
             results = []
             codes = df_raw['stock_code'].unique()
-            print(f">>> [NextLeader] Scrutinizing {len(codes)} stocks for the next big move...")
+            print(f">>> [NextLeader] Human-in-the-Loop Analysis for {len(codes)} stocks...")
 
             for code in codes:
                 stock_history = df_raw[df_raw['stock_code'] == code].sort_values('captured_at', ascending=True)
                 if len(stock_history) < 1: continue
+                curr = stock_history.iloc[-1]; prev = stock_history.iloc[0] if len(stock_history) > 1 else None
                 
-                curr = stock_history.iloc[-1]
-                prev = stock_history.iloc[0] if len(stock_history) > 1 else None
-                
-                # A. 알고리즘 점수 (Q-Score)
+                # A. 퀀트 점수 (Q)
                 algo_score, reason = self.calculate_turnaround_score(curr, prev)
                 
-                # B. 앙상블 상세 점수 (E-Score Details)
+                # B. AI 모델 점수 (L, T, X)
                 e_data = self.get_ensemble_score_details(code, float(curr['price']), 0, float(curr['volume']))
-                e_score = e_data['total']
                 
-                # C. 최종 하이브리드 점수 (동적 가중치 적용)
-                total_score = (algo_score * weight_algo) + (e_score * weight_ai)
+                # C. 실적 가점 (F-Boost)
+                f_boost, f_tag = self.get_financial_boost(code)
+                if f_tag: reason = f"{f_tag}, {reason}"
                 
-                # D. 인적 직관 가중치 반영 (Human-in-the-Loop) [v17.9]
+                # D. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
                 intuition_bonus = 0.0
                 tag = feedback_map.get(code)
                 if tag == '성공' or tag == '매집':
                     intuition_bonus = 5.0
                     reason = f"★직관강화, {reason}"
+                elif tag == '시황':
+                    intuition_bonus = 0.0 # 시황은 중립
+                    reason = f"★시황반영, {reason}"
                 elif tag == '노이즈':
                     intuition_bonus = -10.0
-                    reason = f"⚠노이즈경고, {reason}"
+                    reason = f"⚠노이즈제외, {reason}"
                 elif tag == '실패':
                     intuition_bonus = -15.0
-                    reason = f"✖판단착오, {reason}"
+                    reason = f"✖오판주의, {reason}"
+
+                # E. 최종 합산 (실적 가점은 L, T, X 개별 점수에 녹이고 피드백은 최종 점수에 반영)
+                lstm_f = max(0, min(100, e_data['lstm'] + f_boost))
+                tcn_f = max(0, min(100, e_data['tcn'] + f_boost))
+                xgb_f = max(0, min(100, e_data['xgb'] + f_boost))
                 
+                e_score = (lstm_f + tcn_f + xgb_f) / 3
+                total_score = (algo_score * weight_algo) + (e_score * weight_ai)
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
                 if total_score >= min_threshold:
-                    current_price = float(curr['price']) if curr['price'] is not None else 0.0
                     results.append({
-                        'code': code,
-                        'name': curr['stock_name'],
-                        'total': round(total_score, 1),
-                        'algo': round(algo_score, 1),
-                        'lstm': round(e_data['lstm'], 1),
-                        'tcn': round(e_data['tcn'], 1),
-                        'xgb': round(e_data['xgb'], 1),
-                        'ensemble': round(e_score, 1),
-                        'price_at': current_price,
-                        'reason': reason if reason else "수급안정"
+                        'code': code, 'name': curr['stock_name'],
+                        'total': round(total_score, 1), 'algo': round(algo_score, 1),
+                        'lstm': round(lstm_f, 1), 'tcn': round(tcn_f, 1),
+                        'xgb': round(xgb_f, 1), 'ensemble': round(e_score, 1),
+                        'price_at': float(curr['price']), 'reason': reason
                     })
 
-            # 2. 점수 순 정렬 후 Top 20 선별
             top_20 = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
-            
-            # 3. DB 저장 (컬럼 확장 반영)
             with self.conn.cursor() as cursor:
                 cursor.execute("DELETE FROM ai_next_leaders WHERE DATE(captured_at) = CURDATE()")
                 for item in top_20:
@@ -177,22 +186,15 @@ class NextLeaderEngine(AIEngine):
                         item['lstm'], item['tcn'], item['xgb'], item['ensemble'], 
                         item['reason'], item['price_at']
                     ))
-            
             self.conn.commit()
-            print(f">>> [Success] Top 20 Next Leaders identified and stored.")
+            print(f">>> [Success] Hybrid AI (Quant + DeepLearning + Financial + Human) Sync Complete.")
             return len(top_20)
-
         except Exception as e:
-            print(f">>> [NextLeader Error] {e}")
-            import traceback
-            traceback.print_exc()
+            print(f">>> [Error] {e}")
             return 0
         finally:
-            try:
-                if self.conn and self.conn.open: self.conn.close()
-            except: pass
+            if self.conn and self.conn.open: self.conn.close()
 
 if __name__ == "__main__":
     engine = NextLeaderEngine()
-    count = engine.analyze_next_leaders()
-    print(f"Total Next Leaders Saved: {count}")
+    engine.analyze_next_leaders()
