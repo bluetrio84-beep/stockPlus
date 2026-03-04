@@ -262,6 +262,16 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/trigger-review")
+    public String triggerReview() {
+        try {
+            dailyInvestorScheduler.reviewAiPerformance();
+            return "Review triggered.";
+        } catch (Exception e) {
+            return "Review failed: " + e.getMessage();
+        }
+    }
+
     // [v19.0] 개별 종목 실적 동기화 (Python 수집기 호출용)
     @GetMapping("/intelligence/sync-financials/{stockCode}")
     public String syncFinancials(@PathVariable String stockCode) {
