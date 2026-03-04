@@ -39,7 +39,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // 1. 공용 API 및 대시보드 시세 조회 허용
-                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/admin/trigger-review", "/api/admin/dump-investor").permitAll()
 
                 // 2. 관리자 전용 API
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

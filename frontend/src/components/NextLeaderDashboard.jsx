@@ -213,7 +213,7 @@ const NextLeaderDashboard = () => {
                     </div>
                     <div className="text-right hidden sm:block">
                         <span className="text-[10px] font-black text-slate-500 uppercase block">Verification Window</span>
-                        <span className="text-xs text-indigo-400 font-bold">T+3 Trading Days</span>
+                        <span className="text-xs text-indigo-400 font-bold">T+2 Trading Days</span>
                     </div>
                 </div>
                 

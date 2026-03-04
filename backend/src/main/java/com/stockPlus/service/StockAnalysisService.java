@@ -32,33 +32,35 @@ public class StockAnalysisService {
     private final NaverService naverService; // 뉴스 검색 서비스
     private final KisStockService kisStockService; // 주가 조회 서비스
 
-    // [v18.0] 데일리 매거진용 통합 브리핑 생성 (고도화 버전)
+    // [v19.3] 데일리 매거진용 통합 브리핑 생성 (냉철한 분석 모드)
     public String generateMagazineBriefing(List<java.util.Map<String, Object>> heatmap, List<java.util.Map<String, Object>> leaders) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("당신은 'StockPlus Daily'의 수석 애널리스트입니다. 아래 데이터를 바탕으로 전문적인 투자 보고서를 작성해주세요.\n\n");
+        prompt.append("당신은 'StockPlus Daily'의 냉철한 수석 애널리스트입니다. 아래 데이터를 바탕으로 **전일 장 마감 기준** 투자 보고서를 작성해주세요.\n\n");
         
-        prompt.append("[데이터 1: 히트맵 성적]\n");
+        prompt.append("[데이터 1: 전일 업종별 등락 수치]\n");
         if (heatmap != null) {
-            heatmap.stream().limit(5).forEach(h -> prompt.append("- ").append(h.get("industry_name")).append(": ").append(h.get("change_rate")).append("%\n"));
+            heatmap.stream().limit(10).forEach(h -> prompt.append("- ").append(h.get("industry_name")).append(": ").append(h.get("change_rate")).append("%\n"));
         }
         
-        prompt.append("\n[데이터 2: 오늘의 TOP 3 종목]\n");
+        prompt.append("\n[데이터 2: 포착된 오늘의 유망 종목 (분석 근거 포함)]\n");
         if (leaders != null) {
             leaders.stream().limit(3).forEach(l -> {
-                prompt.append("- ").append(l.get("stock_name")).append(" (코드: ").append(l.get("stock_code"))
-                      .append(", 점수: ").append(l.get("total_score")).append(", 사유: ").append(l.get("reason")).append(")\n");
+                prompt.append("- ").append(l.get("stock_name")).append(" (점수: ").append(l.get("total_score")).append(", 분석근거: ").append(l.get("reason")).append(")\n");
             });
         }
         
-        prompt.append("\n[작성 지침]\n");
-        prompt.append("1. 'MARKET_BRIEF': 전체 시장 흐름과 히트맵 분석 요약 (200자 내외)\n");
-        prompt.append("2. 'STOCK_1', 'STOCK_2', 'STOCK_3': 각 종목의 데이터(점수, 사유)를 바탕으로 왜 오늘 주목해야 하는지 전문적인 코멘트 (각 100자 내외)\n");
-        prompt.append("형식: [MARKET_BRIEF]내용... [STOCK_1]내용... [STOCK_2]내용... [STOCK_3]내용...");
+        prompt.append("\n[작성 필수 지침 - 위반 시 해고]\n");
+        prompt.append("1. **시점 명확화**: 반드시 '전일(어제) 시장'을 분석하고 '오늘의 전략'을 제시하세요. 절대로 전일 데이터를 '금일 시장'이라 부르지 마세요.\n");
+        prompt.append("2. **냉철한 현실 직시**: 수치가 음수(-)라면 '보합세'라는 단어를 절대 쓰지 마세요. 하락 폭에 따라 '급락', '폭락', '붕괴', '약세' 등 시장의 공포를 생생하게 묘사하세요.\n");
+        prompt.append("3. **구조적 브리핑**: \n");
+        prompt.append("   - 'MARKET_BRIEF': 전일 시장의 전반적인 하락/상승 원인과 분위기 요약 (200자 내외)\n");
+        prompt.append("   - 'STOCK_1, 2, 3': 이 폭락/폭등장 속에서도 왜 이 종목들이 AI에게 선택받았는지 기술적/재무적 근거로 코멘트 (각 100자 내외)\n");
+        prompt.append("형식: [MARKET_BRIEF]... [STOCK_1]... [STOCK_2]... [STOCK_3]...");
         
         try {
             return geminiService.getCompletion(prompt.toString());
         } catch (Exception e) {
-            return "[MARKET_BRIEF]데이터 분석 중 오류가 발생했으나 수급 에너지는 긍정적입니다. [STOCK_1]기술적 반등 구간입니다. [STOCK_2]추세 추종 전략이 유효합니다. [STOCK_3]바닥권 매집이 관찰됩니다.";
+            return "[MARKET_BRIEF]데이터 분석 중 일시적 오류가 발생했습니다. 시장의 변동성에 유의하시기 바랍니다. [STOCK_1]기술적 지지선 확인이 필요합니다. [STOCK_2]수급 유입을 기다려야 합니다. [STOCK_3]바닥권 매집 징후가 포착됩니다.";
         }
     }
 

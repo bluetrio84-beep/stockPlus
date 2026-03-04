@@ -355,8 +355,14 @@ def main():
                         policy['holiday'] = res['collect_on_holiday']
             finally: conn.close()
 
-            # 1. 주말 체크 (설정이 'N'이면 정지)
+            # [v18.3] 주말(토:5, 일:6) 완전 정지 로직 (v19.4 주말 최적화 추가)
             if now_weekday >= 5 and policy['weekend'] == 'N':
+                # [v19.4] 일요일 21:00 ~ 21:05 사이에 차주 가중치 자동 최적화 수행
+                if now_weekday == 6 and now_hour == 21 and 0 <= now_min <= 5:
+                    mega.log_to_db("INFO", "[지능가동] 주말 AI 가중치 자동 최적화 시작")
+                    next_engine.optimize_weights()
+                    time.sleep(360) # 중복 실행 방지 (6분 휴식)
+
                 if now_min == 0: print(f">>> [Weekend] 주말 휴식 중... (Policy: {policy['weekend']})")
                 time.sleep(60); continue
 
