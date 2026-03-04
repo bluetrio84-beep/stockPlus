@@ -79,9 +79,9 @@ const AdminTheDailyMagazine = () => {
             
             const images = element.querySelectorAll('img');
             await Promise.all(Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
+                if (img.complete) return img.decode().catch(() => {});
                 return new Promise(resolve => {
-                    img.onload = resolve;
+                    img.onload = () => img.decode().then(resolve).catch(resolve);
                     img.onerror = resolve;
                     setTimeout(resolve, 3000);
                 });
@@ -92,24 +92,15 @@ const AdminTheDailyMagazine = () => {
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: "#f8f5f0",
+                windowWidth: 1200,
                 onclone: (clonedDoc) => {
-                    // [v18.9] 1. 전역 스타일 태그에서 oklch/oklab 정화
-                    const styleTags = clonedDoc.getElementsByTagName('style');
-                    const colorRegex = /(oklch|oklab)\([^)]+\)/g;
-                    for (let i = 0; i < styleTags.length; i++) {
-                        if (styleTags[i].innerHTML) {
-                            styleTags[i].innerHTML = styleTags[i].innerHTML.replace(colorRegex, '#475569');
-                        }
-                    }
-
-                    // [v18.9] 2. 수직 정렬 교정 스타일 강제 주입
-                    const finalStyle = clonedDoc.createElement('style');
-                    finalStyle.innerHTML = `
+                    const style = clonedDoc.createElement('style');
+                    style.innerHTML = `
                         h1, h2, h3, h4, p, span, td, th { line-height: 1.6 !important; }
-                        .rank-title-row { transform: translateY(-5px) !important; display: flex !important; align-items: center !important; }
-                        .rank-stock-name { padding-bottom: 4px !important; margin-top: -2px !important; }
+                        .rank-title-row { pt-3 !important; }
+                        .analysis-tag { font-family: sans-serif !important; font-weight: 900 !important; color: #3730a3 !important; }
                     `;
-                    clonedDoc.head.appendChild(finalStyle);
+                    clonedDoc.head.appendChild(style);
                 }
             });
 
@@ -136,7 +127,7 @@ const AdminTheDailyMagazine = () => {
             pdf.save(`StockPlus_Daily_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (e) {
             console.error("PDF ERROR:", e);
-            alert("PDF 발행 중 오류가 발생했습니다.");
+            alert("PDF 발행 중 기술적 오류가 발생했습니다.");
         } finally {
             setIsLoading(false);
         }
@@ -147,8 +138,8 @@ const AdminTheDailyMagazine = () => {
         const firstChar = text.charAt(0);
         const rest = text.slice(1);
         return (
-            <p className="text-lg lg:text-xl leading-relaxed italic break-keep text-[#334155] pb-2">
-                <span style={{ fontSize: '5rem', fontWeight: '900', color: '#4f46e5', float: 'left', lineHeight: '0.8', marginRight: '1.2rem', marginTop: '0.8rem' }}>{firstChar}</span>
+            <p className="text-base lg:text-[19px] leading-relaxed font-sans font-medium break-keep text-slate-700 pb-2 tracking-tight">
+                <span style={{ fontSize: '4.5rem', fontWeight: '900', color: '#4f46e5', float: 'left', lineHeight: '0.8', marginRight: '1rem', marginTop: '0.6rem' }}>{firstChar}</span>
                 {rest}
             </p>
         );
@@ -168,8 +159,11 @@ const AdminTheDailyMagazine = () => {
                 </div>
             ))}
             <div className="ml-1 border-l border-slate-200 pl-2">
+                {/* [v18.9 Patch] 분석 태그 폰트 교체(Sans), 진하게(Black), 색상 대비 상향 */}
                 {stock.reason?.split(',').map((tag, idx) => (
-                    <span key={idx} className="analysis-tag px-1.5 py-0.5 bg-indigo-50 text-[8px] lg:text-[10px] font-bold text-indigo-500 rounded border border-indigo-100 whitespace-nowrap ml-1">{tag.trim()}</span>
+                    <span key={idx} className="analysis-tag px-1.5 py-0.5 bg-indigo-100/50 text-[8px] lg:text-[10px] font-black font-sans text-indigo-800 rounded border border-indigo-200 whitespace-nowrap ml-1 shadow-sm">
+                        {tag.trim()}
+                    </span>
                 ))}
             </div>
         </div>
@@ -202,13 +196,13 @@ const AdminTheDailyMagazine = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8f5f0]">
-                <div ref={magazineRef} style={{backgroundColor: '#f8f5f0'}} className="max-w-4xl mx-auto p-6 lg:p-16 text-[#1e293b] font-serif overflow-hidden">
+                <div ref={magazineRef} style={{backgroundColor: '#f8f5f0'}} className="max-w-4xl mx-auto p-10 lg:p-20 text-[#1e293b] overflow-hidden">
                     <header className="border-b-4 border-[#0f172a] pb-6 mb-10 flex flex-col items-center text-center gap-3">
                         <div className="flex items-center gap-3 font-sans font-black tracking-[0.3em] uppercase text-[9px] lg:text-xs" style={{color: '#4338ca'}}>
                             <Activity size={14} /> StockPlus AI Intelligence
                         </div>
-                        <h1 className="text-4xl lg:text-8xl font-black tracking-tighter uppercase italic leading-none" style={{color: '#0f172a'}}>
-                            Daily <span style={{color: '#4f46e5'}}>Magazine</span>
+                        <h1 className="text-4xl lg:text-8xl font-black tracking-[-0.05em] uppercase italic leading-none flex items-center justify-center" style={{color: '#0f172a'}}>
+                            Daily<span style={{color: '#4f46e5', marginLeft: '-0.1em'}}>Magazine</span>
                         </h1>
                         <div className="w-full flex justify-between items-center border-t border-[#cbd5e1] mt-4 pt-4 font-sans text-[9px] lg:text-xs font-bold uppercase tracking-widest" style={{color: '#64748b'}}>
                             <span>Edition v18.0 Premium</span>
@@ -219,11 +213,11 @@ const AdminTheDailyMagazine = () => {
 
                     <section className="mb-16">
                         <div className="border-b border-[#cbd5e1] pb-10 mb-12">
-                            <h2 className="text-2xl lg:text-5xl font-black leading-tight mb-8 break-keep underline underline-offset-8 pb-2" style={{color: '#0f172a', textDecorationColor: 'rgba(79, 70, 229, 0.3)'}}>
+                            <h2 className="text-xl lg:text-4xl font-black leading-tight mb-8 break-keep underline underline-offset-8 pb-2" style={{color: '#0f172a', textDecorationColor: 'rgba(79, 70, 229, 0.3)'}}>
                                 "{magazineData.headline}"
                             </h2>
                             <div className="flex gap-6 lg:gap-10 items-start">
-                                <div className="hidden lg:flex w-16 h-16 rounded-full items-center justify-center shrink-0 shadow-xl" style={{backgroundColor: '#4f46e5'}}><Brain className="text-white" size={32} /></div>
+                                <div className="hidden sm:flex w-16 h-16 rounded-full items-center justify-center shrink-0 shadow-xl" style={{backgroundColor: '#4f46e5'}}><Brain className="text-white" size={32} /></div>
                                 {renderBriefingWithDropCap(magazineData.marketBrief)}
                             </div>
                         </div>
@@ -236,10 +230,11 @@ const AdminTheDailyMagazine = () => {
                             {magazineData.topLeaders.slice(0, 3).map((stock, i) => (
                                 <div key={i} className="bg-white p-6 lg:p-8 rounded-r-2xl flex flex-col lg:flex-row justify-between gap-6 shadow-md" style={{borderLeft: '10px solid #4f46e5'}}>
                                     <div className="flex-1 min-w-0">
-                                        <div className="rank-title-row flex items-center gap-3 mb-2 flex-wrap">
-                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1 rounded-full uppercase flex items-center justify-center min-w-[80px] whitespace-nowrap" style={{backgroundColor: '#0f172a'}}>RANK #{i+1}</span>
-                                            <h4 className="rank-stock-name font-black text-lg lg:text-2xl whitespace-nowrap overflow-hidden text-ellipsis leading-none flex items-center" style={{color: '#0f172a'}}>{stock.stock_name}</h4>
-                                            <span style={{color: '#94a3b8'}} className="font-mono text-sm lg:text-base flex items-center">{stock.stock_code}</span>
+                                        {/* [v18.9 Patch] pt-2 및 overflow-visible 적용으로 상단 잘림 원천 봉쇄 */}
+                                        <div className="rank-title-row flex items-center gap-3 mb-2 flex-wrap pt-2 overflow-visible">
+                                            <span className="text-[#ffffff] text-[9px] font-black px-3 py-1 rounded-full uppercase flex items-center justify-center min-w-[80px] whitespace-nowrap shadow-sm" style={{backgroundColor: '#0f172a', height: '24px'}}>RANK #{i+1}</span>
+                                            <h4 className="rank-stock-name font-black text-lg lg:text-2xl whitespace-nowrap overflow-visible leading-none flex items-center" style={{color: '#0f172a', height: '32px'}}>{stock.stock_name}</h4>
+                                            <span style={{color: '#94a3b8'}} className="font-mono text-sm lg:text-base flex items-center h-[24px]">{stock.stock_code}</span>
                                         </div>
                                         <p className="text-xs lg:text-base leading-relaxed italic font-sans break-keep text-[#475569]">{magazineData.stockComments[i]}</p>
                                         <div className="mt-1">{renderDetailedScores(stock)}</div>
@@ -301,7 +296,7 @@ const AdminTheDailyMagazine = () => {
                             <ListOrdered style={{color: '#4f46e5'}} size={32} />
                             <h3 className="text-xl lg:text-3xl font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Next Leaders Ranking <span style={{color: '#94a3b8'}} className="font-normal not-italic">/ TOP 10</span></h3>
                         </div>
-                        <div className="lg:hidden mb-10 space-y-3">
+                        <div className="lg:hidden mb-10 space-y-3 font-sans">
                             {magazineData.topLeaders.map((stock, i) => (
                                 <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-[#e2e8f0]">
                                     <div className="flex justify-between items-center mb-2">
