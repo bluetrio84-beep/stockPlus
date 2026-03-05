@@ -199,15 +199,17 @@ const AdminIntelligenceDashboard = () => {
                                         </div>
                                         <div className="flex flex-col items-end">
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-sm font-black text-indigo-400">{parseInt(sect.ai_score || 50)}</span>
-                                                {sect.score_diff !== 0 && (
-                                                    <span className={classNames("text-[10px] font-black", parseInt(sect.score_diff) > 0 ? "text-rose-500" : "text-blue-500")}>
-                                                        {parseInt(sect.score_diff) > 0 ? '▲' : '▼'}{Math.abs(parseInt(sect.score_diff))}
+                                                <span className="text-sm font-black text-indigo-400">
+                                                    {parseFloat(sect.ai_score || 50).toFixed(1)}
+                                                </span>
+                                                {parseFloat(sect.score_diff) !== 0 && (
+                                                    <span className={classNames("text-[10px] font-black", parseFloat(sect.score_diff) > 0 ? "text-rose-500" : "text-blue-500")}>
+                                                        {parseFloat(sect.score_diff) > 0 ? '▲' : '▼'}{Math.abs(parseFloat(sect.score_diff)).toFixed(1)}
                                                     </span>
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-white font-black opacity-80 mt-[-1px]">
-                                                D-1: {parseInt(sect.ai_score || 50) - (sect.score_diff || 0)}
+                                                D-1: {(parseFloat(sect.ai_score || 50) - parseFloat(sect.score_diff || 0)).toFixed(1)}
                                             </span>
                                         </div>
                                     </div>
