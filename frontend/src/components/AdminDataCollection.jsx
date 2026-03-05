@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Activity, Database, Clock, RefreshCw, AlertCircle, BarChart3, X, Terminal, List, Table, Filter, TrendingUp, Layers, Briefcase, Award, Brain, Shield, Zap, Lock } from 'lucide-react';
+import { Settings, Activity, Database, Clock, RefreshCw, AlertCircle, BarChart3, X, Terminal, List, Table, Filter, TrendingUp, Layers, Briefcase, Award, Brain, Shield, Zap, Lock, Scale } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
@@ -205,11 +205,12 @@ const AdminDataCollection = () => {
                             <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto no-scrollbar">
                                 <button onClick={() => handleStrategyChange('STABLE')} className={classNames("px-6 py-3 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap", aiMode === 'STABLE' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><Shield size={14} /> 안정형</button>
                                 <button onClick={() => handleStrategyChange('BALANCED')} className={classNames("px-6 py-3 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap", aiMode === 'BALANCED' ? "bg-emerald-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><Zap size={14} /> 기본형</button>
+                                <button onClick={() => handleStrategyChange('NEUTRAL')} className={classNames("px-6 py-3 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap", aiMode === 'NEUTRAL' ? "bg-cyan-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><Scale size={14} /> 중립형</button>
                                 <button onClick={() => handleStrategyChange('AGGRESSIVE')} className={classNames("px-6 py-3 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap", aiMode === 'AGGRESSIVE' ? "bg-rose-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><TrendingUp size={14} /> 공격형</button>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                             <div className={classNames("p-5 rounded-2xl border transition-all duration-500", aiMode === 'STABLE' ? "bg-indigo-600/10 border-indigo-500/50 shadow-xl" : "bg-slate-950/50 border-slate-800 opacity-40 grayscale")}>
                                 <div className="flex items-center gap-3 mb-4"><div className="p-2 bg-indigo-500/20 rounded-lg"><Shield className="text-indigo-400" size={18} /></div><h3 className="text-white font-black text-sm">보수적 분석 (Stable)</h3></div>
                                 <ul className="space-y-2.5 text-[11px] font-bold text-slate-400">
@@ -224,6 +225,14 @@ const AdminDataCollection = () => {
                                     <li className="flex justify-between"><span>가중치</span><span className="text-white">Q(0.6) : AI(0.4)</span></li>
                                     <li className="flex justify-between"><span>최소점수</span><span className="text-emerald-400">65점 이상</span></li>
                                     <li className="pt-2 border-t border-slate-800/50 text-[10px] text-slate-500 italic leading-relaxed">"알고리즘과 AI의 조화로운 중단기 분석"</li>
+                                </ul>
+                            </div>
+                            <div className={classNames("p-5 rounded-2xl border transition-all duration-500", aiMode === 'NEUTRAL' ? "bg-cyan-600/10 border-cyan-500/50 shadow-xl" : "bg-slate-950/50 border-slate-800 opacity-40 grayscale")}>
+                                <div className="flex items-center gap-3 mb-4"><div className="p-2 bg-cyan-500/20 rounded-lg"><Scale className="text-cyan-400" size={18} /></div><h3 className="text-white font-black text-sm">중립형 (Neutral)</h3></div>
+                                <ul className="space-y-2.5 text-[11px] font-bold text-slate-400">
+                                    <li className="flex justify-between"><span>가중치</span><span className="text-white">Q(0.5) : AI(0.5)</span></li>
+                                    <li className="flex justify-between"><span>최소점수</span><span className="text-cyan-400">60점 이상</span></li>
+                                    <li className="pt-2 border-t border-slate-800/50 text-[10px] text-slate-500 italic leading-relaxed">"데이터의 완벽한 수평 균형"</li>
                                 </ul>
                             </div>
                             <div className={classNames("p-5 rounded-2xl border transition-all duration-500", aiMode === 'AGGRESSIVE' ? "bg-rose-600/10 border-rose-500/50 shadow-xl" : "bg-slate-950/50 border-slate-800 opacity-40 grayscale")}>

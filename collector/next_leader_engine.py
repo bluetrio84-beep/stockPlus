@@ -102,6 +102,7 @@ class NextLeaderEngine(AIEngine):
             
             if strategy_mode == 'AGGRESSIVE': weight_algo, weight_ai, min_threshold = 0.4, 0.6, 55.0
             elif strategy_mode == 'BALANCED': weight_algo, weight_ai, min_threshold = 0.6, 0.4, 65.0
+            elif strategy_mode == 'NEUTRAL': weight_algo, weight_ai, min_threshold = 0.5, 0.5, 60.0
             else: weight_algo, weight_ai, min_threshold = 0.7, 0.3, 80.0
 
             # 3. [복구] 사용자 피드백(Human 직관) 로드 (v19.0)
