@@ -92,18 +92,28 @@ class NextLeaderEngine(AIEngine):
             """
             df_raw = pd.read_sql(query, self.conn)
             if df_raw.empty: return 0
+            # 2. [v20.1] AI 전략 및 동적 가중치 로드 (코드 최적화)
+            strategy_mode = 'BALANCED'
+            w_l, w_t, w_x = 0.2, 0.2, 0.6 # 기본 황금 비율
+            try:
+                with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    cursor.execute("SELECT ai_strategy_mode, weight_lstm, weight_tcn, weight_xgb FROM collector_config WHERE id = 1")
+                    cfg = cursor.fetchone()
+                    if cfg:
+                        strategy_mode = cfg['ai_strategy_mode'] or 'BALANCED'
+                        if cfg['weight_lstm'] is not None: w_l = float(cfg['weight_lstm'])
+                        if cfg['weight_tcn'] is not None: w_t = float(cfg['weight_tcn'])
+                        if cfg['weight_xgb'] is not None: w_x = float(cfg['weight_xgb'])
+            except Exception as e:
+                print(f">>> [Warning] Failed to load dynamic weights: {e}")
 
-            # 2. 전략 모드 로드
-            strategy_mode = 'STABLE'
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT ai_strategy_mode FROM collector_config WHERE id = 1")
-                row = cursor.fetchone()
-                if row and row[0]: strategy_mode = row[0]
-            
-            if strategy_mode == 'AGGRESSIVE': weight_algo, weight_ai, min_threshold = 0.4, 0.6, 55.0
-            elif strategy_mode == 'BALANCED': weight_algo, weight_ai, min_threshold = 0.6, 0.4, 65.0
+            # 전략별 임계값 설정 (else가 기본 BALANCED 역할을 수행)
+            if strategy_mode == 'STABLE': weight_algo, weight_ai, min_threshold = 0.7, 0.3, 80.0
             elif strategy_mode == 'NEUTRAL': weight_algo, weight_ai, min_threshold = 0.5, 0.5, 60.0
-            else: weight_algo, weight_ai, min_threshold = 0.7, 0.3, 80.0
+            elif strategy_mode == 'AGGRESSIVE': weight_algo, weight_ai, min_threshold = 0.4, 0.6, 55.0
+            else: weight_algo, weight_ai, min_threshold = 0.6, 0.4, 65.0
+
+            print(f">>> [NextLeader] Mode: {strategy_mode} | Dynamic Weights: L({int(w_l*100)}%) T({int(w_t*100)}%) X({int(w_x*100)}%)")
 
             # 3. [복구] 사용자 피드백(Human 직관) 로드 (v19.0)
             feedback_map = {}
@@ -156,11 +166,12 @@ class NextLeaderEngine(AIEngine):
                     reason = f"✖오판주의, {reason}"
 
                 # E. 최종 합산 (실적 가점은 L, T, X 개별 점수에 녹이고 피드백은 최종 점수에 반영)
+                # [v20.0] 동적 가중치 (w_l, w_t, w_x) 적용
                 lstm_f = max(0, min(100, e_data['lstm'] + f_boost))
                 tcn_f = max(0, min(100, e_data['tcn'] + f_boost))
                 xgb_f = max(0, min(100, e_data['xgb'] + f_boost))
                 
-                e_score = (lstm_f + tcn_f + xgb_f) / 3
+                e_score = (lstm_f * w_l) + (tcn_f * w_t) + (xgb_f * w_x)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
@@ -235,7 +246,8 @@ class NextLeaderEngine(AIEngine):
                     """, (new_l / 100.0, new_t / 100.0, new_x / 100.0))
                 self.conn.commit()
 
-                print(f">>> [Success] AI Weights Optimized: L({new_l}%), T({new_t}%), X({new_x}%)")                log_msg = f"[가중치최적화] 차주 가중치 확정 - L:{new_l}% T:{new_t}% X:{new_x}% (최근적중률 기반)"
+                print(f">>> [Success] AI Weights Optimized: L({new_l}%), T({new_t}%), X({new_x}%)")
+                log_msg = f"[가중치최적화] 차주 가중치 확정 - L:{new_l}% T:{new_t}% X:{new_x}% (최근적중률 기반)"
                 cursor.execute("INSERT INTO collector_logs (log_level, message, created_at) VALUES ('INFO', %s, NOW())", (log_msg,))
                 # 실제 엔진 가중치는 소스 코드 상의 상수로 관리되거나 별도 테이블이 필요할 수 있으나, 일단 로그로 기록하여 관찰
                 print(f">>> [Auto-Optimization] Result: {log_msg}")
