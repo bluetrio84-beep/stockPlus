@@ -193,7 +193,25 @@ const AdminIntelligenceDashboard = () => {
                                 <div className="flex items-center gap-4"><span className="text-lg font-black text-slate-700 italic group-hover:text-indigo-500 transition-colors">#{i+1}</span><div><div className="text-sm font-bold text-white mb-0.5">{sect.industry_name}</div><div className="flex items-center gap-2"><span className="text-[10px] text-slate-500">현재 등락</span><span className={classNames("text-[10px] font-bold", parseFloat(sect.change_rate) > 0 ? "text-rose-400" : "text-blue-400")}>{sect.change_rate}%</span></div></div></div>
                                 <div className="text-right">
                                     <div className="text-[10px] text-slate-500 uppercase mb-1">AI Score</div>
-                                    <div className="flex items-center gap-2"><div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${sect.ai_score || 50}%` }}></div></div><span className="text-sm font-black text-indigo-400">{parseInt(sect.ai_score || 50)}</span></div></div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${sect.ai_score || 50}%` }}></div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-sm font-black text-indigo-400">{parseInt(sect.ai_score || 50)}</span>
+                                                {sect.score_diff !== 0 && (
+                                                    <span className={classNames("text-[10px] font-black", parseInt(sect.score_diff) > 0 ? "text-rose-500" : "text-blue-500")}>
+                                                        {parseInt(sect.score_diff) > 0 ? '▲' : '▼'}{Math.abs(parseInt(sect.score_diff))}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="text-[10px] text-white font-black opacity-80 mt-[-1px]">
+                                                D-1: {parseInt(sect.ai_score || 50) - (sect.score_diff || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )) : <div className="text-center py-8 text-slate-500 text-xs">뚜렷한 상승 주도 업종이 포착되지 않았습니다.</div>}
                     </div>

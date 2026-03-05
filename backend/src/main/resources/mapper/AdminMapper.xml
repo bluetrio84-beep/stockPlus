@@ -86,7 +86,12 @@
         LEFT JOIN (
           SELECT target_name, prediction_score as prev_score 
           FROM ai_prediction 
-          WHERE id IN (SELECT MAX(id) FROM ai_prediction WHERE created_at &lt;= DATE_SUB(NOW(), INTERVAL 20 HOUR) GROUP BY target_name)
+          WHERE id IN (
+            SELECT MAX(id) 
+            FROM ai_prediction 
+            WHERE created_at &lt; CURDATE() 
+            GROUP BY target_name
+          )
         ) prev_sig ON i.industry_name = prev_sig.target_name 
         ORDER BY i.change_rate DESC
     </select>
