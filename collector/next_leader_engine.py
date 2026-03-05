@@ -224,10 +224,18 @@ class NextLeaderEngine(AIEngine):
                     new_t = max(20, round((hr['tcn_hr'] / total_hr) * 100))
                     new_x = 100 - new_l - new_t
                 else:
-                    new_l, new_t, new_x = 30, 40, 30 # 데이터 부족 시 기본값
-                
-                # 3. DB 반영 (로그 기록 포함)
-                log_msg = f"[가중치최적화] 차주 가중치 확정 - L:{new_l}% T:{new_t}% X:{new_x}% (최근적중률 기반)"
+                    new_l, new_t, new_x = 20, 20, 60 # [v19.6] 데이터 부족 시 황금 비율 기본값 사용
+
+                # 3. [v19.6] DB 반영 (가중치 물리 저장)
+                with self.conn.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE collector_config 
+                        SET weight_lstm = %s, weight_tcn = %s, weight_xgb = %s 
+                        WHERE id = 1
+                    """, (new_l / 100.0, new_t / 100.0, new_x / 100.0))
+                self.conn.commit()
+
+                print(f">>> [Success] AI Weights Optimized: L({new_l}%), T({new_t}%), X({new_x}%)")                log_msg = f"[가중치최적화] 차주 가중치 확정 - L:{new_l}% T:{new_t}% X:{new_x}% (최근적중률 기반)"
                 cursor.execute("INSERT INTO collector_logs (log_level, message, created_at) VALUES ('INFO', %s, NOW())", (log_msg,))
                 # 실제 엔진 가중치는 소스 코드 상의 상수로 관리되거나 별도 테이블이 필요할 수 있으나, 일단 로그로 기록하여 관찰
                 print(f">>> [Auto-Optimization] Result: {log_msg}")

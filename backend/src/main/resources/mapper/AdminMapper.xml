@@ -201,22 +201,21 @@
     </insert>
 
     <select id="getAiModelPerformance" resultType="map">
-        SELECT 'LSTM' as model_name, 
-        COALESCE(ROUND(COUNT(CASE WHEN lstm_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN lstm_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, 
-        30 as weight 
-        FROM ai_next_leaders 
-        UNION ALL 
-        SELECT 'TCN' as model_name, 
-        COALESCE(ROUND(COUNT(CASE WHEN tcn_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN tcn_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, 
-        40 as weight 
-        FROM ai_next_leaders 
-        UNION ALL 
-        SELECT 'XGB' as model_name, 
-        COALESCE(ROUND(COUNT(CASE WHEN xgb_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN xgb_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate, 
-        30 as weight 
+        SELECT 'LSTM' as model_name,
+        COALESCE(ROUND(COUNT(CASE WHEN lstm_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN lstm_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate,
+        (SELECT ROUND(weight_lstm * 100) FROM collector_config WHERE id = 1) as weight
+        FROM ai_next_leaders
+        UNION ALL
+        SELECT 'TCN' as model_name,
+        COALESCE(ROUND(COUNT(CASE WHEN tcn_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN tcn_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate,
+        (SELECT ROUND(weight_tcn * 100) FROM collector_config WHERE id = 1) as weight
+        FROM ai_next_leaders
+        UNION ALL
+        SELECT 'XGB' as model_name,
+        COALESCE(ROUND(COUNT(CASE WHEN xgb_score &gt;= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN xgb_score &gt;= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as hit_rate,
+        (SELECT ROUND(weight_xgb * 100) FROM collector_config WHERE id = 1) as weight
         FROM ai_next_leaders
     </select>
-
     <select id="getPastRecommendations" resultType="map">
         SELECT stock_code, stock_name, total_score, price_at_recom, price_after_3d, hit_result, DATE_FORMAT(captured_at, '%m.%d') as date 
         FROM ai_next_leaders 
