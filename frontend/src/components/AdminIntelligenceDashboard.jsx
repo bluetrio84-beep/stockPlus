@@ -102,6 +102,76 @@ const AdminIntelligenceDashboard = () => {
         </div>
     );
 
+    const renderHitRateHelp = () => (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2"><TrendingUp className="text-emerald-400" size={20} /> AI 예측 적중률 가이드</h3>
+                    <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
+                </div>
+                <div className="bg-slate-950/50 p-4 rounded-2xl border border-emerald-500/20 leading-relaxed">
+                    <p className="text-xs text-slate-300 font-bold mb-3">[산출 공식]</p>
+                    <p className="text-[11px] text-slate-400 mb-4">최근 7일 동안 AI가 <span className="text-rose-400 font-black"> '매수(BUY)'</span> 신호를 발생시킨 주도 업종들 중에서, <span className="text-emerald-400 font-black">현재 실시간 주가가 실제로 상승(+) 중인 비율</span>을 의미합니다.</p>
+                    <p className="text-[11px] text-slate-500 italic">"이 수치가 높을수록 AI의 최근 트렌드 예측이 현재 시장의 수급 흐름과 정확히 일치하고 있음을 나타냅니다."</p>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderGaugeHelp = () => (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2"><Brain className="text-indigo-400" size={20} /> 인텔리전스 게이지 가이드</h3>
+                    <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
+                </div>
+                <div className="space-y-4">
+                    <div className="bg-slate-950/50 p-4 rounded-2xl border border-indigo-500/20 leading-relaxed">
+                        <p className="text-[11px] text-slate-400">시장 전체 업종의 AI 점수를 산술 평균하여 산출한 <span className="text-white font-bold">통합 시장 심리 지수</span>입니다.</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                            <span className="text-[10px] font-black text-rose-400 block mb-1">탐욕 (Greed)</span>
+                            <p className="text-[9px] text-slate-500 font-bold">평균 65% 이상. 상승세가 강력하며 전방위적 수급 유입 발생.</p>
+                        </div>
+                        <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl">
+                            <span className="text-[10px] font-black text-indigo-400 block mb-1">중립 (Neutral)</span>
+                            <p className="text-[9px] text-slate-500 font-bold">40% ~ 60% 사이. 매수와 매도의 팽팽한 균형 및 방향성 탐색 구간.</p>
+                        </div>
+                        <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl">
+                            <span className="text-[10px] font-black text-blue-400 block mb-1">공포 (Fear)</span>
+                            <p className="text-[9px] text-slate-500 font-bold">평균 35% 이하. 하락 압력이 우세하며 보수적 접근 필요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderRotationHelp = () => (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setHelpModal(null)}></div>
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2"><Target className="text-yellow-400" size={20} /> 순환매 예측 가이드</h3>
+                    <button onClick={() => setHelpModal(null)} className="p-1.5 bg-slate-800 rounded-full text-slate-400"><X size={18} /></button>
+                </div>
+                <div className="space-y-4">
+                    <div className="bg-slate-950/50 p-4 rounded-2xl border border-yellow-500/20 leading-relaxed">
+                        <p className="text-xs text-slate-300 font-bold mb-3">[산출 로직]</p>
+                        <p className="text-[11px] text-slate-400 mb-2">기본 50점 + (업종 평균 등락률 × 5) + (거래대금 가중치, 최대 25점)</p>
+                        <p className="text-[11px] text-slate-500 italic">"가격 상승과 돈의 흐름(거래대금)이 동시에 터지는 섹터를 실시간 포착합니다."</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                        <p className="text-[11px] text-slate-400 leading-relaxed">점수가 <span className="text-yellow-400 font-bold">55점 이상</span>인 업종을 순환매 주도 섹터로 분류하며, 상위 5개 업종을 리스트에 노출합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     const renderAiTracker = () => (
         <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-4 shadow-lg shadow-indigo-900/10 flex flex-col gap-3 h-full min-h-[300px]">
             <div className="flex justify-between items-center shrink-0">
@@ -157,8 +227,11 @@ const AdminIntelligenceDashboard = () => {
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20"><Activity className="text-emerald-400" size={24} /></div>
                         <div>
-                            <h2 className="text-xs font-black text-slate-500 uppercase tracking-widest">AI Prediction Hit Rate</h2>
-                            <p className="text-[10px] text-slate-600 font-medium">(최근 7일 예측 성적)</p>
+                            <h2 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                AI Prediction Hit Rate
+                                <button onClick={() => setHelpModal('hitrate')} className="text-slate-600 hover:text-emerald-400 transition-colors"><HelpCircle size={12} /></button>
+                            </h2>
+                            <p className="text-[10px] text-white/80 font-medium">(최근 7일 예측 성적)</p>
                         </div>
                     </div>
                     <div className="flex flex-col items-end">
@@ -170,7 +243,10 @@ const AdminIntelligenceDashboard = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col items-center shadow-2xl relative overflow-hidden shrink-0">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-rose-500 opacity-50"></div>
                     <div className="flex items-center gap-2 mb-8">
-                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2"><Brain size={14} className="text-indigo-500" /> Market Intelligence Gauge</h2>
+                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                            <Brain size={14} className="text-indigo-500" /> Market Intelligence Gauge
+                            <button onClick={() => setHelpModal('gauge')} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
+                        </h2>
                     </div>
                     <div className="relative w-64 h-32 overflow-hidden">
                         <div className="absolute inset-0 border-[18px] border-slate-800 rounded-t-full"></div>
@@ -183,9 +259,12 @@ const AdminIntelligenceDashboard = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-800/50">
                         <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-black text-white flex items-center gap-2"><Target size={18} className="text-yellow-400" /> 순환매 예측</h2>
+                            <h2 className="text-sm font-black text-white flex items-center gap-2">
+                                <Target size={18} className="text-yellow-400" /> 순환매 예측
+                                <button onClick={() => setHelpModal('rotation')} className="text-slate-600 hover:text-yellow-400 transition-colors"><HelpCircle size={12} /></button>
+                            </h2>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono">LSTM v1 Model</span>
+                        <span className="text-[10px] text-white font-black opacity-60 font-mono">LSTM v1 Model</span>
                     </div>
                     <div className="space-y-3">
                         {rotationList.length > 0 ? rotationList.map((sect, i) => (
@@ -292,8 +371,9 @@ const AdminIntelligenceDashboard = () => {
                 </div>
             )}
             {helpModal === 'supply' && renderSupplyHelp()}
-            {helpModal === 'rotation' && renderRotationHelp()}
+            {helpModal === 'hitrate' && renderHitRateHelp()}
             {helpModal === 'gauge' && renderGaugeHelp()}
+            {helpModal === 'rotation' && renderRotationHelp()}
         </div>
     );
 };
