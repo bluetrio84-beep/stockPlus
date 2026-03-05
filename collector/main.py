@@ -399,16 +399,17 @@ def main():
                 except Exception as e:
                     mega.log_to_db("ERROR", f"[분석실패] {str(e)}")
 
-            # 5. [08:00] 오늘의 유망주 랭킹 리스트 스냅샷
-            if now_hour == 8 and 0 <= now_min <= 5:
+            # 5. [07:20] 오늘의 유망주 랭킹 리스트 스냅샷 (v19.4 시간 앞당김)
+            if now_hour == 7 and 20 <= now_min <= 25:
                 if last_next_leader_date == now_str:
-                    mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (08시)")
+                    mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (07시 20분)")
                     subprocess.run(["python3", "snapshot_engine.py", "--mode", "ranking"])
 
-            # 6. [08:15] 데일리 매거진 선제 생성
-            if now_hour == 8 and 15 <= now_min <= 20:
+            # 6. [07:30] 데일리 매거진 선제 생성 (v19.4 08:15에서 이동)
+            # 8시 데이터 초기화 전, 어제의 종가 데이터를 Gemini가 분석하도록 시간을 앞당김.
+            if now_hour == 7 and 30 <= now_min <= 35:
                 if last_next_leader_date == now_str:
-                    mega.log_to_db("INFO", "[리포트] 데일리 매거진 선제적 생성 트리거 (08시 15분)")
+                    mega.log_to_db("INFO", "[리포트] 데일리 매거진 선제적 생성 트리거 (07시 30분)")
                     subprocess.run(["python3", "snapshot_engine.py", "--mode", "trigger_report"])
 
             # 7. [20:30] 시총 갱신
