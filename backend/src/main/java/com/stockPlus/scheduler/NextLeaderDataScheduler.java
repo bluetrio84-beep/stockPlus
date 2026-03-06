@@ -25,7 +25,7 @@ public class NextLeaderDataScheduler {
      * 9시: 10, 20, 40분 (장 초반 집중 수집)
      * 10시-15시: 10, 40분 (정규 수집)
      */
-    @Scheduled(cron = "0 2,20,40 9 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 3,20,40 9 * * MON-FRI", zone = "Asia/Seoul")
     public void captureOpeningSnapshots() {
         captureIntradaySnapshots();
     }
@@ -89,7 +89,7 @@ public class NextLeaderDataScheduler {
             currentMap.put("volume", vol);
             
             LocalDateTime now = LocalDateTime.now();
-            boolean isStartCycle = (now.getHour() == 9 && now.getMinute() >= 2 && now.getMinute() < 10);
+            boolean isStartCycle = (now.getHour() == 9 && now.getMinute() >= 3 && now.getMinute() < 10);
 
             // OBV 계산 (이전 OBV 및 누적 거래량 증가분 기준)
             long prevObv = 0;
