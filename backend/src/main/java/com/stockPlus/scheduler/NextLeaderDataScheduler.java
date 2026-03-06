@@ -21,9 +21,20 @@ public class NextLeaderDataScheduler {
     private final com.stockPlus.mapper.AdminMapper adminMapper; // [v17.8] 추가
 
     /**
-     * 평일 09:10 ~ 15:40 사이 매 30분마다 수집 (10분, 40분 단위)
+     * [v21.3] 스케줄링 정밀화
+     * 9시: 10, 20, 40분 (장 초반 집중 수집)
+     * 10시-15시: 10, 40분 (정규 수집)
      */
-    @Scheduled(cron = "0 10,40 9-15 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 2,20,40 9 * * MON-FRI", zone = "Asia/Seoul")
+    public void captureOpeningSnapshots() {
+        captureIntradaySnapshots();
+    }
+
+    @Scheduled(cron = "0 10,40 10-15 * * MON-FRI", zone = "Asia/Seoul")
+    public void captureRegularSnapshots() {
+        captureIntradaySnapshots();
+    }
+
     public void captureIntradaySnapshots() {
         if (!isMarketOpen()) return;
         
@@ -77,6 +88,9 @@ public class NextLeaderDataScheduler {
             currentMap.put("price", price);
             currentMap.put("volume", vol);
             
+            LocalDateTime now = LocalDateTime.now();
+            boolean isStartCycle = (now.getHour() == 9 && now.getMinute() >= 2 && now.getMinute() < 10);
+
             // OBV 계산 (이전 OBV 및 누적 거래량 증가분 기준)
             long prevObv = 0;
             long prevVol = 0;
@@ -88,12 +102,17 @@ public class NextLeaderDataScheduler {
                 prevPrice = ((Number) lastRow.get("price")).doubleValue();
             }
             
-            // 당일 누적 거래량이므로 증가분(Delta)만 계산
-            long deltaVol = (vol >= prevVol) ? (vol - prevVol) : vol; 
-            
-            long currentObv = prevObv;
-            if (price > prevPrice) currentObv += deltaVol;
-            else if (price < prevPrice) currentObv -= deltaVol;
+            // [v21.3] 당일 누적 거래량 정밀 계산 및 09:10 제로셋
+            long currentObv;
+            if (isStartCycle || vol < prevVol) {
+                // 장 시작 시점(09:10)에는 무조건 0으로 셋팅하여 당일 기준점 확보
+                currentObv = 0;
+            } else {
+                long deltaVol = vol - prevVol;
+                currentObv = prevObv;
+                if (price > prevPrice) currentObv += deltaVol;
+                else if (price < prevPrice) currentObv -= deltaVol;
+            }
             
             history.add(currentMap);
             
