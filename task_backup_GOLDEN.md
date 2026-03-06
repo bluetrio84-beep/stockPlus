@@ -1,5 +1,10 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v21.1 OBV Supply Tracking System (2026-03-06 완료)
+*   **OBV(On-Balance Volume) 수급 매집 지표 도입**:
+    - **DB 아키텍처 확장**: `stock_intraday_history` 테이블에 누적 거래량 지표인 `obv` (BIGINT) 컬럼을 신설하여 수급 데이터 자산화 시작.
+    - **백엔드 연동 완결**: `NextLeaderDataScheduler.java` 내에 실시간 가격 변동과 거래량을 결합한 OBV 산출 로직을 이식하여 데이터 무결성 확보.
+    - **세력 매집 포착 준비**: 단순 가격 등락을 넘어 '거래량이 동반된 진짜 매집' 종목을 선별하기 위한 핵심 기술적 지표 인프라 구축 완료.
 ## 🛠️ v21.0 Roadmap [고민 중]: 자체 리포트 엔진 전환 (Gemini 독립)
 *   **추진 배경**: 외부 API 의존성(401 에러, 응답 지연) 제거 및 리포트 포맷의 완벽한 통제권 확보.
 *   **고민 포인트**: 
