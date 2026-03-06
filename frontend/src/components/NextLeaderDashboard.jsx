@@ -226,7 +226,7 @@ const NextLeaderDashboard = () => {
                                         </svg>
                                         <span className={classNames("absolute text-2xl lg:text-4xl font-black font-mono tracking-tighter", textColor)}>{m.hit_rate}%</span>
                                     </div>
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hit Rate</span>
+                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Hit Rate</span>
                                 </div>
                                 <div className="h-12 w-px bg-slate-800"></div>
                                 <div className="relative flex items-center justify-center flex-col gap-2">
@@ -237,15 +237,15 @@ const NextLeaderDashboard = () => {
                                         </svg>
                                         <span className="absolute text-2xl lg:text-4xl font-black font-mono text-white tracking-tighter">{m.weight}%</span>
                                     </div>
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Weight</span>
+                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Weight</span>
                                 </div>
                             </div>
 
                             <div className="w-full pt-4 border-t border-slate-800/50 flex flex-col items-center gap-1">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                                <p className="text-[10px] text-white font-bold uppercase tracking-widest text-center">
                                     {m.hit_rate >= 70 ? "High Reliability" : (m.hit_rate >= 50 ? "Stable Performance" : "Calibration Required")}
                                 </p>
-                                <span className="text-[8px] text-slate-600 font-mono italic text-center">Real-time Influence Monitor</span>
+                                <span className="text-[10px] text-white font-mono italic text-center">Real-time Influence Monitor</span>
                             </div>
                         </div>
                     );
@@ -259,9 +259,9 @@ const NextLeaderDashboard = () => {
                     </div>
                     <div>
                         <h4 className="text-indigo-400 font-black text-xs lg:text-sm uppercase tracking-widest mb-2 flex items-center gap-2">
-                            AI Model Tuning Strategy <span className="text-[10px] text-slate-500 font-normal normal-case italic">(Sunday 21:00 Updated)</span>
+                            AI Model Tuning Strategy <span className="text-[11px] text-white font-normal normal-case italic">(Sunday 21:00 Updated)</span>
                         </h4>
-                        <p className="text-white text-base lg:text-lg leading-relaxed font-black">
+                        <p className="text-slate-200 text-sm lg:text-base leading-relaxed font-black">
                             {reviewData.modelPerformance[0].tuning_reason}
                         </p>
                     </div>
