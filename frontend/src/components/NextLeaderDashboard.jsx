@@ -10,6 +10,7 @@ const NextLeaderDashboard = () => {
     const [activeTab, setActiveTab] = useState('ranking'); 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); 
     const [isFeedbackHelpOpen, setIsFeedbackHelpOpen] = useState(false); 
+    const [isReasonHelpOpen, setIsReasonHelpOpen] = useState(false); 
 
     const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [] });
 
@@ -117,7 +118,12 @@ const NextLeaderDashboard = () => {
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[150px] bg-slate-900">Reason</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[150px] bg-slate-900">
+                                <div className="flex items-center gap-1">
+                                    Reason
+                                    <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
+                                </div>
+                            </th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900 min-w-[250px]">
                                 <div className="flex items-center justify-center gap-1.5">
                                     AI Feedback (Review)
@@ -150,7 +156,30 @@ const NextLeaderDashboard = () => {
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className="flex flex-wrap gap-1">{item.reason.split(',').map((r, i) => (<span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[10px] lg:text-[11px] font-bold rounded border border-slate-700/50">{r.trim()}</span>))}</div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
+                                        <div className="flex flex-wrap gap-1">
+                                            {item.reason.split(',').map((r, i) => {
+                                                const txt = r.trim();
+                                                const isHot = txt.includes('★') || txt.includes('오판');
+                                                const isGood = txt.includes('고수익') || txt.includes('고성장');
+                                                const isSupply = txt.includes('수급포착');
+                                                const isNoise = txt.includes('노이즈');
+                                                
+                                                return (
+                                                    <span key={i} className={classNames(
+                                                        "px-2 py-0.5 text-[10px] lg:text-[11px] font-black rounded border transition-all uppercase tracking-tighter",
+                                                        isHot ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
+                                                        isGood ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                                        isSupply ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" :
+                                                        isNoise ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                                                        "bg-slate-800 text-slate-300 border-slate-700/50"
+                                                    )}>
+                                                        {txt}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                         <div className="flex items-center justify-center gap-1">
                                             <button onClick={() => handleFeedback(item.stock_code, '성공')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '성공' ? "bg-emerald-600 text-white border-emerald-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-emerald-400")}><ThumbsUp size={10} /> 성공</button>
@@ -278,6 +307,86 @@ const NextLeaderDashboard = () => {
         </div>
     );
 
+    const renderReasonHelp = () => (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsReasonHelpOpen(false)}></div>
+            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black text-white flex items-center gap-2"><Brain className="text-indigo-400" size={20} /> AI 분석 키워드 가이드</h3>
+                    <button onClick={() => setIsReasonHelpOpen(false)} className="p-1.5 bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"><X size={18} /></button>
+                </div>
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar-thin pr-2">
+                    <section>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">📊 기술적 분석 (퀀트)</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">RSI바닥탈출</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35 이하 침체권에서 반등 신호 포착</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">과매도진입</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 30 이하 역사적 저점 도달</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">이평선수렴</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">5일/20일선 간격 2% 이내 밀착 (에너지 응축)</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">골든크로스</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">5일선이 20일선을 상향 돌파 (추세 전환)</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">거래량폭발</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">직전 대비 거래량 2.5배 이상 급증</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">💰 실적 분석 (펀더멘털)</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
+                                <span className="text-xs font-bold text-emerald-400">고수익</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">영업이익률 10% 초과 우량 실적 기업</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
+                                <span className="text-xs font-bold text-emerald-400">고성장</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">ROE 15% 초과 초고속 성장 기업</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">🧠 인적 직관 (피드백)</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-rose-500/10 flex justify-between items-center">
+                                <span className="text-xs font-bold text-rose-400">★직관강화</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">사용자 피드백(성공/매집) 반영 가점</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-400">★시황반영</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">개별 호재보다 시장 전체 흐름 반영</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-blue-500/10 flex justify-between items-center">
+                                <span className="text-xs font-bold text-blue-400">⚠노이즈제외</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">가짜 수급 및 허수 물량 필터링 감점</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-rose-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-rose-600">✖오판주의</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">사용자 피드백(실패)에 따른 강력 경고</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">🌊 수급 에너지 (OBV)</h4>
+                        <div className="bg-indigo-500/10 p-3 rounded-xl border border-indigo-500/20 flex justify-between items-center">
+                            <span className="text-xs font-bold text-indigo-400">수급포착</span>
+                            <span className="text-[10px] text-slate-200 text-right font-medium">OBV 지표 기반 세력의 매집 에너지 포착</span>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-27 lg:pb-5">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1">
@@ -360,6 +469,7 @@ const NextLeaderDashboard = () => {
                     </div>
                 </div>
             )}
+            {isReasonHelpOpen && renderReasonHelp()}
         </div>
     );
 };
