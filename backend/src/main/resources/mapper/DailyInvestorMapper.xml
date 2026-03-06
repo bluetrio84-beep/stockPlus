@@ -24,7 +24,7 @@
         FROM ai_next_leaders 
         WHERE hit_result = 'PENDING' 
         AND price_at_recom > 0
-        AND DATE(captured_at) &lt;= (
+        AND DATE(captured_at) = (
             SELECT st_date FROM (
                 SELECT DISTINCT bsop_date as st_date 
                 FROM daily_stock_investor 

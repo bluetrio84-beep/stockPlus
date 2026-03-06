@@ -127,9 +127,9 @@ public class DailyInvestorScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 50 20 * * MON-FRI", zone = "Asia/Seoul")
     public void reviewAiPerformance() {
-        log.error(">>> [Review] Starting AI Performance Post-Verification (08:00)...");
+        log.error(">>> [Review] Starting AI Performance Post-Verification (20:50)...");
         List<Map<String, Object>> pendingList = dailyInvestorMapper.getPendingReviewLeaders();
         if (pendingList == null || pendingList.isEmpty()) {
             log.info(">>> [Review] No pending AI recommendations to verify.");
