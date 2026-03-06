@@ -27,10 +27,10 @@ const AdminTheDailyMagazine = () => {
     const parseBriefing = (raw) => {
         const parts = { market: "", stocks: ["-", "-", "-"] };
         try {
-            const marketMatch = raw.match(/\[MARKET_BRIEF\](.*?)(\[STOCK_1\]|\[STOCK_2\]|\[STOCK_3\]|$)/s);
+            const marketMatch = raw.match(/\[MARKET_BRIEF\](.*?)(\[STOCK_1[^\]]*\]|\[STOCK_2[^\]]*\]|\[STOCK_3[^\]]*\]|$)/s);
             if (marketMatch) parts.market = marketMatch[1].trim();
             for (let i = 1; i <= 3; i++) {
-                const stockMatch = raw.match(new RegExp(`\\[STOCK_${i}\\](.*?)(?=\\[STOCK_${i+1}\\]|$)`, "s"));
+                const stockMatch = raw.match(new RegExp(`\\[STOCK_${i}[^\\]]*\\](.*?)(?=\\[STOCK_${i+1}[^\\]]*\\]|$)`, "s"));
                 if (stockMatch) parts.stocks[i-1] = stockMatch[1].trim();
             }
         } catch (e) {}

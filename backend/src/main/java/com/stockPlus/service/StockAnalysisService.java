@@ -55,6 +55,7 @@ public class StockAnalysisService {
         prompt.append("3. **구조적 브리핑**: \n");
         prompt.append("   - 'MARKET_BRIEF': 전일 시장의 전반적인 하락/상승 원인과 분위기 요약 (200자 내외)\n");
         prompt.append("   - 'STOCK_1, 2, 3': 이 폭락/폭등장 속에서도 왜 이 종목들이 AI에게 선택받았는지 기술적/재무적 근거로 코멘트 (각 100자 내외)\n");
+        prompt.append("   - **주의**: 대괄호 안에는 반드시 'STOCK_1', 'STOCK_2', 'STOCK_3'만 적으세요. 종목명을 대괄호 안에 넣지 마세요. (예: [STOCK_1: 효성중공업] (X) -> [STOCK_1] 효성중공업 (O))\n");
         prompt.append("형식: [MARKET_BRIEF]... [STOCK_1]... [STOCK_2]... [STOCK_3]...");
         
         try {
