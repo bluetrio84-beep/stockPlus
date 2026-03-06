@@ -203,30 +203,53 @@ const NextLeaderDashboard = () => {
     const renderReviewTab = () => (
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 px-1">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {reviewData.modelPerformance.map((m, i) => (
-                    <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
-                        <div className={classNames("absolute top-0 left-0 w-1 h-full", 
-                            m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
-                        )}></div>
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h4 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">{m.model_name} Model</h4>
-                                <p className={classNames("text-xl font-black", 
-                                    m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400')
-                                )}>{m.hit_rate}% <span className="text-[10px] text-slate-600 ml-1">HIT</span></p>
+                {reviewData.modelPerformance.map((m, i) => {
+                    const color = m.model_name === 'LSTM' ? '#6366f1' : (m.model_name === 'TCN' ? '#f43f5e' : '#06b6d4');
+                    const textColor = m.model_name === 'LSTM' ? 'text-indigo-400' : (m.model_name === 'TCN' ? 'text-rose-400' : 'text-cyan-400');
+                    const radius = 32;
+                    const circumference = 2 * Math.PI * radius;
+
+                    return (
+                        <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col items-center gap-6 group hover:border-indigo-500/30 transition-all">
+                            <div className="flex justify-center w-full items-center">
+                                <h4 className="text-white font-black text-sm lg:text-base uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <Brain size={18} style={{ color }} /> {m.model_name} Engine
+                                </h4>
                             </div>
-                            <div className="text-right">
-                                <span className="text-[9px] text-slate-500 font-bold block mb-1 uppercase">Weight</span>
-                                <span className="text-sm font-black text-white">{m.weight}%</span>
+                            
+                            <div className="flex items-center justify-around w-full gap-4">
+                                <div className="relative flex items-center justify-center flex-col gap-2">
+                                    <div className="relative flex items-center justify-center">
+                                        <svg className="w-40 h-40 lg:w-48 lg:h-48 transform -rotate-90">
+                                            <circle cx="50%" cy="50%" r="70" stroke="currentColor" strokeWidth="14" fill="transparent" className="text-slate-800" />
+                                            <circle cx="50%" cy="50%" r="70" stroke={color} strokeWidth="14" fill="transparent" strokeDasharray={2 * Math.PI * 70} strokeDashoffset={(2 * Math.PI * 70) - (m.hit_rate / 100) * (2 * Math.PI * 70)} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                                        </svg>
+                                        <span className={classNames("absolute text-2xl lg:text-4xl font-black font-mono tracking-tighter", textColor)}>{m.hit_rate}%</span>
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Hit Rate</span>
+                                </div>
+                                <div className="h-12 w-px bg-slate-800"></div>
+                                <div className="relative flex items-center justify-center flex-col gap-2">
+                                    <div className="relative flex items-center justify-center">
+                                        <svg className="w-40 h-40 lg:w-48 lg:h-48 transform -rotate-90">
+                                            <circle cx="50%" cy="50%" r="70" stroke="currentColor" strokeWidth="14" fill="transparent" className="text-slate-800" />
+                                            <circle cx="50%" cy="50%" r="70" stroke={color} strokeWidth="14" fill="transparent" strokeDasharray={2 * Math.PI * 70} strokeDashoffset={(2 * Math.PI * 70) - (m.weight / 100) * (2 * Math.PI * 70)} strokeLinecap="round" className="transition-all duration-1000 ease-out" opacity="0.6" />
+                                        </svg>
+                                        <span className="absolute text-2xl lg:text-4xl font-black font-mono text-white tracking-tighter">{m.weight}%</span>
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Weight</span>
+                                </div>
+                            </div>
+
+                            <div className="w-full pt-4 border-t border-slate-800/50 flex flex-col items-center gap-1">
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center">
+                                    {m.hit_rate >= 70 ? "High Reliability" : (m.hit_rate >= 50 ? "Stable Performance" : "Calibration Required")}
+                                </p>
+                                <span className="text-[8px] text-slate-600 font-mono italic text-center">Real-time Influence Monitor</span>
                             </div>
                         </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div className={classNames("h-full transition-all duration-1000", 
-                                m.model_name === 'LSTM' ? 'bg-indigo-500' : (m.model_name === 'TCN' ? 'bg-rose-500' : 'bg-cyan-500')
-                            )} style={{ width: `${m.hit_rate}%` }}></div>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
