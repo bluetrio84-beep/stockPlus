@@ -102,17 +102,14 @@ public class NextLeaderDataScheduler {
                 prevPrice = ((Number) lastRow.get("price")).doubleValue();
             }
             
-            // [v21.3] 당일 누적 거래량 정밀 계산 및 09:10 제로셋
-            long currentObv;
-            if (isStartCycle || vol < prevVol) {
-                // 장 시작 시점(09:10)에는 무조건 0으로 셋팅하여 당일 기준점 확보
-                currentObv = 0;
-            } else {
-                long deltaVol = vol - prevVol;
-                currentObv = prevObv;
-                if (price > prevPrice) currentObv += deltaVol;
-                else if (price < prevPrice) currentObv -= deltaVol;
-            }
+            // [v21.8] OBV 무한 누적 로직 (데일리 리셋 제거)
+            // 장 시작 시(vol < prevVol)에는 증가분을 현재 거래량 전체로 잡고, 기준가는 어제 종가(prevPrice)를 유지하여 연속성 확보
+            long deltaVol = (vol < prevVol) ? vol : (vol - prevVol);
+
+            long currentObv = prevObv;
+            if (price > prevPrice) currentObv += deltaVol;
+            else if (price < prevPrice) currentObv -= deltaVol;
+            // 보합(price == prevPrice)일 경우 이전 OBV 유지 (정석 공식)
             
             history.add(currentMap);
             
