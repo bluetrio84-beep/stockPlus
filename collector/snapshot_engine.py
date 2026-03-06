@@ -155,13 +155,13 @@ class SnapshotEngine:
             finally: browser.close()
 
     def trigger_magazine_generation(self):
-        """[v18.2] 백엔드에 매거진 선제적 생성 요청 (08:15 최적화)"""
+        """[v18.2] 백엔드에 매거진 선제적 생성 요청 (07:30 최적화)"""
         self.log_to_db("데일리 매거진 선제적 생성 트리거 시작")
         try:
             # 백엔드 API 호출하여 캐시 생성 유도
             res = requests.get(f"{BACKEND_API_URL.replace('/api/dashboard', '/api/admin')}/magazine/data", timeout=120)
             if res.ok:
-                self.log_to_db("데일리 매거진 생성 및 캐싱 완료 (08:15)")
+                self.log_to_db("데일리 매거진 생성 및 캐싱 완료 (07:30)")
             else:
                 self.log_to_db(f"매거진 생성 트리거 실패: {res.status_code}")
         except Exception as e:
