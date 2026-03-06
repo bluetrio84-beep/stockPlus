@@ -72,18 +72,42 @@ public class NextLeaderDataScheduler {
             long vol = Long.parseLong(dto.getVolume().replace(",", ""));
             long mc = Long.parseLong(dto.getMarketCap().replace(",", ""));
 
-            List<Double> history = getHistory(code, 65);
-            history.add(price);
-            Map<String, Object> ind = calculateIndicators(history);
+            List<Map<String, Object>> history = getFullHistory(code, 65);
+            Map<String, Object> currentMap = new HashMap<>();
+            currentMap.put("price", price);
+            currentMap.put("volume", vol);
             
-            String sql = "INSERT INTO stock_intraday_history (stock_code, price, volume, market_cap, rsi, ma5, ma20, ma60, bb_upper, bb_lower, macd, env_upper, env_lower, is_golden_cross, captured_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
-            jdbcTemplate.update(sql, code, price, vol, mc, ind.get("rsi"), ind.get("ma5"), ind.get("ma20"), ind.get("ma60"), ind.get("bb_up"), ind.get("bb_low"), ind.get("macd"), ind.get("env_up"), ind.get("env_low"), ind.get("is_gc"));
+            // OBV 계산 (이전 OBV 및 누적 거래량 증가분 기준)
+            long prevObv = 0;
+            long prevVol = 0;
+            double prevPrice = price;
+            if (!history.isEmpty()) {
+                Map<String, Object> lastRow = history.get(history.size() - 1);
+                prevObv = (lastRow.get("obv") != null) ? ((Number) lastRow.get("obv")).longValue() : 0L;
+                prevVol = (lastRow.get("volume") != null) ? ((Number) lastRow.get("volume")).longValue() : 0L;
+                prevPrice = ((Number) lastRow.get("price")).doubleValue();
+            }
+            
+            // 당일 누적 거래량이므로 증가분(Delta)만 계산
+            long deltaVol = (vol >= prevVol) ? (vol - prevVol) : vol; 
+            
+            long currentObv = prevObv;
+            if (price > prevPrice) currentObv += deltaVol;
+            else if (price < prevPrice) currentObv -= deltaVol;
+            
+            history.add(currentMap);
+            
+            List<Double> priceHistory = history.stream().map(m -> ((Number) m.get("price")).doubleValue()).toList();
+            Map<String, Object> ind = calculateIndicators(priceHistory);
+            
+            String sql = "INSERT INTO stock_intraday_history (stock_code, price, volume, market_cap, rsi, ma5, ma20, ma60, bb_upper, bb_lower, macd, env_upper, env_lower, is_golden_cross, obv, captured_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
+            jdbcTemplate.update(sql, code, price, vol, mc, ind.get("rsi"), ind.get("ma5"), ind.get("ma20"), ind.get("ma60"), ind.get("bb_up"), ind.get("bb_low"), ind.get("macd"), ind.get("env_up"), ind.get("env_low"), ind.get("is_gc"), currentObv);
         } catch (Exception e) {}
     }
 
-    private List<Double> getHistory(String code, int limit) {
-        String sql = "SELECT price FROM stock_intraday_history WHERE stock_code = ? ORDER BY captured_at DESC LIMIT ?";
-        List<Double> history = jdbcTemplate.queryForList(sql, Double.class, code, limit);
+    private List<Map<String, Object>> getFullHistory(String code, int limit) {
+        String sql = "SELECT price, volume, obv FROM stock_intraday_history WHERE stock_code = ? ORDER BY captured_at DESC LIMIT ?";
+        List<Map<String, Object>> history = jdbcTemplate.queryForList(sql, code, limit);
         Collections.reverse(history);
         return history;
     }
