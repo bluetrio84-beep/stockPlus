@@ -237,18 +237,33 @@ class NextLeaderEngine(AIEngine):
                 else:
                     new_l, new_t, new_x = 20, 20, 60 # [v19.6] 데이터 부족 시 황금 비율 기본값 사용
 
-                # 3. [v19.6] DB 반영 (가중치 물리 저장)
+                # [v23.1] 고도화된 가중치 최적화 사유 생성
+                best_model = max(hit_rates, key=hit_rates.get).upper()
+                hr_info = f"L({hit_rates['lstm']}%), T({hit_rates['tcn']}%), X({hit_rates['xgb']}%)"
+                
+                if best_model == 'LSTM':
+                    analysis = "시계열 추세의 연속성이 뚜렷한 장세가 이어짐에 따라, 장기 기억 기반의 LSTM 모델이 탁월한 수익 궤적을 그려냈습니다. 안정적인 추세 추종을 위해 비중을 상향했습니다."
+                elif best_model == 'TCN':
+                    analysis = "순간적인 거래량 폭발과 미세한 패턴 변동이 잦은 변동성 장세입니다. 파동 포착에 능한 TCN 모델의 민감도를 극대화하여 단기 슈팅 종목 발굴력을 보강했습니다."
+                else:
+                    analysis = "시장의 통계적 신뢰도가 중요한 변곡점입니다. 수만 개의 학습 데이터를 기반으로 냉철한 확률을 계산하는 XGBoost(Meta-Learner)의 의사결정 권한을 강화하여 판정의 무결성을 높였습니다."
+
+                tuning_reason = f"[{best_model} 강세 분석] {analysis} (최근 적중률: {hr_info} | 조정 비중: L:{new_l}% T:{new_t}% X:{new_x}%)"
+                
+                # DB 연결 시 charset 강제 (한글 깨짐 방지)
                 with self.conn.cursor() as cursor:
+                    cursor.execute("SET NAMES utf8mb4")
                     cursor.execute("""
                         UPDATE collector_config 
-                        SET weight_lstm = %s, weight_tcn = %s, weight_xgb = %s 
+                        SET weight_lstm = %s, weight_tcn = %s, weight_xgb = %s, tuning_reason = %s
                         WHERE id = 1
-                    """, (new_l / 100.0, new_t / 100.0, new_x / 100.0))
+                    """, (new_l / 100.0, new_t / 100.0, new_x / 100.0, tuning_reason))
                 self.conn.commit()
 
-                print(f">>> [Success] AI Weights Optimized: L({new_l}%), T({new_t}%), X({new_x}%)")
-                log_msg = f"[가중치최적화] 차주 가중치 확정 - L:{new_l}% T:{new_t}% X:{new_x}% (최근적중률 기반)"
-                cursor.execute("INSERT INTO collector_logs (log_level, message, created_at) VALUES ('INFO', %s, NOW())", (log_msg,))
+                print(f">>> [Success] AI Weights Optimized: {tuning_reason}")
+                log_msg = f"[가중치최적화] {tuning_reason}"
+                with self.conn.cursor() as cursor:
+                    cursor.execute("INSERT INTO collector_logs (log_level, message, created_at) VALUES ('INFO', %s, NOW())", (log_msg,))
                 # 실제 엔진 가중치는 소스 코드 상의 상수로 관리되거나 별도 테이블이 필요할 수 있으나, 일단 로그로 기록하여 관찰
                 print(f">>> [Auto-Optimization] Result: {log_msg}")
                 

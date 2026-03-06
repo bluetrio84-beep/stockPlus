@@ -252,6 +252,22 @@ const NextLeaderDashboard = () => {
                 })}
             </div>
 
+            {reviewData.modelPerformance?.length > 0 && reviewData.modelPerformance[0].tuning_reason && (
+                <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl lg:rounded-3xl p-6 lg:p-8 flex items-start gap-5 shadow-inner animate-in fade-in slide-in-from-top-4 duration-700">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                        <Sparkles className="text-indigo-400" size={28} />
+                    </div>
+                    <div>
+                        <h4 className="text-indigo-400 font-black text-xs lg:text-sm uppercase tracking-widest mb-2 flex items-center gap-2">
+                            AI Model Tuning Strategy <span className="text-[10px] text-slate-500 font-normal normal-case italic">(Sunday 21:00 Updated)</span>
+                        </h4>
+                        <p className="text-white text-base lg:text-lg leading-relaxed font-black">
+                            {reviewData.modelPerformance[0].tuning_reason}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                     <div className="flex items-center gap-3">
