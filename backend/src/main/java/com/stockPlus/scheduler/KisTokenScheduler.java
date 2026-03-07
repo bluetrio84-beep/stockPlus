@@ -22,10 +22,10 @@ public class KisTokenScheduler {
         kisAuthService.refreshAccessToken();
     }
 
-    // 매주 평일(월-금) 오전 11시에 실행
-    @Scheduled(cron = "0 0 11 * * MON-FRI")
+    // 매일 오전 8시와 오후 8시에 실행 (안정성 강화)
+    @Scheduled(cron = "0 0 8,20 * * *", zone = "Asia/Seoul")
     public void scheduleTokenRefresh() {
-        log.info("[Scheduler] 토큰 정기 갱신 작업 시작 (평일 11:00)");
+        log.info("[Scheduler] 토큰 정기 갱신 작업 시작 (08:00 / 20:00)");
         kisAuthService.refreshAccessToken();
     }
 }
