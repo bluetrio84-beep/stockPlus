@@ -328,37 +328,128 @@ const MyPortfolioDashboard = () => {
                                 <p className="text-xl lg:text-2xl font-black leading-snug tracking-tight">{selectedInsight.scenario}</p>
                                 <p className="text-slate-300 text-base lg:text-lg font-bold leading-relaxed italic border-l-4 border-indigo-500 pl-6 py-2 mt-6">"{selectedInsight.radar.interpretation}"</p>
                             </div>
-                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                                <div className="xl:col-span-1 bg-indigo-600/5 border border-indigo-500/20 rounded-[2.5rem] p-8 space-y-6">
+                            {/* 2. Deep Stats Row: Whale | Supply | Sector */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Whale Tracker */}
+                                <div className="bg-slate-950/50 border border-amber-500/20 rounded-[2rem] p-6 space-y-4">
+                                    <div className="flex items-center gap-2 text-amber-400">
+                                        <ShieldCheck size={20} />
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest">Whale Tracker</h4>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-[22px] font-black font-mono text-white block">
+                                            {selectedInsight.deep?.whale?.cost ? `${selectedInsight.deep.whale.cost.toLocaleString()}₩` : "분석 중"}
+                                        </span>
+                                        <p className="text-[10px] text-amber-200/70 font-bold mt-2 leading-relaxed">
+                                            {selectedInsight.deep?.whale?.advice || "거래량 분석 중"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Supply Flow */}
+                                <div className="bg-slate-950/50 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4">
+                                    <div className="flex items-center gap-2 text-indigo-400">
+                                        <TrendingUp size={20} />
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest">Supply Momentum</h4>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className={classNames("text-[22px] font-black font-mono block", (selectedInsight.deep?.supply?.foreign || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                            {(selectedInsight.deep?.supply?.foreign || 0).toLocaleString()}주
+                                        </span>
+                                        <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-tight">외인 순매수 (Live)</p>
+                                    </div>
+                                </div>
+
+                                {/* Sector Intelligence - New v28.2 */}
+                                <div className="bg-slate-950/50 border border-emerald-500/20 rounded-[2rem] p-6 space-y-4">
+                                    <div className="flex items-center gap-2 text-emerald-400">
+                                        <Globe size={20} />
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest">Sector Intelligence</h4>
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-[16px] font-black text-white block leading-tight">
+                                            {selectedInsight.deep?.sector?.status || "섹터 분석 중"}
+                                        </span>
+                                        <p className="text-[10px] text-emerald-200/70 font-bold mt-2 leading-relaxed">
+                                            {selectedInsight.deep?.sector?.advice || "산업군 동조화 분석 중"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Multi-Whale Intelligence Comparison - New v28.5 */}
+                            <div className="bg-slate-950/50 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+                                <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <TrendingUp size={24} className="text-indigo-400" />
-                                        <h3 className="text-white font-black text-lg uppercase tracking-widest">실시간 수급</h3>
+                                        <h3 className="text-white font-black text-lg uppercase tracking-widest">Multi-Whale Intelligence</h3>
                                     </div>
-                                    <div className="flex flex-col gap-4">
-                                        <div className="bg-slate-950/50 p-6 rounded-2xl border border-white/5 text-center">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase block mb-2">외인 순매수 (Live)</span>
-                                            <span className={classNames("text-lg font-black font-mono", (selectedInsight.deep?.supply?.foreign || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                                                {(selectedInsight.deep?.supply?.foreign || 0).toLocaleString()}주
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-slate-900 px-3 py-1 rounded-full border border-white/5">Live Flow Analysis</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Foreigner Stats */}
+                                    <div className="bg-slate-900 border border-indigo-500/20 rounded-[2rem] p-6 flex items-center justify-between group/f">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover/f:bg-indigo-600 group-hover/f:text-white transition-all">
+                                                <Globe size={24} />
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Foreigner Avg Cost</span>
+                                                <span className="text-lg font-black font-mono text-white">
+                                                    {selectedInsight.deep?.multiWhale?.foreigner?.cost ? `${selectedInsight.deep.multiWhale.foreigner.cost.toLocaleString()}₩` : "데이터 수집 중"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[9px] text-slate-500 font-bold uppercase block mb-1">Status</span>
+                                            <span className={classNames(
+                                                "px-3 py-1 rounded-lg text-xs font-black font-mono",
+                                                (selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0) >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                            )}>
+                                                {(selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0) >= 0 ? '+' : ''}{selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0}%
                                             </span>
                                         </div>
-                                        <div className="p-4 bg-slate-900/50 rounded-xl border border-white/5 text-center opacity-50">
-                                            <span className="text-[9px] text-slate-600 font-bold uppercase">기관 데이터 비공개</span>
+                                    </div>
+
+                                    {/* Institution Stats */}
+                                    <div className="bg-slate-900 border border-cyan-500/20 rounded-[2rem] p-6 flex items-center justify-between group/i">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 flex items-center justify-center text-cyan-400 group-hover/i:bg-cyan-600 group-hover/i:text-white transition-all">
+                                                <Activity size={24} />
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Institution Avg Cost</span>
+                                                <span className="text-lg font-black font-mono text-white">
+                                                    {selectedInsight.deep?.multiWhale?.institution?.cost ? `${selectedInsight.deep.multiWhale.institution.cost.toLocaleString()}₩` : "데이터 수집 중"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[9px] text-slate-500 font-bold uppercase block mb-1">Status</span>
+                                            <span className={classNames(
+                                                "px-3 py-1 rounded-lg text-xs font-black font-mono",
+                                                (selectedInsight.deep?.multiWhale?.institution?.profitRate || 0) >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                            )}>
+                                                {(selectedInsight.deep?.multiWhale?.institution?.profitRate || 0) >= 0 ? '+' : ''}{selectedInsight.deep?.multiWhale?.institution?.profitRate || 0}%
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <Newspaper size={24} className="text-indigo-400" />
-                                        <h3 className="text-white font-black text-lg uppercase tracking-widest">분석 근거 및 요약 뉴스</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {(selectedInsight.deep?.news || []).map((news, i) => (
-                                            <div key={i} onClick={() => news.link && window.open(news.link, '_blank')} className={classNames("p-4 bg-slate-950/50 rounded-2xl border border-white/5 flex items-start gap-3 transition-all duration-300", news.link ? "cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 group/news" : "")}>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover/news:scale-125 transition-transform"></div>
-                                                <p className="text-slate-200 text-xs font-bold leading-relaxed group-hover/news:text-white transition-colors">{typeof news === 'string' ? news : news.title}</p>
-                                            </div>
-                                        ))}
-                                    </div>
+                            </div>
+
+                            {/* 4. 요약 뉴스: Full Width */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <Newspaper size={24} className="text-indigo-400" />
+                                    <h3 className="text-white font-black text-lg uppercase tracking-widest">분석 근거 및 요약 뉴스</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {(selectedInsight.deep?.news || []).map((news, i) => (
+                                        <div key={i} onClick={() => news.link && window.open(news.link, '_blank')} className={classNames("p-4 bg-slate-950/50 rounded-2xl border border-white/5 flex items-start gap-3 transition-all duration-300", news.link ? "cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 group/news" : "")}>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover/news:scale-125 transition-transform"></div>
+                                            <p className="text-slate-200 text-[11px] font-bold leading-relaxed group-hover/news:text-white transition-colors">{typeof news === 'string' ? news : news.title}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
