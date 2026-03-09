@@ -9,6 +9,7 @@ import AdminIntelligenceDashboard from "./components/AdminIntelligenceDashboard"
 import NextLeaderDashboard from "./components/NextLeaderDashboard";
 import AdminChartDashboard from "./components/AdminChartDashboard";
 import AdminTheDailyMagazine from "./components/AdminTheDailyMagazine";
+import MyPortfolioDashboard from "./components/MyPortfolioDashboard";
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -50,6 +51,7 @@ function App() {
         <Route path="/admin/chart" element={<AdminRoute><AdminChartDashboard /></AdminRoute>} />
         <Route path="/admin/system" element={<AdminRoute><AdminSystemManagement /></AdminRoute>} />
         <Route path="/admin/magazine" element={<AdminRoute><AdminTheDailyMagazine /></AdminRoute>} />
+        <Route path="/admin/my-dashboard" element={<AdminRoute><MyPortfolioDashboard /></AdminRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

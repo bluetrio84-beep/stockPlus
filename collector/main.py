@@ -361,6 +361,7 @@ def main():
                 if now_weekday == 6 and now_hour == 21 and 0 <= now_min <= 5:
                     mega.log_to_db("INFO", "[지능가동] 주말 AI 가중치 자동 최적화 시작")
                     next_engine.optimize_weights()
+                    mega.log_to_db("INFO", "[지능완료] 주말 AI 가중치 자동 최적화 반영 성공")
                     time.sleep(360) # 중복 실행 방지 (6분 휴식)
 
                 if now_min == 0: print(f">>> [Weekend] 주말 휴식 중... (Policy: {policy['weekend']})")
@@ -379,10 +380,10 @@ def main():
                 if now_min == 0: print(f">>> [Holiday] 공휴일({now_str}) 휴식 중... (Policy: {policy['holiday']})")
                 time.sleep(60); continue
 
-            # [v18.1] 06:30 로컬 뉴스 수집
-            if now_hour == 6 and 30 <= now_min <= 35 and last_snapshot_date != now_str:
-                mega.log_to_db("INFO", "[수집시작] 박달동 로컬 호재 뉴스 수집 (06시 30분)")
-                subprocess.run(["python3", "snapshot_engine.py", "--mode", "local_news"])
+            # [v18.1] 06:30 로컬 뉴스 수집 (기능 구현 전까지 주석 처리)
+            # if now_hour == 6 and 30 <= now_min <= 35 and last_snapshot_date != now_str:
+            #     mega.log_to_db("INFO", "[수집시작] 박달동 로컬 호재 뉴스 수집 (06시 30분)")
+            #     subprocess.run(["python3", "snapshot_engine.py", "--mode", "local_news"])
 
             # 3. [23:00] 어제의 잔상 기록 (히트맵)
             if now_hour == 23 and 0 <= now_min <= 5 and last_snapshot_date != now_str:
@@ -449,6 +450,12 @@ def main():
                     mega.update_stats(total_collected)
                     mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
                     engine.analyze_market()
+
+                    # [v25.7] AI 관제탑 (Black-Box Cockpit) 엔진 가동
+                    # 장중 5분 주기로 보유 종목 초정밀 분석 수행
+                    if 9 <= now_hour < 16 and now_min % 5 == 0:
+                        mega.log_to_db("INFO", "[지능가동] AI 관제탑 블랙박스 5분 정밀 분석 수행")
+                        subprocess.run(["python3", "blackbox_analyst.py"])
                 except: pass
                 time.sleep(interval)
             else:

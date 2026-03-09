@@ -54,6 +54,14 @@ const LayoutMobile = ({ logic }) => {
                 </div>
 
                 <div className="flex items-center gap-1.5 relative">
+                    {isAdmin() && (
+                        <button 
+                            onClick={() => navigate('/admin/my-dashboard')} 
+                            className="p-2 text-indigo-400 bg-indigo-600/10 rounded-lg border border-indigo-500/20 active:scale-90 transition-all shadow-md"
+                        >
+                            <LayoutDashboard size={18} />
+                        </button>
+                    )}
                     <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 mr-1 shadow-sm active:bg-slate-700">
                         <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
                         <span className="text-[11px] font-bold text-slate-300 max-w-[60px] truncate">{usrName}님</span>

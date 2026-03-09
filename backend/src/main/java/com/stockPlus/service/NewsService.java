@@ -65,11 +65,16 @@ public class NewsService {
 
             try {
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
-                List<String> importantKeywords = Arrays.asList("실적", "계약", "공시", "M&A", "인수", "합병", "신공장", "체결", "특허", "임상", "공개", "상장", "수주", "속보", "발표");
+                // [v24.2] 하드코딩 제거: DB에서 시스템 공통 AI 중요 키워드 로드
+                List<String> importantKeywords = userKeywordMapper.findKeywordsByUsrId("SYSTEM_AI");
 
-                // 1. [가중치 1순위] 키워드 뉴스 수집
-                if (!keywords.isEmpty()) {
-                    for (String keyword : keywords) {
+                // 1. [가중치 1순위] 키워드 뉴스 수집 (사용자 키워드 + 시스템 중요 키워드)
+                if (!keywords.isEmpty() || !importantKeywords.isEmpty()) {
+                    // 두 리스트 통합 (중복 제거를 위해 Set 고려 가능하나 단순 루프로 처리)
+                    java.util.Set<String> combinedKeywords = new java.util.HashSet<>(keywords);
+                    combinedKeywords.addAll(importantKeywords);
+
+                    for (String keyword : combinedKeywords) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
                         List<NewsItem> items = naverService.searchNewsItems(keyword);
                         for (NewsItem item : items) {

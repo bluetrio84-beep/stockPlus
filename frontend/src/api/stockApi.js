@@ -225,6 +225,15 @@ export async function toggleFavorite(stockCode, groupId, isFavorite) {
 
 // --- Holdings API (보유 주식 관리) ---
 
+export async function fetchPortfolioIntelligence() {
+    const usrId = localStorage.getItem('usrId');
+    if (!usrId) {
+        console.error(">>> [AUTH ERROR] usrId not found in session.");
+        return null;
+    }
+    return await safeFetch(`api/admin/portfolio/intelligence?usrid=${usrId}`);
+}
+
 export async function fetchHoldings() {
     const data = await safeFetch('api/holdings');
     return Array.isArray(data) ? data : [];

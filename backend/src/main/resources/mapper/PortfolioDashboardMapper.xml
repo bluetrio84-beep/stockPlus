@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.stockPlus.mapper.PortfolioDashboardMapper">
+
+    <!-- [v24.0] 내 종목 심층 분석 데이터 조회 (bluetrio 전용) -->
+    <select id="getMyPortfolioHoldings" resultType="map">
+        SELECT 
+            h.stock_code as stockCode, 
+            sm.stock_name as stockName, 
+            h.quantity, 
+            h.avg_price as avgPrice,
+            nl.total_score as aiScore,
+            nl.lstm_score as lstmScore,
+            nl.tcn_score as tcnScore,
+            nl.xgb_score as xgbScore,
+            nl.reason as aiReason,
+            cf.revenue,
+            cf.op_profit as opProfit,
+            cf.roe
+        FROM holdings h
+        JOIN stock_master sm ON h.stock_code COLLATE utf8mb4_unicode_ci = sm.stock_code COLLATE utf8mb4_unicode_ci
+        LEFT JOIN (
+            SELECT * FROM ai_next_leaders 
+            WHERE id IN (SELECT MAX(id) FROM ai_next_leaders GROUP BY stock_code)
+        ) nl ON h.stock_code COLLATE utf8mb4_unicode_ci = nl.stock_code COLLATE utf8mb4_unicode_ci
+        LEFT JOIN (
+            SELECT cf1.* FROM company_financials cf1
+            JOIN (
+                SELECT stock_code, MAX(CONCAT(report_year, report_code)) as latest_report 
+                FROM company_financials 
+                GROUP BY stock_code
+            ) cf2 ON cf1.stock_code = cf2.stock_code 
+            AND CONCAT(cf1.report_year, cf1.report_code) = cf2.latest_report
+        ) cf ON h.stock_code COLLATE utf8mb4_unicode_ci = cf.stock_code COLLATE utf8mb4_unicode_ci
+        WHERE h.USRID = #{usrid}
+    </select>
+
+    <!-- [v24.0] 최신 제미나이 브리핑 조회 (AI 관제탑 전용) -->
+    <select id="getLatestMyInsight" resultType="string">
+        SELECT insight_text 
+        FROM user_market_insight 
+        WHERE USRID = #{usrid} AND insight_type = 'BLACKBOX'
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+</mapper>

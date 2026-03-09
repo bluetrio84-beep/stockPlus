@@ -42,6 +42,15 @@ const LayoutDesktop = ({ logic }) => {
                 </div>
 
                 <div className="flex items-center gap-4 relative">
+                    {isAdmin() && (
+                        <button 
+                            onClick={() => navigate('/admin/my-dashboard')} 
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 transition-all shadow-lg active:scale-95 group"
+                        >
+                            <PieChart size={16} className="group-hover:rotate-12 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">My-Dashboard</span>
+                        </button>
+                    )}
                     <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all shadow-sm">
                         <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-xs font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
                         <span className="text-xs font-bold text-slate-300">{usrName}님</span>

@@ -216,7 +216,7 @@ class NextLeaderEngine(AIEngine):
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 모델별 최근 7일 적중률 조회 (분모가 5건 이상인 경우만 채택)
+                # 1. 모델별 최근 7일 적중률 조회
                 sql = """
                     SELECT 
                         COALESCE(ROUND(COUNT(CASE WHEN lstm_score >= 50 AND hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(CASE WHEN lstm_score >= 50 AND hit_result != 'PENDING' THEN 1 END), 0) * 100, 1), 0) as lstm_hr,
@@ -228,14 +228,21 @@ class NextLeaderEngine(AIEngine):
                 cursor.execute(sql)
                 hr = cursor.fetchone()
                 
+                # [v23.2] 데이터 타입 캐스팅 (Decimal -> Float)
+                hit_rates = {
+                    'lstm': float(hr['lstm_hr']),
+                    'tcn': float(hr['tcn_hr']),
+                    'xgb': float(hr['xgb_hr'])
+                }
+                
                 # 2. 가중치 계산 (적중률 비례 분배, 최소 20% 보장)
-                total_hr = float(hr['lstm_hr'] + hr['tcn_hr'] + hr['xgb_hr'])
+                total_hr = sum(hit_rates.values())
                 if total_hr > 0:
-                    new_l = max(20, round((hr['lstm_hr'] / total_hr) * 100))
-                    new_t = max(20, round((hr['tcn_hr'] / total_hr) * 100))
+                    new_l = max(20, round((hit_rates['lstm'] / total_hr) * 100))
+                    new_t = max(20, round((hit_rates['tcn'] / total_hr) * 100))
                     new_x = 100 - new_l - new_t
                 else:
-                    new_l, new_t, new_x = 20, 20, 60 # [v19.6] 데이터 부족 시 황금 비율 기본값 사용
+                    new_l, new_t, new_x = 20, 20, 60 # 데이터 부족 시 기본 비율
 
                 # [v23.1] 고도화된 가중치 최적화 사유 생성
                 best_model = max(hit_rates, key=hit_rates.get).upper()
@@ -250,7 +257,7 @@ class NextLeaderEngine(AIEngine):
 
                 tuning_reason = f"[{best_model} 강세 분석] {analysis} (최근 적중률: {hr_info} | 조정 비중: L:{new_l}% T:{new_t}% X:{new_x}%)"
                 
-                # DB 연결 시 charset 강제 (한글 깨짐 방지)
+                # 3. DB 업데이트 (한글 깨짐 방지 강제 적용)
                 with self.conn.cursor() as cursor:
                     cursor.execute("SET NAMES utf8mb4")
                     cursor.execute("""
@@ -258,20 +265,20 @@ class NextLeaderEngine(AIEngine):
                         SET weight_lstm = %s, weight_tcn = %s, weight_xgb = %s, tuning_reason = %s
                         WHERE id = 1
                     """, (new_l / 100.0, new_t / 100.0, new_x / 100.0, tuning_reason))
-                self.conn.commit()
-
-                print(f">>> [Success] AI Weights Optimized: {tuning_reason}")
-                log_msg = f"[가중치최적화] {tuning_reason}"
-                with self.conn.cursor() as cursor:
+                    
+                    # 로그 기록
+                    log_msg = f"[가중치최적화] {tuning_reason}"
                     cursor.execute("INSERT INTO collector_logs (log_level, message, created_at) VALUES ('INFO', %s, NOW())", (log_msg,))
-                # 실제 엔진 가중치는 소스 코드 상의 상수로 관리되거나 별도 테이블이 필요할 수 있으나, 일단 로그로 기록하여 관찰
-                print(f">>> [Auto-Optimization] Result: {log_msg}")
                 
-            self.conn.commit()
+                self.conn.commit()
+                print(f">>> [Success] AI Weights Optimized: {tuning_reason}")
+                
             return True
         except Exception as e:
             print(f">>> [Auto-Optimization Error] {e}")
             return False
+        finally:
+            if self.conn and self.conn.open: self.conn.close()
 
 if __name__ == "__main__":
     engine = NextLeaderEngine()
