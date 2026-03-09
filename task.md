@@ -1,5 +1,13 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.2 Sector Intelligence & Integrated Deep Analysis (2026-03-09 완료)
+*   **섹터 주도주 동조화 분석 (Peer Comparison)**:
+    - **지능형 위상 판별**: 동일 산업군 내 평균 체결강도와 비교하여 "섹터 대장주(Leader)", "섹터 동조주(Follower)" 등 종목의 위치를 실시간 판별.
+    - **수급 전이 분석**: 섹터의 흐름 대비 개별 종목의 탄력을 분석하여 "나 홀로 상승"인지 "섹터 동반 상승"인지에 대한 전술 조언 생성.
+*   **심층 리포트 레이아웃 최종 진화**:
+    - **3대 핵심 패널 통합**: Whale Tracker(세력), Supply Momentum(수급), Sector Intelligence(섹터)를 가로 3열로 배치하여 한눈에 정밀 진단 가능.
+    - **뉴스 그리드 최적화**: 분석 근거 뉴스를 3열 그리드로 확장 재배치하여 정보 탐색 효율 극대화.
+
 ## 🚀 v28.1 Whale Price Tracking & Deep Analysis UI Overhaul (2026-03-09 완료)
 *   **세력 매집 원가 추적 엔진**: 
     - **Whale Tracker 신설**: 최근 20거래일 최대 거래량 시점(Anchor)부터 현재까지의 VWAP을 계산하여 세력의 추정 평단가 도출.
@@ -64,7 +72,7 @@
         - 비용 없는 키워드 기반 뉴스 긍정/부정(NLP) 자체 판별 엔진 구축하여 실시간 호재/악재 점수화.
 ## 🚀 v23.4 AI Insight Style Balancing (2026-03-06 완료)
 *   **대시보드 텍스트 밸런스 최종 최적화**:
-    - **색상 및 크기 정밀 조정**: AI Tuning Strategy 사유 메시지를 고급스러운 슬레이트(Slate-200) 색상으로 원복하고 폰트 크기를 2px 하향하여 전체적인 레이아웃 균형 확보.
+    - **색상 및 크기 정밀 조정**: AI Tuning Strategy 사유 메시지를 고급스러운 슬레이트(Slate-200) 색상으로 원복하고폰트 크기를 2px 하향하여 전체적인 레이아웃 균형 확보.
     - **가독성 극대화**: 도넛 차트 하단의 Hit Rate, Weight, 상태 라벨들을 순백색(White)으로 강화하여 핵심 지표의 시인성 정점 달성.
 
 ## 🚀 v23.1 AI Reasoning & Encoding Mastery (2026-03-06 완료)
@@ -211,7 +219,7 @@
 - [ ] **Fundamental AI**: 분기 실적 발표 시즌 자동 브리핑 엔진 고도화.
 
 ---
-*Last Updated: 2026-03-09 (Full Quadrant Intelligence Integration 완료)*
+*Last Updated: 2026-03-09 (Sector Intelligence & Peer Comparison 완료)*
 
 # StockPlus Project Intelligence & Roadmap (Past History)
 
