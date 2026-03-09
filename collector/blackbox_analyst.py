@@ -25,9 +25,28 @@ class BlackBoxAnalyst:
         self.neg_words = ['유상증자', '배임', '횡령', '영업손실', '하락', '매도세', '공매도', '하향', '적자전환', '압수수색', '과징금', '불성실', '약세', '이탈']
         self.naver_id = os.getenv('NAVER_CLIENT_ID')
         self.naver_secret = os.getenv('NAVER_CLIENT_SECRET')
+        self.strategy_config = {'w_algo': 0.6, 'w_ai': 0.4, 'mode': 'DEFENSIVE'} # 기본값
 
     def connect(self):
         self.conn = pymysql.connect(**DB_CONFIG)
+
+    def load_config(self):
+        # [v28.9] DB에서 AI 전략 모드 및 가중치 동적 로드
+        try:
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT ai_strategy_mode FROM collector_config WHERE id = 1")
+                cfg = cursor.fetchone()
+                if cfg:
+                    mode = cfg['ai_strategy_mode'] or 'DEFENSIVE'
+                    self.strategy_config['mode'] = mode
+                    if mode == 'NEUTRAL': 
+                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.5, 0.5
+                    elif mode == 'AGGRESSIVE':
+                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.4, 0.6
+                    else:
+                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.6, 0.4
+                    print(f">>> [BlackBox] Strategy Config Loaded: {mode} (Algo:{self.strategy_config['w_algo']}, AI:{self.strategy_config['w_ai']})")
+        except: print(">>> [BlackBox] Config Load Failed. Using Defaults.")
 
     def fetch_user_holdings(self):
         with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -41,7 +60,6 @@ class BlackBoxAnalyst:
             return cursor.fetchall()
 
     def calculate_earnings_momentum(self, code):
-        # [v28.7] Fundamental AI: 실적 성장성 및 턴어라운드 분석
         result = {"status": "분석중", "comment": "", "bonus": 0}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -71,7 +89,6 @@ class BlackBoxAnalyst:
         except: return result
 
     def get_market_rotation_status(self):
-        # [v28.6] 시장 전체 섹터 순환매 흐름 스캔
         rotation_data = {"exit_sectors": [], "entry_sectors": []}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -90,7 +107,6 @@ class BlackBoxAnalyst:
         except: return rotation_data
 
     def calculate_multi_whale_stats(self, code, curr_price):
-        # [v28.4] 외인/기관 평단가 분석
         stats = {"foreigner": {"cost": 0, "profitRate": 0}, "institution": {"cost": 0, "profitRate": 0}}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -109,7 +125,6 @@ class BlackBoxAnalyst:
         except: return stats
 
     def calculate_sector_momentum(self, code, industry):
-        # [v28.2] 섹터 주도주 판별
         if not industry: return {"status": "분석불가", "score": 50, "advice": ""}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -124,7 +139,6 @@ class BlackBoxAnalyst:
         except: return {"status": "분석중", "score": 50, "advice": ""}
 
     def calculate_whale_cost(self, code, curr_price):
-        # [v28.1] 세력 평단가 추적
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("SELECT price, volume, captured_at FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 20 DAY) ORDER BY volume DESC LIMIT 1", (code,))
@@ -154,6 +168,9 @@ class BlackBoxAnalyst:
                     if float(history[0]['rsi'] or 50) <= 40: score += 12; tags.append("RSI바닥탈출")
                     if float(history[0]['ma5'] or 0) > float(history[0]['ma20'] or 0) and (float(history[1]['ma5'] or 0) <= float(history[1]['ma20'] or 0)): score += 15; tags.append("골든크로스")
                     if curr_price > float(history[1]['price']): score += 5; tags.append("추세반전")
+                cursor.execute("SELECT op_profit, revenue FROM company_financials WHERE stock_code=%s ORDER BY report_year DESC LIMIT 1", (code,))
+                f = cursor.fetchone()
+                if f and f['revenue'] > 0 and (float(f['op_profit'])/float(f['revenue'])) > 0.10: score += 5; tags.append("고수익성")
         except: pass
         return round(min(100, max(0, score)), 1), tags
 
@@ -186,7 +203,10 @@ class BlackBoxAnalyst:
                         if mw['institution']['profitRate'] < -10: mw_adj += 3
                         if mw['institution']['profitRate'] > 15: mw_adj -= 2
                     
-                    data['xgb'] = round(max(0, min(100, (q_score * 0.6) + (scores['xgb'] * 0.4) + mw_adj + data['earnings']['bonus'])), 1)
+                    # [v28.9] DB 설정 가중치 적용 (Algo vs AI)
+                    w_algo = self.strategy_config['w_algo']
+                    w_ai = self.strategy_config['w_ai']
+                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (scores['xgb'] * w_ai) + mw_adj + data['earnings']['bonus'])), 1)
                 
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()
@@ -215,6 +235,9 @@ class BlackBoxAnalyst:
     def execute(self):
         self.connect()
         try:
+            # 0. 전략 설정 로드 (v28.9)
+            self.load_config()
+            
             holdings = self.fetch_user_holdings()
             if not holdings: return
             rotation = self.get_market_rotation_status()
@@ -234,7 +257,8 @@ class BlackBoxAnalyst:
                 sector_part = f"{industry} 섹터 내 주도권을 장악한 상태입니다." if "Leader" in data['sector']['status'] or "Outperformer" in data['sector']['status'] else f"{industry} 섹터 흐름에 안정적으로 동조화되었습니다."
                 tag_str = f"{', '.join(data['reason'][:2])} 시그널을 바탕으로 " if data['reason'] else ""
                 
-                interpretation = f"지휘 보고: {name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
+                strategy_txt = f"[{self.strategy_config['mode']}] 모드 기반 "
+                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
                 
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,
@@ -251,7 +275,7 @@ class BlackBoxAnalyst:
                     cursor.execute("DELETE FROM user_market_insight WHERE USRID = %s AND insight_type = 'BLACKBOX'", (uid,))
                     cursor.execute("INSERT INTO user_market_insight (USRID, insight_type, insight_text, created_at) VALUES (%s, 'BLACKBOX', %s, NOW())", (uid, json_str))
             self.conn.commit()
-            print(f">>> [BlackBox] v28.7 Fundamental & Rotation Intelligence completed.")
+            print(f">>> [BlackBox] v28.9 Dynamic Strategy Config Applied.")
         finally:
             if self.conn: self.conn.close()
 
