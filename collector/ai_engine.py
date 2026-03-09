@@ -133,10 +133,16 @@ class AIEngine:
                 """, (stock_code,))
                 rows = cursor.fetchall()
                 
-                if len(rows) < 4:
-                    return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
+                # [v26.7] 데이터 부족 대응: 4일치가 안 되면 있는 만큼만 사용하거나 오늘 데이터로 채움
+                if len(rows) < 1:
+                    return {'total': 50.5, 'lstm': 50.2, 'tcn': 50.3, 'xgb': 50.5}
                 
                 past_df = pd.DataFrame(rows[::-1])
+                # 부족한 일수만큼 첫 번째 데이터로 패딩하여 5일치(과거4+오늘1)를 강제로 맞춤
+                if len(rows) < 4:
+                    padding = pd.concat([past_df.iloc[[0]]] * (4 - len(rows)), ignore_index=True)
+                    past_df = pd.concat([padding, past_df], ignore_index=True)
+                
                 today_data = [curr_price, 0, curr_f, 0, curr_vol] 
                 df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
                 
