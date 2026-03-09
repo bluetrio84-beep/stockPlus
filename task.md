@@ -1,5 +1,13 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.9.1 - v28.9.3 AI Engine Restoration & Data Integrity Patch (2026-03-09 완료)
+*   **AI 엔진 데이터 통로 복구**:
+    - **DB 연결 활성화**: `blackbox_analyst.py` 내 `self.ai.connect()`를 긴급 수술하여 AI 모델이 50점에 갇히지 않고 실제 과거 데이터를 조회하도록 복구.
+    - **데이터 타입 무결성**: 딥러닝 전용 `float32` 결과값을 JSON 호환 `float`으로 정밀 변환하여 데이터 적재 에러 해결.
+*   **Fundamental AI 무결성 강화 (v28.7.1 - v28.7.2)**:
+    - **동일 규격 비교 원칙**: 보고서 코드(`report_code`)가 일치할 때만 전년 동기 대비 성장성을 분석하도록 설계하여 통계적 착시 제거.
+    - **절대 수치 벌점/가점제**: 비교 대상이 없는 데이터 공백기에도 현재 영업이익이 흑자면 가점(+3), 적자면 벌점(-5)을 부여하는 강력한 하방 방어 로직 구축.
+
 ## 🚀 v28.9 Dynamic Strategy Configuration & Logic Alignment (2026-03-09 완료)
 *   **지능형 동적 가중치 엔진**: 
     - **DB 설정 동기화**: 하드코딩된 가중치를 제거하고 `collector_config` 테이블의 실시간 설정(중립/공격/방어)과 100% 연동.

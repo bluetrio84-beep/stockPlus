@@ -60,31 +60,33 @@ class BlackBoxAnalyst:
             return cursor.fetchall()
 
     def calculate_earnings_momentum(self, code):
-        result = {"status": "분석중", "comment": "", "bonus": 0}
+        # [v28.7.1] 데이터 무결성 패치: 동일 report_code끼리만 비교 (착시 방지)
+        result = {"status": "데이터 대기", "comment": "", "bonus": 0}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("""
-                    SELECT op_profit, revenue FROM company_financials 
-                    WHERE stock_code = %s ORDER BY report_year DESC LIMIT 2
+                    SELECT op_profit, revenue, report_code FROM company_financials 
+                    WHERE stock_code = %s ORDER BY report_year DESC, report_code DESC LIMIT 2
                 """, (code,))
                 rows = cursor.fetchall()
-                if len(rows) < 1: return result
-                curr = rows[0]; prev = rows[1] if len(rows) > 1 else None
-                curr_op = float(curr['op_profit'] or 0); curr_rev = float(curr['revenue'] or 1)
-                margin = (curr_op / curr_rev) * 100
-                if prev:
-                    prev_op = float(prev['op_profit'] or 0)
-                    if prev_op <= 0 and curr_op > 0:
-                        result = {"status": "턴어라운드", "comment": "적자 탈출 및 실적 턴어라운드에 성공하며 강력한 기초 체력을 확보했습니다.", "bonus": 10}
-                    elif curr_op > prev_op * 1.2:
-                        result = {"status": "성장 가속", "comment": "전년 대비 영업이익이 20% 이상 급증하는 어닝 서프라이즈 구간에 진입했습니다.", "bonus": 7}
-                    elif curr_op > prev_op:
-                        result = {"status": "견조한 실적", "comment": "매출과 이익이 안정적인 우상향 곡선을 그리며 펀더멘털 신뢰도를 높이고 있습니다.", "bonus": 3}
+                if len(rows) < 2: return result
+                curr = rows[0]; prev = rows[1]
+                if curr['report_code'] != prev['report_code']:
+                    # [v28.7.2] 비교 불가 시 절대 수치 기반 벌점/가점제 적용
+                    curr_op = float(curr['op_profit'] or 0)
+                    if curr_op > 0:
+                        return {"status": "흑자 유지", "comment": "현재 수익을 창출하며 안정적인 기초 체력을 유지하고 있습니다.", "bonus": 3}
                     else:
-                        result = {"status": "수익성 둔화", "comment": "최근 실적 성장세가 주춤하며 새로운 모멘텀을 기다리는 단계입니다.", "bonus": -2}
+                        return {"status": "적자 지속", "comment": "현재 영업 적자 상태로 펀더멘털 측면의 리스크 관리가 필요합니다.", "bonus": -5}
+                curr_op = float(curr['op_profit'] or 0); prev_op = float(prev['op_profit'] or 0)
+                if prev_op <= 0 and curr_op > 0:
+                    result = {"status": "턴어라운드", "comment": "적자 탈출 및 실적 턴어라운드에 성공하며 기초 체력을 회복했습니다.", "bonus": 10}
+                elif curr_op > prev_op * 1.2:
+                    result = {"status": "성장 가속", "comment": "전년 동기 대비 영업이익이 20% 이상 급증하며 강력한 성장 모멘텀을 입증했습니다.", "bonus": 7}
+                elif curr_op > prev_op:
+                    result = {"status": "견조한 실적", "comment": "안정적인 이익 우상향 흐름을 유지하며 펀더멘털 신뢰도를 높이고 있습니다.", "bonus": 3}
                 else:
-                    if margin > 10:
-                        result = {"status": "우량 기업", "comment": f"영업이익률 {margin:.1f}%를 기록하며 우수한 수익성을 증명하고 있습니다.", "bonus": 5}
+                    result = {"status": "수익성 둔화", "comment": "이익 성장세가 다소 정체되어 수급 및 차트 중심의 대응이 필요한 단계입니다.", "bonus": -2}
             return result
         except: return result
 
