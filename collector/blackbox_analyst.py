@@ -193,7 +193,9 @@ class BlackBoxAnalyst:
                     data['earnings'] = self.calculate_earnings_momentum(clean_code)
                     
                     scores = self.ai.get_ensemble_score_details(clean_code, price, f_buy, vol)
-                    data['lstm'], data['tcn'] = round(scores['lstm'], 1), round(scores['tcn'], 1)
+                    # [v28.9.3] float32 타입을 표준 float으로 변환 (JSON 직렬화 에러 방지)
+                    s_lstm, s_tcn, s_xgb = float(scores['lstm']), float(scores['tcn']), float(scores['xgb'])
+                    data['lstm'], data['tcn'] = round(s_lstm, 1), round(s_tcn, 1)
                     
                     mw = data['multiWhale']; mw_adj = 0
                     if mw['foreigner']['cost'] > 0:
@@ -206,7 +208,7 @@ class BlackBoxAnalyst:
                     # [v28.9] DB 설정 가중치 적용 (Algo vs AI)
                     w_algo = self.strategy_config['w_algo']
                     w_ai = self.strategy_config['w_ai']
-                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (scores['xgb'] * w_ai) + mw_adj + data['earnings']['bonus'])), 1)
+                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'])), 1)
                 
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()
@@ -234,6 +236,7 @@ class BlackBoxAnalyst:
 
     def execute(self):
         self.connect()
+        self.ai.connect() # [v28.9.1] AI 엔진의 DB 연결 활성화
         try:
             # 0. 전략 설정 로드 (v28.9)
             self.load_config()
