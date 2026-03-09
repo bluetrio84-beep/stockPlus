@@ -1,5 +1,12 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.6 Sector Rotation Intelligence & Integrated Briefing (2026-03-09 완료)
+*   **시장 순환매 탐지 엔진**: 
+    - **Rotation Intelligence**: 2,800개 전 종목의 수급을 실시간 합산하여 자금 유입(Entry) 및 유출(Exit) 섹터를 TOP 3까지 자동 스캔.
+    - **선취매 시그널**: 주도 섹터(반도체 등)의 자금 이탈과 보유 섹터의 자금 유입 연결 고리를 포착하여 "순환매 선취매" 기회 보고.
+*   **통합 거시 브리핑**:
+    - **Global Market Context**: 종목 개별 지표를 넘어 "시장 전체의 돈이 어디서 와서 어디로 가는지"를 포함한 거시적 지휘 보고서 완성.
+
 ## 🚀 v28.5 Multi-Whale Intelligence Comparison & Adaptive Scoring (2026-03-09 완료)
 *   **수급 주체별 손익계산서 공개**: 
     - **Multi-Whale Tracker**: 외인과 기관의 20거래일 추정 평단가와 실시간 수익률을 1대1로 대조하는 분석 엔진 구축.
@@ -273,7 +280,7 @@
 - [ ] **Fundamental AI**: 분기 실적 발표 시즌 자동 브리핑 엔진 고도화.
 
 ---
-*Last Updated: 2026-03-09 (Full Quadrant & Sector Intelligence Integration 완료)*
+*Last Updated: 2026-03-09 (Rotation Intelligence & Macro Flow Analysis 완료)*
 
 # StockPlus Project Intelligence & Roadmap (Past History)
 
