@@ -1,5 +1,17 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.5 Multi-Whale Intelligence Comparison & Adaptive Scoring (2026-03-09 완료)
+*   **수급 주체별 손익계산서 공개**: 
+    - **Multi-Whale Tracker**: 외인과 기관의 20거래일 추정 평단가와 실시간 수익률을 1대1로 대조하는 분석 엔진 구축.
+    - **지능형 리포트 UI**: 심층 리포트 하단에 외인 vs 기관의 평단가/수익률 대조표를 신설하여 수급의 '질'을 시각화.
+*   **지능형 스코어링 (Intelligence Scaling)**:
+    - **수급 기반 보정**: 외인/기관이 -10% 이상 물려있을 시 '강력 방어 의지'로 판단하여 가산점 부여, +15% 이상 수익 시 '투매 위험'으로 판단하여 감점 적용.
+
+## 🚀 v28.3 - v28.4 Advanced Commander Briefing & Multi-Whale Tracking (2026-03-09 완료)
+*   **지능형 종합 브리핑 엔진**:
+    - **통합 문장 조립**: [세력 방어선 + 섹터 위상 + 딥러닝 에너지]를 엮어 "지휘 보고: 세력 평단가 하단에서 에너지를 응축 중이며..."와 같은 실전적 지휘 명령 생성.
+    - **Multi-Whale 통찰**: 외인과 기관의 수익 상태를 숫자로 명시하여 브리핑의 객관성 확보.
+
 ## 🚀 v28.2 Sector Intelligence & Integrated Deep Analysis (2026-03-09 완료)
 *   **섹터 주도주 동조화 분석 (Peer Comparison)**:
     - **지능형 위상 판별**: 동일 산업군 내 평균 체결강도와 비교하여 "섹터 대장주(Leader)", "섹터 동조주(Follower)" 등 종목의 위치를 실시간 판별.
