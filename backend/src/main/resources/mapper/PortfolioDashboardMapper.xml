@@ -33,6 +33,7 @@
             AND CONCAT(cf1.report_year, cf1.report_code) = cf2.latest_report
         ) cf ON h.stock_code COLLATE utf8mb4_unicode_ci = cf.stock_code COLLATE utf8mb4_unicode_ci
         WHERE h.USRID = #{usrid}
+        ORDER BY h.stock_code
     </select>
 
     <!-- [v24.0] 최신 제미나이 브리핑 조회 (AI 관제탑 전용) -->

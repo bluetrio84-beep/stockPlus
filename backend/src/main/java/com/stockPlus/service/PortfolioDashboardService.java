@@ -23,9 +23,9 @@ public class PortfolioDashboardService {
         List<Map<String, Object>> holdings = portfolioMapper.getMyPortfolioHoldings(usrid);
         String insight = portfolioMapper.getLatestMyInsight(usrid);
 
-        // 2. 각 종목별 실시간 시세 결합
+        // 2. 각 종목별 실시간 시세 결합 (순서 보장을 위해 flatMapSequential 사용)
         return Flux.fromIterable(holdings)
-                .flatMap(h -> {
+                .flatMapSequential(h -> {
                     String code = (String) h.get("stockCode");
                     return kisStockService.fetchCurrentPrice(code)
                             .map(priceOutput -> {

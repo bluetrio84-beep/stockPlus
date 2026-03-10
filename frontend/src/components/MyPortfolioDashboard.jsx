@@ -97,7 +97,8 @@ const MyPortfolioDashboard = () => {
                                 const colors = ["#6366f1", "#f43f5e", "#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#14b8a6"];
                                 const ratio = totalEvaluation > 0 ? (Number(h.currentPrice || 0) * Number(h.quantity || 0)) / totalEvaluation : 0;
                                 const circ = 2 * Math.PI * 85;
-                                const visualLength = ratio > 0 ? Math.max(ratio * circ, 15) : 0;
+                                // [v28.9.16] 최소 시각적 길이를 25px로 상향하여 소액 비중 가독성 확보
+                                const visualLength = ratio > 0 ? Math.max(ratio * circ, 25) : 0;
                                 let prevRatios = 0;
                                 for(let j=0; j<i; j++) { prevRatios += (Number(holdings[j].currentPrice || 0) * Number(holdings[j].quantity || 0)) / totalEvaluation; }
                                 return (

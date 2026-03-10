@@ -1,5 +1,11 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.9.14 - v28.9.16 Asset Allocation Stability & Visual Optimization (2026-03-10 완료)
+*   **자산 배분 도넛 차트 고정 (Stability)**:
+    - **순서의 무결성**: DB(`ORDER BY`)부터 백엔드(`flatMapSequential`), 프론트엔드(`holdings.map`)까지 이어지는 데이터 파이프라인의 정렬 순서를 완벽하게 고정하여 화면 진입 시마다 도넛이 바뀌는 현상 해결.
+*   **소액 비중 가독성 강화 (Visual Presence)**:
+    - **최소 면적 확보**: 도넛 차트의 최소 시각적 길이를 15px에서 **25px**로 상향하여, 4% 내외의 소액 보유 종목도 선명하게 식별 가능하도록 UI 보정.
+
 ## 🚀 v28.9.4 - v28.9.13 Aggressive Edge & Final Intelligence Polish (2026-03-10 완료)
 *   **공격형(AGGRESSIVE) 모드 특화**:
     - **수급 폭발 가중치**: 공격형 모드 선택 시 AI 비중을 60%로 상향하고, 최근 5일 이내 외인/기관 순매수 유입 시 즉시 가산점(+4)을 부여하는 기회 포착 로직 탑재.
