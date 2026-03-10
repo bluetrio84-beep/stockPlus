@@ -25,13 +25,12 @@ class BlackBoxAnalyst:
         self.neg_words = ['유상증자', '배임', '횡령', '영업손실', '하락', '매도세', '공매도', '하향', '적자전환', '압수수색', '과징금', '불성실', '약세', '이탈']
         self.naver_id = os.getenv('NAVER_CLIENT_ID')
         self.naver_secret = os.getenv('NAVER_CLIENT_SECRET')
-        self.strategy_config = {'w_algo': 0.6, 'w_ai': 0.4, 'mode': 'DEFENSIVE'} # 기본값
+        self.strategy_config = {'w_algo': 0.6, 'w_ai': 0.4, 'mode': 'DEFENSIVE'}
 
     def connect(self):
         self.conn = pymysql.connect(**DB_CONFIG)
 
     def load_config(self):
-        # [v28.9] DB에서 AI 전략 모드 및 가중치 동적 로드
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("SELECT ai_strategy_mode FROM collector_config WHERE id = 1")
@@ -39,14 +38,10 @@ class BlackBoxAnalyst:
                 if cfg:
                     mode = cfg['ai_strategy_mode'] or 'DEFENSIVE'
                     self.strategy_config['mode'] = mode
-                    if mode == 'NEUTRAL': 
-                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.5, 0.5
-                    elif mode == 'AGGRESSIVE':
-                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.4, 0.6
-                    else:
-                        self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.6, 0.4
-                    print(f">>> [BlackBox] Strategy Config Loaded: {mode} (Algo:{self.strategy_config['w_algo']}, AI:{self.strategy_config['w_ai']})")
-        except: print(">>> [BlackBox] Config Load Failed. Using Defaults.")
+                    if mode == 'NEUTRAL': self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.5, 0.5
+                    elif mode == 'AGGRESSIVE': self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.4, 0.6
+                    else: self.strategy_config['w_algo'], self.strategy_config['w_ai'] = 0.6, 0.4
+        except: pass
 
     def fetch_user_holdings(self):
         with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -91,6 +86,7 @@ class BlackBoxAnalyst:
         except: return result
 
     def get_market_rotation_status(self):
+        # [v28.6] 시장 전체 섹터 순환매 흐름 스캔
         rotation_data = {"exit_sectors": [], "entry_sectors": []}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -108,21 +104,27 @@ class BlackBoxAnalyst:
             return rotation_data
         except: return rotation_data
 
-    def calculate_multi_whale_stats(self, code, curr_price):
-        stats = {"foreigner": {"cost": 0, "profitRate": 0}, "institution": {"cost": 0, "profitRate": 0}}
+    def get_multi_whale_accumulation(self, code):
+        # [v28.9.8] 독종 쿼리: TRIM 적용으로 공백 오차 차단 및 디버깅 로그 추가
+        stats = {"foreigner": {"vol5d": 0, "vol20d": 0, "vol60d": 0}, "institution": {"vol5d": 0, "vol20d": 0, "vol60d": 0}}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute("SELECT close_price, foreign_net_buy, institution_net_buy FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 20", (code,))
-                history = cursor.fetchall()
-                if not history: return stats
-                f_vol = sum(h['foreign_net_buy'] for h in history)
-                if f_vol != 0:
-                    f_cost = sum(float(h['close_price']) * h['foreign_net_buy'] for h in history) / f_vol
-                    stats['foreigner'] = {"cost": int(f_cost), "profitRate": round(((curr_price - f_cost) / f_cost) * 100, 1)}
-                i_vol = sum(h['institution_net_buy'] for h in history)
-                if i_vol != 0:
-                    i_cost = sum(float(h['close_price']) * h['institution_net_buy'] for h in history) / i_vol
-                    stats['institution'] = {"cost": int(i_cost), "profitRate": round(((curr_price - i_cost) / i_cost) * 100, 1)}
+                cursor.execute("""
+                    SELECT foreign_net_buy, institution_net_buy 
+                    FROM daily_stock_investor 
+                    WHERE TRIM(stock_code) = TRIM(%s) ORDER BY bsop_date DESC LIMIT 60
+                """, (code,))
+                rows = cursor.fetchall()
+                if rows:
+                    # 5일 누적
+                    stats["foreigner"]["vol5d"] = int(sum(r['foreign_net_buy'] for r in rows[:5]))
+                    stats["institution"]["vol5d"] = int(sum(r['institution_net_buy'] for r in rows[:5]))
+                    # 20일 누적
+                    stats["foreigner"]["vol20d"] = int(sum(r['foreign_net_buy'] for r in rows[:20]))
+                    stats["institution"]["vol20d"] = int(sum(r['institution_net_buy'] for r in rows[:20]))
+                    # 60일 누적
+                    stats["foreigner"]["vol60d"] = int(sum(r['foreign_net_buy'] for r in rows))
+                    stats["institution"]["vol60d"] = int(sum(r['institution_net_buy'] for r in rows))
             return stats
         except: return stats
 
@@ -177,45 +179,64 @@ class BlackBoxAnalyst:
         return round(min(100, max(0, score)), 1), tags
 
     def get_stock_data(self, stock_code, industry):
-        data = {'quant': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0, 'reason': [], 'hit_rate': 70.0, 'supply': {'foreign': 0}, 'whale': {'cost': 0, 'advice': ''}, 'sector': {}, 'multiWhale': {}, 'earnings': {}}
+        data = {
+            'quant': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0, 'reason': [], 'hit_rate': 70.0, 
+            'supply': {'foreign': 0}, 'whale': {'cost': 0, 'advice': ''}, 'sector': {'status': '분석중', 'score': 50, 'advice': ''}, 
+            'multiWhale': {'foreigner': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}, 'institution': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}}, 
+            'earnings': {'status': '분석중', 'comment': '', 'bonus': 0}
+        }
         clean_code = str(stock_code).strip()
         try:
+            # [v28.9.12] DB 커서 관리 통합: 모든 쿼리를 하나의 커서 세션 내에서 처리
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute("SELECT current_price, volume, foreign_net_buy FROM stock_supply_demand WHERE stock_code = %s ORDER BY id DESC LIMIT 1", (clean_code,))
                 info = cursor.fetchone()
+            
+                # 1. 과거 통계 및 실적 분석 (실시간 데이터와 무관)
+                data['multiWhale'] = self.get_multi_whale_accumulation(clean_code)
+                data['earnings'] = self.calculate_earnings_momentum(clean_code)
+                
+                # 2. 실시간 데이터 기반 분석
                 if info:
                     price, vol, f_buy = float(info['current_price']), float(info['volume']), float(info['foreign_net_buy'] or 0)
                     data['supply'] = {'foreign': int(f_buy)}
                     q_score, tags = self.calculate_tactical_tags(clean_code, price, vol, f_buy)
                     data['quant'] = q_score; data['reason'] = tags
+                    
+                    # 세력 평단가 및 섹터 모멘텀
                     w_cost, w_advice = self.calculate_whale_cost(clean_code, price)
                     data['whale'] = {'cost': w_cost, 'advice': w_advice}
                     data['sector'] = self.calculate_sector_momentum(clean_code, industry)
-                    data['multiWhale'] = self.calculate_multi_whale_stats(clean_code, price)
-                    data['earnings'] = self.calculate_earnings_momentum(clean_code)
                     
+                    # 딥러닝 추론
                     scores = self.ai.get_ensemble_score_details(clean_code, price, f_buy, vol)
-                    # [v28.9.3] float32 타입을 표준 float으로 변환 (JSON 직렬화 에러 방지)
                     s_lstm, s_tcn, s_xgb = float(scores['lstm']), float(scores['tcn']), float(scores['xgb'])
                     data['lstm'], data['tcn'] = round(s_lstm, 1), round(s_tcn, 1)
-                    
+                        
+                    # 수급 누적량 기반 가중치 보정
                     mw = data['multiWhale']; mw_adj = 0
-                    if mw['foreigner']['cost'] > 0:
-                        if mw['foreigner']['profitRate'] < -10: mw_adj += 2
-                        if mw['foreigner']['profitRate'] > 15: mw_adj -= 3
-                    if mw['institution']['cost'] > 0:
-                        if mw['institution']['profitRate'] < -10: mw_adj += 3
-                        if mw['institution']['profitRate'] > 15: mw_adj -= 2
+                    if mw['foreigner']['vol20d'] > 100000: mw_adj += 3
+                    if mw['institution']['vol20d'] > 50000: mw_adj += 3
+                    if mw['foreigner']['vol20d'] < -100000: mw_adj -= 3
                     
-                    # [v28.9] DB 설정 가중치 적용 (Algo vs AI)
+                    # 종합 점수 산출 (DB 설정 기반)
                     w_algo = self.strategy_config['w_algo']
                     w_ai = self.strategy_config['w_ai']
-                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'])), 1)
-                
+
+                    # [v28.9.13] 공격형 모드 전용 수급 폭발 가중치 보정
+                    agg_bonus = 0
+                    if self.strategy_config['mode'] == 'AGGRESSIVE':
+                        if mw['foreigner']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 외인 매집 시 가산
+                        if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
+
+                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)                
+                # 3. AI 적중률(Hit Rate) 조회
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()
                 data['hit_rate'] = round((hr_row['h'] / hr_row['t']) * 100, 1) if hr_row and hr_row['t'] > 0 else round(random.uniform(68.0, 75.0), 1)
-        except: pass
+                
+        except Exception as e:
+            print(f">>> [Error] get_stock_data failed for {stock_code}: {e}")
         return data
 
     def scrape_realtime_news(self, stock_name):
@@ -238,11 +259,9 @@ class BlackBoxAnalyst:
 
     def execute(self):
         self.connect()
-        self.ai.connect() # [v28.9.1] AI 엔진의 DB 연결 활성화
+        self.ai.connect()
         try:
-            # 0. 전략 설정 로드 (v28.9)
             self.load_config()
-            
             holdings = self.fetch_user_holdings()
             if not holdings: return
             rotation = self.get_market_rotation_status()
@@ -256,8 +275,10 @@ class BlackBoxAnalyst:
                 
                 earnings_part = f"본 종목은 {data['earnings']['comment']} " if data['earnings']['comment'] else ""
                 rotation_part = f"현재 시장 주도 자금이 {industry} 섹터로 유입되는 '순환매 선취매' 신호가 포착되었습니다. " if industry in rotation['entry_sectors'] else ""
-                mw = data['multiWhale']; f_p = mw['foreigner']['profitRate']; i_p = mw['institution']['profitRate']
-                mw_part = f"외인은 {f_p}%, 기관은 {i_p}% 수익률을 기록 중입니다. " if mw['foreigner']['cost'] > 0 else ""
+                
+                mw = data['multiWhale']
+                mw_part = f"최근 20일간 외인은 {mw['foreigner']['vol20d']:,}주, 기관은 {mw['institution']['vol20d']:,}주 순매수를 기록 중입니다. "
+                
                 whale_part = "세력 방어선 위에서 안정적 흐름이며, " if data['whale']['cost'] > 0 and data['quant'] > 50 else "세력 매집가 근처 공방 중이며, "
                 sector_part = f"{industry} 섹터 내 주도권을 장악한 상태입니다." if "Leader" in data['sector']['status'] or "Outperformer" in data['sector']['status'] else f"{industry} 섹터 흐름에 안정적으로 동조화되었습니다."
                 tag_str = f"{', '.join(data['reason'][:2])} 시그널을 바탕으로 " if data['reason'] else ""
@@ -280,10 +301,11 @@ class BlackBoxAnalyst:
                     cursor.execute("DELETE FROM user_market_insight WHERE USRID = %s AND insight_type = 'BLACKBOX'", (uid,))
                     cursor.execute("INSERT INTO user_market_insight (USRID, insight_type, insight_text, created_at) VALUES (%s, 'BLACKBOX', %s, NOW())", (uid, json_str))
             self.conn.commit()
-            print(f">>> [BlackBox] v28.9 Dynamic Strategy Config Applied.")
+            print(f">>> [BlackBox] v28.9.12 Advanced Integrated Intelligence completed.")
         finally:
             if self.conn: self.conn.close()
 
 if __name__ == "__main__":
+    # [Cache-Breaker] v28.9.12: Final Indentation & Cursor Management Fix
     analyst = BlackBoxAnalyst()
     analyst.execute()

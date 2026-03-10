@@ -388,50 +388,68 @@ const MyPortfolioDashboard = () => {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Foreigner Stats */}
-                                    <div className="bg-slate-900 border border-indigo-500/20 rounded-[2rem] p-6 flex items-center justify-between group/f">
+                                    <div className="bg-slate-900 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4 group/f">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover/f:bg-indigo-600 group-hover/f:text-white transition-all">
                                                 <Globe size={24} />
                                             </div>
                                             <div>
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Foreigner Avg Cost</span>
-                                                <span className="text-lg font-black font-mono text-white">
-                                                    {selectedInsight.deep?.multiWhale?.foreigner?.cost ? `${selectedInsight.deep.multiWhale.foreigner.cost.toLocaleString()}₩` : "데이터 수집 중"}
-                                                </span>
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Foreigner Cumulative Net Buy</span>
+                                                <span className="text-lg font-black font-mono text-white">Live Accumulation</span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-[9px] text-slate-500 font-bold uppercase block mb-1">Status</span>
-                                            <span className={classNames(
-                                                "px-3 py-1 rounded-lg text-xs font-black font-mono",
-                                                (selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0) >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                                            )}>
-                                                {(selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0) >= 0 ? '+' : ''}{selectedInsight.deep?.multiWhale?.foreigner?.profitRate || 0}%
-                                            </span>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">5D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol5d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.foreigner?.vol5d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">20D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol20d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.foreigner?.vol20d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">60D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol60d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.foreigner?.vol60d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Institution Stats */}
-                                    <div className="bg-slate-900 border border-cyan-500/20 rounded-[2rem] p-6 flex items-center justify-between group/i">
+                                    <div className="bg-slate-900 border border-cyan-500/20 rounded-[2rem] p-6 space-y-4 group/i">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 flex items-center justify-center text-cyan-400 group-hover/i:bg-cyan-600 group-hover/i:text-white transition-all">
                                                 <Activity size={24} />
                                             </div>
                                             <div>
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Institution Avg Cost</span>
-                                                <span className="text-lg font-black font-mono text-white">
-                                                    {selectedInsight.deep?.multiWhale?.institution?.cost ? `${selectedInsight.deep.multiWhale.institution.cost.toLocaleString()}₩` : "데이터 수집 중"}
-                                                </span>
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase block">Institution Cumulative Net Buy</span>
+                                                <span className="text-lg font-black font-mono text-white">Live Accumulation</span>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-[9px] text-slate-500 font-bold uppercase block mb-1">Status</span>
-                                            <span className={classNames(
-                                                "px-3 py-1 rounded-lg text-xs font-black font-mono",
-                                                (selectedInsight.deep?.multiWhale?.institution?.profitRate || 0) >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                                            )}>
-                                                {(selectedInsight.deep?.multiWhale?.institution?.profitRate || 0) >= 0 ? '+' : ''}{selectedInsight.deep?.multiWhale?.institution?.profitRate || 0}%
-                                            </span>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">5D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol5d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.institution?.vol5d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">20D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol20d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.institution?.vol20d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                                <span className="text-[8px] text-slate-500 font-bold block mb-1">60D</span>
+                                                <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol60d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                    {(selectedInsight.deep?.multiWhale?.institution?.vol60d || 0).toLocaleString()}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
