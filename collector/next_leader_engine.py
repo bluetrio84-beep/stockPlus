@@ -187,16 +187,17 @@ class NextLeaderEngine(AIEngine):
             top_20 = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
             with self.conn.cursor() as cursor:
                 cursor.execute("DELETE FROM ai_next_leaders WHERE DATE(captured_at) = CURDATE()")
-                for item in top_20:
+                for idx, item in enumerate(top_20):
+                    is_top10 = 'Y' if idx < 10 else 'N' # [v28.9.17] TOP 10 종목 별도 표시
                     sql = """INSERT INTO ai_next_leaders 
                              (stock_code, stock_name, total_score, algo_score, 
                               lstm_score, tcn_score, xgb_score, ensemble_score, 
-                              reason, price_at_recom, captured_at) 
-                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                              reason, price_at_recom, is_top10, captured_at) 
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     cursor.execute(sql, (
                         item['code'], item['name'], item['total'], item['algo'], 
                         item['lstm'], item['tcn'], item['xgb'], item['ensemble'], 
-                        item['reason'], item['price_at']
+                        item['reason'], item['price_at'], is_top10
                     ))
             self.conn.commit()
             print(f">>> [Success] Hybrid AI (Quant + DeepLearning + Financial + Human) Sync Complete.")

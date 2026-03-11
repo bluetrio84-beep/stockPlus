@@ -220,12 +220,11 @@
         FROM ai_next_leaders
     </select>
     <select id="getPastRecommendations" resultType="map">
-        SELECT stock_code, stock_name, total_score, price_at_recom, price_after_3d, hit_result, DATE_FORMAT(captured_at, '%m.%d') as date 
-        FROM ai_next_leaders 
-        WHERE hit_result != 'PENDING' 
-        ORDER BY captured_at DESC LIMIT 10
+        SELECT stock_code, stock_name, total_score, price_at_recom, price_after_3d, hit_result, DATE_FORMAT(captured_at, '%m.%d') as date
+        FROM ai_next_leaders
+        WHERE hit_result != 'PENDING' AND is_top10 = 'Y'
+        ORDER BY captured_at DESC, total_score DESC LIMIT 10
     </select>
-
     <select id="getHolidaysByYear" resultType="map">
         SELECT * FROM market_holidays WHERE holiday_year = #{year} ORDER BY holiday_date ASC
     </select>

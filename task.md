@@ -1,5 +1,11 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.9.17 Elite Mark System & Dashboard Synchronization (2026-03-11 완료)
+*   **복기 리포트 정예화 (Elite Marking)**:
+    - **is_top10 낙인 시스템**: AI 분석 결과 중 상위 10개 종목에 대해 `is_top10 = 'Y'` 컬럼값을 부여하여 데이터 생성 시점부터 정예 종목을 관리하도록 엔진(`next_leader_engine.py`) 개조.
+    - **화면 싱크로율 100%**: 사후 복기 리포트(AI Review) 조회 시 마킹된 정예 종목들만 출력하도록 쿼리를 수정하여, 랭킹 TOP 10과 복기 명단 간의 불일치 문제 완벽 해결.
+    - **과거 데이터 소급**: 3월 9일 ~ 3월 11일자 주요 탐지 종목들에 대해 정예 마킹 작업을 소급 적용하여 과거 성적표 정화 완료.
+
 ## 🚀 v28.9.14 - v28.9.16 Asset Allocation Stability & Visual Optimization (2026-03-10 완료)
 *   **자산 배분 도넛 차트 고정 (Stability)**:
     - **순서의 무결성**: DB(`ORDER BY`)부터 백엔드(`flatMapSequential`), 프론트엔드(`holdings.map`)까지 이어지는 데이터 파이프라인의 정렬 순서를 완벽하게 고정하여 화면 진입 시마다 도넛이 바뀌는 현상 해결.
