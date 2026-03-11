@@ -1,5 +1,10 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v28.9.18 Tactical Navigation Optimization (2026-03-11 완료)
+*   **관제탑 내비게이션 강화**:
+    - **뒤로가기 버튼 신설**: 포트폴리오 관제탑(My-Dashboard) 헤더 최좌측에 메인 대시보드로 즉시 복귀할 수 있는 직관적인 뒤로가기 버튼(Chevron) 배치.
+    - **레이아웃 정밀 재정돈**: 관제탑 아이콘, 타이틀, 새로고침 버튼을 조화롭게 재배치하여 전술적 통제 편의성 극대화.
+
 ## 🚀 v28.9.17 Elite Mark System & Dashboard Synchronization (2026-03-11 완료)
 *   **복기 리포트 정예화 (Elite Marking)**:
     - **is_top10 낙인 시스템**: AI 분석 결과 중 상위 10개 종목에 대해 `is_top10 = 'Y'` 컬럼값을 부여하여 데이터 생성 시점부터 정예 종목을 관리하도록 엔진(`next_leader_engine.py`) 개조.

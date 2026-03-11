@@ -8,7 +8,10 @@ import {
 import classNames from 'classnames';
 import { fetchPortfolioIntelligence } from '../api/stockApi';
 
+import { useNavigate } from 'react-router-dom';
+
 const MyPortfolioDashboard = () => {
+    const navigate = useNavigate();
     const [holdings, setHoldings] = useState([]);
     const [aiInsight, setAiInsight] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +68,14 @@ const MyPortfolioDashboard = () => {
             {/* 🔝 HEADER */}
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
+                    {/* [v28.9.18] 뒤로가기 버튼: 최좌측 배치 */}
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className="w-12 h-12 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-lg group"
+                    >
+                        <ChevronRight size={24} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+                    </button>
+
                     <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 relative overflow-hidden">
                         <ShieldCheck size={32} className="text-white relative z-10" />
                         <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
