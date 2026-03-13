@@ -1,6 +1,9 @@
 # Use an official Eclipse Temurin JDK runtime as a parent image
 FROM eclipse-temurin:17-jdk-jammy
 
+# [v30.36] Git 및 Python3 설치 (스캐너 엔진 구동용)
+RUN apt-get update && apt-get install -y git python3 && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -21,6 +24,9 @@ RUN ./mvnw dependency:go-offline
 
 # Copy the project source code
 COPY backend/src src
+
+# [v30.36] 파이썬 스캐너 스크립트 복사
+COPY collector/master_spec_generator.py collector/master_spec_generator.py
 
 # Package the application
 RUN ./mvnw package -DskipTests

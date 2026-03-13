@@ -14,8 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
 
@@ -24,20 +24,24 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            // [핵심] REST API 설정: 인증 실패 시 리다이렉트하지 않고 401 반환
-            .exceptionHandling(exception -> exception
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
                 })
             )
             .authorizeHttpRequests(auth -> auth
+                // [v30.46] 명세 추출 API 최우선 허용 (401 에러 원천 차단)
+                .requestMatchers("/api/admin/doc/**").permitAll()
+                .requestMatchers("/api/doc/**").permitAll()
+
                 // 1. 공용 API, 대시보드 및 포트폴리오 인텔리전스 허용
                 .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/portfolio/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/admin/trigger-review", "/api/admin/dump-investor", "/api/admin/magazine/data").permitAll()
 
@@ -47,10 +51,7 @@ public class SecurityConfig {
                 // 3. 그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

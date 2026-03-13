@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter, Calendar, UserCheck, UserX, Shield, UserPlus, Key, Link } from 'lucide-react';
+import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter, Calendar, UserCheck, UserX, Shield, UserPlus, Key, Link, Globe, Wallet, BarChart3, ChevronDown, Database } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
@@ -39,6 +39,11 @@ const AdminSystemManagement = () => {
     const [deleteTarget, setDeleteConfirm] = useState(null); 
     const [deleteHolidayTarget, setDeleteHolidayConfirm] = useState(null);
     const [deleteUserTarget, setDeleteUserConfirm] = useState(null);
+
+    // [v30.36] API 스캔 전용 상태 (기존 로직 100% 보존)
+    const [gitUrl, setGitUrl] = useState('https://github.com/bluetrio84-beep/stockPlus.git');
+    const [scannedData, setScannedData] = useState(null);
+    const [expandedApi, setExpandedApi] = useState(null);
 
     const fetchStocks = async (p = 0) => {
         try {
@@ -191,6 +196,59 @@ const AdminSystemManagement = () => {
         } catch (e) {}
     };
 
+    // [v30.36] 파이썬 지능형 스캐너 연동 핸들러 (정밀 주입)
+    const handleScanRepo = async () => {
+        if (!gitUrl.trim()) return setErrorPopup("Git URL을 입력하세요.");
+        try {
+            setIsLoading(true);
+            const res = await fetch(`/stockPlus/api/admin/doc/scan?gitUrl=${encodeURIComponent(gitUrl)}`, { headers: getAuthHeader() });
+            if (!res.ok) throw new Error("스캔 엔진 구동 실패");
+            const data = await res.json();
+            setScannedData(data);
+            return data;
+        } catch (e) { setErrorPopup(e.message); return null; } finally { setIsLoading(false); }
+    };
+
+    const handleDownloadDoc = async () => {
+        let data = scannedData || await handleScanRepo();
+        if (!data || data.status !== 'SUCCESS') return;
+        try {
+            const { apis, tables } = data;
+            let html = `<html><head><meta charset='utf-8'><style>
+                body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; color: #1e293b; }
+                h1 { color: #4f46e5; text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; font-size: 22pt; }
+                .section-header { background: #1e293b; color: #ffffff; padding: 12px; margin-top: 40px; font-size: 16pt; text-align: center; font-weight: bold; border-radius: 8px; }
+                h2 { color: #4f46e5; background: #f8fafc; padding: 8px; border-left: 5px solid #4f46e5; margin-top: 30px; font-size: 14pt; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+                th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 9pt; text-align: left; word-wrap: break-word; }
+                th { background: #f1f5f9; font-weight: bold; color: #475569; }
+                .mapping-header { background: #6366f1; color: white; }
+                .table-header { background: #10b981; color: white; }
+                pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 8pt; white-space: pre-wrap; }
+            </style></head><body>
+                <h1>StockPlus System Intelligent Specification</h1>
+                <p style='text-align: right;'>Generated: ${new Date().toLocaleString()}</p>
+                <div class='section-header'>SECTION I. API DATA MAPPING</div>`;
+            apis?.forEach((spec, index) => {
+                html += `<div style='margin-bottom: 40px;'><h2>${index + 1}. ${spec.function} API</h2><table><tr><th style='width: 20%;'>Endpoint</th><td style='font-family: monospace; font-weight: bold; color: #4f46e5;'>${spec.url}</td></tr><tr><th>Method</th><td><b>${spec.method}</b></td></tr></table>
+                <h3>▶ Data Mapping Specification</h3><table><thead><tr><th class='mapping-header' style='width: 25%;'>JSON Key</th><th class='mapping-header'>Type & Description</th><th class='mapping-header' style='width: 25%;'>DB Mapping</th></tr></thead><tbody>
+                ${spec.mapping?.map(f => `<tr><td><b>${f.key}</b></td><td>${f.desc} (${f.type})</td><td>${f.key.replace(/([A-Z])/g, "_$1").toLowerCase()}</td></tr>`).join('') || '<tr><td colspan="3">No mapping data</td></tr>'}
+                </tbody></table><h3>▶ Request Sample</h3><pre>${spec.sample || '{}'}</pre></div>`;
+            });
+            html += `<div class='section-header' style='page-break-before: always;'>SECTION II. DATABASE SCHEMA DESIGN</div>`;
+            tables?.forEach(table => {
+                html += `<div style='margin-bottom: 30px;'><h2>TABLE: ${table.table}</h2><p>용도: ${table.usage}</p><table><thead><tr><th class='table-header' style='width: 30%;'>Column Name</th><th class='table-header' style='width: 20%;'>Type</th><th class='table-header'>Description</th></tr></thead><tbody>
+                ${table.columns?.map(col => `<tr><td><b>${col.name}</b></td><td>${col.type}</td><td>${col.desc || '-'}</td></tr>`).join('') || '<tr><td colspan="3">No columns extracted</td></tr>'}
+                </tbody></table></div>`;
+            });
+            html += "</body></html>";
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = "StockPlus_Full_Spec.doc";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        } catch (e) { setErrorPopup(e.message); }
+    };
+
     return (
         <div className="flex-1 bg-slate-950 p-2 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-3 lg:gap-6 relative pb-28 lg:pb-5">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 shrink-0">
@@ -282,20 +340,63 @@ const AdminSystemManagement = () => {
             )}
 
             {activeTab === 'api' && (
-                <div className="flex-1 min-h-0 flex flex-col gap-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center text-center gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                            <Link className="text-amber-500" size={40} />
+                <div className="flex-1 min-h-0 flex flex-col gap-4 animate-in fade-in duration-300 overflow-hidden">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl shrink-0 flex flex-col lg:flex-row items-center gap-6">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20"><Link className="text-amber-500" size={32} /></div>
+                        <div className="flex-1 w-full space-y-3">
+                            <h3 className="text-white font-black text-lg uppercase italic tracking-tighter">Ultimate Spec Engine (Python AI)</h3>
+                            <div className="relative group">
+                                <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500/50" size={16} />
+                                <input type="password" value={gitUrl} onChange={(e) => setGitUrl(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-xs text-white focus:ring-2 focus:ring-amber-500/50 transition-all font-mono" placeholder="Enter Protected Git URL" />
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-white font-black text-xl uppercase tracking-tighter mb-2">StockPlus API Documentation</h3>
-                            <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-                                시스템 전체의 데이터 흐름과 인터페이스 규격이 정리된 최신 API 가이드북을 다운로드할 수 있습니다.
-                            </p>
+                        <div className="flex gap-2 shrink-0">
+                            <button onClick={handleScanRepo} disabled={isLoading} className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 font-black rounded-xl transition-all shadow-lg flex items-center gap-2 disabled:opacity-50">{isLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />} 스캔 시작</button>
+                            <button onClick={handleDownloadDoc} disabled={isLoading || !scannedData} className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-xl transition-all shadow-lg shadow-amber-600/20 active:scale-95 flex items-center gap-2 disabled:opacity-50"><Save size={16} /> 다운로드</button>
                         </div>
-                        <button className="px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-2xl transition-all shadow-lg shadow-amber-600/20 active:scale-95 flex items-center gap-2">
-                            <Save size={20} /> API 가이드 다운로드 (.DOC)
-                        </button>
+                    </div>
+
+                    <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+                        <div className="p-4 bg-slate-950/50 border-b border-slate-800 flex justify-between items-center shrink-0">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Analysis Results: <span className="text-amber-500">{scannedData?.total_apis || 0} APIs</span> | <span className="text-emerald-500">{scannedData?.total_tables || 0} Tables</span></span>
+                        </div>
+                        <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
+                            {scannedData ? scannedData.apis.map((spec, idx) => (
+                                <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden group">
+                                    <button onClick={() => setExpandedApi(expandedApi === idx ? null : idx)} className="w-full px-5 py-4 flex items-center justify-between text-white hover:bg-white/5 transition-all font-black">
+                                        <div className="flex items-center gap-4">
+                                            <span className={classNames("px-2 py-0.5 rounded text-[9px] w-12 text-center", spec.method === 'POST' ? "bg-rose-500/10 text-rose-400" : "bg-cyan-500/10 text-cyan-400")}>{spec.method}</span>
+                                            <span className="text-sm font-mono">{spec.url}</span>
+                                            <span className="text-[10px] text-slate-500 hidden lg:inline">({spec.function})</span>
+                                        </div>
+                                        <ChevronDown size={16} className={classNames("text-slate-600 transition-transform", expandedApi === idx && "rotate-180")} />
+                                    </button>
+                                    {expandedApi === idx && (
+                                        <div className="px-5 pb-5 pt-2 border-t border-slate-800/50 grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+                                            <div className="space-y-2">
+                                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">▶ Data Mapping Spec</h4>
+                                                <table className="w-full text-left text-[10px] border-collapse bg-slate-900/50 rounded-xl overflow-hidden">
+                                                    <thead><tr className="bg-slate-800 text-slate-500 uppercase"><th className="px-3 py-2">Field</th><th className="px-3 py-2">Mapping & Desc</th></tr></thead>
+                                                    <tbody className="divide-y divide-slate-800">
+                                                        {spec.mapping?.map(f => (<tr key={f.key}><td className="px-3 py-2 font-mono text-white font-bold">{f.key}</td><td className="px-3 py-2 text-slate-400">{f.desc} ({f.type})</td></tr>))}
+                                                        {(!spec.mapping || spec.mapping.length === 0) && (<tr><td colSpan="2" className="px-3 py-4 text-center text-slate-600 italic">No fields found</td></tr>)}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest">▶ JSON Sample</h4>
+                                                <pre className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[10px] font-mono text-emerald-400 overflow-x-auto">{spec.sample || '{}'}</pre>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )) : (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-600 py-20 gap-3 opacity-30">
+                                    <Database size={48} />
+                                    <p className="font-black text-xs uppercase tracking-[0.3em]">Ready to scan repository</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
