@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter, Calendar, UserCheck, UserX, Shield, UserPlus, Key } from 'lucide-react';
+import { Settings, Users, Box, Search, Plus, Edit2, Trash2, X, Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, Filter, Calendar, UserCheck, UserX, Shield, UserPlus, Key, Link } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 
@@ -199,6 +199,7 @@ const AdminSystemManagement = () => {
                     <button onClick={() => setActiveTab('stocks')} className={classNames("flex-1 lg:flex-none px-4 lg:px-6 py-1.5 lg:py-2 rounded-lg text-[10px] lg:text-xs font-black transition-all flex items-center justify-center gap-2 whitespace-nowrap", activeTab === 'stocks' ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300")}><Box size={14} /> 상장종목</button>
                     <button onClick={() => setActiveTab('holidays')} className={classNames("flex-1 lg:flex-none px-4 lg:px-6 py-1.5 lg:py-2 rounded-lg text-[10px] lg:text-xs font-black transition-all flex items-center justify-center gap-2 whitespace-nowrap", activeTab === 'holidays' ? "bg-cyan-600 text-white" : "text-slate-500 hover:text-slate-300")}><Calendar size={14} /> 공휴일</button>
                     <button onClick={() => setActiveTab('users')} className={classNames("flex-1 lg:flex-none px-4 lg:px-6 py-1.5 lg:py-2 rounded-lg text-[10px] lg:text-xs font-black transition-all flex items-center justify-center gap-2 whitespace-nowrap", activeTab === 'users' ? "bg-rose-600 text-white" : "text-slate-500 hover:text-slate-300")}><Users size={14} /> 사용자</button>
+                    <button onClick={() => setActiveTab('api')} className={classNames("flex-1 lg:flex-none px-4 lg:px-6 py-1.5 lg:py-2 rounded-lg text-[10px] lg:text-xs font-black transition-all flex items-center justify-center gap-2 whitespace-nowrap", activeTab === 'api' ? "bg-amber-600 text-white" : "text-slate-500 hover:text-slate-300")}><Link size={14} /> API 가이드</button>
                 </div>
             </header>
 
@@ -276,6 +277,25 @@ const AdminSystemManagement = () => {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'api' && (
+                <div className="flex-1 min-h-0 flex flex-col gap-4 animate-in fade-in duration-300">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center text-center gap-6">
+                        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                            <Link className="text-amber-500" size={40} />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-black text-xl uppercase tracking-tighter mb-2">StockPlus API Documentation</h3>
+                            <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                                시스템 전체의 데이터 흐름과 인터페이스 규격이 정리된 최신 API 가이드북을 다운로드할 수 있습니다.
+                            </p>
+                        </div>
+                        <button className="px-8 py-4 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-2xl transition-all shadow-lg shadow-amber-600/20 active:scale-95 flex items-center gap-2">
+                            <Save size={20} /> API 가이드 다운로드 (.DOC)
+                        </button>
                     </div>
                 </div>
             )}
