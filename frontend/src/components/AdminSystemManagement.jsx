@@ -367,7 +367,7 @@ const AdminSystemManagement = () => {
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Analysis Results: <span className="text-amber-500">{scannedData?.total_apis || 0} APIs</span> | <span className="text-emerald-500">{scannedData?.total_tables || 0} Tables</span></span>
                         </div>
                         <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
-                            {scannedData ? scannedData.apis.map((spec, idx) => (
+                            {scannedData?.apis ? scannedData.apis.map((spec, idx) => (
                                 <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden group">
                                     <button onClick={() => setExpandedApi(expandedApi === idx ? null : idx)} className="w-full px-5 py-4 flex items-center justify-between text-white hover:bg-white/5 transition-all font-black">
                                         <div className="flex items-center gap-4">
@@ -399,7 +399,7 @@ const AdminSystemManagement = () => {
                             )) : (
                                 <div className="h-full flex flex-col items-center justify-center text-slate-600 py-20 gap-3 opacity-30">
                                     <Database size={48} />
-                                    <p className="font-black text-xs uppercase tracking-[0.3em]">Ready to scan repository</p>
+                                    <p className="font-black text-xs uppercase tracking-[0.3em]">{scannedData?.status === 'ERROR' ? scannedData.message : 'Ready to scan repository'}</p>
                                 </div>
                             )}
                         </div>

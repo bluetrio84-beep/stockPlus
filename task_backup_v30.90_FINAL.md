@@ -1,17 +1,5 @@
 # 📋 StockPlus 개발 Task 현황
 
-## 🚀 v30.90 Intelligent Source-to-Spec Master & API Documentation Precision Strike (2026-03-14 완료) 🔥
-*   **API 전수 복구 및 정밀 분석 (100% Recovery)**:
-    - **누락 API 완정 정복**: `auth/login`, `portfolio/intelligence`, `market-insight`, `special-report`, `addTrade`, `updateTrade` 등 사각지대에 있던 핵심 API 100% 복구 성공.
-    - **Reactive & Generic 마스터**: `Mono<Map<...>>`, `ResponseEntity<?>`, `Flux` 등 복잡한 중첩 제네릭 및 리액티브 타입을 추적하는 '재귀적 파서'급 정규표현식 이식.
-    - **서비스 레이어 심층 추적**: 컨트롤러 본문을 넘어 Service 클래스 내부의 `.put()`, `Map.of()` 로직까지 4,000자 범위로 확장 스캔하여 결과 필드 명세화.
-*   **데이터 시각화 및 자동화 혁신**:
-    - **JSON Sample 자동 생성 엔진**: 필드 타입(String, Int, Boolean, List 등)을 분석하여 실제 통신 규격에 맞는 JSON 샘플을 실시간으로 자동 생성.
-    - **DB 테이블 완정 정복 (34개)**: MyBatis XML의 DML(`INSERT`, `UPDATE`, `DELETE`, `JOIN`)과 파이썬 수집기 쿼리를 전수 조사하여 시스템 내 모든 테이블 스키마 추출.
-*   **시스템 안정성 및 UI 방어**:
-    - **프론트엔드 무결성 수술**: Optional Chaining(`?.`)과 에러 핸들링 UI를 적용하여 스캔 중 발생할 수 있는 `TypeError` 원천 차단.
-    - **지능형 용어 사전 확장**: `payload` 분석 로직 강화 및 `usrid`, `tradeDate`, `special_report` 등 비즈니스 핵심 용어들에 대한 한글 설명 정밀 매핑.
-
 ## 🚀 v30.52 Intelligent Source-to-Spec Master (2026-03-13 완료) 🔥
 *   **지능형 자가 명세 엔진 구축 (Python AI)**:
     - **69개 API 전수 복구**: 멀티라인 파서를 통해 스프링 컨트롤러 내의 모든 엔드포인트를 100% 낚아채는 '욕심쟁이 스캐너' 완비.
