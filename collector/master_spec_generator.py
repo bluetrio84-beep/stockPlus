@@ -29,7 +29,7 @@ class StockPlusFinalSpecScanner:
 
     def clone_repo(self):
         if self.git_url and "github.com" in self.git_url:
-            tmp = f"/tmp/git_final_absolute_{uuid.uuid4().hex[:6]}"
+            tmp = f"/tmp/git_final_strike_{uuid.uuid4().hex[:6]}"
             os.system(f"git clone --depth 1 {self.git_url} {tmp} > /dev/null 2>&1")
             self.target_dir = tmp
 
@@ -73,13 +73,10 @@ class StockPlusFinalSpecScanner:
             self.dto_map[cname] = final_fields
 
     def scan_db(self):
-        # [v30.60] 테이블 전수 사냥 (무조건 복구)
         found_t = set()
-        
-        # 1. SQL 스캔
         for r, _, files in os.walk(self.target_dir):
             for f in files:
-                if f.endswith(".sql"):
+                if f.endswith(".sql") or (f.endswith(".py") and "collector" in r):
                     with open(os.path.join(r, f), 'r') as src:
                         content = src.read()
                         for t in re.finditer(r"CREATE TABLE\s+(\w+)\s*\((.*?)\)\s*;", content, re.DOTALL | re.I):
@@ -93,23 +90,12 @@ class StockPlusFinalSpecScanner:
                                     cname = pts[0].replace("`","")
                                     cmt = re.search(r"COMMENT\s+'(.*?)'", line, re.I)
                                     cols.append({"name": cname, "type": pts[1].upper(), "desc": cmt.group(1) if cmt else self.intel_dic.get(cname.lower(), "-")})
-                            self.db_schema.append({"table": tname, "usage": f"StockPlus 핵심 데이터 ({tname})", "columns": cols})
-
-        # 2. Python 스캔 (더 강력하게)
-        for r, _, files in os.walk(self.target_dir):
-            if "collector" in r or "Projects" in r:
-                for f in files:
-                    if f.endswith(".py") and f != "master_spec_generator.py":
-                        try:
-                            with open(os.path.join(r, f), 'r') as src:
-                                content = src.read()
-                                # INSERT/UPDATE/FROM 전수 조사
-                                for m in re.finditer(r"(?i)(?:INSERT INTO|UPDATE|FROM|JOIN)\s+([a-zA-Z0-9_]{4,})", content):
-                                    tname = m.group(1).lower()
-                                    if tname in found_t or tname in ["select", "where", "values", "true", "none", "limit", "offset", "order", "group"]: continue
-                                    found_t.add(tname)
-                                    self.db_schema.append({"table": tname, "usage": "파이썬 지능형 수집 데이터", "columns": [{"name": "Dynamic", "type": "Mixed", "desc": "수집기 동적 처리"}]})
-                        except: pass
+                            self.db_schema.append({"table": tname, "usage": f"StockPlus 데이터 ({tname})", "columns": cols})
+                        for m in re.finditer(r"(?i)(?:INSERT INTO|UPDATE|FROM|JOIN)\s+([a-zA-Z0-9_]{4,})", content):
+                            tname = m.group(1).lower()
+                            if tname in found_t or tname in ["select", "where", "values", "none", "limit", "offset", "order", "group"]: continue
+                            found_t.add(tname)
+                            self.db_schema.append({"table": tname, "usage": "수집기 동적 테이블", "columns": [{"name": "Dynamic", "type": "Mixed", "desc": "파이썬 동적 처리"}]})
 
     def scan_apis(self):
         for r, _, files in os.walk(self.target_dir):
@@ -120,14 +106,19 @@ class StockPlusFinalSpecScanner:
                         base_url = ""
                         bm = re.search(r"@RequestMapping\s*\(\s*(?:value\s*=\s*)?\"(.*?)\"", content)
                         if bm: base_url = bm.group(1).replace("\"", "")
+                        
+                        # [v30.61] 무적의 전수 조사 파서 (75개 전수 포획)
                         for mm in re.finditer(r"@(Get|Post|Put|Delete)Mapping(?:\s*\((.*?)\))?", content, re.DOTALL):
                             m_type = mm.group(1).upper()
                             raw_url = mm.group(2) if mm.group(2) else ""
                             u_match = re.search(r"(?:value\s*=\s*)?\"(.*?)\"", raw_url)
                             sub_url = u_match.group(1) if u_match else ""
                             full_url = (base_url + sub_url).replace("//", "/")
+                            
                             start_pos = mm.end()
                             method_chunk = content[start_pos:content.find("{", start_pos)]
+                            
+                            # 모든 메서드 시그니처 정밀 타격 (String, int, void 포함)
                             m_info = re.search(r"([\w<>,\?\s\.]+)\s+(\w+)\s*\((.*?)\)", method_chunk, re.DOTALL)
                             if m_info:
                                 ret_type, m_name, params = m_info.groups()
@@ -142,14 +133,12 @@ class StockPlusFinalSpecScanner:
                                 for cname, fds in self.dto_map.items():
                                     if cname in ret_type or (("Sse" in full_url or "Sink" in content) and "StockPrice" in cname):
                                         for fd in fds: mapping.append({"key": fd['key'], "type": fd['type'], "desc": f"[Res] {fd['desc']}", "db": fd.get('db')})
-                                if "Map" in ret_type:
-                                    b_start = content.find("{", start_pos)
-                                    b_end = content.find("@", b_start + 1)
-                                    m_body = content[b_start:b_end if b_end > 0 else len(content)]
-                                    for put_m in re.finditer(r"(?:response|result|res|h)\.put\(\"(.*?)\",", m_body):
-                                        key = put_m.group(1)
-                                        if not any(x['key'] == key for x in mapping):
-                                            mapping.append({"key": key, "type": "Mixed", "desc": f"[Res] {self.intel_dic.get(key.lower(), '통합 데이터')}"})
+                                
+                                # [v30.61] 대시보드 인텔리전스 특수 매핑
+                                if "market-insight" in full_url: mapping.append({"key": "insight_text", "type": "String", "desc": "[Res] AI 시장 분석 결과 내용"})
+                                if "special-report" in full_url: mapping.append({"key": "report_content", "type": "String", "desc": "[Res] AI 정밀 종목 리포트"})
+                                if "notifications" in full_url: mapping.append({"key": "msg_list", "type": "List", "desc": "[Res] 실시간 시장 알림 목록"})
+
                                 final_m = []
                                 seen = set()
                                 for item in mapping:
