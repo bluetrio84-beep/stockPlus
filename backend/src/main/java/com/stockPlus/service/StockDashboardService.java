@@ -21,7 +21,6 @@ public class StockDashboardService {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StockDashboardService.class);
 
     private final WatchlistMapper watchlistMapper; // 관심 종목 DB 매퍼
-    private final StockInfoMapper stockInfoMapper; // 주식 상세 정보 DB 매퍼
     private final UserNoteMapper userNoteMapper; // 사용자 메모 DB 매퍼
     private final UserMapper userMapper; // 사용자 정보 DB 매퍼
     private final UserMarketInsightMapper userMarketInsightMapper; // AI 인사이트 DB 매퍼
@@ -318,15 +317,6 @@ public class StockDashboardService {
             }
         }
         log.info("[Scheduler] Specialized AI Analysis Completed.");
-    }
-
-    public StockInfo getStockInfo(String stockCode) {
-        return stockInfoMapper.findByStockCode(stockCode);
-    }
-
-    @Transactional
-    public void updateStockInfo(StockInfo stockInfo) {
-        stockInfoMapper.upsert(stockInfo);
     }
 
     // --- Notifications (알림 관리) ---

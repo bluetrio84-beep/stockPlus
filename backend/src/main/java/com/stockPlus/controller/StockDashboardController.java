@@ -1,7 +1,7 @@
 package com.stockPlus.controller;
 
 import com.stockPlus.domain.StockChartDto;
-import com.stockPlus.domain.StockInfo;
+import com.stockPlus.domain.StockPriceDto;
 import com.stockPlus.domain.UserNote;
 import com.stockPlus.domain.Watchlist;
 import com.stockPlus.service.KisRealtimeService;
@@ -167,25 +167,6 @@ public class StockDashboardController {
     }
 
     // --- Stock Info & Chart (주식 정보 및 차트) ---
-
-    /**
-     * 특정 종목의 상세 정보를 조회합니다.
-     * @param stockCode 종목 코드
-     * @return 주식 상세 정보
-     */
-    @GetMapping("/stock-info/{stockCode}")
-    public StockInfo getStockInfo(@PathVariable String stockCode) {
-        return dashboardService.getStockInfo(stockCode);
-    }
-
-    /**
-     * 주식 정보를 업데이트합니다.
-     * @param stockInfo 업데이트할 주식 정보
-     */
-    @PostMapping("/stock-info")
-    public void updateStockInfo(@RequestBody StockInfo stockInfo) {
-        dashboardService.updateStockInfo(stockInfo);
-    }
 
     /**
      * 주식 차트 데이터를 조회합니다. (한국투자증권 API 연동)

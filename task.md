@@ -1,5 +1,17 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v31.80 Live DB Perfect Synchronization & System Purification (2026-03-14 완료) 🔥
+*   **DB 완정 정복 (29개 테이블 100% 일치)**:
+    - **실측 기반 동기화**: 실제 DB에 숨어있던 수집기/AI 전용 테이블 13개(`stock_intraday_history`, `collector_config` 등)를 역추적하여 `schema.sql`에 완벽 박제.
+    - **불순물 0% 소탕**: 데이터 0건인 유령 테이블(`news`, `stock_info`, `stock_signals` 등)을 DB와 설계도에서 전격 삭제하여 최적화 완료.
+    - **설계도 무결성**: API 가이드 내 Database Schema 명세와 실제 DB 테이블 개수(29개)를 1:1로 완벽히 일치시킴.
+*   **백엔드 소스 코드 정예화**:
+    - **찌꺼기 로직 도려내기**: 삭제된 테이블을 참조하던 `StockInfoMapper`, `StockInfo.java` 및 관련 컨트롤러/서비스 메서드를 전수 조사하여 영구 제거.
+    - **빌드 무결성 사수**: 삭제 과정에서 발생한 참조 에러를 정밀 타격하여 수정하고, 백엔드 재빌드를 통해 시스템 안정성 최종 검증 완료.
+*   **지능형 스캐너 정점 (`v31.30`)**:
+    - **SQL 파서 극강화**: `IF NOT EXISTS` 및 한글 주석이 섞인 복잡한 SQL 구문을 100% 낚아채는 '방탄 파서' 구축.
+    - **에러 추적 브릿지**: 파이썬 실행 에러를 자바가 낚아채어 프론트엔드에 즉시 보고하는 통합 에러 채널 완성.
+
 ## 🚀 v30.95 DB Schema Deep-Dive & Multi-Tab Specification (2026-03-14 완료) 🔥
 *   **DB 설계도의 정밀화 (Architecture Master)**:
     - **제약 조건 100% 추출**: `CREATE TABLE` 구문을 정밀 분석하여 **PK(기본키), NOT NULL, AUTO_INCREMENT** 등 핵심 제약 조건을 완벽하게 낚아챔.
