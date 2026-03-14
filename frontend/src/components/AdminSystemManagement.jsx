@@ -222,23 +222,29 @@ const AdminSystemManagement = () => {
                 table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
                 th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 9pt; text-align: left; word-wrap: break-word; }
                 th { background: #f1f5f9; font-weight: bold; color: #475569; }
-                .mapping-header { background: #6366f1; color: white; }
-                .table-header { background: #10b981; color: white; }
+                .mapping-header { background: #6366f1 !important; color: white !important; }
+                .table-header { background: #10b981 !important; color: white !important; }
                 pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 8pt; white-space: pre-wrap; }
             </style></head><body>
                 <h1>StockPlus System Intelligent Specification</h1>
                 <p style='text-align: right;'>Generated: ${new Date().toLocaleString()}</p>
-                <div class='section-header'>SECTION I. API DATA MAPPING</div>`;
+                <div class='section-header'>SECTION I. API INTERFACE & DATA MAPPING</div>`;
+            
             apis?.forEach((spec, index) => {
                 html += `<div style='margin-bottom: 40px;'><h2>${index + 1}. ${spec.function} API</h2><table><tr><th style='width: 20%;'>Endpoint</th><td style='font-family: monospace; font-weight: bold; color: #4f46e5;'>${spec.url}</td></tr><tr><th>Method</th><td><b>${spec.method}</b></td></tr></table>
-                <h3>▶ Data Mapping Specification</h3><table><thead><tr><th class='mapping-header' style='width: 25%;'>JSON Key</th><th class='mapping-header'>Type & Description</th><th class='mapping-header' style='width: 25%;'>DB Mapping</th></tr></thead><tbody>
-                ${spec.mapping?.map(f => `<tr><td><b>${f.key}</b></td><td>${f.desc} (${f.type})</td><td>${f.key.replace(/([A-Z])/g, "_$1").toLowerCase()}</td></tr>`).join('') || '<tr><td colspan="3">No mapping data</td></tr>'}
-                </tbody></table><h3>▶ Request Sample</h3><pre>${spec.sample || '{}'}</pre></div>`;
+                <h3>▶ Data Mapping Specification</h3><table><thead><tr><th class='mapping-header' style='width: 25%;'>JSON Key</th><th class='mapping-header'>Description & Type</th><th class='mapping-header' style='width: 25%;'>DB Mapping</th></tr></thead><tbody>
+                ${spec.mapping && spec.mapping.length > 0 ? 
+                    spec.mapping.map(f => `<tr><td style='font-weight: bold;'>${f.key}</td><td>${f.desc} (${f.type})</td><td style='color: #6366f1; font-family: monospace;'>${f.key.replace(/([A-Z])/g, "_$1").toLowerCase()}</td></tr>`).join('') :
+                    '<tr><td colspan="3" style="text-align: center;">No mapping data available</td></tr>'}
+                </tbody></table><h3>▶ Request JSON Sample</h3><pre>${spec.sample || '{}'}</pre></div>`;
             });
+
             html += `<div class='section-header' style='page-break-before: always;'>SECTION II. DATABASE SCHEMA DESIGN</div>`;
             tables?.forEach(table => {
                 html += `<div style='margin-bottom: 30px;'><h2>TABLE: ${table.table}</h2><p>용도: ${table.usage}</p><table><thead><tr><th class='table-header' style='width: 30%;'>Column Name</th><th class='table-header' style='width: 20%;'>Type</th><th class='table-header'>Description</th></tr></thead><tbody>
-                ${table.columns?.map(col => `<tr><td><b>${col.name}</b></td><td>${col.type}</td><td>${col.desc || '-'}</td></tr>`).join('') || '<tr><td colspan="3">No columns extracted</td></tr>'}
+                ${table.columns && table.columns.length > 0 ? 
+                    table.columns.map(col => `<tr><td style='font-weight: bold;'>${col.name}</td><td style='color: #059669;'>${col.type}</td><td>${col.desc || '-'}</td></tr>`).join('') :
+                    '<tr><td colspan="3" style="text-align: center;">No columns extracted</td></tr>'}
                 </tbody></table></div>`;
             });
             html += "</body></html>";
