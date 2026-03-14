@@ -44,6 +44,8 @@ const AdminSystemManagement = () => {
     const [gitUrl, setGitUrl] = useState('https://github.com/bluetrio84-beep/stockPlus.git');
     const [scannedData, setScannedData] = useState(null);
     const [expandedApi, setExpandedApi] = useState(null);
+    const [expandedTable, setExpandedTable] = useState(null);
+    const [activeSubTab, setActiveSubTab] = useState('apis');
 
     const fetchStocks = async (p = 0) => {
         try {
@@ -225,6 +227,7 @@ const AdminSystemManagement = () => {
                 .mapping-header { background: #6366f1 !important; color: white !important; }
                 .table-header { background: #10b981 !important; color: white !important; }
                 pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 8pt; white-space: pre-wrap; }
+                .pk-badge { color: #e11d48; font-weight: bold; }
             </style></head><body>
                 <h1>StockPlus System Intelligent Specification</h1>
                 <p style='text-align: right;'>Generated: ${new Date().toLocaleString()}</p>
@@ -234,23 +237,23 @@ const AdminSystemManagement = () => {
                 html += `<div style='margin-bottom: 40px;'><h2>${index + 1}. ${spec.function} API</h2><table><tr><th style='width: 20%;'>Endpoint</th><td style='font-family: monospace; font-weight: bold; color: #4f46e5;'>${spec.url}</td></tr><tr><th>Method</th><td><b>${spec.method}</b></td></tr></table>
                 <h3>▶ Data Mapping Specification</h3><table><thead><tr><th class='mapping-header' style='width: 25%;'>JSON Key</th><th class='mapping-header'>Description & Type</th><th class='mapping-header' style='width: 25%;'>DB Mapping</th></tr></thead><tbody>
                 ${spec.mapping && spec.mapping.length > 0 ? 
-                    spec.mapping.map(f => `<tr><td style='font-weight: bold;'>${f.key}</td><td>${f.desc} (${f.type})</td><td style='color: #6366f1; font-family: monospace;'>${f.key.replace(/([A-Z])/g, "_$1").toLowerCase()}</td></tr>`).join('') :
+                    spec.mapping.map(f => `<tr><td style='font-weight: bold;'>${f.key}</td><td>${f.desc} (${f.type})</td><td style='color: #6366f1; font-family: monospace;'>${f.db || f.key.replace(/([A-Z])/g, "_$1").toLowerCase()}</td></tr>`).join('') :
                     '<tr><td colspan="3" style="text-align: center;">No mapping data available</td></tr>'}
                 </tbody></table><h3>▶ Request JSON Sample</h3><pre>${spec.sample || '{}'}</pre></div>`;
             });
 
             html += `<div class='section-header' style='page-break-before: always;'>SECTION II. DATABASE SCHEMA DESIGN</div>`;
             tables?.forEach(table => {
-                html += `<div style='margin-bottom: 30px;'><h2>TABLE: ${table.table}</h2><p>용도: ${table.usage}</p><table><thead><tr><th class='table-header' style='width: 30%;'>Column Name</th><th class='table-header' style='width: 20%;'>Type</th><th class='table-header'>Description</th></tr></thead><tbody>
+                html += `<div style='margin-bottom: 30px;'><h2>TABLE: ${table.table}</h2><p>용도: ${table.usage}</p><table><thead><tr><th class='table-header' style='width: 20%;'>Column</th><th class='table-header' style='width: 15%;'>Type(Size)</th><th class='table-header' style='width: 8%; text-align: center;'>PK</th><th class='table-header' style='width: 8%; text-align: center;'>Null</th><th class='table-header'>Description</th></tr></thead><tbody>
                 ${table.columns && table.columns.length > 0 ? 
-                    table.columns.map(col => `<tr><td style='font-weight: bold;'>${col.name}</td><td style='color: #059669;'>${col.type}</td><td>${col.desc || '-'}</td></tr>`).join('') :
-                    '<tr><td colspan="3" style="text-align: center;">No columns extracted</td></tr>'}
+                    table.columns.map(col => `<tr><td style='font-weight: bold;'>${col.name}</td><td style='color: #059669;'>${col.type}${col.size !== '-' ? `(${col.size})` : ''}</td><td style='text-align: center;' class='${col.pk === 'Y' ? 'pk-badge' : ''}'>${col.pk}</td><td style='text-align: center;'>${col.null}</td><td>${col.desc || '-'}</td></tr>`).join('') :
+                    '<tr><td colspan="5" style="text-align: center;">No columns extracted</td></tr>'}
                 </tbody></table></div>`;
             });
             html += "</body></html>";
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a'); link.href = url; link.download = "StockPlus_Full_Spec.doc";
+            const link = document.createElement('a'); link.href = url; link.download = `StockPlus_Full_Spec_${new Date().toISOString().split('T')[0]}.doc`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         } catch (e) { setErrorPopup(e.message); }
     };
@@ -362,41 +365,88 @@ const AdminSystemManagement = () => {
                         </div>
                     </div>
 
+                    <div className="flex bg-slate-950/50 border border-slate-800 p-1 rounded-2xl w-fit shrink-0">
+                        <button onClick={() => setActiveSubTab('apis')} className={classNames("px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeSubTab === 'apis' ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "text-slate-500 hover:text-slate-300")}>API Interface</button>
+                        <button onClick={() => setActiveSubTab('tables')} className={classNames("px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all", activeSubTab === 'tables' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-500 hover:text-slate-300")}>Database Schema</button>
+                    </div>
+
                     <div className="flex-1 min-h-0 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden flex flex-col shadow-2xl">
                         <div className="p-4 bg-slate-950/50 border-b border-slate-800 flex justify-between items-center shrink-0">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Analysis Results: <span className="text-amber-500">{scannedData?.total_apis || 0} APIs</span> | <span className="text-emerald-500">{scannedData?.total_tables || 0} Tables</span></span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                {activeSubTab === 'apis' ? `Analysis Results: ${scannedData?.total_apis || 0} APIs` : `Database Inventory: ${scannedData?.total_tables || 0} Tables`}
+                            </span>
                         </div>
                         <div className="flex-1 overflow-auto custom-scrollbar p-4 space-y-3">
-                            {scannedData?.apis ? scannedData.apis.map((spec, idx) => (
-                                <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden group">
-                                    <button onClick={() => setExpandedApi(expandedApi === idx ? null : idx)} className="w-full px-5 py-4 flex items-center justify-between text-white hover:bg-white/5 transition-all font-black">
-                                        <div className="flex items-center gap-4">
-                                            <span className={classNames("px-2 py-0.5 rounded text-[9px] w-12 text-center", spec.method === 'POST' ? "bg-rose-500/10 text-rose-400" : "bg-cyan-500/10 text-cyan-400")}>{spec.method}</span>
-                                            <span className="text-sm font-mono">{spec.url}</span>
-                                            <span className="text-[10px] text-slate-500 hidden lg:inline">({spec.function})</span>
-                                        </div>
-                                        <ChevronDown size={16} className={classNames("text-slate-600 transition-transform", expandedApi === idx && "rotate-180")} />
-                                    </button>
-                                    {expandedApi === idx && (
-                                        <div className="px-5 pb-5 pt-2 border-t border-slate-800/50 grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                                            <div className="space-y-2">
-                                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">▶ Data Mapping Spec</h4>
-                                                <table className="w-full text-left text-[10px] border-collapse bg-slate-900/50 rounded-xl overflow-hidden">
-                                                    <thead><tr className="bg-slate-800 text-slate-500 uppercase"><th className="px-3 py-2">Field</th><th className="px-3 py-2">Mapping & Desc</th></tr></thead>
-                                                    <tbody className="divide-y divide-slate-800">
-                                                        {spec.mapping?.map(f => (<tr key={f.key}><td className="px-3 py-2 font-mono text-white font-bold">{f.key}</td><td className="px-3 py-2 text-slate-400">{f.desc} ({f.type})</td></tr>))}
-                                                        {(!spec.mapping || spec.mapping.length === 0) && (<tr><td colSpan="2" className="px-3 py-4 text-center text-slate-600 italic">No fields found</td></tr>)}
-                                                    </tbody>
-                                                </table>
+                            {activeSubTab === 'apis' ? (
+                                scannedData?.apis?.map((spec, idx) => (
+                                    <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden group">
+                                        <button onClick={() => setExpandedApi(expandedApi === idx ? null : idx)} className="w-full px-5 py-4 flex items-center justify-between text-white hover:bg-white/5 transition-all font-black">
+                                            <div className="flex items-center gap-4">
+                                                <span className={classNames("px-2 py-0.5 rounded text-[9px] w-12 text-center", spec.method === 'POST' ? "bg-rose-500/10 text-rose-400" : "bg-cyan-500/10 text-cyan-400")}>{spec.method}</span>
+                                                <span className="text-sm font-mono">{spec.url}</span>
+                                                <span className="text-[10px] text-slate-500 hidden lg:inline">({spec.function})</span>
                                             </div>
-                                            <div className="space-y-2">
-                                                <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest">▶ JSON Sample</h4>
-                                                <pre className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[10px] font-mono text-emerald-400 overflow-x-auto">{spec.sample || '{}'}</pre>
+                                            <ChevronDown size={16} className={classNames("text-slate-600 transition-transform", expandedApi === idx && "rotate-180")} />
+                                        </button>
+                                        {expandedApi === idx && (
+                                            <div className="px-5 pb-5 pt-2 border-t border-slate-800/50 grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+                                                <div className="space-y-2">
+                                                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">▶ Data Mapping Spec</h4>
+                                                    <table className="w-full text-left text-[10px] border-collapse bg-slate-900/50 rounded-xl overflow-hidden">
+                                                        <thead><tr className="bg-slate-800 text-slate-500 uppercase"><th className="px-3 py-2">Field</th><th className="px-3 py-2">Mapping & Desc</th></tr></thead>
+                                                        <tbody className="divide-y divide-slate-800">
+                                                            {spec.mapping?.map(f => (
+                                                                <tr key={f.key}><td className="px-3 py-2 font-mono text-white font-bold">{f.key}</td><td className="px-3 py-2 text-slate-400">{f.desc} ({f.type})</td></tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest">▶ JSON Sample</h4>
+                                                    <pre className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[10px] font-mono text-emerald-400 overflow-x-auto">{spec.sample || '{}'}</pre>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )) : (
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                scannedData?.tables?.map((table, idx) => (
+                                    <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-2xl overflow-hidden group">
+                                        <button onClick={() => setExpandedTable(expandedTable === idx ? null : idx)} className="w-full px-5 py-4 flex items-center justify-between text-white hover:bg-white/5 transition-all font-black">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400"><Database size={14} /></div>
+                                                <span className="text-sm font-mono uppercase">{table.table}</span>
+                                                <span className="text-[10px] text-slate-500 hidden lg:inline">{table.usage}</span>
+                                            </div>
+                                            <ChevronDown size={16} className={classNames("text-slate-600 transition-transform", expandedTable === idx && "rotate-180")} />
+                                        </button>
+                                        {expandedTable === idx && (
+                                            <div className="px-5 pb-5 pt-2 border-t border-slate-800/50 animate-in slide-in-from-top-2">
+                                                <div className="space-y-2">
+                                                    <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">▶ Database Schema Spec</h4>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-left text-[10px] border-collapse bg-slate-900/50 rounded-xl overflow-hidden min-w-[600px]">
+                                                            <thead><tr className="bg-slate-800 text-slate-500 uppercase"><th className="px-3 py-2 w-[25%]">Column</th><th className="px-3 py-2 w-[20%]">Type(Size)</th><th className="px-3 py-2 w-[8%] text-center">PK</th><th className="px-3 py-2 w-[8%] text-center">Null</th><th className="px-3 py-2">Description</th></tr></thead>
+                                                            <tbody className="divide-y divide-slate-800">
+                                                                {table.columns?.map(col => (
+                                                                    <tr key={col.name} className="hover:bg-white/5 transition-colors">
+                                                                        <td className="px-3 py-2 font-mono text-white font-bold">{col.name}</td>
+                                                                        <td className="px-3 py-2 text-emerald-400">{col.type}{col.size !== '-' ? `(${col.size})` : ''}</td>
+                                                                        <td className="px-3 py-2 text-center">{col.pk === 'Y' ? <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 font-black text-[8px] border border-rose-500/30">PK</span> : <span className="text-slate-700">-</span>}</td>
+                                                                        <td className="px-3 py-2 text-center"><span className={classNames("text-[9px] font-bold", col.null === 'Y' ? "text-slate-500" : "text-amber-500")}>{col.null === 'Y' ? 'YES' : 'N-NULL'}</span></td>
+                                                                        <td className="px-3 py-2 text-slate-400 italic text-[9px]">{col.desc}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                            {(!scannedData || (activeSubTab === 'apis' ? !scannedData.apis : !scannedData.tables)) && (
                                 <div className="h-full flex flex-col items-center justify-center text-slate-600 py-20 gap-3 opacity-30">
                                     <Database size={48} />
                                     <p className="font-black text-xs uppercase tracking-[0.3em]">{scannedData?.status === 'ERROR' ? scannedData.message : 'Ready to scan repository'}</p>

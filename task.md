@@ -1,5 +1,17 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v30.95 DB Schema Deep-Dive & Multi-Tab Specification (2026-03-14 완료) 🔥
+*   **DB 설계도의 정밀화 (Architecture Master)**:
+    - **제약 조건 100% 추출**: `CREATE TABLE` 구문을 정밀 분석하여 **PK(기본키), NOT NULL, AUTO_INCREMENT** 등 핵심 제약 조건을 완벽하게 낚아챔.
+    - **데이터 사이즈 분리**: `VARCHAR(100)`, `DECIMAL(10,2)` 등 타입과 사이즈를 분리하여 설계도 수준의 데이터 규격 명세화 성공.
+    - **복합 PK 추적**: 테이블 레벨에서 정의된 복합 기본키 제약 조건까지 역추적하여 개별 컬럼에 PK 마킹 주입.
+*   **프론트엔드 UI/UX 혁신**:
+    - **듀얼 서브 탭 시스템**: API 가이드 내부에 **[API Interface]**와 **[Database Schema]** 서브 탭을 신설하여 방대한 시스템 정보를 체계적으로 분리.
+    - **시각적 명세 강화**: PK(장미색 배지), N-NULL(호박색 강조) 등 중요 제약 조건을 배지 형태로 시각화하여 가독성 극대화.
+    - **워드 명세서 고도화**: 다운로드받는 `.doc` 파일에 테이블 상세 제약 조건이 포함된 전문가용 표 레이아웃 적용.
+*   **시스템 안정성 사수**:
+    - **변수 스코프 정밀 수술**: API와 Table 루프 간의 변수 참조 오류(`ReferenceError`)를 정밀 타격하여 완벽 수정 및 렌더링 무결성 확보.
+
 ## 🚀 v30.90 Intelligent Source-to-Spec Master & API Documentation Precision Strike (2026-03-14 완료) 🔥
 *   **API 전수 복구 및 정밀 분석 (100% Recovery)**:
     - **누락 API 완정 정복**: `auth/login`, `portfolio/intelligence`, `market-insight`, `special-report`, `addTrade`, `updateTrade` 등 사각지대에 있던 핵심 API 100% 복구 성공.

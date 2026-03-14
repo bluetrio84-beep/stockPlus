@@ -88,14 +88,13 @@ class StockPlusPerfectScanner:
         return json.dumps(sample, indent=2, ensure_ascii=False)
 
     def scan_apis(self):
-        # [v30.90] Master Hunter - Method별 독립 분리 및 파라미터 완벽 수집
+        # [v30.95] Ultimate API Hunter
         for path, content in self.source_cache.items():
             if path.endswith("Controller.java"):
                 base_url = ""
                 bm = re.search(r"@RequestMapping\s*\(\s*(?:value\s*=\s*)?\"(.*?)\"", content)
                 if bm: base_url = bm.group(1).replace("\"", "")
                 
-                # 정규표현식 보강: 어노테이션 종류에 상관없이 전수 조사
                 for mm in re.finditer(r"@(Get|Post|Put|Delete)Mapping(?:\s*\((.*?)\))?", content, re.DOTALL):
                     m_type = mm.group(1).upper()
                     url_part = mm.group(2) if mm.group(2) else ""
@@ -103,44 +102,36 @@ class StockPlusPerfectScanner:
                     full_url = (base_url + (u_match.group(1) if u_match else "")).replace("//", "/")
                     
                     start_pos = mm.end()
-                    # 본문 시작점 찾기 ({)
                     bracket_pos = content.find("{", start_pos)
-                    # 메서드 시그니처 캡처 (리턴 타입, 이름, 파라미터 포함)
                     method_chunk = content[start_pos:bracket_pos] if bracket_pos > 0 else ""
                     
-                    # 시그니처 정밀 파싱 (비탐욕적 매칭 강화)
                     m_info = re.search(r"([\w<>\s,\?\.]+?)\s+(\w+)\s*\((.*?)\)", method_chunk, re.DOTALL)
                     if m_info:
                         ret_type, m_name, params = m_info.groups()
                         mapping = []
                         
-                        # 1. Request 분석 (쉼표 단위 분할 및 어노테이션 무시)
                         param_list = params.split(",")
                         for p in param_list:
                             p = p.strip()
                             if not p: continue
-                            # 어노테이션 제거 및 타입/변수명 추출
                             p_clean = re.sub(r"@[\w]+(?:\(.*?\))?", "", p).strip()
                             pts = p_clean.split()
                             if len(pts) >= 2:
                                 p_type, p_name = pts[-2], pts[-1]
                                 mapping.append({"key": p_name, "type": p_type, "desc": f"[Param] {self.infer_purpose(p_name)}", "db": p_name.upper()})
                             
-                            # [추가] DTO 타입인 경우 DTO 내부 필드 전개
                             for cname, fds in self.dto_map.items():
                                 if cname in p:
                                     for fd in fds: 
                                         if not any(x['key'] == fd['key'] for x in mapping):
                                             mapping.append({"key": fd['key'], "type": fd['type'], "desc": f"[DTO] {fd['desc']}", "db": fd['db']})
 
-                        # [추가] 본문 내 Map.get() 또는 payload.get() 추적
                         body_chunk = content[bracket_pos:bracket_pos+2000]
                         for gk in re.finditer(r"(\w+)\.get\(\"(\w+)\"\)", body_chunk):
                             key = gk.group(2)
                             if not any(x['key'] == key for x in mapping):
                                 mapping.append({"key": key, "type": "String", "desc": f"[Req] {self.infer_purpose(key)}", "db": key.upper()})
 
-                        # 2. Response 분석
                         if "String" in ret_type:
                             mapping.append({"key": "result", "type": "String", "desc": "[Res] Plain Text Result", "db": "TEXT"})
 
@@ -150,7 +141,6 @@ class StockPlusPerfectScanner:
                                     if not any(x['key'] == fd['key'] for x in mapping):
                                         mapping.append({"key": fd['key'], "type": fd['type'], "desc": f"[Res] {fd['desc']}", "db": fd['db']})
                         
-                        # Map/Mono 내부 키값 추적
                         if any(x in ret_type for x in ["Map", "ResponseEntity", "Mono", "Flux"]):
                             for pk in re.finditer(r"(?:\.put|Map\.of|result\.put|res\.put|data\.put)\s*\(\s*\"(\w+)\"", body_chunk, re.DOTALL):
                                 key = pk.group(1)
@@ -163,34 +153,80 @@ class StockPlusPerfectScanner:
                             if item['key'] not in seen:
                                 final_m.append(item); seen.add(item['key'])
 
-                        # Method별 독립 등록 (중복 URL 허용)
                         self.api_specs.append({
                             "method": m_type, "url": full_url, "function": m_name.strip(), 
                             "mapping": final_m, "sample": self.generate_json_sample(final_m)
                         })
 
     def scan_db(self):
+        # [v30.95] DB Schema Deep-Dive (PK, Size, Null 100% 탐색)
         found_t = set()
         for path, content in self.source_cache.items():
             if path.endswith(".sql"):
+                # CREATE TABLE 구문 내부 정밀 분석
                 for t in re.finditer(r"CREATE TABLE\s+(\w+)\s*\((.*?)\)\s*;", content, re.DOTALL | re.I):
                     tname = t.group(1).lower()
                     if tname in found_t: continue
                     found_t.add(tname); cols = []
-                    for line in t.group(2).split(",\n"):
-                        pts = line.strip().split()
+                    
+                    # 쉼표 기준 분할 전, 괄호 안의 쉼표 보호 처리 (DECIMAL(10,2) 등 대비)
+                    body = t.group(2)
+                    lines = []
+                    current_line = ""
+                    bracket_level = 0
+                    for char in body:
+                        if char == '(': bracket_level += 1
+                        elif char == ')': bracket_level -= 1
+                        if char == ',' and bracket_level == 0:
+                            lines.append(current_line.strip())
+                            current_line = ""
+                        else:
+                            current_line += char
+                    if current_line.strip(): lines.append(current_line.strip())
+
+                    for line in lines:
+                        if line.upper().startswith(("PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "KEY", "CONSTRAINT")):
+                            # 테이블 레벨 제약 조건 처리 (PK 추출용)
+                            pk_match = re.search(r"PRIMARY KEY\s*\((.*?)\)", line, re.I)
+                            if pk_match:
+                                pk_cols = [c.strip().replace("`","").upper() for c in pk_match.group(1).split(",")]
+                                for c in cols:
+                                    if c['name'].upper() in pk_cols: c['pk'] = "Y"
+                            continue
+
+                        pts = line.split()
                         if len(pts) >= 2:
-                            cname = pts[0].replace("`","")
-                            cols.append({"name": cname, "type": pts[1].upper(), "desc": self.infer_purpose(cname)})
-                    self.db_schema.append({"table": tname, "usage": f"DB Table ({tname})", "columns": cols})
+                            cname = pts[0].replace("`","").replace("\"","")
+                            full_type = pts[1].upper()
+                            
+                            # 타입과 사이즈 분리 (예: VARCHAR(50) -> VARCHAR, 50)
+                            size = "-"
+                            sz_match = re.search(r"\((\d+.*?)\)", full_type)
+                            if sz_match:
+                                size = sz_match.group(1)
+                                full_type = re.sub(r"\(.*?\)", "", full_type)
+                            
+                            is_pk = "Y" if "PRIMARY KEY" in line.upper() else "N"
+                            is_null = "N" if "NOT NULL" in line.upper() else "Y"
+                            if is_pk == "Y": is_null = "N"
+                            
+                            cmt = re.search(r"COMMENT\s+'(.*?)'", line, re.I)
+                            desc = cmt.group(1) if cmt else self.infer_purpose(cname)
+                            
+                            cols.append({
+                                "name": cname, "type": full_type, "size": size,
+                                "pk": is_pk, "null": is_null, "desc": desc
+                            })
+                    self.db_schema.append({"table": tname, "usage": f"데이터 저장소 ({tname})", "columns": cols})
         
+        # MyBatis/Python 연동 테이블 (Dynamic)
         for path, content in self.source_cache.items():
             if path.endswith((".xml", ".py")):
                 for m in re.finditer(r"(?i)(?:FROM|JOIN|UPDATE|INTO|DELETE\s+FROM)\s+([a-zA-Z0-9_]{4,})", content):
                     tname = m.group(1).lower()
                     if tname in found_t or tname in ["select", "where", "values", "true", "none", "join", "into", "from", "update", "limit", "offset", "order", "group", "desc", "asc"]: continue
                     found_t.add(tname)
-                    self.db_schema.append({"table": tname, "usage": "Persistence Table", "columns": [{"name": "Dynamic", "type": "Mixed", "desc": "Reference Data"}]})
+                    self.db_schema.append({"table": tname, "usage": "영속성 관리 테이블", "columns": [{"name": "Dynamic", "type": "Mixed", "size": "-", "pk": "-", "null": "-", "desc": "Reference Data"}]})
 
     def run(self):
         try:
@@ -200,7 +236,6 @@ class StockPlusPerfectScanner:
             self.scan_java_models()
             self.scan_db()
             self.scan_apis()
-            # 최종 결과 출력
             print(json.dumps({"status": "SUCCESS", "total_apis": len(self.api_specs), "total_tables": len(self.db_schema), "apis": self.api_specs, "tables": self.db_schema}, ensure_ascii=False, indent=2))
         except Exception as e:
             print(json.dumps({"status": "ERROR", "message": str(e), "traceback": traceback.format_exc()}, ensure_ascii=False, indent=2))
