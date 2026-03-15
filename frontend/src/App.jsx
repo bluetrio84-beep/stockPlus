@@ -10,6 +10,7 @@ import NextLeaderDashboard from "./components/NextLeaderDashboard";
 import AdminChartDashboard from "./components/AdminChartDashboard";
 import AdminTheDailyMagazine from "./components/AdminTheDailyMagazine";
 import MyPortfolioDashboard from "./components/MyPortfolioDashboard";
+import InvestmentJournal from "./components/InvestmentJournal";
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -43,6 +44,7 @@ function App() {
         <Route path="/stock/:stockCode" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/summary" element={<ProtectedRoute><WatchlistSummary /></ProtectedRoute>} />
         <Route path="/keywords" element={<ProtectedRoute><AiKeywordManager /></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute><InvestmentJournal /></ProtectedRoute>} />
         
         {/* 관리자 전용 라우트 */}
         <Route path="/admin" element={<AdminRoute><AdminDataCollection /></AdminRoute>} />

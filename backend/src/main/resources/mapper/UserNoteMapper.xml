@@ -2,29 +2,57 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.stockPlus.mapper.UserNoteMapper">
 
-    <select id="findAll" resultType="com.stockPlus.domain.UserNote">
-        SELECT id, USRID as usrId, ref_code as refCode, title, content, created_at as createdAt, updated_at as updatedAt 
-        FROM user_note WHERE USRID = #{usrId} ORDER BY created_at DESC
+    <select id="findAllByUsrId" resultType="com.stockPlus.domain.UserNote">
+        SELECT n.*, m.stock_name as stockName
+        FROM user_note n
+        LEFT JOIN stock_master m ON n.ref_code = m.stock_code
+        WHERE n.USRID = #{usrId} 
+        ORDER BY n.is_important DESC, n.created_at DESC
     </select>
 
     <select id="findByRefCode" resultType="com.stockPlus.domain.UserNote">
-        SELECT id, USRID as usrId, ref_code as refCode, title, content, created_at as createdAt, updated_at as updatedAt 
-        FROM user_note WHERE USRID = #{usrId} AND ref_code = #{refCode} ORDER BY created_at DESC
+        SELECT n.*, m.stock_name as stockName
+        FROM user_note n
+        LEFT JOIN stock_master m ON n.ref_code = m.stock_code
+        WHERE n.USRID = #{usrId} AND n.ref_code = #{refCode}
+        ORDER BY n.created_at DESC
+    </select>
+
+    <select id="findByIdAndUsrId" resultType="com.stockPlus.domain.UserNote">
+        SELECT n.*, m.stock_name as stockName
+        FROM user_note n
+        LEFT JOIN stock_master m ON n.ref_code = m.stock_code
+        WHERE n.id = #{id} AND n.USRID = #{usrId}
     </select>
 
     <insert id="insert" parameterType="com.stockPlus.domain.UserNote" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO user_note (USRID, ref_code, title, content, created_at, updated_at)
-        VALUES (#{usrId}, #{refCode}, #{title}, #{content}, NOW(), NOW())
+        INSERT INTO user_note (
+            USRID, ref_code, stock_name, title, content, category, is_important, view_count, created_at, updated_at
+        ) VALUES (
+            #{usrId}, #{refCode}, 
+            (SELECT MAX(stock_name) FROM stock_master WHERE stock_code = #{refCode}),
+            #{title}, #{content}, #{category}, #{isImportant}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
     </insert>
 
     <update id="update" parameterType="com.stockPlus.domain.UserNote">
         UPDATE user_note
-        SET title = #{title}, content = #{content}, updated_at = NOW()
-        WHERE USRID = #{usrId} AND id = #{id}
+        SET title = #{title},
+            content = #{content},
+            ref_code = #{refCode},
+            stock_name = (SELECT MAX(stock_name) FROM stock_master WHERE stock_code = #{refCode}),
+            category = #{category},
+            is_important = #{isImportant},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND USRID = #{usrId}
     </update>
 
-    <delete id="deleteById">
-        DELETE FROM user_note WHERE USRID = #{usrId} AND id = #{id}
+    <update id="incrementViewCount">
+        UPDATE user_note SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM user_note WHERE id = #{id} AND USRID = #{usrId}
     </delete>
 
 </mapper>

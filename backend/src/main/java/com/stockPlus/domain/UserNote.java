@@ -12,10 +12,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserNote {
     private Long id;
-    private String usrId; // String 으로 변경
+    private String usrId;
     private String refCode; 
+    private String stockName; // [v33.95] 추가: 종목명 자동 매핑
     private String title;
     private String content;
+    private String category;
+    private Boolean isImportant;
+    private Integer viewCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,5 +1,21 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v35.00 Premium Investment Journal & Intelligent Asset Fortress (2026-03-15 완료) 🔥
+*   **이미지 서버 저장 시스템 구축 (Server-Side Storage)**:
+    - **파일 기반 저장**: 기존 Base64 인코딩 저장 방식을 폐지하고, `/img/notes` 서버 폴더에 실제 파일로 저장하는 고성능 아키텍처 구현.
+    - **영구 보존 아키텍처**: Docker Volume 매핑을 통해 컨테이너 재시작 시에도 데이터가 유실되지 않는 안정성 확보.
+    - **이미지 업로드 엔진**: UUID 기반 파일명 생성 및 Nginx/Spring 정적 자원 매핑을 통한 초고속 이미지 서빙 인프라 구축.
+*   **지능형 종목 매핑 시스템 (Auto-Discovery)**:
+    - **실시간 종목 검색**: 종목코드 입력창에 "삼성"만 쳐도 관련 종목이 리스트업되는 드롭다운 UI 및 검색 API 연동 완료.
+    - **자동 이름 박제**: 종목 선택 시 `stock_master` 테이블과 동기화되어 종목명과 코드가 일지에 자동으로 영구 기록됨.
+*   **반응형 기기 최적화 (Desktop & Mobile Separation)**:
+    - **Desktop Elite UI**: 마스터-디테일 2단 레이아웃과 풍부한 툴바(색상, 크기, 정렬 등)를 갖춘 전문가용 리치 에디터 완성.
+    - **Mobile App-Style UI**: [목록 -> 상세 -> 작성]의 독립적 화면 흐름을 가진 모바일 전용 UI 신설로 작은 화면 가독성 극대화.
+*   **시스템 무결성 및 UX 정예화**:
+    - **버그 소탕**: React 19 환경의 `findDOMNode` 에러 및 1970년 날짜 표기 오류를 정밀 타격하여 완벽 수정.
+    - **알림 및 보안**: 저장/수정/삭제 시 세련된 토스트 알림 주입 및 Spring Security 화이트리스트 설정을 통한 이미지 401 에러 원천 차단.
+    - **페이징 및 필터링**: 목록 하단 페이지네이션 및 카테고리/검색 필터 기능을 통해 대규모 일지 관리 기반 마련.
+
 ## 🚀 v33.50 Hybrid Master Specification & Dual-Track Recovery (2026-03-15 완료) 🔥
 *   **하이브리드 엔진 구축 (Golden API + Pure SQL)**:
     - **API Interface 부활**: v30.95 골든 로직을 100% 사수하여 `Portfolio Intelligence`, `Login` 등 누락되었던 70여 개 API와 서비스 레이어 심층 추적 로직 완전 복구.

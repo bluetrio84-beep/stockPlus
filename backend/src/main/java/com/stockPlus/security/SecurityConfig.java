@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/doc/**").permitAll()
 
                 // 1. 공용 API, 대시보드 및 포트폴리오 인텔리전스 허용
-                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/portfolio/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/admin/trigger-review", "/api/admin/dump-investor", "/api/admin/magazine/data").permitAll()
+                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/portfolio/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/notes/images/**", "/api/admin/trigger-review", "/api/admin/dump-investor", "/api/admin/magazine/data").permitAll()
 
                 // 2. 관리자 전용 API
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

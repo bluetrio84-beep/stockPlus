@@ -209,23 +209,6 @@ public class StockDashboardController {
         return kisStockService.fetchInvestors(stockCode, exchangeCode);
     }
 
-    // --- User Notes (사용자 메모) ---
-
-    @GetMapping("/notes")
-    public List<UserNote> getAllNotes() { return dashboardService.getAllNotes(); }
-    
-    @GetMapping("/notes/{refCode}")
-    public List<UserNote> getNotesByRefCode(@PathVariable String refCode) { return dashboardService.getNotesByRefCode(refCode); }
-    
-    @PostMapping("/notes")
-    public void createNote(@RequestBody UserNote note) { dashboardService.createNote(note); }
-    
-    @PutMapping("/notes")
-    public void updateNote(@RequestBody UserNote note) { dashboardService.updateNote(note); }
-    
-    @DeleteMapping("/notes/{id}")
-    public void deleteNote(@PathVariable Long id) { dashboardService.deleteNote(id); }
-
     // --- AI Market Insight (AI 시장 분석) ---
 
     /**

@@ -175,7 +175,7 @@ public class StockDashboardService {
     // --- User Notes (사용자 메모 관리) ---
     
     public List<UserNote> getAllNotes() {
-        return userNoteMapper.findAll(getCurrentUsrId());
+        return userNoteMapper.findAllByUsrId(getCurrentUsrId());
     }
 
     // 특정 종목이나 키워드(refCode)와 연관된 메모 조회
@@ -186,6 +186,7 @@ public class StockDashboardService {
     @Transactional
     public void createNote(UserNote note) {
         note.setUsrId(getCurrentUsrId());
+        if (note.getCategory() == null) note.setCategory("GENERAL");
         userNoteMapper.insert(note);
     }
     
@@ -197,7 +198,7 @@ public class StockDashboardService {
 
     @Transactional
     public void deleteNote(Long id) {
-        userNoteMapper.deleteById(getCurrentUsrId(), id);
+        userNoteMapper.delete(id, getCurrentUsrId());
     }
 
     // --- AI Market Insight (시장 분석 리포트) ---

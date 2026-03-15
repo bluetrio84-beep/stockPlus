@@ -9,9 +9,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // [v18.0] 스냅샷 이미지 서빙을 위한 경로 맵핑
-        // 외부 요청 주소: /api/snapshots/** -> 실제 서버 내부 경로: file:/app/snapshots/
+        // [v18.0] 스냅샷 이미지 서빙
         registry.addResourceHandler("/api/snapshots/**")
                 .addResourceLocations("file:/app/snapshots/");
+
+        // [v35.00] 투자 일지 업로드 이미지 서빙
+        registry.addResourceHandler("/api/notes/images/**")
+                .addResourceLocations("file:/app/img/notes/");
     }
 }
