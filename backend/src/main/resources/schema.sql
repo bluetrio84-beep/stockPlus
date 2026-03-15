@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS user_market_insight;
 DROP TABLE IF EXISTS user_keyword;
 DROP TABLE IF EXISTS stock_master;
 DROP TABLE IF EXISTS news_item;
+DROP TABLE IF EXISTS stock_info;
 DROP TABLE IF EXISTS stock_analysis_log;
 DROP TABLE IF EXISTS holdings;
 DROP TABLE IF EXISTS trade_history;
@@ -29,7 +30,7 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'USER' COMMENT '권한',
     useyn CHAR(1) DEFAULT 'Y' COMMENT '사용여부',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '가입일'
-) COMMENT '사용자 마스터';
+) COMMENT '시스템 사용자 마스터';
 
 CREATE TABLE stock_master (
     stock_code VARCHAR(20) COMMENT '종목코드',
@@ -124,10 +125,9 @@ CREATE TABLE company_financials (
 ) COMMENT '기업 주요 재무제표';
 
 -- ============================================================================
--- SECTION II. INTELLIGENCE & MONITORING (Collector & AI Engine Tables)
+-- SECTION II. LIVE COLLECTOR & AI ENGINE SCHEMAS (Collector & AI Engine Tables)
 -- ============================================================================
 
--- 11. 수집기 통합 제어판
 CREATE TABLE IF NOT EXISTS collector_config (
     id INT PRIMARY KEY COMMENT '설정ID',
     collect_interval INT DEFAULT 600 COMMENT '수집주기(초)',
@@ -140,7 +140,6 @@ CREATE TABLE IF NOT EXISTS collector_config (
     weight_xgb DECIMAL(4,2) DEFAULT 0.60 COMMENT 'XGB가중치'
 ) COMMENT '데이터 수집기 핵심 설정';
 
--- 12. 분 단위 실시간 기술적 지표 (The Big Data)
 CREATE TABLE IF NOT EXISTS stock_intraday_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '기록ID',
     stock_code VARCHAR(10) NOT NULL COMMENT '종목코드',
@@ -155,7 +154,6 @@ CREATE TABLE IF NOT EXISTS stock_intraday_history (
     obv BIGINT DEFAULT 0 COMMENT 'OBV지표'
 ) COMMENT '장중 분단위 시세 및 기술적 분석 데이터';
 
--- 13. AI 리포트 및 예측
 CREATE TABLE IF NOT EXISTS ai_daily_report (
     report_date DATE PRIMARY KEY COMMENT '리포트일자',
     content TEXT NOT NULL COMMENT '리포트전문',
@@ -179,7 +177,6 @@ CREATE TABLE IF NOT EXISTS ai_next_leaders (
     captured_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '분석시간'
 ) COMMENT 'AI 선정 차기 주도주';
 
--- 14. 수급 및 랭킹 분석
 CREATE TABLE IF NOT EXISTS daily_stock_investor (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '고유번호',
     stock_code VARCHAR(10) NOT NULL COMMENT '종목코드',
@@ -209,7 +206,6 @@ CREATE TABLE IF NOT EXISTS stock_rankings (
     captured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '캡처시간'
 ) COMMENT '거래대금/등락률 랭킹 정보';
 
--- 15. 뉴스 및 모니터링
 CREATE TABLE IF NOT EXISTS news_item (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '뉴스ID',
     title VARCHAR(500) NOT NULL COMMENT '제목',
@@ -228,14 +224,13 @@ CREATE TABLE IF NOT EXISTS monitoring_queue (
     last_collected_at TIMESTAMP COMMENT '최종수집시간'
 ) COMMENT '수집 대상 종목 큐';
 
--- 16. 업종/테마/지수 히스토리
 CREATE TABLE IF NOT EXISTS industry_history (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '기록ID',
     industry_name VARCHAR(100) COMMENT '업종명',
     change_rate DECIMAL(5,2) COMMENT '등락률',
     trade_amount BIGINT DEFAULT 0 COMMENT '거래대금',
     captured_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '기록시간'
-) COMMENT '업종별 등락 히스토리';
+) COMMENT '업종별 등락 히트맵 기록';
 
 CREATE TABLE IF NOT EXISTS market_holidays (
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '번호',
@@ -249,16 +244,15 @@ CREATE TABLE IF NOT EXISTS market_index_history (
     index_name VARCHAR(50) NOT NULL COMMENT '지수명',
     index_value DECIMAL(10,2) NOT NULL COMMENT '수치',
     captured_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '기록시간'
-) COMMENT '지수 변동 히스토리';
+) COMMENT '시장 지수 히스토리';
 
 CREATE TABLE IF NOT EXISTS program_trading (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '기록ID',
     stock_code VARCHAR(10) COMMENT '종목코드',
     net_buy_qty BIGINT COMMENT '프로그램순매수',
     captured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '기록시간'
-) COMMENT '프로그램 매매 실시간 데이터';
+) COMMENT '프로그램 매매 데이터';
 
--- 17. 기타 로그 및 통계
 CREATE TABLE IF NOT EXISTS collector_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '로그ID',
     log_level VARCHAR(10) COMMENT '레벨',
@@ -270,7 +264,7 @@ CREATE TABLE IF NOT EXISTS collector_hourly_stats (
     stat_hour VARCHAR(13) PRIMARY KEY COMMENT '시간(YYYYMMDDHH)',
     row_count INT DEFAULT 0 COMMENT '처리건수',
     avg_latency_ms INT DEFAULT 0 COMMENT '평균지연시간'
-) COMMENT '수집기 시간별 성능 통계';
+) COMMENT '수집기 성능 통계';
 
 CREATE TABLE IF NOT EXISTS stock_analysis_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '로그ID',

@@ -3,12 +3,14 @@ import re
 import json
 import sys
 import argparse
+import shutil
 import uuid
 import traceback
 
 class StockPlusPerfectScanner:
     def __init__(self, root_dir, git_url=None):
         self.root_dir = root_dir
+        self.git_url = git_url
         self.target_dir = root_dir
         self.db_schema = []
         self.dto_map = {}
@@ -16,15 +18,19 @@ class StockPlusPerfectScanner:
         self.api_specs = []
         self.source_cache = {}
 
+    def clone_repo(self):
+        if self.git_url and "github.com" in self.git_url:
+            tmp = f"/tmp/git_final_perfect_{uuid.uuid4().hex[:6]}"
+            os.system(f"git clone --depth 1 {self.git_url} {tmp} > /dev/null 2>&1")
+            self.target_dir = tmp
+
     def load_all_sources(self):
-        # [v31.30] Encoding-Safe Loader
         for r, _, files in os.walk(self.target_dir):
             for f in files:
-                if f.endswith((".java", ".xml", ".sql")):
+                if f.endswith((".java", ".xml", ".py", ".sql")):
                     full_path = os.path.join(r, f)
                     try:
-                        # 한글 주석 대비 UTF-8 강제 및 에러 무시
-                        with open(full_path, 'r', encoding='utf-8', errors='ignore') as src:
+                        with open(full_path, 'r', encoding='utf-8') as src:
                             self.source_cache[full_path] = src.read()
                     except: pass
 
@@ -40,21 +46,125 @@ class StockPlusPerfectScanner:
             if path.endswith(".java") and ("/domain" in path or "/dto" in path or "@Data" in content or "@Getter" in content):
                 cname = os.path.basename(path).replace(".java", "")
                 fields = []
-                # 한 줄 주석 포함 정밀 파싱
                 for m in re.finditer(r"private\s+([\w<>\[\]\?]+)\s+(\w+);(?:\s*//\s*(.*))?", content):
                     f_type, f_name, f_comment = m.groups()
-                    desc = f_comment.strip() if f_comment else f_name
-                    fields.append({"key": f_name, "type": f_type, "desc": desc, "db": self.mapper_map.get(f_name.lower(), f_name.upper())})
+                    desc = f_comment.strip() if f_comment else self.infer_purpose(f_name)
+                    snake = re.sub(r'([A-Z])', r'_\1', f_name).upper()
+                    fields.append({
+                        "key": f_name, "type": f_type, "desc": desc,
+                        "db": self.mapper_map.get(f_name.lower(), snake)
+                    })
                 if fields: temp_dto[cname] = fields
         self.dto_map = temp_dto
 
+    def infer_purpose(self, key):
+        dic = {
+            "usrid": "사용자 계정 ID", "usrname": "사용자 성명", "stockcode": "종목코드 (6자리)",
+            "stockname": "종목명", "avgprice": "매수 평균단가", "quantity": "보유/거래 수량",
+            "currentprice": "현재가", "changerate": "등락률 (%)", "yield": "수익률 (%)",
+            "aiscore": "AI 예측 점수", "aisummary": "뉴스 핵심 요약", "content": "상세 내용",
+            "markettype": "시장 구분 (KOSPI/KOSDAQ)", "exchangecode": "거래소 코드", "createdat": "생성 일시",
+            "password": "비밀번호 (암호화)", "email": "이메일 주소", "role": "사용자 권한 (ADMIN/USER)",
+            "token": "JWT 인증 토큰", "revenue": "매출액", "op_profit": "영업이익", "net_income": "당기순이익",
+            "roe": "ROE (%)", "insight_text": "AI 시장 통찰 정보", "special_report": "AI 특별 분석 보고서",
+            "report_date": "보고서 작성일", "indices": "시장 지수 정보", "heatmap": "업종 등락 히트맵",
+            "keyword": "검색/관심 키워드", "tradeDate": "매매 일자", "price": "매매 가격", "historyId": "매매 내역 고유 ID"
+        }
+        return dic.get(key.lower(), "상세 데이터")
+
+    def generate_json_sample(self, mapping):
+        sample = {}
+        if not mapping: return "{ \"message\": \"Action Executed Successfully\" }"
+        for item in mapping:
+            key = item['key']
+            t = item['type'].lower()
+            val = "string"
+            if any(x in t for x in ["int", "long", "bigint"]): val = 0
+            elif any(x in t for x in ["double", "float", "decimal"]): val = 0.0
+            elif "boolean" in t: val = False
+            elif "list" in t or "[]" in t: val = []
+            elif "map" in t: val = {}
+            sample[key] = val
+        return json.dumps(sample, indent=2, ensure_ascii=False)
+
+    def scan_apis(self):
+        # [v30.95] Ultimate API Hunter
+        for path, content in self.source_cache.items():
+            if path.endswith("Controller.java"):
+                base_url = ""
+                bm = re.search(r"@RequestMapping\s*\(\s*(?:value\s*=\s*)?\"(.*?)\"", content)
+                if bm: base_url = bm.group(1).replace("\"", "")
+                
+                for mm in re.finditer(r"@(Get|Post|Put|Delete)Mapping(?:\s*\((.*?)\))?", content, re.DOTALL):
+                    m_type = mm.group(1).upper()
+                    url_part = mm.group(2) if mm.group(2) else ""
+                    u_match = re.search(r"\"(.*?)\"", url_part)
+                    full_url = (base_url + (u_match.group(1) if u_match else "")).replace("//", "/")
+                    
+                    start_pos = mm.end()
+                    bracket_pos = content.find("{", start_pos)
+                    method_chunk = content[start_pos:bracket_pos] if bracket_pos > 0 else ""
+                    
+                    m_info = re.search(r"([\w<>\s,\?\.]+?)\s+(\w+)\s*\((.*?)\)", method_chunk, re.DOTALL)
+                    if m_info:
+                        ret_type, m_name, params = m_info.groups()
+                        mapping = []
+                        
+                        param_list = params.split(",")
+                        for p in param_list:
+                            p = p.strip()
+                            if not p: continue
+                            p_clean = re.sub(r"@[\w]+(?:\(.*?\))?", "", p).strip()
+                            pts = p_clean.split()
+                            if len(pts) >= 2:
+                                p_type, p_name = pts[-2], pts[-1]
+                                mapping.append({"key": p_name, "type": p_type, "desc": f"[Param] {self.infer_purpose(p_name)}", "db": p_name.upper()})
+                            
+                            for cname, fds in self.dto_map.items():
+                                if cname in p:
+                                    for fd in fds: 
+                                        if not any(x['key'] == fd['key'] for x in mapping):
+                                            mapping.append({"key": fd['key'], "type": fd['type'], "desc": f"[DTO] {fd['desc']}", "db": fd['db']})
+
+                        body_chunk = content[bracket_pos:bracket_pos+2000]
+                        for gk in re.finditer(r"(\w+)\.get\(\"(\w+)\"\)", body_chunk):
+                            key = gk.group(2)
+                            if not any(x['key'] == key for x in mapping):
+                                mapping.append({"key": key, "type": "String", "desc": f"[Req] {self.infer_purpose(key)}", "db": key.upper()})
+
+                        if "String" in ret_type:
+                            mapping.append({"key": "result", "type": "String", "desc": "[Res] Plain Text Result", "db": "TEXT"})
+
+                        for cname, fds in self.dto_map.items():
+                            if cname in ret_type or (("Sse" in full_url or "Sink" in content) and "StockPrice" in cname):
+                                for fd in fds: 
+                                    if not any(x['key'] == fd['key'] for x in mapping):
+                                        mapping.append({"key": fd['key'], "type": fd['type'], "desc": f"[Res] {fd['desc']}", "db": fd['db']})
+                        
+                        if any(x in ret_type for x in ["Map", "ResponseEntity", "Mono", "Flux"]):
+                            for pk in re.finditer(r"(?:\.put|Map\.of|result\.put|res\.put|data\.put)\s*\(\s*\"(\w+)\"", body_chunk, re.DOTALL):
+                                key = pk.group(1)
+                                if not any(x['key'] == key for x in mapping):
+                                    mapping.append({"key": key, "type": "Mixed", "desc": f"[Res] {self.infer_purpose(key)}", "db": key.upper()})
+
+                        final_m = []
+                        seen = set()
+                        for item in mapping:
+                            if item['key'] not in seen:
+                                final_m.append(item); seen.add(item['key'])
+
+                        self.api_specs.append({
+                            "method": m_type, "url": full_url, "function": m_name.strip(), 
+                            "mapping": final_m, "sample": self.generate_json_sample(final_m)
+                        })
+
     def scan_db(self):
-        # [v31.30] Final Bulletproof SQL Parser
+        # [v33.50] Isolated Pure SQL Hunter
         found_t = set()
         for path, content in self.source_cache.items():
             if not path.endswith(".sql"): continue
             
-            # 주석 완전 제거 후 블록 분리
+            # 주석 제거 및 블록 분리
             clean_content = re.sub(r"--.*?\n", "\n", content)
             blocks = clean_content.split(";")
             
@@ -83,18 +193,14 @@ class StockPlusPerfectScanner:
                         
                         pts = line.replace(","," ").split()
                         if len(pts) >= 2:
-                            cname = pts[0].replace("`","")
-                            full_type = pts[1].upper()
-                            size = "-"; sz_m = re.search(r"\((\d+.*?)\)", full_type)
-                            if sz_m: size = sz_m.group(1); full_type = re.sub(r"\(.*?\)", "", full_type)
+                            cname = pts[0].replace("`",""); f_type = pts[1].upper()
+                            size = "-"; sz_m = re.search(r"\((\d+.*?)\)", f_type)
+                            if sz_m: size = sz_m.group(1); f_type = re.sub(r"\(.*?\)", "", f_type)
                             
                             is_pk = "Y" if "PRIMARY KEY" in line.upper() else "N"
                             is_null = "N" if "NOT NULL" in line.upper() else "Y"
-                            if is_pk == "Y": is_null = "N"
-                            
                             cmt_m = re.search(r"COMMENT\s+'(.*?)'", line, re.I)
-                            desc = cmt_m.group(1) if cmt_m else cname
-                            cols.append({"name": cname, "type": full_type, "size": size, "pk": is_pk, "null": is_null, "desc": desc})
+                            cols.append({"name": cname, "type": f_type, "size": size, "pk": is_pk, "null": is_null, "desc": cmt_m.group(1) if cmt_m else self.infer_purpose(cname)})
                 
                 # PK 보정
                 pk_line = re.search(r"PRIMARY\s+KEY\s*\((.*?)\)", block, re.I)
@@ -105,43 +211,21 @@ class StockPlusPerfectScanner:
                 
                 self.db_schema.append({"table": tname, "usage": usage, "columns": cols})
 
-    def scan_apis(self):
-        for path, content in self.source_cache.items():
-            if not path.endswith("Controller.java"): continue
-            base_url = ""
-            bm = re.search(r"@RequestMapping\s*\(\s*(?:value\s*=\s*)?\"(.*?)\"", content)
-            if bm: base_url = bm.group(1).replace("\"", "")
-            
-            for mm in re.finditer(r"@(Get|Post|Put|Delete)Mapping(?:\s*\((.*?)\))?", content, re.DOTALL):
-                m_type = mm.group(1).upper()
-                u_m = re.search(r"\"(.*?)\"", mm.group(2) if mm.group(2) else "")
-                full_url = (base_url + (u_m.group(1) if u_m else "")).replace("//", "/")
-                
-                start = mm.end()
-                bracket = content.find("{", start)
-                if bracket == -1: continue
-                
-                m_info = re.search(r"([\w<>\s,\?\.]+?)\s+(\w+)\s*\((.*?)\)", content[start:bracket], re.DOTALL)
-                if m_info:
-                    ret_type, m_name, params = m_info.groups()
-                    mapping = []
-                    # 파라미터 낚시
-                    for p in params.split(","):
-                        p = p.strip()
-                        pts = re.sub(r"@[\w]+(?:\(.*?\))?", "", p).strip().split()
-                        if len(pts) >= 2:
-                            mapping.append({"key": pts[-1], "type": pts[-2], "desc": pts[-1], "db": pts[-1].upper()})
-                    
-                    self.api_specs.append({"method": m_type, "url": full_url, "function": m_name.strip(), "mapping": mapping, "sample": "{}"})
-
     def run(self):
         try:
-            self.load_all_sources(); self.scan_mybatis(); self.scan_java_models(); self.scan_db(); self.scan_apis()
-            print(json.dumps({"status": "SUCCESS", "total_apis": len(self.api_specs), "total_tables": len(self.db_schema), "apis": self.api_specs, "tables": self.db_schema}, ensure_ascii=False))
+            self.clone_repo()
+            self.load_all_sources()
+            self.scan_mybatis()
+            self.scan_java_models()
+            self.scan_db()
+            self.scan_apis()
+            print(json.dumps({"status": "SUCCESS", "total_apis": len(self.api_specs), "total_tables": len(self.db_schema), "apis": self.api_specs, "tables": self.db_schema}, ensure_ascii=False, indent=2))
         except Exception as e:
-            print(json.dumps({"status": "ERROR", "message": str(e), "traceback": traceback.format_exc()}, ensure_ascii=False))
+            print(json.dumps({"status": "ERROR", "message": str(e), "traceback": traceback.format_exc()}, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(); parser.add_argument("--url", help="Git URL"); args = parser.parse_args()
-    # /app 경로에서 실행되므로 상대 경로 유지
-    scanner = StockPlusPerfectScanner(".", git_url=args.url); scanner.run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--url", help="Git URL")
+    args = parser.parse_args()
+    scanner = StockPlusPerfectScanner(".", git_url=args.url)
+    scanner.run()

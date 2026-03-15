@@ -1,5 +1,16 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v33.50 Hybrid Master Specification & Dual-Track Recovery (2026-03-15 완료) 🔥
+*   **하이브리드 엔진 구축 (Golden API + Pure SQL)**:
+    - **API Interface 부활**: v30.95 골든 로직을 100% 사수하여 `Portfolio Intelligence`, `Login` 등 누락되었던 70여 개 API와 서비스 레이어 심층 추적 로직 완전 복구.
+    - **Database Schema 정예화**: v31.80의 정밀 SQL 파서를 이식하여 `schema.sql` 기반의 29개 테이블 명세(PK, Size, Null, 한글 주석)를 완벽하게 시각화.
+    - **로직 물리 격리**: API 파서와 Table 파서 간의 메모리 간섭 및 정규표현식 충돌을 원천 차단하는 '독립 운용 시스템' 적용.
+*   **데이터 무결성 및 정화**:
+    - **마스터 설계도 일치**: 실제 DB와 `schema.sql`을 29개 테이블 체제로 1:1 동기화 완료 및 불순물(유령 테이블) 0% 달성.
+    - **방탄 SQL 전처리**: 한글 주석(`--`) 및 `IF NOT EXISTS` 구문을 완벽하게 처리하는 전처리 로직 주입으로 스캔 안정성 극대화.
+*   **시스템 최적화**:
+    - **찌꺼기 코드 소탕**: 사용하지 않는 `stock_info` 관련 매퍼, 도메인, 컨트롤러 찌꺼기들을 전수 조사하여 제거하고 빌드 무결성 최종 검증.
+
 ## 🚀 v31.80 Live DB Perfect Synchronization & System Purification (2026-03-14 완료) 🔥
 *   **DB 완정 정복 (29개 테이블 100% 일치)**:
     - **실측 기반 동기화**: 실제 DB에 숨어있던 수집기/AI 전용 테이블 13개(`stock_intraday_history`, `collector_config` 등)를 역추적하여 `schema.sql`에 완벽 박제.
