@@ -15,9 +15,8 @@ const InvestmentJournalDesktop = ({
     createNewNote, handleEditStart, editorRef, fileInputRef, quillRef, execCommand, 
     notification, notifType,
     searchStocks, stockSearchResults, showStockSearch, setShowStockSearch, selectStock,
-    isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload,
-    syncEditorContent // [v35.30] 누락된 Props 주입
-}) => {
+    isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload
+    }) => {
     return (
         <div className="flex flex-col h-full bg-slate-950 text-slate-200 overflow-hidden animate-in fade-in duration-500 font-sans relative">
             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
@@ -184,7 +183,7 @@ const InvestmentJournalDesktop = ({
                                                 <div 
                                                     ref={editorRef} 
                                                     contentEditable 
-                                                    onInput={syncEditorContent}
+                                                    suppressContentEditableWarning={true}
                                                     placeholder="여기에 통찰을 기록하세요..." 
                                                     className="w-full min-h-[600px] bg-slate-950/50 border-x border-b border-slate-800 rounded-b-2xl p-8 outline-none text-white leading-relaxed font-medium text-lg shadow-inner custom-scrollbar overflow-y-auto" 
                                                     dangerouslySetInnerHTML={{ __html: selectedNote.content }} 

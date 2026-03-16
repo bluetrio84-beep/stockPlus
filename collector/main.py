@@ -430,6 +430,16 @@ def main():
 
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
+                
+                # [v35.90] 최우선 순위 가동: AI 관제탑 블랙박스 분석 (09:00 ~ 16:59)
+                if 9 <= now_hour <= 16:
+                    try:
+                        mega.log_to_db("INFO", "[지능가동] AI 관제탑 블랙박스 정밀 분석 수행")
+                        subprocess.run(["python3", "blackbox_analyst.py"])
+                        mega.log_to_db("INFO", "[지능완료] AI 관제탑 정밀 분석 및 리포트 생성 완료")
+                    except Exception as e:
+                        mega.log_to_db("ERROR", f"[분석오류] {str(e)}")
+
                 total_collected = 0
                 try:
                     sects, themes, q_cnt = mega.run_quick_sync()
@@ -450,12 +460,6 @@ def main():
                     mega.update_stats(total_collected)
                     mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
                     engine.analyze_market()
-
-                    # [v25.7] AI 관제탑 (Black-Box Cockpit) 엔진 가동
-                    # 장중 5분 주기로 보유 종목 초정밀 분석 수행
-                    if 9 <= now_hour < 16 and now_min % 5 == 0:
-                        mega.log_to_db("INFO", "[지능가동] AI 관제탑 블랙박스 5분 정밀 분석 수행")
-                        subprocess.run(["python3", "blackbox_analyst.py"])
                 except: pass
                 time.sleep(interval)
             else:

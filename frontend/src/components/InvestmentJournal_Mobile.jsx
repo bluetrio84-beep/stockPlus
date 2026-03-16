@@ -12,9 +12,8 @@ const InvestmentJournalMobile = ({
     searchTerm, setSearchTerm, filterCategory, setCategory,
     createNewNote, handleEditStart, editorRef, fileInputRef, quillRef, execCommand, 
     notification, notifType, isLoading,
-    searchStocks, stockSearchResults, showStockSearch, setShowStockSearch, selectStock,
-    isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload,
-    syncEditorContent // [v35.20] 누락된 Props 주입
+    searchStocks, stockSearchResults, showStockSearch, selectStock,
+    isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload
 }) => {
     const [viewMode, setViewMode] = useState('LIST');
 
@@ -182,7 +181,7 @@ const InvestmentJournalMobile = ({
                         <div 
                             ref={editorRef} 
                             contentEditable 
-                            onInput={syncEditorContent}
+                            suppressContentEditableWarning={true}
                             placeholder="여기에 통찰을 기록하세요..." 
                             className="w-full min-h-[400px] bg-slate-950/50 border-x border-b border-slate-800 rounded-b-xl p-4 outline-none text-white text-sm leading-relaxed ql-editor" 
                             dangerouslySetInnerHTML={{ __html: selectedNote.content }} 

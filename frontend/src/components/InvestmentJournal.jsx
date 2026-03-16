@@ -24,6 +24,7 @@ const InvestmentJournal = () => {
 
     const editorRef = useRef(null);
     const fileInputRef = useRef(null);
+    const isComposing = useRef(false); // [v35.60] 한글 조합 상태 추적
 
     const categories = [
         { id: 'ALL', label: '전체', color: 'bg-slate-500' },
@@ -101,17 +102,10 @@ const InvestmentJournal = () => {
 
     useEffect(() => { fetchNotes(); }, []);
 
-    // [v34.90] 에디터 내용 실시간 싱크 함수
-    const syncEditorContent = () => {
-        if (editorRef.current) {
-            const html = editorRef.current.innerHTML;
-            setSelectedNote(prev => ({ ...prev, content: html }));
-        }
-    };
-
+    // [v35.90] 타이핑 방해 금지 (Uncontrolled Mode)
+    // 데이터는 handleSaveNote 실행 시 editorRef.current.innerHTML에서 직접 추출함
     const execCommand = (command, value = null) => {
         document.execCommand(command, false, value);
-        syncEditorContent(); // 명령 실행 후 즉시 싱크
         if (editorRef.current) editorRef.current.focus();
     };
 
@@ -261,8 +255,7 @@ const InvestmentJournal = () => {
         createNewNote, handleEditStart, editorRef, fileInputRef, execCommand, 
         notification, notifType, isLoading,
         searchStocks, stockSearchResults, showStockSearch, setShowStockSearch, selectStock,
-        isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload,
-        syncEditorContent // [v34.90] 싱크 함수 전달
+        isDeleteModalOpen, setIsDeleteModalOpen, handleDeleteNote, handleImageUpload
     };
 
     if (isMobile) {

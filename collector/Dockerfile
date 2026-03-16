@@ -30,6 +30,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir \
     requests \
     pymysql \
+    cryptography \
     pytz \
     beautifulsoup4 \
     playwright \
