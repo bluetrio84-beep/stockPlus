@@ -1,5 +1,19 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.10 / v36.20 System Failure Control (NOC) & AI Debugging Intelligence (2026-03-16 완료) 🔥
+*   **시스템 장애 관제 사령탑 (NOC Dashboard) 구축**:
+    - **실시간 리소스 모니터링**: Java MXBean을 통해 백엔드 컨테이너의 CPU Load, Memory Usage를 10초 단위로 정밀 추적 및 시각화.
+    - **지능형 장애 위험도(Risk Radar)**: `(CPU * 0.3) + (MEM * 0.3) + (Log Error Density * 0.4)` 공식을 적용하여 시스템 장애 확률(%)을 실시간 산출.
+    - **심층 지표 확장**: DB 활성 세션 수(HikariCP/Processlist) 및 KIS API 토큰 헬스 상태를 실시간 게이지로 감시.
+*   **AI 블랙박스 디버깅 시스템 (Gemini 2.0 Flash)**:
+    - **원클릭 AI 분석**: 로그 피드에서 특정 에러 클릭 시, Gemini 2.0 Flash 모델이 해당 로그를 분석하여 **원인/해결 코드/재발 방지책**을 즉시 브리핑하는 사이드바 UI 구현.
+    - **실시간 로그 스트리밍**: `logs/stockplus.log` 파일을 실시간 스캔하여 `ERROR`, `Critical` 키워드 발생 시 블랙박스 피드에 즉시 노출.
+*   **시스템 긴급 복구 엔진 (Emergency Recovery)**:
+    - **One-Tap Restart**: 관리자 화면에서 버튼 클릭 한 번으로 백엔드 및 수집기 컨테이너를 강제 재시작하여 메모리 누수나 데드락 상황을 즉시 해소하는 원격 제어 로직 탑재.
+*   **어드민 UX/UI 정밀 튜닝**:
+    - **메뉴 구조 혁신**: `MANAGEMENT` 섹션에 '장애 관리' 메뉴를 신설하고, 중복 노출 방지를 위해 내비게이션 필터 로직 정밀 타격 수정.
+    - **모바일 최적화**: 모바일 사이드바 메뉴 패딩을 `py-3`으로 통일하여 정보 밀도를 높이고 전문가용 다크 테마 UI 완성.
+
 ## 🚀 v36.00 Dashboard UX Restoration & Mobile Sidebar Precision Tuning (2026-03-16 완료) 🔥
 *   **어드민 인텔리전스 복구 (Heatmap Restoration)**:
     - **히트맵 클릭 팝업 부활**: 업종 등락 히트맵에서 개별 업종 클릭 시 'Leading Stocks TOP 5' 상세 모달이 뜨지 않던 이벤트 리스너 누락 문제를 정밀 타격하여 복구 완료.
@@ -139,9 +153,9 @@
 ## 🚀 v28.9 Dynamic Strategy Configuration & Logic Alignment (2026-03-09 완료)
 *   **지능형 동적 가중치 엔진**: 
     - **DB 설정 동기화**: 하드코딩된 가중치를 제거하고 `collector_config` 테이블의 실시간 설정(중립/공격/방어)과 100% 연동.
-    - **언행일치 로직**: 화면의 전략 모드에 따라 알고리즘(Q)과 AI(LTX)의 비중을 자동 조절(중립형 기준 5:5)하여 분석의 일관성 확보.
-*   **전술 보고서 투명화**:
-    - **모드 명시 브리핑**: 지휘 보고 서두에 적용된 전략 모드(`[NEUTRAL]` 등)를 명시하여 판단의 근거를 명확히 제시.
+    - **언행일치 로직**: 화면의 전략 모드에 따라 알고리즘(Q)과 AI(LTX) 점수를 0.5 : 0.5 동등한 비중으로 합산하는 '중립형' 모드 구축. 
+    - **엔진 이식**: Python `NextLeaderEngine`에 NEUTRAL 모드 분기 로직 및 최적화된 문턱 점수(60.0) 적용 완료.
+    - **관리자 UI 고도화**: 전략 선택 바에 '중립형' 옵션 추가 및 4열 안내 카드 레이아웃 적용으로 분석 투명성 강화.
 
 ## 🚀 v28.7 - v28.8 Fundamental AI & Scoring Precision (2026-03-09 완료)
 *   **재무 실적 분석 엔진 (Fundamental AI)**: 
@@ -428,7 +442,7 @@
 - [ ] **Real-time Disclosure Radar**: DART API 연동을 통한 공시 실시간 탐지 엔진 구축.
 
 ---
-*Last Updated: 2026-03-09 (Fundamental AI & Total Intelligence Integration 완료)*
+*Last Updated: 2026-03-16 (AI NOC & Full Debugging Integration 완료)*
 
 # StockPlus Project Intelligence & Roadmap (Past History)
 

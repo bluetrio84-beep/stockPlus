@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart, Award, Activity, Newspaper, Book } from 'lucide-react';
+import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart, Award, Activity, Newspaper, Book, ShieldAlert } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -24,6 +24,7 @@ const LayoutDesktop = ({ logic }) => {
         navItems.push({ name: 'NEXT LEADERS', path: '/admin/next-leaders', icon: Award });
         navItems.push({ name: 'MARKET BUBBLE CHART', path: '/admin/chart', icon: BarChart2 });
         navItems.push({ name: '데이터 수집 관리', path: '/admin', icon: Activity });
+        navItems.push({ name: '장애 관리', path: '/admin/failure', icon: ShieldAlert });
         navItems.push({ name: '시스템 관리', path: '/admin/system', icon: Settings });
     }
 
@@ -121,7 +122,7 @@ const LayoutDesktop = ({ logic }) => {
                     <div className="px-2 py-3 mb-4 whitespace-nowrap"><span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span></div>
                     <nav className="flex-1 flex flex-col min-w-[224px]">
                         <div className="space-y-1.5 flex-1">
-                            {navItems.filter(item => !['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                            {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
                                     <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200")}>
@@ -134,7 +135,7 @@ const LayoutDesktop = ({ logic }) => {
                         {isAdmin() && (
                             <div className="mt-4 pt-4 border-t border-slate-800/60 space-y-1.5">
                                 <div className="px-2 pb-2"><span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
-                                {navItems.filter(item => ['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
                                         <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20" : "text-slate-500 hover:bg-slate-800 hover:text-slate-300")}>

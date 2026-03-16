@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book } from 'lucide-react';
+import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book, ShieldAlert } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -24,6 +24,7 @@ const LayoutMobile = ({ logic }) => {
         navItems.push({ name: 'NEXT LEADERS', path: '/admin/next-leaders', icon: Award });
         navItems.push({ name: 'MARKET BUBBLE CHART', path: '/admin/chart', icon: BarChart2 });
         navItems.push({ name: '데이터 수집 관리', path: '/admin', icon: Activity });
+        navItems.push({ name: '장애 관리', path: '/admin/failure', icon: ShieldAlert });
         navItems.push({ name: '시스템 관리', path: '/admin/system', icon: Settings });
     }
 
@@ -135,10 +136,10 @@ const LayoutMobile = ({ logic }) => {
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-8">
                             <div className="space-y-1.5">
-                                {navItems.filter(item => !['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
-                                        <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 active:bg-slate-800")}>
+                                        <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 active:bg-slate-800")}>
                                             <item.icon size={18} className={isActive ? "text-white" : "text-slate-500"} />{item.name}
                                         </button>
                                     );
@@ -148,7 +149,7 @@ const LayoutMobile = ({ logic }) => {
                             {isAdmin() && (
                                 <div className="mt-10 pt-8 border-t border-slate-800/60 space-y-1.5">
                                     <div className="px-4 pb-2"><span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
-                                    {navItems.filter(item => ['데이터 수집 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                                    {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                         const isActive = location.pathname === item.path;
                                         return (
                                             <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-rose-600 shadow-lg shadow-rose-600/20" : "text-slate-400 active:bg-slate-800")}>

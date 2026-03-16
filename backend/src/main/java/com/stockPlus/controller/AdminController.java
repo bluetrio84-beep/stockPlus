@@ -26,6 +26,7 @@ public class AdminController {
     private final StockMasterService stockMasterService;
     private final com.stockPlus.service.StockAnalysisService stockAnalysisService;
     private final com.stockPlus.service.KisStockService kisStockService; // [추가] 실적 수집용 서비스
+    private final com.stockPlus.service.SystemMonitoringService systemMonitoringService; // [신규] 시스템 관제 서비스
 
     // --- 0. 상장종목 관리 (CRUD) ---
     @GetMapping("/stocks")
@@ -286,5 +287,26 @@ public class AdminController {
         } catch (Exception e) {
             return "ERROR: " + e.getMessage();
         }
+    }
+
+    // [v36.10] 시스템 장애 관제 (NOC) 데이터 조회
+    @GetMapping("/system/metrics")
+    public Map<String, Object> getSystemMetrics() {
+        return systemMonitoringService.getSystemMetrics();
+    }
+
+    // [v36.20] 로그 AI 분석 (Gemini 연동)
+    @PostMapping("/system/analyze-log")
+    public Map<String, String> analyzeLog(@RequestBody Map<String, String> payload) {
+        String logContent = payload.get("log");
+        String analysis = systemMonitoringService.analyzeLogWithAi(logContent);
+        return Map.of("analysis", analysis);
+    }
+
+    // [v36.20] 시스템 긴급 복구 (재시작)
+    @PostMapping("/system/restart")
+    public Map<String, String> restartSystem() {
+        systemMonitoringService.triggerSystemRestart();
+        return Map.of("message", "System restart triggered. Please wait a few moments.");
     }
 }
