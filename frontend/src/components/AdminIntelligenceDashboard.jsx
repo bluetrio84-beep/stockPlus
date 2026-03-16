@@ -318,7 +318,9 @@ const AdminIntelligenceDashboard = () => {
                     <div className="flex justify-between items-center mb-4 lg:mb-6 shrink-0"><h2 className="text-sm lg:text-lg font-bold text-white flex items-center gap-2"><PieChart size={18} className="text-indigo-400" /> 업종 등락 히트맵</h2><span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">Top 50</span></div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-2.5 overflow-y-auto custom-scrollbar-thin pr-1 flex-1 pb-2 content-start">
                         {data.heatmap?.map((item, idx) => (
-                            <div key={idx} className={classNames("relative aspect-[1.2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-1.5 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left", getHeatmapColor(item.change_rate))}>
+                            <div key={idx} 
+                                onClick={() => setSelectedSector(item)}
+                                className={classNames("relative aspect-[1.2/1] lg:aspect-[4/3] rounded-lg lg:rounded-xl p-1.5 lg:p-3 flex flex-col justify-center items-center lg:justify-between lg:items-start transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border border-white/5 text-center lg:text-left", getHeatmapColor(item.change_rate))}>
                                 {item.ai_signal === 'BUY' && <div className="absolute top-1 right-1 flex items-center justify-center"><ArrowUpCircle className="text-white fill-rose-500 animate-pulse" size={14} /></div>}
                                 {item.ai_signal === 'SELL' && <div className="absolute top-1 right-1 flex items-center justify-center"><ArrowDownCircle className="text-white fill-blue-500" size={14} /></div>}
                                 <span className="text-[9px] lg:text-[11px] font-black text-white leading-tight drop-shadow-md truncate w-full px-1">{item.industry_name}</span>

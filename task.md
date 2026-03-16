@@ -1,5 +1,13 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.00 Dashboard UX Restoration & Mobile Sidebar Precision Tuning (2026-03-16 완료) 🔥
+*   **어드민 인텔리전스 복구 (Heatmap Restoration)**:
+    - **히트맵 클릭 팝업 부활**: 업종 등락 히트맵에서 개별 업종 클릭 시 'Leading Stocks TOP 5' 상세 모달이 뜨지 않던 이벤트 리스너 누락 문제를 정밀 타격하여 복구 완료.
+*   **모바일 사이드바 공간 최적화 (Mobile UI Polish)**:
+    - **메뉴 리스트 다이어트**: 메뉴의 폰트 크기(`text-sm`)와 상하 여백(`py-3.5`)을 정교하게 축소하여 작은 화면에서도 모든 메뉴가 한눈에 들어오도록 개선.
+    - **레이아웃 재배치**: 'MANAGEMENT' 섹션을 명칭 유지와 함께 리스트 최하단으로 고정 배치하여 실전 지휘 시 오클릭을 방지하고 사용 편의성 극대화.
+    - **스크롤 안정화**: 메뉴 컨테이너에 유동적 스크롤 영역을 확보하여 하단 '시스템 관리' 메뉴까지 완벽하게 접근 가능하도록 조치.
+
 ## 🚀 v35.90 Ultimate Investment Journal & Collector Priority Intelligence (2026-03-16 완료) 🔥
 *   **수집기 엔진 전략적 재배치 (Collector Evolution)**:
     - **최우선 가동 시스템**: 수집 사이클이 시작되자마자 AI 포트폴리오 분석(`blackbox_analyst.py`)을 가장 먼저 수행하도록 로직 순서 전격 교체.
