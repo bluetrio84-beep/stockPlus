@@ -76,7 +76,22 @@ public class NewsService {
 
                     for (String keyword : combinedKeywords) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
-                        List<NewsItem> items = naverService.searchNewsItems(keyword);
+                        
+                        // [v36.30] Naver API Throttling: 호출 전 미세 딜레이 주입 (429 에러 방지)
+                        try { Thread.sleep(850); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
+                        List<NewsItem> items = null;
+                        try {
+                            items = naverService.searchNewsItems(keyword);
+                        } catch (Exception e) {
+                            if (e.getMessage().contains("RATE_LIMIT_EXCEEDED")) {
+                                log.error(">>> [News Pipeline] Naver API Quota exceeded. Aborting this cycle entirely.");
+                                return; // 이번 시간대 뉴스 수집 전면 중단
+                            }
+                        }
+                        
+                        if (items == null || items.isEmpty()) continue;
+
                         for (NewsItem item : items) {
                             if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
                             if (isNotJunk(item.getTitle(), item.getDescription())) {

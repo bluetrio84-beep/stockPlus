@@ -177,25 +177,27 @@ const AdminFailureManagement = () => {
                         </span>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-2 custom-scrollbar bg-black/20">
+                    <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-2 custom-scrollbar bg-black/20 select-text cursor-text">
                         {metrics?.recentErrors?.map((log, idx) => {
                             const isCritical = log.includes('Critical') || log.includes('ERROR');
                             return (
                                 <div 
                                     key={idx} 
-                                    onClick={() => handleAnalyzeLog(log)}
-                                    className={classNames("p-3 rounded-xl border cursor-pointer transition-all hover:scale-[0.99] active:scale-95 group relative", 
+                                    className={classNames("p-3 rounded-xl border transition-all group relative", 
                                         isCritical ? "bg-rose-500/5 border-rose-500/20 text-rose-200" : "bg-slate-800/30 border-slate-800 text-slate-400")}
                                 >
-                                    <div className="flex items-start gap-3">
+                                    <div className="flex items-start gap-3 select-text">
                                         <span className={classNames("mt-0.5 shrink-0", isCritical ? "text-rose-500" : "text-amber-500")}>
                                             <Zap size={14} />
                                         </span>
-                                        <span className="break-all">{log}</span>
+                                        <span className="break-all cursor-text">{log}</span>
                                     </div>
-                                    <div className="absolute right-3 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-indigo-400 font-black text-[9px] uppercase">
+                                    <button 
+                                        onClick={() => handleAnalyzeLog(log)}
+                                        className="absolute right-3 bottom-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white px-2 py-1 rounded-md font-black text-[9px] uppercase shadow-lg active:scale-90 z-10"
+                                    >
                                          <Brain size={12} /> AI Debug
-                                    </div>
+                                    </button>
                                 </div>
                             );
                         })}

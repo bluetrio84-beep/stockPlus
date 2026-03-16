@@ -60,6 +60,11 @@ public class NaverService {
                     .header("X-Naver-Client-Id", clientId)
                     .header("X-Naver-Client-Secret", clientSecret)
                     .retrieve()
+                    .onStatus(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS::equals, 
+                        res -> {
+                            log.error(">>> [Naver API] 429 Too Many Requests detected for query: {}", query);
+                            return reactor.core.publisher.Mono.error(new RuntimeException("RATE_LIMIT_EXCEEDED"));
+                        })
                     .bodyToMono(String.class)
                     .block(); // 동기 처리
 
