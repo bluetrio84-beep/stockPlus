@@ -1,5 +1,17 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.30 Anti-429 News Shield & Resource Fortress (2026-03-16 완료) 🔥
+*   **방탄 뉴스 수집 시스템 (Anti-429 Shield)**:
+    - **지능형 Throttling**: 네이버 API 호출 사이사이에 850ms의 정밀 딜레이를 주입하여 초당 호출 제한(Rate Limit)을 완벽하게 회피.
+    - **Quota Guard 로직**: `429 Too Many Requests` 발생 시 무의미한 재시도를 중단하고 해당 수집 사이클을 즉시 종료하여 IP 차단 위험 최소화.
+    - **에러 전파 아키텍처**: `NaverService`와 `NewsService` 간의 예외 전파를 통해 시스템 전체의 뉴스 수집 안정성 확보.
+*   **시스템 인프라 리소스 최적화**:
+    - **컨테이너 메모리 격리**: `docker-compose` 설정을 통해 백엔드(2GB), 수집기(1.5GB), MySQL(1GB)의 메모리 한계를 명시하여 서비스 간 간섭 차단.
+    - **JVM Heap 고정**: `JAVA_OPTS`(-Xmx1536m)를 적용하여 백엔드 메모리 점유율을 가시화하고 예기치 못한 OOM(Out of Memory) 원천 봉쇄.
+*   **NOC 관제 UI 고도화 (v2)**:
+    - **로그 복사 활성화**: 텍스트 선택(select-text) 속성을 주입하여 에러 로그를 마우스로 드래그하여 즉시 복사 가능하도록 개선.
+    - **AI 디버깅 버튼 분리**: 로그 클릭 시 분석창이 바로 뜨던 불편함을 제거하고, 별도의 [AI Debug] 버튼을 클릭할 때만 Gemini 분석이 시작되도록 UX 정밀 수정.
+
 ## 🚀 v36.10 / v36.20 System Failure Control (NOC) & AI Debugging Intelligence (2026-03-16 완료) 🔥
 *   **시스템 장애 관제 사령탑 (NOC Dashboard) 구축**:
     - **실시간 리소스 모니터링**: Java MXBean을 통해 백엔드 컨테이너의 CPU Load, Memory Usage를 10초 단위로 정밀 추적 및 시각화.
