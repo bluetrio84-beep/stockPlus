@@ -137,7 +137,6 @@ const InvestmentJournal = () => {
                     if (editorRef.current) {
                         editorRef.current.focus();
                         document.execCommand('insertHTML', false, imgTag);
-                        syncEditorContent();
                     }
                 } else {
                     showNotification('이미지 업로드에 실패했습니다.', 'ERROR');

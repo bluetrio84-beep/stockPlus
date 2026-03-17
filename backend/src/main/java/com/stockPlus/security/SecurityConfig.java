@@ -50,6 +50,7 @@ public class SecurityConfig {
                     "/api/auth/**", 
                     "/api/sse/**", 
                     "/api/dashboard/**", // 대시보드 공용 API 허용
+                    "/api/dashboard/notes/upload", // 이미지 업로드 경로 전격 허용
                     "/api/snapshots/**", 
                     "/api/notes/images/**",
                     "/api/admin/portfolio/**", // [v36.53] 포트폴리오 분석 전격 개방

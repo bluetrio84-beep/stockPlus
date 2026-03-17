@@ -35,7 +35,10 @@ public class NewsService {
     private final UserMapper userMapper;
 
     private static final List<String> RSS_FEED_URLS = Arrays.asList(
-        "https://rss.hankyung.com/feed/market.xml"
+        "https://rss.hankyung.com/feed/market.xml",
+        "https://news.einfomax.co.kr/rss/S1N1.xml",
+        "https://www.mk.co.kr/rss/30100041/",
+        "https://www.sedaily.com/Rss/Stock"
     );
 
     private static final List<String> JUNK_KEYWORDS = Arrays.asList(
@@ -102,8 +105,8 @@ public class NewsService {
                     }
                 }
                 
-                // 2. [가중치 2순위] RSS 피드 보충
-                if (userSavedThisCycle < MAX_NEWS_TO_SAVE) {
+                // 2. [가중치 2순위] RSS 피드 보충 (키워드 매칭 강화)
+                if (userSavedThisCycle < MAX_NEWS_TO_SAVE && !keywords.isEmpty()) {
                     for (String feedUrl : RSS_FEED_URLS) {
                         if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
                         try {
@@ -112,7 +115,13 @@ public class NewsService {
                             SyndFeed feed = input.build(new XmlReader(url));
                             for (SyndEntry entry : feed.getEntries()) {
                                 if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
-                                if (isNotJunk(entry.getTitle(), "")) {
+                                
+                                // [v36.66] RSS 뉴스도 제목/본문에 사용자 키워드가 포함된 것만 엄선
+                                String title = entry.getTitle() != null ? entry.getTitle().toLowerCase() : "";
+                                String desc = (entry.getDescription() != null ? entry.getDescription().getValue() : "").toLowerCase();
+                                boolean hasKeyword = keywords.stream().anyMatch(k -> title.contains(k.toLowerCase()) || desc.contains(k.toLowerCase()));
+
+                                if (hasKeyword && isNotJunk(title, desc)) {
                                     NewsItem newsItem = convertToNewsItem(entry);
                                     newsItem.setUsrId(usrId);
                                     if (newsMapper.saveNews(newsItem) > 0) userSavedThisCycle++;

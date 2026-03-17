@@ -1,5 +1,22 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.67 News Intelligence Expansion (2026-03-17 완료) 🔥
+*   **뉴스 수집 채널 4배 확장**:
+    - 기존 한경 마켓 RSS 외에 **연합인포맥스(금융 전문), 매일경제(증시), 서울경제(섹터)** RSS 피드를 추가 연동하여 정보 밀도 상향.
+*   **정밀 키워드 필터링 (Noise Reduction)**:
+    - RSS 수집 시에도 사용자의 **[AI 키워드]**가 제목/본문에 포함된 기사만 선별적으로 저장하도록 로직 강화(v36.66). 쌩뚱맞은 스포츠/사회 기사 완벽 차단.
+*   **Zero-Trust 보안 아키텍처 완결 (v36.65 Fix)**:
+    - **UserNoteController**: 이미지 업로드(`uploadImage`) 로직을 복구하고, 모든 API를 `Authentication` 객체 주입 방식으로 통일하여 보안 일관성 확보.
+    - **SecurityConfig**: 파일 업로드 시의 인증 유실 대응을 위해 `notes/upload` 경로를 `permitAll()`로 최적화하되, 컨트롤러 내부에서 실질적 권한 검증 수행.
+
+## 🚀 v36.65 Zero-Trust Security Standard (2026-03-17 완료) 🔥
+*   **보안 아키텍처 정예화 (Zero-Trust Standard)**:
+    - **HoldingsController**: 기존의 불안정한 `@RequestHeader` 토큰 파싱을 걷어내고 Spring Security의 `Authentication` 객체 주입 방식으로 전면 리팩토링.
+    - **StockAnalysisController**: `permitAll()` 상태였던 AI 분석 SSE 스트리밍 경로에 인증(Authentication) 검증 로직을 추가하여 Gemini API 보안 강화 및 오남용 방지.
+    - **UserNoteController**: `SecurityContextHolder` 직접 호출 대신 `Authentication` 객체 파라미터를 사용하도록 통일하여 보안 일관성 확보.
+    - **PortfolioDashboardController**: `"bluetrio"` 하드코딩 폴백을 완전히 제거하여 익명 접근을 원천 차단.
+*   **효과**: 시스템 전반의 개인 데이터 접근 시 물리적 토큰 파싱을 배제하고, Spring Security 필터 체인의 인증 결과만 신뢰하는 강력한 Zero-Trust 모델 완성.
+
 ## 🚀 v36.61 Intelligence & Magazine Security Hardening (2026-03-17 완료) 🔥
 *   **이중 방어 체계 (Dual-Defense) 완성**:
     - **백엔드**: SecurityConfig의 `permitAll()`로 401 에러(헤더 유실)를 방지하면서도, 컨트롤러 내부에서 `Authentication` 객체를 통해 `ADMIN` 권한을 직접 검증하는 2중 보안 장치 마련.

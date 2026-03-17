@@ -19,10 +19,9 @@ public class PortfolioDashboardController {
 
     @GetMapping("/intelligence")
     public Mono<Map<String, Object>> getMyDashboard(Authentication authentication) {
-        // [v36.54] 지능형 권한 방어: SecurityConfig는 통과하더라도 여기서 최종 권한 확인
+        // [v36.62] Zero-Trust: 하드코딩 폴백 완전 제거. 반드시 인증된 사용자 정보만 사용.
         if (authentication == null || !authentication.isAuthenticated()) {
-            // 토큰 유실 시에도 bluetrio 데이터를 보여주되, 로그는 남김
-            return portfolioService.getMyPortfolioIntelligence("bluetrio");
+            throw new RuntimeException("Unauthorized: Valid authentication is required to access portfolio intelligence.");
         }
 
         // 명시적으로 ADMIN 권한이 있는지 확인
