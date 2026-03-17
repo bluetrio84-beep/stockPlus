@@ -65,10 +65,12 @@ public class StockAnalysisService {
         }
     }
 
-    // 현재 로그인한 사용자 ID 조회 (없으면 기본값 반환)
+    // [v36.50] 현재 로그인한 사용자 ID 조회 (하드코딩 제거 및 보안 강화)
     private String getCurrentUsrId() {
         String principal = SecurityContextHolder.getContext().getAuthentication().getName();
-        if ("anonymousUser".equals(principal) || principal == null) return "bluetrio";
+        if (principal == null || "anonymousUser".equals(principal)) {
+            throw new RuntimeException("User authentication is required.");
+        }
         return principal;
     }
 

@@ -54,13 +54,13 @@ public class UserNoteController {
         }
     }
 
+    // [v36.50] 현재 로그인한 사용자 ID 조회 (하드코딩 제거 및 보안 강화)
     private String getCurrentUsrId() {
-        try {
-            String principal = SecurityContextHolder.getContext().getAuthentication().getName();
-            return ("anonymousUser".equals(principal) || principal == null) ? "bluetrio" : principal;
-        } catch (Exception e) {
-            return "bluetrio";
+        String principal = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (principal == null || "anonymousUser".equals(principal)) {
+            throw new RuntimeException("User authentication is required.");
         }
+        return principal;
     }
 
     @GetMapping

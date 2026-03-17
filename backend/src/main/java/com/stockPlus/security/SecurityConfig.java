@@ -42,13 +42,26 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/doc/**").permitAll()
                 .requestMatchers("/api/doc/**").permitAll()
 
-                // 1. 공용 API, 대시보드 및 포트폴리오 인텔리전스 허용
-                .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/portfolio/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/notes/images/**", "/api/admin/trigger-review", "/api/admin/dump-investor", "/api/admin/magazine/data").permitAll()
+                // 1. 공용 API (기존 설정 주석 보존 - 복구용)
+                // .requestMatchers("/api/auth/**", "/api/sse/**", "/api/dashboard/**", "/api/admin/portfolio/**", "/api/admin/intelligence/sync-financials/**", "/api/snapshots/**", "/api/notes/images/**", "/api/admin/trigger-review", "/api/admin/dump-investor", "/api/admin/magazine/data").permitAll()
 
-                // 2. 관리자 전용 API
+                // [v36.51] 필수 허용 경로 복구 (401 에러 방지)
+                .requestMatchers(
+                    "/api/auth/**", 
+                    "/api/sse/**", 
+                    "/api/dashboard/**", // 대시보드 공용 API 허용
+                    "/api/snapshots/**", 
+                    "/api/notes/images/**",
+                    "/api/admin/intelligence/sync-financials/**", 
+                    "/api/admin/trigger-review", 
+                    "/api/admin/dump-investor", 
+                    "/api/admin/magazine/data"
+                ).permitAll()
+
+                // 2. 관리자 전용 API (그 외 모든 admin 기능은 ADMIN 권한 확인)
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
-                // 3. 그 외 모든 요청은 인증 필요
+                // 3. 그 외 모든 요청 (대시보드, 포트폴리오 등)은 이제 반드시 로그인 필요
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

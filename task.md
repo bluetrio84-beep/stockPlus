@@ -1,5 +1,15 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.50 Hardened Security & Zero-Trust Identity (2026-03-17 완료) 🔥
+*   **사용자 식별 로직 정예화 (Zero-Trust)**:
+    - **하드코딩 완전 제거**: PortfolioDashboardController, StockDashboardService, StockAnalysisService, UserNoteController 등 시스템 전반에 걸쳐 잔존하던 'bluetrio' ID 하드코딩 및 폴백(Fallback) 로직을 전격 폐기.
+    - **명시적 인증 강제**: SecurityContextHolder를 통해 실제 인증된 사용자명만 추출하며, 익명 사용자(anonymousUser) 접근 시 즉시 예외를 발생시켜 데이터 유출을 원천 봉쇄.
+*   **보안 아키텍처 정밀 튜닝 (SecurityConfig)**:
+    - **정교한 접근 제어**: 대시보드 및 포트폴리오 관리 등 개인 정보 관련 경로를 authenticated() 영역으로 격리 (단, 공용 지수/시세 조회를 위해 /api/dashboard/**는 최소 허용).
+    - **수집기 통신 보장**: 파이썬 수집기가 직접 호출하는 3대 핵심 경로(sync-financials, trigger-review, dump-investor)를 permitAll() 영역에 명시하여 시스템 가동성 유지.
+    - **가용성 확보**: 401 에러가 발생하던 대시보드 공용 API들을 선별적으로 복구하여 일반 서비스 이용에 지장이 없도록 조치.
+
+
 ## 🚀 v36.40 SSE Stability & Log Purification (2026-03-17 완료) 🔥
 *   **SSE 실시간 통신 안정화 (Broken Pipe Defense)**:
     - **에러 로그 정화**: 클라이언트 이탈 시 발생하는 `Broken pipe` (ClientAbortException)의 방대한 스택 트레이스를 제거하고 `debug` 레벨의 짧은 한 줄 로그로 대체.
