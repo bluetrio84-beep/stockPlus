@@ -52,11 +52,12 @@ public class StockSseController {
                 .subscribe(
                         stockPrice -> {
                             try {
-                                // 데이터 발생 시 클라이언트에게 전송 (이벤트명: priceUpdate)
                                 emitter.send(SseEmitter.event().name("priceUpdate").data(stockPrice));
-                            } catch (IOException e) {
-                                log.warn("Error sending SSE data, client might have disconnected.", e);
-                                // 에러 처리는 아래 onError/onCompletion에서 수행됨
+                            } catch (Exception e) {
+                                // [v36.40] Broken pipe 발생 시 로그만 짧게 남기고 구독 종료
+                                // 스택 트레이스를 생략하여 로그 폭주 및 리소스 낭비 방지
+                                log.debug(">>> [SSE] Client disconnected. (Broken pipe)");
+                                emitter.complete();
                             }
                         },
                         error -> {

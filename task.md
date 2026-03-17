@@ -1,5 +1,14 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.40 SSE Stability & Log Purification (2026-03-17 완료) 🔥
+*   **SSE 실시간 통신 안정화 (Broken Pipe Defense)**:
+    - **에러 로그 정화**: 클라이언트 이탈 시 발생하는 `Broken pipe` (ClientAbortException)의 방대한 스택 트레이스를 제거하고 `debug` 레벨의 짧은 한 줄 로그로 대체.
+    - **리소스 자가 정리**: 전송 실패 시 `emitter.complete()`를 즉시 호출하여 서버 측 구독(Subscription)을 종료함으로써 불필요한 연산 및 메모리 점유 차단.
+    - **무결성 유지**: 브라우저 재접속 시 새로운 SSE 세션이 생성되어 실시간 시세 데이터 유입이 즉시 재개되도록 설계.
+*   **배치 스케줄러 로그 레벨 정상화**:
+    - **허위 경보 박멸**: 시스템 시작 및 진행 안내에 사용되던 `log.error`를 `log.info`로 수정하여 NOC 대시보드의 장애 지표 신뢰도 향상.
+    - **출처 식별자 도입**: 서버 기동 시의 초기화 작업(`[INIT]`)과 정기 오후 7시 수집 작업(`[Batch]`) 로그를 분리하여 운영 가시성 확보.
+
 ## 🚀 v36.30 Anti-429 News Shield & Resource Fortress (2026-03-16 완료) 🔥
 *   **방탄 뉴스 수집 시스템 (Anti-429 Shield)**:
     - **지능형 Throttling**: 네이버 API 호출 사이사이에 850ms의 정밀 딜레이를 주입하여 초당 호출 제한(Rate Limit)을 완벽하게 회피.
@@ -130,7 +139,7 @@
 ## 🚀 v28.9.18 Tactical Navigation Optimization (2026-03-11 완료)
 *   **관제탑 내비게이션 강화**:
     - **뒤로가기 버튼 신설**: 포트폴리오 관제탑(My-Dashboard) 헤더 최좌측에 메인 대시보드로 즉시 복귀할 수 있는 직관적인 뒤로가기 버튼(Chevron) 배치.
-    - **레이아웃 정밀 재정돈**: 관제탑 아이콘, 타이틀, 새로고침 버튼을 조화롭게 재배치하여 전술적 통제 편의성 극대화.
+    - **레이아웃 정밀 재정돈**: 관제탑 아이콘, 타이틀, 새로고침 버튼을 조화롭게 배치하여 전술적 통제 편의성 극대화.
 
 ## 🚀 v28.9.17 Elite Mark System & Dashboard Synchronization (2026-03-11 완료)
 *   **복기 리포트 정예화 (Elite Marking)**:
@@ -454,7 +463,7 @@
 - [ ] **Real-time Disclosure Radar**: DART API 연동을 통한 공시 실시간 탐지 엔진 구축.
 
 ---
-*Last Updated: 2026-03-16 (AI NOC & Full Debugging Integration 완료)*
+*Last Updated: 2026-03-17 (SSE Stability & Log Purification 완료)*
 
 # StockPlus Project Intelligence & Roadmap (Past History)
 

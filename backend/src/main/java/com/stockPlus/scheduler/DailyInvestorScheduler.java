@@ -37,13 +37,13 @@ public class DailyInvestorScheduler {
      */
     @jakarta.annotation.PostConstruct
     public void init() {
-        log.error(">>> [INIT] Starting Historical Data Aggregation...");
+        log.info(">>> [INIT] Starting Historical Data Aggregation...");
         new Thread(() -> {
             try {
                 Thread.sleep(10000);
-                collectDailyInvestorData();
+                collectDailyInvestorDataInternal(true);
             } catch (Exception e) {
-                log.error("Init aggregation failed", e);
+                log.error(">>> [INIT] Aggregation failed", e);
             }
         }).start();
     }
@@ -53,12 +53,18 @@ public class DailyInvestorScheduler {
      */
     @Scheduled(cron = "0 0 19 * * MON-FRI", zone = "Asia/Seoul")
     public void collectDailyInvestorData() {
+        collectDailyInvestorDataInternal(false);
+    }
+
+    private void collectDailyInvestorDataInternal(boolean isInit) {
         // 휴장일 체크
         if (!isMarketOpen()) {
             return;
         }
 
-        log.error(">>> [Batch] Starting High-Precision Data Collection (19:00)...");
+        String label = isInit ? "INIT" : "Batch";
+        String timeInfo = isInit ? "Startup/Manual" : "19:00";
+        log.info(">>> [{}] Starting High-Precision Data Collection ({})...", label, timeInfo);
         
         List<String> stockCodes = watchlistMapper.findAllGlobal().stream()
                 .map(w -> w.getStockCode())
@@ -95,15 +101,15 @@ public class DailyInvestorScheduler {
                             count++;
                         }
                     }
-                    if (count > 0) log.info(">>> [Batch] MERGE SUCCESS for {}: {} records.", code, count);
+                    if (count > 0) log.info(">>> [{}] MERGE SUCCESS for {}: {} records.", label, code, count);
                 });
                 
                 Thread.sleep(300); // KIS API TPS 보호
             } catch (Exception e) {
-                log.error(">>> [Batch] Error merging stock {}: {}", code, e.getMessage());
+                log.error(">>> [{}] Error merging stock {}: {}", label, code, e.getMessage());
             }
         }
-        log.error(">>> [Batch] High-Precision Collection Process Launched!");
+        log.info(">>> [{}] High-Precision Collection Process Launched!", label);
     }
 
     private void saveMergedData(String stockCode, String date, InvestorDto.InvestorItem inv, StockChartDto chart) {
