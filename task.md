@@ -1,5 +1,15 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.61 Intelligence & Magazine Security Hardening (2026-03-17 완료) 🔥
+*   **이중 방어 체계 (Dual-Defense) 완성**:
+    - **백엔드**: SecurityConfig의 `permitAll()`로 401 에러(헤더 유실)를 방지하면서도, 컨트롤러 내부에서 `Authentication` 객체를 통해 `ADMIN` 권한을 직접 검증하는 2중 보안 장치 마련.
+    - **프론트엔드**: AdminIntelligence, NextLeader, DailyMagazine 등 관리자 전용 컴포넌트 진입 시 `role`을 체크하여 비관리자 접근 시 즉시 메인으로 Redirect 처리.
+*   **대상 API 전수 조사 및 적용**:
+    - AdminController (Intelligence, Next-Leader, Magazine 관련 모든 API)
+    - NewsController (News Trigger API)
+    - PortfolioDashboardController (Portfolio Intelligence API)
+*   **경로 미스매치 해결**: `/api/admin/**`와 `/stockPlus/api/admin/**` 패턴을 모두 수용하여 Nginx 프록시 환경에서의 보안 일관성 확보.
+
 ## 🚀 v36.50 Hardened Security & Zero-Trust Identity (2026-03-17 완료) 🔥
 *   **사용자 식별 로직 정예화 (Zero-Trust)**:
     - **하드코딩 완전 제거**: PortfolioDashboardController, StockDashboardService, StockAnalysisService, UserNoteController 등 시스템 전반에 걸쳐 잔존하던 'bluetrio' ID 하드코딩 및 폴백(Fallback) 로직을 전격 폐기.

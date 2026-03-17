@@ -52,14 +52,15 @@ public class SecurityConfig {
                     "/api/dashboard/**", // 대시보드 공용 API 허용
                     "/api/snapshots/**", 
                     "/api/notes/images/**",
+                    "/api/admin/portfolio/**", // [v36.53] 포트폴리오 분석 전격 개방
                     "/api/admin/intelligence/sync-financials/**", 
                     "/api/admin/trigger-review", 
                     "/api/admin/dump-investor", 
                     "/api/admin/magazine/data"
                 ).permitAll()
 
-                // 2. 관리자 전용 API (그 외 모든 admin 기능은 ADMIN 권한 확인)
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // [v36.52] 관리자 전용 API (접두어 포함 대응)
+                .requestMatchers("/api/admin/**", "/stockPlus/api/admin/**").hasRole("ADMIN")
                 
                 // 3. 그 외 모든 요청 (대시보드, 포트폴리오 등)은 이제 반드시 로그인 필요
                 .anyRequest().authenticated()

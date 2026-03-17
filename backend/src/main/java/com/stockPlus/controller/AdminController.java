@@ -151,7 +151,10 @@ public class AdminController {
 
     // --- 2. 인텔리전스 대시보드 ---
     @GetMapping("/intelligence/dashboard")
-    public Map<String, Object> getIntelligenceDashboard() {
+    public Map<String, Object> getIntelligenceDashboard(org.springframework.security.core.Authentication authentication) {
+        // [v36.60] 관리자 권한 강제 (이중 방어)
+        validateAdmin(authentication);
+
         Map<String, Object> response = new HashMap<>();
         response.put("heatmap", adminMapper.getIndustryHeatmap());
         response.put("persistence", adminMapper.getThemePersistence());
@@ -164,7 +167,8 @@ public class AdminController {
     }
 
     @GetMapping("/intelligence/industry")
-    public Map<String, String> getLeadStocks(@RequestParam String industryName) {
+    public Map<String, String> getLeadStocks(@RequestParam String industryName, org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
         String leadStocks = adminMapper.getLeadStocksByIndustryName(industryName);
         Map<String, String> response = new HashMap<>();
         response.put("leadStocks", leadStocks != null ? leadStocks : "");
@@ -172,14 +176,16 @@ public class AdminController {
     }
 
     @GetMapping("/intelligence/next-leaders")
-    public List<Map<String, Object>> getNextLeaders(@RequestParam(required = false) String date) {
+    public List<Map<String, Object>> getNextLeaders(@RequestParam(required = false) String date, org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
         String targetDate = (date != null) ? date : java.time.LocalDate.now().toString();
         // [v18.0] TOP 10으로 정예화
         return adminMapper.getNextLeadersByDate(targetDate).stream().limit(10).toList();
     }
 
     @PostMapping("/intelligence/next-leaders/feedback")
-    public void updateNextLeaderFeedback(@RequestBody Map<String, String> payload) {
+    public void updateNextLeaderFeedback(@RequestBody Map<String, String> payload, org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
         String stockCode = payload.get("stockCode");
         String date = payload.get("date");
         String feedbackTag = payload.get("feedbackTag");
@@ -188,15 +194,31 @@ public class AdminController {
     }
 
     @GetMapping("/intelligence/ai-review")
-    public Map<String, Object> getAiReviewData() {
+    public Map<String, Object> getAiReviewData(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
         Map<String, Object> response = new HashMap<>();
         response.put("modelPerformance", adminMapper.getAiModelPerformance());
         response.put("pastRecommendations", adminMapper.getPastRecommendations());
         return response;
     }
 
+    // [v36.60] 관리자 권한 통합 검증 유틸리티
+    private void validateAdmin(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Unauthorized: Authentication is required.");
+        }
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            throw new RuntimeException("Forbidden: Only ADMIN can access intelligence data.");
+        }
+    }
+
     @GetMapping("/magazine/data")
-    public Map<String, Object> getMagazineData() {
+    public Map<String, Object> getMagazineData(org.springframework.security.core.Authentication authentication) {
+        // [v36.61] 매거진 데이터 보안 강화: 관리자 권한 확인
+        validateAdmin(authentication);
+
         Map<String, Object> response = new HashMap<>();
         String today = java.time.LocalDate.now().toString();
         

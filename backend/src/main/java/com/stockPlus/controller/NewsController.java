@@ -41,7 +41,17 @@ public class NewsController {
      * @return 실행 결과 메시지
      */
     @GetMapping("/trigger")
-    public String triggerNewsFetch() {
+    public String triggerNewsFetch(org.springframework.security.core.Authentication authentication) {
+        // [v36.60] 관리자 권한 강제 (이중 방어)
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Unauthorized: Authentication is required.");
+        }
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            throw new RuntimeException("Forbidden: Only ADMIN can trigger news fetch.");
+        }
+
         newsService.fetchAndSaveNews();    // 네이버 뉴스 API 호출, 저장 및 즉시 AI 요약 수행
         return "News fetch & AI summary triggered!";
     }

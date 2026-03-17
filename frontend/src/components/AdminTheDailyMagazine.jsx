@@ -5,7 +5,21 @@ import classNames from 'classnames';
 import html2canvas from 'html2canvas-pro'; 
 import jsPDF from 'jspdf';
 
+import { useNavigate } from 'react-router-dom';
+
 const AdminTheDailyMagazine = () => {
+    const navigate = useNavigate();
+
+    // [v36.61] Zero-Trust UI Security: ADMIN 권한 확인 및 미승인 시 즉시 퇴출
+    useEffect(() => {
+        const userRole = localStorage.getItem('role');
+        if (userRole !== 'ADMIN') {
+            console.error(">>> [SECURITY ALERT] Unauthorized access attempt to Daily Magazine.");
+            alert("관리자 전용 영역입니다. 접근 권한이 없습니다.");
+            navigate('/');
+        }
+    }, [navigate]);
+
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloadable, setIsDownloadable] = useState(false);
     const [magazineData, setMagazineData] = useState({

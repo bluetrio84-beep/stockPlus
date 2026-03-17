@@ -3,7 +3,21 @@ import { getAuthHeader } from '../api/stockApi';
 import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown, Sparkles } from 'lucide-react';
 import classNames from 'classnames';
 
+import { useNavigate } from 'react-router-dom';
+
 const NextLeaderDashboard = () => {
+    const navigate = useNavigate();
+
+    // [v36.60] Zero-Trust UI Security: ADMIN 권한 확인 및 미승인 시 즉시 퇴출
+    useEffect(() => {
+        const userRole = localStorage.getItem('role');
+        if (userRole !== 'ADMIN') {
+            console.error(">>> [SECURITY ALERT] Unauthorized access attempt to Next Leaders Dashboard.");
+            alert("관리자 전용 영역입니다. 접근 권한이 없습니다.");
+            navigate('/');
+        }
+    }, [navigate]);
+
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [nextLeaders, setNextLeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);

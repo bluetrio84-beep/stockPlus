@@ -19,6 +19,16 @@ const MyPortfolioDashboard = () => {
     const [selectedInsight, setSelectedInsight] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // [v36.55] Zero-Trust UI Security: ADMIN 권한 확인 및 미승인 시 즉시 퇴출
+    useEffect(() => {
+        const userRole = localStorage.getItem('role');
+        if (userRole !== 'ADMIN') {
+            console.error(">>> [SECURITY ALERT] Unauthorized access attempt to Portfolio Intelligence Center.");
+            alert("관리자 전용 영역입니다. 접근 권한이 없습니다.");
+            navigate('/');
+        }
+    }, [navigate]);
+
     const fetchData = async () => {
         try {
             setIsLoading(true);
