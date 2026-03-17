@@ -1,5 +1,161 @@
 # 📋 StockPlus 개발 Task 현황
 
+## 🚀 v36.67 News Intelligence Expansion (2026-03-17 완료) 🔥
+*   **뉴스 수집 채널 4배 확장**:
+    - 기존 한경 마켓 RSS 외에 **연합인포맥스(금융 전문), 매일경제(증시), 서울경제(섹터)** RSS 피드를 추가 연동하여 정보 밀도 상향.
+*   **정밀 키워드 필터링 (Noise Reduction)**:
+    - RSS 수집 시에도 사용자의 **[AI 키워드]**가 제목/본문에 포함된 기사만 선별적으로 저장하도록 로직 강화(v36.66). 쌩뚱맞은 스포츠/사회 기사 완벽 차단.
+*   **Zero-Trust 보안 아키텍처 완결 (v36.65 Fix)**:
+    - **UserNoteController**: 이미지 업로드(`uploadImage`) 로직을 복구하고, 모든 API를 `Authentication` 객체 주입 방식으로 통일하여 보안 일관성 확보.
+    - **SecurityConfig**: 파일 업로드 시의 인증 유실 대응을 위해 `notes/upload` 경로를 `permitAll()`로 최적화하되, 컨트롤러 내부에서 실질적 권한 검증 수행.
+
+## 🚀 v36.65 Zero-Trust Security Standard (2026-03-17 완료) 🔥
+*   **보안 아키텍처 정예화 (Zero-Trust Standard)**:
+    - **HoldingsController**: 기존의 불안정한 `@RequestHeader` 토큰 파싱을 걷어내고 Spring Security의 `Authentication` 객체 주입 방식으로 전면 리팩토링.
+    - **StockAnalysisController**: `permitAll()` 상태였던 AI 분석 SSE 스트리밍 경로에 인증(Authentication) 검증 로직을 추가하여 Gemini API 보안 강화 및 오남용 방지.
+    - **UserNoteController**: `SecurityContextHolder` 직접 호출 대신 `Authentication` 객체 파라미터를 사용하도록 통일하여 보안 일관성 확보.
+    - **PortfolioDashboardController**: `"bluetrio"` 하드코딩 폴백을 완전히 제거하여 익명 접근을 원천 차단.
+*   **효과**: 시스템 전반의 개인 데이터 접근 시 물리적 토큰 파싱을 배제하고, Spring Security 필터 체인의 인증 결과만 신뢰하는 강력한 Zero-Trust 모델 완성.
+
+## 🚀 v36.61 Intelligence & Magazine Security Hardening (2026-03-17 완료) 🔥
+*   **이중 방어 체계 (Dual-Defense) 완성**:
+    - **백엔드**: SecurityConfig의 `permitAll()`로 401 에러(헤더 유실)를 방지하면서도, 컨트롤러 내부에서 `Authentication` 객체를 통해 `ADMIN` 권한을 직접 검증하는 2중 보안 장치 마련.
+    - **프론트엔드**: AdminIntelligence, NextLeader, DailyMagazine 등 관리자 전용 컴포넌트 진입 시 `role`을 체크하여 비관리자 접근 시 즉시 메인으로 Redirect 처리.
+*   **대상 API 전수 조사 및 적용**:
+    - AdminController (Intelligence, Next-Leader, Magazine 관련 모든 API)
+    - NewsController (News Trigger API)
+    - PortfolioDashboardController (Portfolio Intelligence API)
+*   **경로 미스매치 해결**: `/api/admin/**`와 `/stockPlus/api/admin/**` 패턴을 모두 수용하여 Nginx 프록시 환경에서의 보안 일관성 확보.
+
+## 🚀 v36.50 Hardened Security & Zero-Trust Identity (2026-03-17 완료) 🔥
+*   **사용자 식별 로직 정예화 (Zero-Trust)**:
+    - **하드코딩 완전 제거**: PortfolioDashboardController, StockDashboardService, StockAnalysisService, UserNoteController 등 시스템 전반에 걸쳐 잔존하던 'bluetrio' ID 하드코딩 및 폴백(Fallback) 로직을 전격 폐기.
+    - **명시적 인증 강제**: SecurityContextHolder를 통해 실제 인증된 사용자명만 추출하며, 익명 사용자(anonymousUser) 접근 시 즉시 예외를 발생시켜 데이터 유출을 원천 봉쇄.
+*   **보안 아키텍처 정밀 튜닝 (SecurityConfig)**:
+    - **정교한 접근 제어**: 대시보드 및 포트폴리오 관리 등 개인 정보 관련 경로를 authenticated() 영역으로 격리 (단, 공용 지수/시세 조회를 위해 /api/dashboard/**는 최소 허용).
+    - **수집기 통신 보장**: 파이썬 수집기가 직접 호출하는 3대 핵심 경로(sync-financials, trigger-review, dump-investor)를 permitAll() 영역에 명시하여 시스템 가동성 유지.
+    - **가용성 확보**: 401 에러가 발생하던 대시보드 공용 API들을 선별적으로 복구하여 일반 서비스 이용에 지장이 없도록 조치.
+
+
+## 🚀 v36.40 SSE Stability & Log Purification (2026-03-17 완료) 🔥
+*   **SSE 실시간 통신 안정화 (Broken Pipe Defense)**:
+    - **에러 로그 정화**: 클라이언트 이탈 시 발생하는 `Broken pipe` (ClientAbortException)의 방대한 스택 트레이스를 제거하고 `debug` 레벨의 짧은 한 줄 로그로 대체.
+    - **리소스 자가 정리**: 전송 실패 시 `emitter.complete()`를 즉시 호출하여 서버 측 구독(Subscription)을 종료함으로써 불필요한 연산 및 메모리 점유 차단.
+    - **무결성 유지**: 브라우저 재접속 시 새로운 SSE 세션이 생성되어 실시간 시세 데이터 유입이 즉시 재개되도록 설계.
+*   **배치 스케줄러 로그 레벨 정상화**:
+    - **허위 경보 박멸**: 시스템 시작 및 진행 안내에 사용되던 `log.error`를 `log.info`로 수정하여 NOC 대시보드의 장애 지표 신뢰도 향상.
+    - **출처 식별자 도입**: 서버 기동 시의 초기화 작업(`[INIT]`)과 정기 오후 7시 수집 작업(`[Batch]`) 로그를 분리하여 운영 가시성 확보.
+
+## 🚀 v36.30 Anti-429 News Shield & Resource Fortress (2026-03-16 완료) 🔥
+*   **방탄 뉴스 수집 시스템 (Anti-429 Shield)**:
+    - **지능형 Throttling**: 네이버 API 호출 사이사이에 850ms의 정밀 딜레이를 주입하여 초당 호출 제한(Rate Limit)을 완벽하게 회피.
+    - **Quota Guard 로직**: `429 Too Many Requests` 발생 시 무의미한 재시도를 중단하고 해당 수집 사이클을 즉시 종료하여 IP 차단 위험 최소화.
+    - **에러 전파 아키텍처**: `NaverService`와 `NewsService` 간의 예외 전파를 통해 시스템 전체의 뉴스 수집 안정성 확보.
+*   **시스템 인프라 리소스 최적화**:
+    - **컨테이너 메모리 격리**: `docker-compose` 설정을 통해 백엔드(2GB), 수집기(1.5GB), MySQL(1GB)의 메모리 한계를 명시하여 서비스 간 간섭 차단.
+    - **JVM Heap 고정**: `JAVA_OPTS`(-Xmx1536m)를 적용하여 백엔드 메모리 점유율을 가시화하고 예기치 못한 OOM(Out of Memory) 원천 봉쇄.
+*   **NOC 관제 UI 고도화 (v2)**:
+    - **로그 복사 활성화**: 텍스트 선택(select-text) 속성을 주입하여 에러 로그를 마우스로 드래그하여 즉시 복사 가능하도록 개선.
+    - **AI 디버깅 버튼 분리**: 로그 클릭 시 분석창이 바로 뜨던 불편함을 제거하고, 별도의 [AI Debug] 버튼을 클릭할 때만 Gemini 분석이 시작되도록 UX 정밀 수정.
+
+## 🚀 v36.10 / v36.20 System Failure Control (NOC) & AI Debugging Intelligence (2026-03-16 완료) 🔥
+*   **시스템 장애 관제 사령탑 (NOC Dashboard) 구축**:
+    - **실시간 리소스 모니터링**: Java MXBean을 통해 백엔드 컨테이너의 CPU Load, Memory Usage를 10초 단위로 정밀 추적 및 시각화.
+    - **지능형 장애 위험도(Risk Radar)**: `(CPU * 0.3) + (MEM * 0.3) + (Log Error Density * 0.4)` 공식을 적용하여 시스템 장애 확률(%)을 실시간 산출.
+    - **심층 지표 확장**: DB 활성 세션 수(HikariCP/Processlist) 및 KIS API 토큰 헬스 상태를 실시간 게이지로 감시.
+*   **AI 블랙박스 디버깅 시스템 (Gemini 2.0 Flash)**:
+    - **원클릭 AI 분석**: 로그 피드에서 특정 에러 클릭 시, Gemini 2.0 Flash 모델이 해당 로그를 분석하여 **원인/해결 코드/재발 방지책**을 즉시 브리핑하는 사이드바 UI 구현.
+    - **실시간 로그 스트리밍**: `logs/stockplus.log` 파일을 실시간 스캔하여 `ERROR`, `Critical` 키워드 발생 시 블랙박스 피드에 즉시 노출.
+*   **시스템 긴급 복구 엔진 (Emergency Recovery)**:
+    - **One-Tap Restart**: 관리자 화면에서 버튼 클릭 한 번으로 백엔드 및 수집기 컨테이너를 강제 재시작하여 메모리 누수나 데드락 상황을 즉시 해소하는 원격 제어 로직 탑재.
+*   **어드민 UX/UI 정밀 튜닝**:
+    - **메뉴 구조 혁신**: `MANAGEMENT` 섹션에 '장애 관리' 메뉴를 신설하고, 중복 노출 방지를 위해 내비게이션 필터 로직 정밀 타격 수정.
+    - **모바일 최적화**: 모바일 사이드바 메뉴 패딩을 `py-3`으로 통일하여 정보 밀도를 높이고 전문가용 다크 테마 UI 완성.
+
+## 🚀 v36.00 Dashboard UX Restoration & Mobile Sidebar Precision Tuning (2026-03-16 완료) 🔥
+*   **어드민 인텔리전스 복구 (Heatmap Restoration)**:
+    - **히트맵 클릭 팝업 부활**: 업종 등락 히트맵에서 개별 업종 클릭 시 'Leading Stocks TOP 5' 상세 모달이 뜨지 않던 이벤트 리스너 누락 문제를 정밀 타격하여 복구 완료.
+*   **모바일 사이드바 공간 최적화 (Mobile UI Polish)**:
+    - **메뉴 리스트 다이어트**: 메뉴의 폰트 크기(`text-sm`)와 상하 여백(`py-3.5`)을 정교하게 축소하여 작은 화면에서도 모든 메뉴가 한눈에 들어오도록 개선.
+    - **레이아웃 재배치**: 'MANAGEMENT' 섹션을 명칭 유지와 함께 리스트 최하단으로 고정 배치하여 실전 지휘 시 오클릭을 방지하고 사용 편의성 극대화.
+    - **스크롤 안정화**: 메뉴 컨테이너에 유동적 스크롤 영역을 확보하여 하단 '시스템 관리' 메뉴까지 완벽하게 접근 가능하도록 조치.
+
+## 🚀 v35.90 Ultimate Investment Journal & Collector Priority Intelligence (2026-03-16 완료) 🔥
+*   **수집기 엔진 전략적 재배치 (Collector Evolution)**:
+    - **최우선 가동 시스템**: 수집 사이클이 시작되자마자 AI 포트폴리오 분석(`blackbox_analyst.py`)을 가장 먼저 수행하도록 로직 순서 전격 교체.
+    - **타이밍 미스 박멸**: 기존의 엄격한 분(minute) 체크 방식을 제거하여 장중(09:00~16:59) 사이클이 돌 때마다 즉시 분석이 수행되도록 지능화.
+    - **운영 투명성 강화**: 분석 시작(`[지능가동]`) 및 완료(`[지능완료]`) 로그를 DB에 남겨 실시간 모니터링 체계 구축.
+*   **시스템 무결성 및 인프라 사수**:
+    - **보안 패키지 주입**: `cryptography` 라이브러리 누락으로 인한 DB 접속 장애를 `Dockerfile` 수정을 통해 영구 해결.
+    - **401/500 에러 소탕**: 이미지 접근 권한(permitAll) 설정 및 DB `updated_at` 컬럼 주입을 통해 통신 무결성 100% 달성.
+*   **투자 일지 UI 최종 안정화 (v7)**:
+    - **한글 입력(IME) 무결성**: React 19 환경에서 한글 타이핑 시 글자가 꼬이거나 커서가 튀는 현상을 정교한 Ref 제어로 완벽 해결.
+    - **모바일 에디터 풀파워**: 모바일 UI에도 리치 텍스트 에디터를 이식하여 스마트폰에서도 글자 색상, 크기, 이미지 삽입을 자유자재로 수행 가능.
+    - **가독성 극대화**: 다크 모드 시인성 확보를 위해 본문 텍스트를 순백색(White)으로 최적화 및 모든 도구에 지능형 툴팁 주입.
+
+## 🚀 v35.00 Premium Investment Journal & Intelligent Asset Fortress (2026-03-15 완료) 🔥
+*   **이미지 서버 저장 시스템 구축 (Server-Side Storage)**:
+    - **파일 기반 저장**: 기존 Base64 인코딩 저장 방식을 폐지하고, `/img/notes` 서버 폴더에 실제 파일로 저장하는 고성능 아키텍처 구현.
+    - **영구 보존 아키텍처**: Docker Volume 매핑을 통해 컨테이너 재시작 시에도 데이터가 유실되지 않는 안정성 확보.
+    - **이미지 업로드 엔진**: UUID 기반 파일명 생성 및 Nginx/Spring 정적 자원 매핑을 통한 초고속 이미지 서빙 인프라 구축.
+*   **지능형 종목 매핑 시스템 (Auto-Discovery)**:
+    - **실시간 종목 검색**: 종목코드 입력창에 "삼성"만 쳐도 관련 종목이 리스트업되는 드롭다운 UI 및 검색 API 연동 완료.
+    - **자동 이름 박제**: 종목 선택 시 `stock_master` 테이블과 동기화되어 종목명과 코드가 일지에 자동으로 영구 기록됨.
+*   **반응형 기기 최적화 (Desktop & Mobile Separation)**:
+    - **Desktop Elite UI**: 마스터-디테일 2단 레이아웃과 풍부한 툴바(색상, 크기, 정렬 등)를 갖춘 전문가용 리치 에디터 완성.
+    - **Mobile App-Style UI**: [목록 -> 상세 -> 작성]의 독립적 화면 흐름을 가진 모바일 전용 UI 신설로 작은 화면 가독성 극대화.
+*   **시스템 무결성 및 UX 정예화**:
+    - **버그 소탕**: React 19 환경의 `findDOMNode` 에러 및 1970년 날짜 표기 오류를 정밀 타격하여 완벽 수정.
+    - **알림 및 보안**: 저장/수정/삭제 시 세련된 토스트 알림 주입 및 Spring Security 화이트리스트 설정을 통한 이미지 401 에러 원천 차단.
+    - **페이징 및 필터링**: 목록 하단 페이지네이션 및 카테고리/검색 필터 기능을 통해 대규모 일지 관리 기반 마련.
+
+## 🚀 v33.50 Hybrid Master Specification & Dual-Track Recovery (2026-03-15 완료) 🔥
+*   **하이브리드 엔진 구축 (Golden API + Pure SQL)**:
+    - **API Interface 부활**: v30.95 골든 로직을 100% 사수하여 `Portfolio Intelligence`, `Login` 등 누락되었던 70여 개 API와 서비스 레이어 심층 추적 로직 완전 복구.
+    - **Database Schema 정예화**: v31.80의 정밀 SQL 파서를 이식하여 `schema.sql` 기반의 29개 테이블 명세(PK, Size, Null, 한글 주석)를 완벽하게 시각화.
+    - **로직 물리 격리**: API 파서와 Table 파서 간의 메모리 간섭 및 정규표현식 충돌을 원천 차단하는 '독립 운용 시스템' 적용.
+*   **데이터 무결성 및 정화**:
+    - **마스터 설계도 일치**: 실제 DB와 `schema.sql`을 29개 테이블 체제로 1:1 동기화 완료 및 불순물(유령 테이블) 0% 달성.
+    - **방탄 SQL 전처리**: 한글 주석(`--`) 및 `IF NOT EXISTS` 구문을 완벽하게 처리하는 전처리 로직 주입으로 스캔 안정성 극대화.
+*   **시스템 최적화**:
+    - **찌꺼기 코드 소탕**: 사용하지 않는 `stock_info` 관련 매퍼, 도메인, 컨트롤러 찌꺼기들을 전수 조사하여 제거하고 빌드 무결성 최종 검증.
+
+## 🚀 v31.80 Live DB Perfect Synchronization & System Purification (2026-03-14 완료) 🔥
+*   **DB 완정 정복 (29개 테이블 100% 일치)**:
+    - **실측 기반 동기화**: 실제 DB에 숨어있던 수집기/AI 전용 테이블 13개(`stock_intraday_history`, `collector_config` 등)를 역추적하여 `schema.sql`에 완벽 박제.
+    - **불순물 0% 소탕**: 데이터 0건인 유령 테이블(`news`, `stock_info`, `stock_signals` 등)을 DB와 설계도에서 전격 삭제하여 최적화 완료.
+    - **설계도 무결성**: API 가이드 내 Database Schema 명세와 실제 DB 테이블 개수(29개)를 1:1로 완벽히 일치시킴.
+*   **백엔드 소스 코드 정예화**:
+    - **찌꺼기 로직 도려내기**: 삭제된 테이블을 참조하던 `StockInfoMapper`, `StockInfo.java` 및 관련 컨트롤러/서비스 메서드를 전수 조사하여 영구 제거.
+    - **빌드 무결성 사수**: 삭제 과정에서 발생한 참조 에러를 정밀 타격하여 수정하고, 백엔드 재빌드를 통해 시스템 안정성 최종 검증 완료.
+*   **지능형 스캐너 정점 (`v31.30`)**:
+    - **SQL 파서 극강화**: `IF NOT EXISTS` 및 한글 주석이 섞인 복잡한 SQL 구문을 100% 낚아채는 '방탄 파서' 구축.
+    - **에러 추적 브릿지**: 파이썬 실행 에러를 자바가 낚아채어 프론트엔드에 즉시 보고하는 통합 에러 채널 완성.
+
+## 🚀 v30.95 DB Schema Deep-Dive & Multi-Tab Specification (2026-03-14 완료) 🔥
+*   **DB 설계도의 정밀화 (Architecture Master)**:
+    - **제약 조건 100% 추출**: `CREATE TABLE` 구문을 정밀 분석하여 **PK(기본키), NOT NULL, AUTO_INCREMENT** 등 핵심 제약 조건을 완벽하게 낚아챔.
+    - **데이터 사이즈 분리**: `VARCHAR(100)`, `DECIMAL(10,2)` 등 타입과 사이즈를 분리하여 설계도 수준의 데이터 규격 명세화 성공.
+    - **복합 PK 추적**: 테이블 레벨에서 정의된 복합 기본키 제약 조건까지 역추적하여 개별 컬럼에 PK 마킹 주입.
+*   **프론트엔드 UI/UX 혁신**:
+    - **듀얼 서브 탭 시스템**: API 가이드 내부에 **[API Interface]**와 **[Database Schema]** 서브 탭을 신설하여 방대한 시스템 정보를 체계적으로 분리.
+    - **시각적 명세 강화**: PK(장미색 배지), N-NULL(호박색 강조) 등 중요 제약 조건을 배지 형태로 시각화하여 가독성 극대화.
+    - **워드 명세서 고도화**: 다운로드받는 `.doc` 파일에 테이블 상세 제약 조건이 포함된 전문가용 표 레이아웃 적용.
+*   **시스템 안정성 사수**:
+    - **변수 스코프 정밀 수술**: API와 Table 루프 간의 변수 참조 오류(`ReferenceError`)를 정밀 타격하여 완벽 수정 및 렌더링 무결성 확보.
+
+## 🚀 v30.90 Intelligent Source-to-Spec Master & API Documentation Precision Strike (2026-03-14 완료) 🔥
+*   **API 전수 복구 및 정밀 분석 (100% Recovery)**:
+    - **누락 API 완정 정복**: `auth/login`, `portfolio/intelligence`, `market-insight`, `special-report`, `addTrade`, `updateTrade` 등 사각지대에 있던 핵심 API 100% 복구 성공.
+    - **Reactive & Generic 마스터**: `Mono<Map<...>>`, `ResponseEntity<?>`, `Flux` 등 복잡한 중첩 제네릭 및 리액티브 타입을 추적하는 '재귀적 파서'급 정규표현식 이식.
+    - **서비스 레이어 심층 추적**: 컨트롤러 본문을 넘어 Service 클래스 내부의 `.put()`, `Map.of()` 로직까지 4,000자 범위로 확장 스캔하여 결과 필드 명세화.
+*   **데이터 시각화 및 자동화 혁신**:
+    - **JSON Sample 자동 생성 엔진**: 필드 타입(String, Int, Boolean, List 등)을 분석하여 실제 통신 규격에 맞는 JSON 샘플을 실시간으로 자동 생성.
+    - **DB 테이블 완정 정복 (34개)**: MyBatis XML의 DML(`INSERT`, `UPDATE`, `DELETE`, `JOIN`)과 파이썬 수집기 쿼리를 전수 조사하여 시스템 내 모든 테이블 스키마 추출.
+*   **시스템 안정성 및 UI 방어**:
+    - **프론트엔드 무결성 수술**: Optional Chaining(`?.`)과 에러 핸들링 UI를 적용하여 스캔 중 발생할 수 있는 `TypeError` 원천 차단.
+    - **지능형 용어 사전 확장**: `payload` 분석 로직 강화 및 `usrid`, `tradeDate`, `special_report` 등 비즈니스 핵심 용어들에 대한 한글 설명 정밀 매핑.
+
 ## 🚀 v30.52 Intelligent Source-to-Spec Master (2026-03-13 완료) 🔥
 *   **지능형 자가 명세 엔진 구축 (Python AI)**:
     - **69개 API 전수 복구**: 멀티라인 파서를 통해 스프링 컨트롤러 내의 모든 엔드포인트를 100% 낚아채는 '욕심쟁이 스캐너' 완비.
@@ -20,7 +176,7 @@
 ## 🚀 v28.9.18 Tactical Navigation Optimization (2026-03-11 완료)
 *   **관제탑 내비게이션 강화**:
     - **뒤로가기 버튼 신설**: 포트폴리오 관제탑(My-Dashboard) 헤더 최좌측에 메인 대시보드로 즉시 복귀할 수 있는 직관적인 뒤로가기 버튼(Chevron) 배치.
-    - **레이아웃 정밀 재정돈**: 관제탑 아이콘, 타이틀, 새로고침 버튼을 조화롭게 재배치하여 전술적 통제 편의성 극대화.
+    - **레이아웃 정밀 재정돈**: 관제탑 아이콘, 타이틀, 새로고침 버튼을 조화롭게 배치하여 전술적 통제 편의성 극대화.
 
 ## 🚀 v28.9.17 Elite Mark System & Dashboard Synchronization (2026-03-11 완료)
 *   **복기 리포트 정예화 (Elite Marking)**:
@@ -55,9 +211,9 @@
 ## 🚀 v28.9 Dynamic Strategy Configuration & Logic Alignment (2026-03-09 완료)
 *   **지능형 동적 가중치 엔진**: 
     - **DB 설정 동기화**: 하드코딩된 가중치를 제거하고 `collector_config` 테이블의 실시간 설정(중립/공격/방어)과 100% 연동.
-    - **언행일치 로직**: 화면의 전략 모드에 따라 알고리즘(Q)과 AI(LTX)의 비중을 자동 조절(중립형 기준 5:5)하여 분석의 일관성 확보.
-*   **전술 보고서 투명화**:
-    - **모드 명시 브리핑**: 지휘 보고 서두에 적용된 전략 모드(`[NEUTRAL]` 등)를 명시하여 판단의 근거를 명확히 제시.
+    - **언행일치 로직**: 화면의 전략 모드에 따라 알고리즘(Q)과 AI(LTX) 점수를 0.5 : 0.5 동등한 비중으로 합산하는 '중립형' 모드 구축. 
+    - **엔진 이식**: Python `NextLeaderEngine`에 NEUTRAL 모드 분기 로직 및 최적화된 문턱 점수(60.0) 적용 완료.
+    - **관리자 UI 고도화**: 전략 선택 바에 '중립형' 옵션 추가 및 4열 안내 카드 레이아웃 적용으로 분석 투명성 강화.
 
 ## 🚀 v28.7 - v28.8 Fundamental AI & Scoring Precision (2026-03-09 완료)
 *   **재무 실적 분석 엔진 (Fundamental AI)**: 
@@ -344,7 +500,7 @@
 - [ ] **Real-time Disclosure Radar**: DART API 연동을 통한 공시 실시간 탐지 엔진 구축.
 
 ---
-*Last Updated: 2026-03-09 (Fundamental AI & Total Intelligence Integration 완료)*
+*Last Updated: 2026-03-17 (SSE Stability & Log Purification 완료)*
 
 # StockPlus Project Intelligence & Roadmap (Past History)
 

@@ -70,6 +70,27 @@ const InvestmentJournal = () => {
         }
     };
 
+    // [v36.72] 일지 상세 조회 및 조회수 증가 처리
+    const handleNoteClick = async (note) => {
+        setSelectedNote(note);
+        setIsEditing(false);
+        
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(getApiUrl(note.id), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const updatedNote = await response.json();
+                setSelectedNote(updatedNote);
+                // 리스트에서도 조회수 반영
+                setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+            }
+        } catch (error) {
+            console.error('Detail fetch error:', error);
+        }
+    };
+
     const searchStocks = async (query) => {
         if (!query || query.length < 1) {
             setStockSearchResults([]);
@@ -134,10 +155,17 @@ const InvestmentJournal = () => {
                     const imgUrl = data.url;
                     const imgTag = `<img src="${imgUrl}" style="max-width: 100%; border-radius: 12px; margin: 10px 0; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />`;
                     
-                    if (editorRef.current) {
-                        editorRef.current.focus();
-                        document.execCommand('insertHTML', false, imgTag);
-                    }
+                    // [v36.71] React 상태 기반의 정석적인 삽입 방식
+                    // 기존 에디터의 최신 내용을 먼저 가져온 후 이미지 태그를 합침
+                    const currentContent = editorRef.current ? editorRef.current.innerHTML : (selectedNote.content || '');
+                    const newContent = currentContent + imgTag;
+
+                    setSelectedNote(prev => ({
+                        ...prev,
+                        content: newContent
+                    }));
+
+                    showNotification('이미지가 삽입되었습니다.');
                 } else {
                     showNotification('이미지 업로드에 실패했습니다.', 'ERROR');
                 }
@@ -247,7 +275,7 @@ const InvestmentJournal = () => {
     const paginatedNotes = filteredNotes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const commonProps = {
-        notes, categories, selectedNote, setSelectedNote, 
+        notes, categories, selectedNote, setSelectedNote: handleNoteClick, 
         isEditing, setIsEditing, handleSaveNote, confirmDelete, 
         searchTerm, setSearchTerm, filterCategory, setCategory,
         currentPage, setCurrentPage, totalPages, paginatedNotes,

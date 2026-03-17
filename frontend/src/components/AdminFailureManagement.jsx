@@ -13,6 +13,9 @@ const AdminFailureManagement = () => {
     const [selectedLog, setSelectedLog] = useState(null);
     const [aiAnalysis, setAiAnalysis] = useState("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    // [v36.68] 모바일 전용 탭 상태 추가
+    const [mobileTab, setMobileTab] = useState('metrics'); // 'metrics' or 'logs'
 
     const fetchMetrics = async () => {
         try {
@@ -105,7 +108,7 @@ const AdminFailureManagement = () => {
     const statusColor = prob > 70 ? 'text-rose-500' : (prob > 45 ? 'text-amber-500' : 'text-emerald-500');
 
     return (
-        <div className="flex-1 bg-slate-950 p-4 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-4 lg:gap-6 relative pb-28 lg:pb-5">
+        <div className="flex-1 bg-slate-950 p-4 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-4 lg:gap-6 relative pb-40 lg:pb-5">
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0">
                 <div>
                     <h1 className="text-xl lg:text-2xl font-black text-white tracking-tight uppercase italic flex items-center gap-3">
@@ -127,7 +130,10 @@ const AdminFailureManagement = () => {
 
             <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 overflow-hidden">
                 {/* Left Panel: Health Metrics */}
-                <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+                <div className={classNames(
+                    "lg:col-span-4 flex flex-col gap-4 overflow-y-auto no-scrollbar transition-all duration-300",
+                    mobileTab !== 'metrics' && 'hidden lg:flex'
+                )}>
                     {/* Risk Radar Card */}
                     <div className={classNames("rounded-[2rem] p-6 border flex flex-col items-center justify-center gap-4 shadow-2xl relative bg-slate-900/40 transition-colors", prob > 70 ? "border-rose-500/30" : "border-slate-800")}>
                         <div className="text-center">
@@ -166,14 +172,17 @@ const AdminFailureManagement = () => {
                 </div>
 
                 {/* Right Panel: Blackbox Log & AI Analysis */}
-                <div className="lg:col-span-8 flex flex-col bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+                <div className={classNames(
+                    "lg:col-span-8 flex flex-col bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300",
+                    mobileTab !== 'logs' && 'hidden lg:flex'
+                )}>
                     <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center">
                         <div className="flex items-center gap-3">
                             <Terminal size={18} className="text-indigo-400" />
                             <h3 className="text-sm font-black text-white uppercase italic tracking-tight">System Blackbox Feed</h3>
                         </div>
                         <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2">
-                             <AlertCircle size={12} /> Click Log to Debug with AI
+                             <AlertCircle size={12} /> {window.innerWidth < 1024 ? "Log Feed" : "Click Log to Debug"}
                         </span>
                     </div>
                     
@@ -194,7 +203,7 @@ const AdminFailureManagement = () => {
                                     </div>
                                     <button 
                                         onClick={() => handleAnalyzeLog(log)}
-                                        className="absolute right-3 bottom-2 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white px-2 py-1 rounded-md font-black text-[9px] uppercase shadow-lg active:scale-90 z-10"
+                                        className="absolute right-3 bottom-2 opacity-0 lg:group-hover:opacity-100 transition-all flex items-center gap-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white px-2 py-1 rounded-md font-black text-[9px] uppercase shadow-lg active:scale-90 z-10"
                                     >
                                          <Brain size={12} /> AI Debug
                                     </button>
@@ -240,6 +249,24 @@ const AdminFailureManagement = () => {
                     </div>
                 </div>
             </main>
+
+            {/* [v36.68] Mobile Bottom Tab Navigation */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 h-16 flex items-center justify-around px-6 z-40 pb-safe">
+                <button 
+                    onClick={() => setMobileTab('metrics')} 
+                    className={classNames("flex flex-col items-center gap-1 transition-all", mobileTab === 'metrics' ? "text-indigo-400" : "text-slate-500")}
+                >
+                    <Activity size={20} />
+                    <span className="text-[10px] font-black uppercase">지표 모니터링</span>
+                </button>
+                <button 
+                    onClick={() => setMobileTab('logs')} 
+                    className={classNames("flex flex-col items-center gap-1 transition-all", mobileTab === 'logs' ? "text-rose-400" : "text-slate-500")}
+                >
+                    <Terminal size={20} />
+                    <span className="text-[10px] font-black uppercase">블랙박스 로그</span>
+                </button>
+            </div>
         </div>
     );
 };

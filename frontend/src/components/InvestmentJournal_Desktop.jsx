@@ -181,6 +181,7 @@ const InvestmentJournalDesktop = ({
                                                 </div>
                                                 {/* PURE EDITABLE AREA (WHITE FONT) */}
                                                 <div 
+                                                    id="note-editor"
                                                     ref={editorRef} 
                                                     contentEditable 
                                                     suppressContentEditableWarning={true}

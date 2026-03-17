@@ -22,9 +22,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 4G
         reservations:
-          memory: 512M
+          memory: 2G
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pcnbas.2015"]
       timeout: 20s
@@ -41,7 +41,7 @@ services:
         max-file: "3"
     environment:
       TZ: Asia/Seoul
-      JAVA_OPTS: "-Xmx1536m -Xms512m"
+      JAVA_OPTS: "-Xmx4096m -Xms1024m"
     ports:
       - "8080:8080"
     env_file:
@@ -58,9 +58,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 6G
         reservations:
-          memory: 1G
+          memory: 3G
 
   frontend:
     build:
@@ -82,9 +82,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 1G
         reservations:
-          memory: 128M
+          memory: 512M
 
   collector:
     build:
@@ -103,9 +103,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1536M
+          memory: 4G
         reservations:
-          memory: 512M
+          memory: 2G
 
 volumes:
   mysql_data:
