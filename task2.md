@@ -2,6 +2,11 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v36.73 Scheduler Logging Normalization (2026-03-17 완료) 🔥
+*   **에러 로그 오타 수정**:
+    - `DailyInvestorScheduler`의 20:50 AI 성능 검증 시작 로그가 `log.error`로 잘못 기입되어 있던 것을 `log.info`로 정정.
+    - 시스템 정상 가동 중 불필요한 시각적 불안 요소 제거.
+
 ## 🚀 v36.72 Journal Intelligence & Viewer Tracking (2026-03-17 완료) 🔥
 *   **실시간 조회수 트래킹 시스템**:
     - 리스트 클릭 시 단순 상태 변경이 아닌, 서버의 상세 조회 API(`GET /api/dashboard/notes/{id}`)를 호출하도록 프론트엔드 로직 전면 개편.

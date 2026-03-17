@@ -1,4 +1,4 @@
-#### task.md 파일 읽고 StockPlus Project  진행 내용 파악 !!
+#### task.md,task.me2 파일 읽고 StockPlus Project  진행 내용 파악 !!
 
 ## 🛠️ Query Implementation Policy (Mandatory)
 *   **MyBatis XML 우선 원칙**: 모든 SQL 쿼리는 Java 인터페이스의 어노테이션(`@Select`, `@Update` 등) 대신 반드시 **MyBatis XML 매퍼 파일** 내에 구현한다. 이는 쿼리의 가독성 유지와 복잡한 동적 SQL 처리를 위한 프로젝트 표준 지침이다.
