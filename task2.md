@@ -2,6 +2,14 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v36.82 AI Developer Center UI & Layout Optimization (2026-03-18 완료) 🔥
+*   **기기별 레이아웃 이원화 (Responsive Specialization)**:
+    - **PC (Large Screen)**: 하단 내비게이션을 제거하고 상단 헤더에 통합 탭 시스템 주입. 'AI 개발 센터' 활성화 시 그리드 제약을 해제하여 화면 전체를 터미널로 광활하게 활용.
+    - **모바일 (Mobile)**: 하단 탭 바 순서를 [지표] / [로그] / [AI 개발]로 재배치하고 버튼 크기를 축소하여 한 손 사용성 최적화.
+*   **UI 무결성 및 오류 해결**:
+    - `activeTab` 상태 통합 과정에서 발생한 자바스크립트 참조 에러(ReferenceError) 및 JSX 태그 불일치 문제 전수 해결.
+    - 가상 콘솔 UI(Terminal Mockup)를 통한 지능형 관제 환경의 시각적 완성도 상향.
+
 ## 🚀 v36.76 Notification Resilience & Log Cleanup (2026-03-18 완료) 🔥
 *   **알림 시스템 보안 유연화**:
     - 브라우저 세션 만료 또는 절전 모드 시 발생하는 `Authorization Header MISSING` 현상에 대응하여, `StockDashboardService`의 알림 조회 로직을 수정.

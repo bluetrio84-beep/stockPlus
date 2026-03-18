@@ -44,10 +44,11 @@ public class SystemMonitoringService {
 
         // 1. CPU & Memory Metrics
         double cpuLoad = getProcessCpuLoad();
-        long totalMemory = Runtime.getRuntime().totalMemory();
+        long maxMemory = Runtime.getRuntime().maxMemory(); // JVM이 쓸 수 있는 최대 메모리 (Limit)
+        long totalMemory = Runtime.getRuntime().totalMemory(); 
         long freeMemory = Runtime.getRuntime().freeMemory();
         long usedMemory = totalMemory - freeMemory;
-        double memoryUsage = (double) usedMemory / totalMemory * 100;
+        double memoryUsage = (double) usedMemory / maxMemory * 100; // 최대치 대비 실제 사용량
 
         metrics.put("cpuLoad", Math.round(cpuLoad * 100 * 10.0) / 10.0);
         metrics.put("memoryUsage", Math.round(memoryUsage * 10.0) / 10.0);
