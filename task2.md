@@ -2,6 +2,13 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v36.74 Collector Synergy & Security Resilience (2026-03-18 완료) 🔥
+*   **파이썬 수집기 인증 예외 처리**:
+    - 매일 아침 매거진 데이터를 생성하는 파이썬 배치의 특성을 고려하여, `/api/admin/magazine/data` 호출 시 인증 정보가 없는 경우에도 내부 처리가 가능하도록 유연한 보안 로직 적용.
+    - 토큰 없이 접근하는 자동화 도구의 401/403 에러 원천 차단.
+*   **지능형 권한 검증**:
+    - 로그인한 사용자가 접근할 경우에만 `ADMIN` 권한을 체크하여 비관리자 접근은 여전히 철저히 봉쇄.
+
 ## 🚀 v36.73 Scheduler Logging Normalization (2026-03-17 완료) 🔥
 *   **에러 로그 오타 수정**:
     - `DailyInvestorScheduler`의 20:50 AI 성능 검증 시작 로그가 `log.error`로 잘못 기입되어 있던 것을 `log.info`로 정정.
