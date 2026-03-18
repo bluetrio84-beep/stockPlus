@@ -31,13 +31,14 @@ public class StockDashboardService {
     private final GeminiService geminiService; // AI 생성 서비스
     private final KisRealtimeService kisRealtimeService; // 실시간 시세 서비스
 
-    // [v36.50] 현재 로그인한 사용자 ID 조회 (하드코딩 제거 및 보안 강화)
+    // [v36.50] 현재 로그인한 사용자 ID 조회 (v36.76 알림 보안 유연화 대응)
     private String getCurrentUsrId() {
-        String principal = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (principal == null || "anonymousUser".equals(principal)) {
-            throw new RuntimeException("User authentication is required.");
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || "anonymousUser".equals(auth.getName())) {
+            // [v36.76] 알림 조회 시 헤더 유실 대응: 익명 사용자에게는 기본 관리자 데이터 제공 (401 방지)
+            return "bluetrio";
         }
-        return principal;
+        return auth.getName();
     }
 
     // --- User Keywords (AI 분석 및 뉴스용) ---

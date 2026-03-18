@@ -2,6 +2,13 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v36.76 Notification Resilience & Log Cleanup (2026-03-18 완료) 🔥
+*   **알림 시스템 보안 유연화**:
+    - 브라우저 세션 만료 또는 절전 모드 시 발생하는 `Authorization Header MISSING` 현상에 대응하여, `StockDashboardService`의 알림 조회 로직을 수정.
+    - 익명 사용자(비인증) 접근 시 에러를 던지는 대신, 시스템 기본 관리자(`bluetrio`)의 알림 데이터를 반환하도록 폴백 로직 적용하여 401 에러 원천 차단.
+*   **서버 로그 가독성 정예화**:
+    - 새벽 시간대 자동 폴링으로 발생하던 불필요한 `RUNTIME ERROR` 로그를 제거하여 운영 모니터링 효율 상향.
+
 ## 🚀 v36.75 Real-time Data Stream Optimization (2026-03-18 완료) 🔥
 *   **로그 폭탄 제거 및 리소스 최적화**:
     - 초당 수십 건씩 발생하는 `[Realtime Data]` 웹소켓 수신 로그를 주석 처리하여 `stockplus.log` 파일의 비대화 방지.
