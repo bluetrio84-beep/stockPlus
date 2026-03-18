@@ -85,7 +85,8 @@ public class KisRealtimeService {
                     .map(WebSocketMessage::getPayloadAsText)
                     .doOnNext(msg -> {
                         if (!msg.contains("PINGPONG")) {
-                            log.info(">>> [Realtime Data] {}", msg);
+                            // [v36.75] 로그 최적화: 실시간 데이터 로그 주석 처리
+                            // log.info(">>> [Realtime Data] {}", msg);
                             handleMessage(msg);
                         }
                     }))

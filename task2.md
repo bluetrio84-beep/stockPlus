@@ -2,6 +2,11 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v36.75 Real-time Data Stream Optimization (2026-03-18 완료) 🔥
+*   **로그 폭탄 제거 및 리소스 최적화**:
+    - 초당 수십 건씩 발생하는 `[Realtime Data]` 웹소켓 수신 로그를 주석 처리하여 `stockplus.log` 파일의 비대화 방지.
+    - 불필요한 I/O 부하를 줄여 시스템 전반의 성능 및 가독성 향상.
+
 ## 🚀 v36.74 Collector Synergy & Security Resilience (2026-03-18 완료) 🔥
 *   **파이썬 수집기 인증 예외 처리**:
     - 매일 아침 매거진 데이터를 생성하는 파이썬 배치의 특성을 고려하여, `/api/admin/magazine/data` 호출 시 인증 정보가 없는 경우에도 내부 처리가 가능하도록 유연한 보안 로직 적용.
