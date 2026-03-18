@@ -275,7 +275,8 @@ const InvestmentJournal = () => {
     const paginatedNotes = filteredNotes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const commonProps = {
-        notes, categories, selectedNote, setSelectedNote: handleNoteClick, 
+        notes, categories, selectedNote, setSelectedNote, 
+        onFetchDetail: handleNoteClick,
         isEditing, setIsEditing, handleSaveNote, confirmDelete, 
         searchTerm, setSearchTerm, filterCategory, setCategory,
         currentPage, setCurrentPage, totalPages, paginatedNotes,

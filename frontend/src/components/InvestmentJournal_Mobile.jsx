@@ -7,7 +7,7 @@ import {
 import classNames from 'classnames';
 
 const InvestmentJournalMobile = ({ 
-    notes, categories, selectedNote, setSelectedNote, 
+    notes, categories, selectedNote, setSelectedNote, onFetchDetail,
     isEditing, setIsEditing, handleSaveNote, confirmDelete, 
     searchTerm, setSearchTerm, filterCategory, setCategory,
     createNewNote, handleEditStart, editorRef, fileInputRef, quillRef, execCommand, 
@@ -18,8 +18,7 @@ const InvestmentJournalMobile = ({
     const [viewMode, setViewMode] = useState('LIST');
 
     const onNoteClick = (note) => {
-        setSelectedNote(note);
-        setIsEditing(false);
+        onFetchDetail(note); // 상세 정보 조회 및 조회수 증가
         setViewMode('VIEW');
     };
 
@@ -147,7 +146,7 @@ const InvestmentJournalMobile = ({
             )}
 
             {viewMode === 'FORM' && selectedNote && (
-                <div className="flex flex-col h-full bg-slate-900 animate-in slide-in-from-bottom-full duration-400">
+                <div className="flex flex-col h-full bg-slate-900">
                     <header className="shrink-0 h-14 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between px-4 sticky top-0 z-30">
                         <button onClick={() => setViewMode(selectedNote.id ? 'VIEW' : 'LIST')} className="p-2 -ml-2 text-slate-400 active:text-white"><X size={24} /></button>
                         <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">{selectedNote.id ? '수정' : '기록'}</h2>

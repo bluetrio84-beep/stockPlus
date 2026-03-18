@@ -2,13 +2,29 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
-## 🚀 v36.82 AI Developer Center UI & Layout Optimization (2026-03-18 완료) 🔥
-*   **기기별 레이아웃 이원화 (Responsive Specialization)**:
-    - **PC (Large Screen)**: 하단 내비게이션을 제거하고 상단 헤더에 통합 탭 시스템 주입. 'AI 개발 센터' 활성화 시 그리드 제약을 해제하여 화면 전체를 터미널로 광활하게 활용.
-    - **모바일 (Mobile)**: 하단 탭 바 순서를 [지표] / [로그] / [AI 개발]로 재배치하고 버튼 크기를 축소하여 한 손 사용성 최적화.
-*   **UI 무결성 및 오류 해결**:
-    - `activeTab` 상태 통합 과정에서 발생한 자바스크립트 참조 에러(ReferenceError) 및 JSX 태그 불일치 문제 전수 해결.
-    - 가상 콘솔 UI(Terminal Mockup)를 통한 지능형 관제 환경의 시각적 완성도 상향.
+## 🚀 v36.94 Journal UX Restoration & Navigation Fix (2026-03-18 완료) 🔥
+*   **타이핑 시 화면 튕김(Jump) 버그 해결**:
+    - `setSelectedNote`(상태 업데이트)와 `onFetchDetail`(상세 조회/화면 전환) 핸들러를 분리하여 신규 등록/수정 시 타이핑할 때마다 상세 화면으로 이동하던 현상을 완벽하게 차단.
+*   **에디터 오리지널 디자인 복구**:
+    - 리팩토링 과정에서 누락되었던 화려한 리치 텍스트 에디터 기능(Bold, Italic, 정렬, 색상 등)과 스타일을 100% 복구하여 사용자 경험(UX) 원복.
+*   **애니메이션 최적화 (v36.93)**:
+    - 편집 폼 진입 시의 불필요한 `animate-in` 클래스를 제거하여 글자 입력 시 화면이 출렁거리는 간섭 현상 제거.
+
+## 🚀 v36.92 AI Dev Center: Intelligent Agent & Shell Bridge (2026-03-18 완료) 🔥
+*   **지능형 에이전트 브릿지 (v36.90~v36.92)**:
+    - 백엔드에 쉘 명령어와 AI 대화를 자동으로 구분하는 라우터 구축. 이제 터미널에서 `gemini` 접두어 없이 대화 가능.
+    - 호스트의 `~/.gemini` 히스토리 폴더를 컨테이너에 마운트하여 CLI와의 대화 맥락(Context) 완벽 공유.
+*   **환경 최적화 및 랩핑 (v36.86~v36.89)**:
+    - 백엔드 컨테이너에 **Node.js 20** 설치 및 `gemini` 실행 경로 자동 변환 로직 적용.
+    - 비대화형 모드 대응을 위한 `--prompt` 자동 랩핑 기능 주입.
+*   **실시간 쉘 브릿지 구축 (v36.83~v36.85)**:
+    - `/Projects` 볼륨 마운트를 통해 웹 터미널에서 호스트 소스 코드에 직접 접근 및 제어(read/write/replace) 가능.
+
+## 🚀 v36.78 System Resource Diet & Metrics Normalization (2026-03-18 완료) 🔥
+*   **메모리 점유율 지표 정상화**:
+    - 지능 관제 화면의 메모리 사용률 계산 방식을 `maxMemory` 기준으로 변경하여 실제 자원 여유도를 정확하게 시각화.
+*   **전체 시스템 자원 다이어트 (v36.77)**:
+    - MySQL(2G), Backend(4G), Collector(2G), Frontend(512M)로 할당량을 대폭 축소하여 16GB 호스트 서버의 숨통을 틔움 (전체 예약 자원 15G → 8.5G).
 
 ## 🚀 v36.76 Notification Resilience & Log Cleanup (2026-03-18 완료) 🔥
 *   **알림 시스템 보안 유연화**:

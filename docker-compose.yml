@@ -47,9 +47,12 @@ services:
     env_file:
       - .env
     volumes:
+      - .:/Projects # 프로젝트 전체 소스 및 gemini 도구 연결
       - ./logs:/app/logs
       - ./img/snapshots:/app/snapshots
       - ./img/notes:/app/img/notes
+      - /home/lms/.npm-global:/usr/local/npm-global # gemini 실행 파일 공유
+      - /home/lms/.gemini:/root/.gemini # gemini 대화 히스토리 공유
     depends_on:
       mysql:
         condition: service_healthy

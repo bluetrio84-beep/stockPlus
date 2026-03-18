@@ -337,4 +337,77 @@ public class AdminController {
         systemMonitoringService.triggerSystemRestart();
         return Map.of("message", "System restart triggered. Please wait a few moments.");
     }
+
+    /**
+     * [v36.90] AI 개발 센터: 지능형 에이전트 브릿지 (명령어 + 대화 통합)
+     */
+    @PostMapping("/system/terminal/execute")
+    public Map<String, String> executeAgentCommand(@RequestBody Map<String, String> payload, org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        
+        String input = payload.get("command").trim();
+        StringBuilder output = new StringBuilder();
+
+        // 1. 슬래시(/)로 시작하는 메타 명령어 처리 (v36.91 추가)
+        if (input.startsWith("/")) {
+            log.info(">>> [Agent] Executing Meta Command: {}", input);
+            
+            // [v36.92] /resume 명령어 웹 최적화 처리
+            if (input.equals("/resume")) {
+                return Map.of("output", ">>> [Web Context] 이전 대화 맥락이 자동으로 유지되고 있습니다. 바로 질문을 입력해 주세요.");
+            }
+
+            String geminiMetaCmd = "/usr/local/npm-global/bin/gemini " + input;
+            try {
+                // 비대화형 모드 에러 방지를 위해 가상 TTY 환경 흉내 (script 활용)
+                ProcessBuilder pb = new ProcessBuilder("bash", "-c", geminiMetaCmd);
+                pb.directory(new java.io.File("/Projects"));
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) output.append(line).append("\n");
+                return Map.of("output", output.toString());
+            } catch (Exception e) {
+                return Map.of("output", ">>> Meta Command Error: " + e.getMessage());
+            }
+        }
+
+        // 2. 리눅스 명령어 여부 판단
+        boolean isLinuxCommand = input.matches("^(ls|pwd|cd|docker|cat|grep|ps|date|whoami|find|mkdir|rm|cp|mv|chmod|chown|df|free|tail|head|mvn|npm|python3|git).*");
+
+        try {
+            if (isLinuxCommand) {
+                // ... (기존 명령어 실행 로직 동일) ...
+                ProcessBuilder pb = new ProcessBuilder("bash", "-c", input);
+                pb.directory(new java.io.File("/Projects"));
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) output.append(line).append("\n");
+                if (output.length() == 0) output.append(">>> Command executed successfully.");
+            } else {
+                // [v36.92] AI 대화 모드: 자동으로 '최신 상황'을 인지하도록 프롬프트 보강
+                log.info(">>> [Agent] Forwarding to Gemini with Context: {}", input);
+                
+                // task2.md 내용을 참고하여 현재 상황을 인지하게 함
+                String contextPrompt = "현재 StockPlus 프로젝트의 /Projects 폴더에서 작업을 수행 중이야. " +
+                                     "다음 질문에 대해 프로젝트의 문맥을 고려해서 답변해줘: " + input;
+                
+                String geminiCmd = "/usr/local/npm-global/bin/gemini --prompt \"" + contextPrompt.replace("\"", "\\\"") + "\"";
+                ProcessBuilder pb = new ProcessBuilder("bash", "-c", geminiCmd);
+                pb.directory(new java.io.File("/Projects"));
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) output.append(line).append("\n");
+            }
+        } catch (Exception e) {
+            output.append(">>> Agent Error: ").append(e.getMessage());
+        }
+        
+        return Map.of("output", output.toString());
+    }
 }

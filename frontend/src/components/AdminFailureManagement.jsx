@@ -43,6 +43,41 @@ const AdminFailureManagement = () => {
     // [v36.82] 통합 탭 상태 (지표, 로그, AI 개발 센터)
     const [activeTab, setActiveTab] = useState('metrics'); // 'metrics', 'logs', 'aidev'
 
+    // [v36.83] 터미널 전용 상태
+    const [terminalInput, setTerminalInput] = useState("");
+    const [terminalLogs, setTerminalLogs] = useState([
+        { type: 'sys', content: '>>> Welcome to StockPlus AI Console v1.0' },
+        { type: 'sys', content: '// 시스템 실시간 제어 및 AI 공동 개발 보안 콘솔입니다.' }
+    ]);
+    const [isExecuting, setIsExecuting] = useState(false);
+
+    const handleTerminalCommand = async (e) => {
+        if (e.key !== 'Enter' || !terminalInput.trim() || isExecuting) return;
+
+        const cmd = terminalInput.trim();
+        setTerminalLogs(prev => [...prev, { type: 'cmd', content: cmd }]);
+        setTerminalInput("");
+        setIsExecuting(true);
+
+        try {
+            const res = await fetch('/stockPlus/api/admin/system/terminal/execute', {
+                method: 'POST',
+                headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setTerminalLogs(prev => [...prev, { type: 'res', content: data.output }]);
+            } else {
+                setTerminalLogs(prev => [...prev, { type: 'err', content: '>>> API Connection Failed (401/403/500)' }]);
+            }
+        } catch (err) {
+            setTerminalLogs(prev => [...prev, { type: 'err', content: `>>> Error: ${err.message}` }]);
+        } finally {
+            setIsExecuting(false);
+        }
+    };
+
     const fetchMetrics = async () => {
         try {
             const res = await fetch('/stockPlus/api/admin/system/metrics', { headers: getAuthHeader() });
@@ -251,27 +286,38 @@ const AdminFailureManagement = () => {
                             </div>
                         </div>
                         <div className="flex-1 flex flex-col min-h-0 bg-black/40 p-4 font-mono text-sm overflow-hidden relative">
-                            <div className="flex-1 overflow-y-auto custom-scrollbar text-emerald-400/90 leading-relaxed p-4 bg-slate-950/20 rounded-2xl border border-slate-800/30 shadow-inner">
-                                <p className="mb-2 text-indigo-400 font-black">>>> Welcome to StockPlus AI Console v1.0</p>
-                                <p className="mb-4 text-slate-500 text-[10px] tracking-tight">// 시스템 실시간 제어 및 AI 공동 개발 보안 콘솔입니다.</p>
-                                <div className="space-y-3">
-                                    <div className="space-y-1 text-xs lg:text-sm">
-                                        <div className="flex gap-2"><span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span><span className="text-white font-bold italic">ls -lh /Projects</span></div>
-                                        <div className="text-slate-400 pl-4 grid grid-cols-1 gap-0.5 font-mono text-[10px] lg:text-xs">
-                                            <span>total 156K</span>
-                                            <span>drwxr-xr-x 10 lms developers 4.0K Mar 18 10:00 backend</span>
-                                            <span>drwxr-xr-x  8 lms developers 4.0K Mar 18 10:00 collector</span>
-                                            <span>drwxr-xr-x  9 lms developers 4.0K Mar 18 10:00 frontend</span>
-                                            <span>-rw-r--r--  1 lms developers 1.2K Mar 18 10:00 docker-compose.yml</span>
-                                        </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-950/20 rounded-2xl border border-slate-800/30 shadow-inner select-text cursor-text">
+                                {terminalLogs.map((log, i) => (
+                                    <div key={i} className="mb-3">
+                                        {log.type === 'sys' && <p className="text-indigo-400 font-black mb-1">{log.content}</p>}
+                                        {log.type === 'cmd' && (
+                                            <div className="flex gap-2">
+                                                <span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span>
+                                                <span className="text-white font-bold">{log.content}</span>
+                                            </div>
+                                        )}
+                                        {log.type === 'res' && <pre className="text-slate-400 text-xs pl-4 whitespace-pre-wrap mt-1 font-mono leading-tight">{log.content}</pre>}
+                                        {log.type === 'err' && <p className="text-rose-500 text-xs pl-4 italic mt-1">{log.content}</p>}
                                     </div>
-                                    <div className="flex gap-2 animate-pulse mt-4"><span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span><span className="w-2 h-5 bg-indigo-500"></span></div>
+                                ))}
+                                {isExecuting && <div className="flex gap-2 animate-pulse"><span className="text-indigo-500 font-black">...</span><span className="text-slate-500 text-xs">Executing on server...</span></div>}
+                                <div className="flex gap-2 mt-2">
+                                    <span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span>
+                                    <span className="w-2 h-5 bg-indigo-500 animate-pulse"></span>
                                 </div>
                             </div>
                             <div className="h-14 border-t border-slate-800 flex items-center gap-3 px-4 bg-slate-900/50 shrink-0 mt-4 rounded-b-2xl">
                                 <span className="text-indigo-500 font-black text-xs shrink-0">bluetrio@admin:~$</span>
-                                <input type="text" placeholder="Enter command..." className="flex-1 bg-transparent border-none outline-none text-white font-mono text-sm placeholder:text-slate-700" />
-                                <Zap size={18} className="text-slate-600 hover:text-amber-400 cursor-pointer transition-colors" />
+                                <input 
+                                    type="text" 
+                                    value={terminalInput}
+                                    onChange={(e) => setTerminalInput(e.target.value)}
+                                    onKeyDown={handleTerminalCommand}
+                                    placeholder={isExecuting ? "Executing..." : "Enter shell command..."} 
+                                    disabled={isExecuting}
+                                    className="flex-1 bg-transparent border-none outline-none text-white font-mono text-sm placeholder:text-slate-700" 
+                                />
+                                <Zap size={18} className={classNames("transition-colors cursor-pointer", isExecuting ? "text-amber-500 animate-bounce" : "text-slate-600 hover:text-amber-400")} />
                             </div>
                         </div>
                     </div>

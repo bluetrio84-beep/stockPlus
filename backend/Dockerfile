@@ -1,8 +1,11 @@
 # Use an official Eclipse Temurin JDK runtime as a parent image
 FROM eclipse-temurin:17-jdk-jammy
 
-# [v30.36] Git 및 Python3 설치 (스캐너 엔진 구동용)
-RUN apt-get update && apt-get install -y git python3 && rm -rf /var/lib/apt/lists/*
+# [v30.36] Git, Python3, Node.js 20 설치 (gemini CLI 대응)
+RUN apt-get update && apt-get install -y git python3 curl && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app

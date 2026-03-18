@@ -8,7 +8,7 @@ import {
 import classNames from 'classnames';
 
 const InvestmentJournalDesktop = ({ 
-    notes, categories, selectedNote, setSelectedNote, 
+    notes, categories, selectedNote, setSelectedNote, onFetchDetail,
     isEditing, setIsEditing, handleSaveNote, confirmDelete, 
     searchTerm, setSearchTerm, filterCategory, setCategory,
     currentPage, setCurrentPage, totalPages, paginatedNotes,
@@ -81,7 +81,7 @@ const InvestmentJournalDesktop = ({
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-2">
                         {paginatedNotes.map(note => (
-                            <div key={note.id} onClick={() => { setSelectedNote(note); setIsEditing(false); }} className={classNames(
+                            <div key={note.id} onClick={() => onFetchDetail(note)} className={classNames(
                                 "p-4 rounded-2xl cursor-pointer transition-all border group relative overflow-hidden",
                                 selectedNote?.id === note.id ? "bg-slate-900 border-indigo-500/50 shadow-2xl ring-1 ring-indigo-500/20" : "hover:bg-white/5 border-slate-900"
                             )}>
@@ -130,7 +130,7 @@ const InvestmentJournalDesktop = ({
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-12">
                                 <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                                     {isEditing ? (
-                                        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
+                                        <div className="space-y-8">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2 text-white">
                                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 italic">Category</label>
