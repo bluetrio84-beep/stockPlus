@@ -75,19 +75,19 @@ class NextLeaderEngine(AIEngine):
             reasons.append("거래량폭발")
         return min(100, score), ", ".join(reasons)
 
-    def get_program_boost(self, stock_code):
+    def get_program_boost(self, stock_code, total_volume):
         """
-        [v21.0] 프로그램 매매 수급 기반 가점 산출
+        [v21.7] 스마트머니(프로그램) 유입 강도 분석
+        전체 거래량 대비 프로그램 순매수 비중을 계산하여 Q 점수에 강력 반영
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 최근 2개 데이터를 조회하여 순매수세가 강화되는지 확인
                 sql = """
                     SELECT program_net_buy 
-                    FROM daily_stock_investor 
+                    FROM stock_intraday_history 
                     WHERE stock_code = %s 
-                    ORDER BY bsop_date DESC LIMIT 2
+                    ORDER BY captured_at DESC LIMIT 2
                 """
                 cursor.execute(sql, (stock_code,))
                 rows = cursor.fetchall()
@@ -97,21 +97,24 @@ class NextLeaderEngine(AIEngine):
                 reasons = []
                 curr_net = int(rows[0]['program_net_buy'] or 0)
                 
-                # 1. 순매수 양수 여부 (수급 유입)
-                if curr_net > 0:
-                    boost += 3.0
-                    reasons.append("프로그램순매수")
-                
+                # 1. 프로그램 순매수 비중 계산 (스마트머니 강도)
+                if total_volume > 0:
+                    pgm_ratio = (curr_net / total_volume) * 100
+                    if pgm_ratio > 10: # 10% 돌파 (압도적 스마트머니)
+                        boost += 15.0
+                        reasons.append("스마트머니폭발")
+                    elif pgm_ratio > 5: # 5% 돌파 (강력 유입)
+                        boost += 8.0
+                        reasons.append("스마트머니유입")
+                    elif pgm_ratio > 2: # 2% 돌파 (의미있는 수급)
+                        boost += 4.0
+                        reasons.append("수급개선")
+
                 # 2. 전회차 대비 순매수 강화 여부
                 if len(rows) > 1 and curr_net > int(rows[1]['program_net_buy'] or 0):
-                    boost += 2.0
-                    reasons.append("프로그램수급강화")
+                    boost += 3.0
+                    reasons.append("수급강화")
                 
-                # 3. 과도한 매도세 방어 (페널티)
-                if curr_net < -50000: # 5만 주 이상 프로그램 매도 시
-                    boost -= 5.0
-                    reasons.append("프로그램이탈")
-                    
                 return boost, ",".join(reasons)
         except: return 0.0, ""
 
@@ -190,7 +193,7 @@ class NextLeaderEngine(AIEngine):
                 if f_tag: reason = f"{f_tag}, {reason}"
                 
                 # D. 프로그램 매매 가점 (P-Boost) [v21.0]
-                p_boost, p_tag = self.get_program_boost(code)
+                p_boost, p_tag = self.get_program_boost(code, float(curr['volume']))
                 if p_tag: reason = f"{p_tag}, {reason}"
                 
                 # E. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
@@ -209,16 +212,20 @@ class NextLeaderEngine(AIEngine):
                     intuition_bonus = -15.0
                     reason = f"✖오판주의, {reason}"
 
-                # E. 최종 합산 (실적 가점은 L, T, X 개별 점수에 녹이고 피드백은 최종 점수에 반영)
-                # [v20.0] 동적 가중치 (w_l, w_t, w_x) 적용
-                lstm_f = max(0, min(100, e_data['lstm'] + f_boost))
-                tcn_f = max(0, min(100, e_data['tcn'] + f_boost))
-                xgb_f = max(0, min(100, e_data['xgb'] + f_boost))
+                # E. 최종 합산 (실적 및 프로그램 가점 반영)
+                # [v21.6] 프로그램 매매(P-Boost)를 퀀트(Q)와 AI(L,T,X) 점수 전체에 깊게 투영
+                # 퀀트(Q) 점수에 프로그램 수급 직접 반영
+                algo_score = max(0, min(100, algo_score + p_boost))
+
+                # AI 모델(L, T, X) 각각의 점수에 프로그램 및 실적 가점 반영
+                lstm_f = max(0, min(100, e_data['lstm'] + f_boost + p_boost))
+                tcn_f = max(0, min(100, e_data['tcn'] + f_boost + p_boost))
+                xgb_f = max(0, min(100, e_data['xgb'] + f_boost + p_boost))
                 
                 e_score = (lstm_f * w_l) + (tcn_f * w_t) + (xgb_f * w_x)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
-                # [v21.0] 프로그램 매매 가점 반영
-                total_score = max(0, min(100, total_score + intuition_bonus + p_boost))
+                # 최종 합산 및 직관 보너스 적용
+                total_score = max(0, min(100, total_score + intuition_bonus))
 
                 if total_score >= min_threshold:
                     results.append({

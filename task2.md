@@ -2,6 +2,15 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v37.20 BlackBox AI Intelligence & Smart Money Report (2026-03-19 완료) 🔥
+*   **AI 지휘 보고(BlackBox) 스마트머니 로직 주입 (v21.8)**:
+    - `BlackBoxAnalyst.py`의 `calculate_tactical_tags`를 정밀 타격하여 실시간 프로그램 매수세(`program_net_buy`) 감지 로직 추가.
+    - 1만 주 이상의 프로그램 유입 시 **'스마트머니유입'** 전술 태그를 자동 부여하여 리포트 점수와 시너지를 내도록 설계.
+*   **인간형 AI 지휘 보고 문구 고도화**:
+    - `execute` 메서드의 `interpretation` 생성 로직을 개선하여 "특히 스마트머니(프로그램)의 강력한 선취매가 포착되어 수급의 질이 매우 우수하며..."와 같은 전문적인 리서치급 문구가 자동 생성되도록 고도화.
+*   **수집기(Collector) 최종 최적화 배포**:
+    - `NextLeaderEngine`과 `BlackBoxAnalyst`가 동일한 실시간 데이터셋(`stock_intraday_history`)을 공유하도록 쿼리 구조를 단일화하여 시스템 정합성 확보 및 재배포 완료.
+
 ## 🚀 v37.10 AI-Integrated Real-time Terminal Station (2026-03-19 완료) 🔥
 *   **xterm.js + node-pty 기반 차세대 터미널 구축 (v36.108 ~ v36.111)**:
     - 단순 텍스트 로그 방식을 탈피하여 `xterm.js`와 WebSocket, 그리고 Node.js `node-pty` 엔진을 결합한 진짜 리눅스 터미널 환경을 웹 브라우저 내에 완벽 구현.

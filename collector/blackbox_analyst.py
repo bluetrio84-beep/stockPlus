@@ -164,9 +164,17 @@ class BlackBoxAnalyst:
         score, tags = 50.0 + random.uniform(-0.5, 0.5), []
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute("SELECT price, volume, rsi, ma5, ma20 FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 5", (code,))
+                # [v21.8] 프로그램 매수세(program_net_buy) 필드 추가 조회
+                cursor.execute("SELECT price, volume, rsi, ma5, ma20, program_net_buy FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 5", (code,))
                 history = cursor.fetchall()
                 if len(history) > 1:
+                    # 스마트머니(프로그램) 유입 포착
+                    curr_pgm = float(history[0]['program_net_buy'] or 0)
+                    if curr_pgm > 10000: # 1만 주 이상 프로그램 순매수 시 강력 가점
+                        score += 12; tags.append("스마트머니유입")
+                    elif curr_pgm > 0:
+                        score += 5; tags.append("프로그램매수")
+                    
                     if curr_vol > float(history[1]['volume'] or 1) * 1.3: score += 10; tags.append("거래량포착")
                     if f_buy > 1000: score += 7; tags.append("수급포착")
                     if float(history[0]['rsi'] or 50) <= 40: score += 12; tags.append("RSI바닥탈출")
@@ -283,8 +291,11 @@ class BlackBoxAnalyst:
                 sector_part = f"{industry} 섹터 내 주도권을 장악한 상태입니다." if "Leader" in data['sector']['status'] or "Outperformer" in data['sector']['status'] else f"{industry} 섹터 흐름에 안정적으로 동조화되었습니다."
                 tag_str = f"{', '.join(data['reason'][:2])} 시그널을 바탕으로 " if data['reason'] else ""
                 
+                # [v21.8] 프로그램 수급(스마트머니) 리포트 문구 추가
+                pgm_part = "특히 스마트머니(프로그램)의 강력한 선취매가 포착되어 수급의 질이 매우 우수하며, " if "스마트머니유입" in data['reason'] else ""
+                
                 strategy_txt = f"[{self.strategy_config['mode']}] 모드 기반 "
-                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
+                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{pgm_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
                 
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,
