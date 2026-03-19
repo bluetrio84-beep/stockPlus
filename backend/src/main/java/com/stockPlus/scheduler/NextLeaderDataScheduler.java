@@ -116,8 +116,9 @@ public class NextLeaderDataScheduler {
             List<Double> priceHistory = history.stream().map(m -> ((Number) m.get("price")).doubleValue()).toList();
             Map<String, Object> ind = calculateIndicators(priceHistory);
             
-            String sql = "INSERT INTO stock_intraday_history (stock_code, price, volume, market_cap, rsi, ma5, ma20, ma60, bb_upper, bb_lower, macd, env_upper, env_lower, is_golden_cross, obv, captured_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
-            jdbcTemplate.update(sql, code, price, vol, mc, ind.get("rsi"), ind.get("ma5"), ind.get("ma20"), ind.get("ma60"), ind.get("bb_up"), ind.get("bb_low"), ind.get("macd"), ind.get("env_up"), ind.get("env_low"), ind.get("is_gc"), currentObv);
+            long pgm = Long.parseLong(dto.getProgramNet() != null ? dto.getProgramNet().replace(",", "") : "0");
+            String sql = "INSERT INTO stock_intraday_history (stock_code, price, volume, market_cap, rsi, ma5, ma20, ma60, bb_upper, bb_lower, macd, env_upper, env_lower, is_golden_cross, obv, program_net_buy, captured_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
+            jdbcTemplate.update(sql, code, price, vol, mc, ind.get("rsi"), ind.get("ma5"), ind.get("ma20"), ind.get("ma60"), ind.get("bb_up"), ind.get("bb_low"), ind.get("macd"), ind.get("env_up"), ind.get("env_low"), ind.get("is_gc"), currentObv, pgm);
         } catch (Exception e) {}
     }
 

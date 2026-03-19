@@ -75,6 +75,8 @@ public class KisStockService {
                                 .listedShares(getField(out, "lstn_stcn", "LSTN_STCN", "0")).high52w(getField(out, "w52_hgpr", "W52_HGPR", "0"))
                                 .low52w(getField(out, "w52_lwpr", "W52_LWPR", "0")).indexName(indexName)
                                 .industryName(getField(out, "bstp_kor_isnm", "BSTP_KOR_ISNM", "")) // [v16.4] 업종명 추출
+                                .programNet(getField(out, "pgtr_ntby_qty", "PGTR_NTBY_QTY", "0")) // [v21.0] 프로그램 실시간 수급
+                                .foreignNet(getField(out, "frgn_ntby_qty", "FRGN_NTBY_QTY", "0")) // [v21.0] 외국인 실시간 수급
                                 .exchangeCode(requestExchange).build();
                     } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
                 })
@@ -478,5 +480,31 @@ public class KisStockService {
         if (node.has(lower)) return node.path(lower).asText(defaultVal);
         if (node.has(upper)) return node.path(upper).asText(defaultVal);
         return defaultVal;
+    }
+
+    /**
+     * [v21.0] 프로그램 매매 데이터 원천 조회 (테스트 및 로깅용)
+     * TR: FHKST01010109 (종목별 프로그램 매매추이)
+     */
+    public Mono<String> fetchProgramTradingRaw(String stockCode, String marketDiv) {
+        String token = kisAuthService.getAccessToken();
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-investor"
+                + "?FID_COND_MRKT_DIV_CODE=" + marketDiv
+                + "&FID_INPUT_ISCD=" + stockCode;
+                
+        return webClientBuilder.build().get().uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "FHKST01010900") // 투자자/프로그램 통합 TR 시도
+                .header("content-type", "application/json")
+                .header("custtype", "P")
+                .retrieve()
+                .bodyToMono(String.class)
+                .doOnNext(res -> log.info(">>> [KIS API] Investor/PGM Raw Response for {}: {}", stockCode, res))
+                .onErrorResume(e -> {
+                    log.error(">>> [KIS API] Error fetching investor for {}: {}", stockCode, e.getMessage());
+                    return Mono.just("");
+                });
     }
 }

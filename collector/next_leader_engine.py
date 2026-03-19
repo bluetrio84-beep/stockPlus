@@ -75,6 +75,46 @@ class NextLeaderEngine(AIEngine):
             reasons.append("거래량폭발")
         return min(100, score), ", ".join(reasons)
 
+    def get_program_boost(self, stock_code):
+        """
+        [v21.0] 프로그램 매매 수급 기반 가점 산출
+        """
+        try:
+            if not self.conn or not self.conn.open: self.connect()
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 최근 2개 데이터를 조회하여 순매수세가 강화되는지 확인
+                sql = """
+                    SELECT program_net_buy 
+                    FROM daily_stock_investor 
+                    WHERE stock_code = %s 
+                    ORDER BY bsop_date DESC LIMIT 2
+                """
+                cursor.execute(sql, (stock_code,))
+                rows = cursor.fetchall()
+                if not rows: return 0.0, ""
+
+                boost = 0.0
+                reasons = []
+                curr_net = int(rows[0]['program_net_buy'] or 0)
+                
+                # 1. 순매수 양수 여부 (수급 유입)
+                if curr_net > 0:
+                    boost += 3.0
+                    reasons.append("프로그램순매수")
+                
+                # 2. 전회차 대비 순매수 강화 여부
+                if len(rows) > 1 and curr_net > int(rows[1]['program_net_buy'] or 0):
+                    boost += 2.0
+                    reasons.append("프로그램수급강화")
+                
+                # 3. 과도한 매도세 방어 (페널티)
+                if curr_net < -50000: # 5만 주 이상 프로그램 매도 시
+                    boost -= 5.0
+                    reasons.append("프로그램이탈")
+                    
+                return boost, ",".join(reasons)
+        except: return 0.0, ""
+
     def analyze_next_leaders(self):
         if not self.conn or not self.conn.open: self.connect()
         try:
@@ -149,7 +189,11 @@ class NextLeaderEngine(AIEngine):
                 f_boost, f_tag = self.get_financial_boost(code)
                 if f_tag: reason = f"{f_tag}, {reason}"
                 
-                # D. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
+                # D. 프로그램 매매 가점 (P-Boost) [v21.0]
+                p_boost, p_tag = self.get_program_boost(code)
+                if p_tag: reason = f"{p_tag}, {reason}"
+                
+                # E. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
                 intuition_bonus = 0.0
                 tag = feedback_map.get(code)
                 if tag == '성공' or tag == '매집':
@@ -173,7 +217,8 @@ class NextLeaderEngine(AIEngine):
                 
                 e_score = (lstm_f * w_l) + (tcn_f * w_t) + (xgb_f * w_x)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
-                total_score = max(0, min(100, total_score + intuition_bonus))
+                # [v21.0] 프로그램 매매 가점 반영
+                total_score = max(0, min(100, total_score + intuition_bonus + p_boost))
 
                 if total_score >= min_threshold:
                     results.append({

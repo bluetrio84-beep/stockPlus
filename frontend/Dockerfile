@@ -9,6 +9,7 @@ COPY frontend/package*.json ./
 
 # Install dependencies with legacy-peer-deps to avoid conflicts
 RUN npm install --legacy-peer-deps
+RUN npm install xterm xterm-addon-fit --legacy-peer-deps
 
 # Copy the rest of the application source code
 COPY frontend/ .

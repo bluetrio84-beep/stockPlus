@@ -2,6 +2,33 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v37.10 AI-Integrated Real-time Terminal Station (2026-03-19 완료) 🔥
+*   **xterm.js + node-pty 기반 차세대 터미널 구축 (v36.108 ~ v36.111)**:
+    - 단순 텍스트 로그 방식을 탈피하여 `xterm.js`와 WebSocket, 그리고 Node.js `node-pty` 엔진을 결합한 진짜 리눅스 터미널 환경을 웹 브라우저 내에 완벽 구현.
+    - `vim`, `top`, `docker` 등 모든 인터랙티브 명령어를 실시간(Zero-latency)으로 실행 가능한 고성능 워크스테이션 환경 확보.
+    - 터미널 접속 시 `gemini` 에리전트를 자동으로 기동하여, 탭 클릭 즉시 AI와 코딩 협업이 시작되는 심리스(Seamless) UX 완성.
+*   **초강력 보안 시스템 및 2중 잠금장치 (v36.112 ~ v36.115)**:
+    - **Docker-in-Docker(DinD)** 권한 부여: 컨테이너 내부에서 호스트의 도커 소켓(`/var/run/docker.sock`)을 직접 제어하여 웹 터미널을 통한 실시간 빌드 및 배포 능력 확보.
+    - **Terminal Master Key**: 로그인 권한과 별개로 터미널 진입 시에만 요구되는 2차 고정 패스워드 시스템을 구축하여, 계정 탈취 상황에서도 서버 제어권을 최후까지 방어.
+    - 오직 `bluetrio` 관리자 계정만 접근 가능하도록 웹소켓 레벨에서 철저한 사용자 식별 차단막 적용.
+*   **UI/UX 및 스트리밍 정밀 최적화**:
+    - Nginx의 `proxy_buffering` 및 `chunked_transfer_encoding` 설정을 정교하게 튜닝하여 `INCOMPLETE_CHUNKED_ENCODING` 에러를 해결하고 끊김 없는 데이터 스트림 보장.
+    - 문자(char) 단위 버퍼 읽기 방식을 통해 한글 깨짐 현상을 완벽 차단하고, `FitAddon` 기반의 터미널 풀스크린 리사이즈 기능 구현.
+
+## 🚀 v37.00 Real-time Program Trading Intelligence (2026-03-19 완료) 🔥
+*   **실시간 프로그램 수급 수집 엔진 구축 (v21.0 ~ v21.5)**:
+    - KIS 현재가 API(`FHKST01010100`)의 숨겨진 필드인 실시간 프로그램 순매수(`pgtr_ntby_qty`) 및 외국인 순매수 데이터를 발굴하여 전 시스템 연동.
+    - `StockPriceDto` 및 `KisStockService` 고도화를 통해 별도의 API 호출 비용 없이 현재가 조회 시 수급 데이터를 동시에 확보하는 초저지연 구조 완성.
+*   **고해상도 수급 추적 시스템 (Intraday Snapshot)**:
+    - `stock_intraday_history` 테이블에 `program_net_buy` 컬럼을 추가하고, `NextLeaderDataScheduler`를 통해 장중 1,800종목의 프로그램 흐름을 30분 단위로 정밀 기록.
+    - 장 종료 후의 결과값이 아닌, 장중 실시간 수급 패턴 분석을 위한 고해상도(High-Resolution) 데이터셋 확보.
+*   **AI 주도주 분석 엔진(NextLeader) 강화**:
+    - `NextLeaderEngine.py`에 프로그램 매매 가점 로직(`get_program_boost`) 신설.
+    - 프로그램 순매수 유입(+3~5점) 및 과도한 이탈(-5점) 신호를 AI 최종 점수에 반영하여 주도주 발굴의 정확도를 대폭 상향.
+*   **아키텍처 최적화 및 클린업**:
+    - 데이터 유실 가능성이 높고 중복적인 `daily_stock_investor` 테이블의 프로그램 수집 로직을 과감히 제거하여 시스템 경량화 및 DB 무결성 확보.
+    - 백엔드 재빌드 및 무중단 배포를 통해 실전 가동 및 데이터 적재 확인.
+
 ## 🚀 v36.94 Journal UX Restoration & Navigation Fix (2026-03-18 완료) 🔥
 *   **타이핑 시 화면 튕김(Jump) 버그 해결**:
     - `setSelectedNote`(상태 업데이트)와 `onFetchDetail`(상세 조회/화면 전환) 핸들러를 분리하여 신규 등록/수정 시 타이핑할 때마다 상세 화면으로 이동하던 현상을 완벽하게 차단.

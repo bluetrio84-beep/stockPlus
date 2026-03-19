@@ -1,7 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShieldAlert, Activity, Cpu, HardDrive, Terminal, AlertTriangle, CheckCircle, Clock, RefreshCw, ChevronRight, Zap, Database, Globe, Brain, Send, X, AlertCircle, Power } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
+import { Terminal as XTerm } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import 'xterm/css/xterm.css';
+
+// [v36.108] XTerm 터미널 컴포넌트 정의 (v36.114 마스터 키 연동)
+const RealTerminal = ({ passkey }) => {
+    const terminalRef = useRef(null);
+    const xtermRef = useRef(null);
+    const socketRef = useRef(null);
+
+    useEffect(() => {
+        // [v36.115] 패스키가 없으면 절대 연결하지 않음 (이중 방어)
+        if (!terminalRef.current || !passkey || passkey.trim() === "") return;
+
+        // 1. XTerm 초기화
+        const term = new XTerm({
+            cursorBlink: true,
+            fontSize: 14,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            theme: {
+                background: '#020617', // slate-950
+                foreground: '#cbd5e1', // slate-300
+                cursor: '#6366f1',     // indigo-500
+            }
+        });
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(terminalRef.current);
+        
+        setTimeout(() => fitAddon.fit(), 100);
+        xtermRef.current = term;
+
+        // 2. WebSocket 연결 (보안 마스터 키 포함)
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/terminal-ws?passkey=${passkey}`;
+        const socket = new WebSocket(wsUrl);
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+            term.writeln('\x1b[1;34m>>> Welcome to StockPlus AI Station v2.0\x1b[0m');
+            term.writeln('\x1b[1;32m>>> Secure Access Granted via Master Key\x1b[0m\r\n');
+            
+            const dims = fitAddon.proposeDimensions();
+            if (dims) {
+                socket.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
+            }
+        };
+
+        socket.onmessage = (event) => {
+            term.write(event.data);
+        };
+
+        socket.onclose = () => {
+            term.writeln('\r\n\x1b[1;31m>>> Terminal Disconnected.\x1b[0m');
+        };
+
+        // 3. 브라우저 -> 서버 전송
+        term.onData((data) => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(data);
+            }
+        });
+
+        // 4. 창 크기 조절 대응
+        const handleResize = () => {
+            fitAddon.fit();
+            const dims = fitAddon.proposeDimensions();
+            if (dims && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
+            }
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            socket.close();
+            term.dispose();
+        };
+    }, []);
+
+    return <div ref={terminalRef} className="flex-1 w-full h-full overflow-hidden rounded-2xl border border-indigo-500/20 shadow-inner" />;
+};
 
 // Gauge Chart Component
 const GaugeChart = ({ value, label, colorClass, icon: Icon, subValue }) => {
@@ -42,41 +124,8 @@ const AdminFailureManagement = () => {
     
     // [v36.82] 통합 탭 상태 (지표, 로그, AI 개발 센터)
     const [activeTab, setActiveTab] = useState('metrics'); // 'metrics', 'logs', 'aidev'
-
-    // [v36.83] 터미널 전용 상태
-    const [terminalInput, setTerminalInput] = useState("");
-    const [terminalLogs, setTerminalLogs] = useState([
-        { type: 'sys', content: '>>> Welcome to StockPlus AI Console v1.0' },
-        { type: 'sys', content: '// 시스템 실시간 제어 및 AI 공동 개발 보안 콘솔입니다.' }
-    ]);
-    const [isExecuting, setIsExecuting] = useState(false);
-
-    const handleTerminalCommand = async (e) => {
-        if (e.key !== 'Enter' || !terminalInput.trim() || isExecuting) return;
-
-        const cmd = terminalInput.trim();
-        setTerminalLogs(prev => [...prev, { type: 'cmd', content: cmd }]);
-        setTerminalInput("");
-        setIsExecuting(true);
-
-        try {
-            const res = await fetch('/stockPlus/api/admin/system/terminal/execute', {
-                method: 'POST',
-                headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: cmd })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTerminalLogs(prev => [...prev, { type: 'res', content: data.output }]);
-            } else {
-                setTerminalLogs(prev => [...prev, { type: 'err', content: '>>> API Connection Failed (401/403/500)' }]);
-            }
-        } catch (err) {
-            setTerminalLogs(prev => [...prev, { type: 'err', content: `>>> Error: ${err.message}` }]);
-        } finally {
-            setIsExecuting(false);
-        }
-    };
+    const [terminalPasskey, setTerminalPasskey] = useState(""); // [v36.114] 마스터 키 상태
+    const [isTerminalUnlocked, setIsTerminalUnlocked] = useState(false);
 
     const fetchMetrics = async () => {
         try {
@@ -137,6 +186,7 @@ const AdminFailureManagement = () => {
 
     return (
         <div className="flex-1 bg-slate-950 p-4 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-4 lg:gap-6 relative pb-40 lg:pb-5">
+            {/* ... 헤더 생략 ... */}
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10">
                     <div>
@@ -146,7 +196,6 @@ const AdminFailureManagement = () => {
                         <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1 lg:ml-10 hidden lg:block">NOC ACTIVE | {lastUpdated.toLocaleTimeString()}</p>
                     </div>
 
-                    {/* [v36.82] PC 전용 상단 탭 내비게이션 */}
                     <div className="hidden lg:flex bg-slate-900 p-1 rounded-xl border border-slate-800 mr-4 shadow-inner">
                         <button 
                             onClick={() => setActiveTab('metrics')}
@@ -179,7 +228,7 @@ const AdminFailureManagement = () => {
                 "flex-1 min-h-0 relative overflow-hidden",
                 activeTab !== 'aidev' ? "grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6" : "flex flex-col"
             )}>
-                {/* 1 & 2. 지능 관제 뷰 (지표 + 로그 병합 모드) */}
+                {/* ... 지능 관제 뷰 (기존 코드 유지) ... */}
                 {activeTab !== 'aidev' && (
                     <>
                         <div className={classNames(
@@ -272,53 +321,55 @@ const AdminFailureManagement = () => {
                     </>
                 )}
 
-                {/* 3. AI Dev Center Panel */}
+                {/* 3. AI Dev Center Panel (v36.114 마스터 키 가드 적용) */}
                 {activeTab === 'aidev' && (
                     <div className="flex-1 flex flex-col bg-slate-950 border border-indigo-500/30 rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full">
                         <div className="px-6 py-5 border-b border-indigo-500/20 bg-indigo-500/5 flex justify-between items-center shrink-0">
                             <div className="flex items-center gap-3">
                                 <Brain size={20} className="text-indigo-400 animate-pulse" />
-                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">Gemini AI Developer Center</h3>
+                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">Gemini AI Developer Station</h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Console</span>
+                                <span className={classNames("w-2 h-2 rounded-full", isTerminalUnlocked ? "bg-emerald-500 animate-ping" : "bg-rose-500")}></span>
+                                <span className={classNames("text-[10px] font-black uppercase tracking-widest", isTerminalUnlocked ? "text-emerald-500" : "text-rose-500")}>
+                                    {isTerminalUnlocked ? "Secure Session" : "Locked Station"}
+                                </span>
                             </div>
                         </div>
-                        <div className="flex-1 flex flex-col min-h-0 bg-black/40 p-4 font-mono text-sm overflow-hidden relative">
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-slate-950/20 rounded-2xl border border-slate-800/30 shadow-inner select-text cursor-text">
-                                {terminalLogs.map((log, i) => (
-                                    <div key={i} className="mb-3">
-                                        {log.type === 'sys' && <p className="text-indigo-400 font-black mb-1">{log.content}</p>}
-                                        {log.type === 'cmd' && (
-                                            <div className="flex gap-2">
-                                                <span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span>
-                                                <span className="text-white font-bold">{log.content}</span>
-                                            </div>
-                                        )}
-                                        {log.type === 'res' && <pre className="text-slate-400 text-xs pl-4 whitespace-pre-wrap mt-1 font-mono leading-tight">{log.content}</pre>}
-                                        {log.type === 'err' && <p className="text-rose-500 text-xs pl-4 italic mt-1">{log.content}</p>}
+                        
+                        <div className="flex-1 flex flex-col min-h-0 bg-black/40 p-4 overflow-hidden relative h-full">
+                            {!isTerminalUnlocked ? (
+                                // [v36.114] 마스터 키 입력 화면
+                                <div className="flex-1 flex flex-col items-center justify-center gap-6">
+                                    <div className="p-6 bg-slate-900 border border-slate-800 rounded-full shadow-2xl">
+                                        <ShieldAlert size={48} className="text-indigo-500 animate-bounce" />
                                     </div>
-                                ))}
-                                {isExecuting && <div className="flex gap-2 animate-pulse"><span className="text-indigo-500 font-black">...</span><span className="text-slate-500 text-xs">Executing on server...</span></div>}
-                                <div className="flex gap-2 mt-2">
-                                    <span className="text-indigo-500 font-black">bluetrio@stockplus:~$</span>
-                                    <span className="w-2 h-5 bg-indigo-500 animate-pulse"></span>
+                                    <div className="text-center">
+                                        <h4 className="text-white font-black text-lg uppercase tracking-tighter">Station Restricted</h4>
+                                        <p className="text-slate-500 text-xs font-bold mt-1">Please enter the Terminal Master Key to proceed.</p>
+                                    </div>
+                                    <div className="w-full max-w-xs space-y-3">
+                                        <input 
+                                            type="password"
+                                            value={terminalPasskey}
+                                            onChange={(e) => setTerminalPasskey(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && setIsTerminalUnlocked(true)}
+                                            placeholder="••••••••"
+                                            autoFocus
+                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-6 py-4 text-center text-white font-mono tracking-widest focus:border-indigo-500 outline-none transition-all shadow-inner"
+                                        />
+                                        <button 
+                                            onClick={() => setIsTerminalUnlocked(true)}
+                                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95"
+                                        >
+                                            Unlock Station
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="h-14 border-t border-slate-800 flex items-center gap-3 px-4 bg-slate-900/50 shrink-0 mt-4 rounded-b-2xl">
-                                <span className="text-indigo-500 font-black text-xs shrink-0">bluetrio@admin:~$</span>
-                                <input 
-                                    type="text" 
-                                    value={terminalInput}
-                                    onChange={(e) => setTerminalInput(e.target.value)}
-                                    onKeyDown={handleTerminalCommand}
-                                    placeholder={isExecuting ? "Executing..." : "Enter shell command..."} 
-                                    disabled={isExecuting}
-                                    className="flex-1 bg-transparent border-none outline-none text-white font-mono text-sm placeholder:text-slate-700" 
-                                />
-                                <Zap size={18} className={classNames("transition-colors cursor-pointer", isExecuting ? "text-amber-500 animate-bounce" : "text-slate-600 hover:text-amber-400")} />
-                            </div>
+                            ) : (
+                                // 마스터 키 통과 시 진짜 터미널 렌더링
+                                <RealTerminal passkey={terminalPasskey} />
+                            )}
                         </div>
                     </div>
                 )}

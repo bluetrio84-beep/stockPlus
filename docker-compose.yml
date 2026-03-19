@@ -53,6 +53,7 @@ services:
       - ./img/notes:/app/img/notes
       - /home/lms/.npm-global:/usr/local/npm-global # gemini 실행 파일 공유
       - /home/lms/.gemini:/root/.gemini # gemini 대화 히스토리 공유
+      - /var/run/docker.sock:/var/run/docker.sock # [v36.112] 호스트 도커 제어권 부여
     depends_on:
       mysql:
         condition: service_healthy

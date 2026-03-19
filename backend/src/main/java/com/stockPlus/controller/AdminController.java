@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import reactor.core.publisher.Flux;
 import java.util.*;
 
 @RestController
@@ -339,75 +340,48 @@ public class AdminController {
     }
 
     /**
-     * [v36.90] AI 개발 센터: 지능형 에이전트 브릿지 (명령어 + 대화 통합)
+     * [v36.102] AI 개발 센터: 지능형 SSE 스트리밍 터미널 (v36.105 노이즈 제거 및 실시간성 강화)
      */
-    @PostMapping("/system/terminal/execute")
-    public Map<String, String> executeAgentCommand(@RequestBody Map<String, String> payload, org.springframework.security.core.Authentication authentication) {
+    @PostMapping(value = "/system/terminal/execute", produces = org.springframework.http.MediaType.TEXT_PLAIN_VALUE)
+    public Flux<String> executeAgentCommand(@RequestBody Map<String, String> payload, org.springframework.security.core.Authentication authentication) {
         validateAdmin(authentication);
-        
         String input = payload.get("command").trim();
-        StringBuilder output = new StringBuilder();
+        String modelFlag = "--model gemini-3-flash-preview";
 
-        // 1. 슬래시(/)로 시작하는 메타 명령어 처리 (v36.91 추가)
-        if (input.startsWith("/")) {
-            log.info(">>> [Agent] Executing Meta Command: {}", input);
-            
-            // [v36.92] /resume 명령어 웹 최적화 처리
-            if (input.equals("/resume")) {
-                return Map.of("output", ">>> [Web Context] 이전 대화 맥락이 자동으로 유지되고 있습니다. 바로 질문을 입력해 주세요.");
-            }
-
-            String geminiMetaCmd = "/usr/local/npm-global/bin/gemini " + input;
+        return Flux.create(sink -> {
             try {
-                // 비대화형 모드 에러 방지를 위해 가상 TTY 환경 흉내 (script 활용)
-                ProcessBuilder pb = new ProcessBuilder("bash", "-c", geminiMetaCmd);
+                String targetCommand;
+                if (input.startsWith("/")) {
+                    targetCommand = "script -q -c \"/usr/local/npm-global/bin/gemini " + modelFlag + " " + input + "\" /dev/null";
+                } else if (input.matches("^(ls|pwd|cd|docker|cat|grep|ps|date|whoami|find|mkdir|rm|cp|mv|chmod|chown|df|free|tail|head|mvn|npm|python3|git).*")) {
+                    targetCommand = input;
+                } else {
+                    String contextPrompt = "현재 StockPlus 프로젝트의 /Projects 폴더에서 작업을 수행 중이야. 프로젝트 문맥을 고려해서 답변해줘: " + input;
+                    targetCommand = "script -q -c \"/usr/local/npm-global/bin/gemini " + modelFlag + " --prompt '" + contextPrompt.replace("'", "'\\''") + "'\" /dev/null";
+                }
+
+                ProcessBuilder pb = new ProcessBuilder("bash", "-c", targetCommand);
                 pb.directory(new java.io.File("/Projects"));
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
-                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) output.append(line).append("\n");
-                return Map.of("output", output.toString());
+
+                // [v36.106] 한글 깨짐 방지를 위해 문자(char) 단위 스트리밍 적용
+                java.io.InputStreamReader reader = new java.io.InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8);
+                char[] buffer = new char[16]; // 16글자 단위로 안전하게 읽기
+                int length;
+                try {
+                    while ((length = reader.read(buffer)) != -1) {
+                        sink.next(new String(buffer, 0, length));
+                    }
+                } finally {
+                    reader.close();
+                }
+                process.waitFor();
+                sink.complete();
             } catch (Exception e) {
-                return Map.of("output", ">>> Meta Command Error: " + e.getMessage());
+                sink.next(">>> Error: " + e.getMessage());
+                sink.complete();
             }
-        }
-
-        // 2. 리눅스 명령어 여부 판단
-        boolean isLinuxCommand = input.matches("^(ls|pwd|cd|docker|cat|grep|ps|date|whoami|find|mkdir|rm|cp|mv|chmod|chown|df|free|tail|head|mvn|npm|python3|git).*");
-
-        try {
-            if (isLinuxCommand) {
-                // ... (기존 명령어 실행 로직 동일) ...
-                ProcessBuilder pb = new ProcessBuilder("bash", "-c", input);
-                pb.directory(new java.io.File("/Projects"));
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) output.append(line).append("\n");
-                if (output.length() == 0) output.append(">>> Command executed successfully.");
-            } else {
-                // [v36.92] AI 대화 모드: 자동으로 '최신 상황'을 인지하도록 프롬프트 보강
-                log.info(">>> [Agent] Forwarding to Gemini with Context: {}", input);
-                
-                // task2.md 내용을 참고하여 현재 상황을 인지하게 함
-                String contextPrompt = "현재 StockPlus 프로젝트의 /Projects 폴더에서 작업을 수행 중이야. " +
-                                     "다음 질문에 대해 프로젝트의 문맥을 고려해서 답변해줘: " + input;
-                
-                String geminiCmd = "/usr/local/npm-global/bin/gemini --prompt \"" + contextPrompt.replace("\"", "\\\"") + "\"";
-                ProcessBuilder pb = new ProcessBuilder("bash", "-c", geminiCmd);
-                pb.directory(new java.io.File("/Projects"));
-                pb.redirectErrorStream(true);
-                Process process = pb.start();
-                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
-                String line;
-                while ((line = reader.readLine()) != null) output.append(line).append("\n");
-            }
-        } catch (Exception e) {
-            output.append(">>> Agent Error: ").append(e.getMessage());
-        }
-        
-        return Map.of("output", output.toString());
+        });
     }
 }
