@@ -54,10 +54,19 @@ const MyPortfolioDashboard = () => {
 
     let parsedInsights = null;
     try {
+        let rawInsights = null;
         if (aiInsight && typeof aiInsight === 'string' && aiInsight.trim().startsWith('[')) {
-            parsedInsights = JSON.parse(aiInsight);
+            rawInsights = JSON.parse(aiInsight);
         } else if (Array.isArray(aiInsight)) {
-            parsedInsights = aiInsight;
+            rawInsights = aiInsight;
+        }
+
+        // [v37.80] 실시간 필터링: 현재 보유 중인 종목(holdings)에 존재하는 인사이트만 표시
+        if (rawInsights && holdings.length > 0) {
+            const holdingCodes = new Set(holdings.map(h => String(h.stockCode).trim()));
+            parsedInsights = rawInsights.filter(i => holdingCodes.has(String(i.stockCode).trim()));
+        } else {
+            parsedInsights = rawInsights;
         }
     } catch (e) {
         parsedInsights = null;

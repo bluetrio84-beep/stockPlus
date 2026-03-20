@@ -21,6 +21,15 @@ wss.on('connection', (ws, req) => {
 
     console.log('>>> [Terminal Server] Authorized access granted');
 
+    // [v37.90] Heartbeat: 30초마다 핑을 보내 연결 유지 (1분 타임아웃 방지)
+    const heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.ping();
+        } else {
+            clearInterval(heartbeat);
+        }
+    }, 30000);
+
     const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-256color',
@@ -60,6 +69,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         console.log('>>> [Terminal Server] Client disconnected');
+        clearInterval(heartbeat);
         ptyProcess.kill();
     });
 });

@@ -2,6 +2,18 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v37.90 Terminal Connection Stability & Infrastructure Tuning (2026-03-20 완료) 🔥
+*   **웹 터미널 커넥션 팅김 현상 원천 해결**:
+    - **Heartbeat 매커니즘 도입**: `terminal-server.js`에 30초 단위 Ping-Pong 로직을 주입하여 WebSocket 세션 유휴 상태로 인한 강제 종료 방지.
+    - **Infrastructure 타임아웃 연장**: Nginx 설정(`nginx.conf`) 내 터미널 전용 프록시의 `proxy_read_timeout` 및 `proxy_send_timeout`을 1시간(3600s)으로 대폭 상향 조정.
+*   **시스템 가용성 최적화**:
+    - 백엔드와 프론트엔드의 유기적인 하트비트 연동을 통해 장시간 터미널 작업 시에도 안정적인 연결 유지 보장.
+
+## 🚀 v37.80 Portfolio-AI Control Tower Synchronization (2026-03-20 완료) 🔥
+*   **보유 종목 동기화 필터링 구현**:
+    - `MyPortfolioDashboard.jsx`의 AI 관제탑 섹션에 실시간 필터링 로직을 추가하여, 사용자가 삭제한 종목(예: 대웅제약)이 AI 리포트 원본에 남아있더라도 화면에서는 즉시 제외되도록 고도화.
+    - 백엔드 쿼리 수정 없이 프론트엔드 레벨에서의 정밀 타격 대조(Holdings vs Insights) 방식을 채택하여 성능과 정확성을 동시 확보.
+
 ## 🚀 v37.70 AI Model Retraining & Stacking Ensemble Refresh (2026-03-20 완료) 🔥
 *   **3대 모델 앙상블 재학습 (LSTM, TCN, XGBoost)**:
     - 최근 2주간의 급변하는 시장 변동성과 수급 패턴, 그리고 사용자 피드백(성공/실패)을 완벽히 반영하여 모델의 '두뇌'를 최신 Regime에 동기화.

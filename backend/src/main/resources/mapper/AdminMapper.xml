@@ -109,7 +109,7 @@
     <select id="getMarketLeaders" resultType="map">
         SELECT sm.stock_name, sd.foreign_net_buy, sd.top_brokers 
         FROM stock_supply_demand sd JOIN stock_master sm ON sd.stock_code = sm.stock_code 
-        WHERE sd.captured_at &gt;= DATE_SUB(NOW(), INTERVAL 24 HOUR) 
+        WHERE sd.captured_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) 
         ORDER BY sd.foreign_net_buy DESC LIMIT 10
     </select>
 
@@ -119,7 +119,7 @@
         INNER JOIN (
           SELECT target_name, MAX(id) as max_id 
           FROM ai_prediction 
-          WHERE created_at &gt;= DATE_SUB(NOW(), INTERVAL 15 MINUTE) 
+          WHERE created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE) 
           GROUP BY target_name
         ) latest ON ap.id = latest.max_id 
         JOIN stock_master sm ON ap.target_name = CONCAT('STOCK_', sm.stock_code) 
