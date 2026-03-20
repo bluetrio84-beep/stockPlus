@@ -3,6 +3,7 @@ package com.stockPlus.scheduler;
 import com.stockPlus.domain.InvestorDto;
 import com.stockPlus.domain.StockChartDto;
 import com.stockPlus.mapper.DailyInvestorMapper;
+import com.stockPlus.mapper.ShortSellingMapper;
 import com.stockPlus.mapper.WatchlistMapper;
 import com.stockPlus.service.KisStockService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class DailyInvestorScheduler {
     private final KisStockService kisStockService;
     private final WatchlistMapper watchlistMapper;
     private final DailyInvestorMapper dailyInvestorMapper;
+    private final ShortSellingMapper shortSellingMapper; // [v23.5] 공매도 매퍼 추가
     private final com.stockPlus.mapper.AdminMapper adminMapper; // [v17.8] 추가
 
     /**
@@ -73,15 +75,43 @@ public class DailyInvestorScheduler {
 
         for (String code : stockCodes) {
             try {
-                // 수급 데이터와 일봉 데이터를 병렬로 호출
+                // [v23.5] 수급, 일봉, 공매도 데이터를 병렬로 호출
                 Mono.zip(
                     kisStockService.fetchInvestors(code, "J"),
-                    kisStockService.fetchUnifiedChart(code, "J", "1D")
+                    kisStockService.fetchUnifiedChart(code, "J", "1D"),
+                    kisStockService.fetchShortSelling(code)
                 ).subscribe(tuple -> {
                     List<InvestorDto.InvestorItem> investors = tuple.getT1().getItems();
                     List<StockChartDto> charts = tuple.getT2();
+                    com.stockPlus.domain.ShortSellingDto shortSelling = tuple.getT3();
                     
                     if (investors == null || charts == null) return;
+
+                    // 공매도 데이터 저장 처리
+                    if (shortSelling != null && shortSelling.getItems() != null) {
+                        for (com.stockPlus.domain.ShortSellingDto.ShortSellingItem item : shortSelling.getItems()) {
+                            try {
+                                Map<String, Object> sp = new HashMap<>();
+                                String rawDate = item.getDate(); // YYYYMMDD
+                                String formattedDate = rawDate.substring(0, 4) + "-" + rawDate.substring(4, 6) + "-" + rawDate.substring(6, 8);
+                                sp.put("stockCode", code);
+                                sp.put("bsopDate", formattedDate);
+                                sp.put("shortCntgQty", Long.parseLong(item.getShortCntgQty()));
+                                sp.put("shortRatio", Double.parseDouble(item.getShortRatio()));
+                                sp.put("shortAmtRatio", Double.parseDouble(item.getShortAmtRatio())); // [v24.2] 추가
+                                sp.put("shortCntgAmt", Long.parseLong(item.getShortCntgAmt()));
+                                sp.put("totalShortCntgQty", Long.parseLong(item.getTotalShortCntgQty()));
+                                sp.put("totalShortRatio", Double.parseDouble(item.getTotalShortRatio()));
+                                sp.put("totalShortAmtRatio", Double.parseDouble(item.getTotalShortAmtRatio())); // [v24.2] 추가
+                                sp.put("totalShortAmt", Long.parseLong(item.getTotalShortAmt()));
+                                sp.put("avgShortPrice", Double.parseDouble(item.getAvgShortPrice()));
+                                sp.put("shortBalance", Long.parseLong(item.getTotalShortCntgQty())); 
+                                shortSellingMapper.insertOrUpdateShortSelling(sp);
+                            } catch (Exception e) {
+                                // 파싱 에러 등 무시
+                            }
+                        }
+                    }
 
                     // 차트 데이터를 날짜별 맵으로 변환 (YYYY-MM-DD -> Volume)
                     Map<String, StockChartDto> chartMap = charts.stream()

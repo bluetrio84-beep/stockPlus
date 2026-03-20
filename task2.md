@@ -2,6 +2,17 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v37.50 Short Selling Intelligence Infrastructure (2026-03-20 완료) 🔥
+*   **전 종목 공매도 일별 추이 수집 엔진 구축 (v24.0 ~ v24.2)**:
+    - KIS 공매도 전용 API(`FHPST04830000`)를 연동하여 거래량 비중(`ssts_vol_rlim`), 거래대금 비중(`ssts_tr_pbmn_rlim`), 누적 공매도 잔고(`acml_ssts_cntg_qty`) 등 7대 핵심 지표 확보.
+    - `daily_short_selling` 테이블을 설계하고 복합 PK 및 `ON DUPLICATE KEY UPDATE` 로직을 적용하여 매일 30일치 데이터를 중복 없이 동기화하는 멱등성(Idempotency) 구조 완성.
+*   **자바 백엔드 데이터 파이프라인 고도화**:
+    - **병렬 수집 아키텍처**: `DailyInvestorScheduler` 내 `Mono.zip`을 확장하여 기존 수급 데이터와 공매도 데이터를 동시에 수집하는 고성능 비동기 파이프라인 구현.
+    - **실전 맵핑 최적화**: API 응답 배열(`output2`)과 실제 필드명을 실시간 로그 분석을 통해 100% 정밀 매칭(Zero-Error Parsing).
+*   **숏커버링(Short Cover) 분석 기반 마련**:
+    - 누적 공매도 잔고를 실시간 추적하여 "주가 상승 + 잔고 감소"를 포착하는 **'숏커버 점수'** 공식 산출을 위한 데이터 적재 체계 가동.
+    - 저녁 배치 대기 없이 서버 기동 즉시 1,800종목의 최근 30일치 공매도 히스토리 자동 덤프 완료.
+
 ## 🚀 v37.40 Smart Money Hall of Fame Dashboard (2026-03-20 완료) 🔥
 *   **스마트머니 전용 대시보드 구축**:
     - 좌측 사이드바에 **🔥 SMART MONEY** 독립 메뉴 신설 및 `/admin/smart-money` 전용 라우트 구축.

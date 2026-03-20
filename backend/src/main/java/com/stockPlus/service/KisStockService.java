@@ -3,6 +3,7 @@ package com.stockPlus.service;
 import com.stockPlus.domain.StockPriceDto;
 import com.stockPlus.domain.StockChartDto;
 import com.stockPlus.domain.InvestorDto;
+import com.stockPlus.domain.ShortSellingDto;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -483,28 +484,60 @@ public class KisStockService {
     }
 
     /**
-     * [v21.0] 프로그램 매매 데이터 원천 조회 (테스트 및 로깅용)
-     * TR: FHKST01010109 (종목별 프로그램 매매추이)
+     * [v23.5] 일별 공매도 추이 조회
+     * TR: FHPST04830000
      */
-    public Mono<String> fetchProgramTradingRaw(String stockCode, String marketDiv) {
+    public Mono<ShortSellingDto> fetchShortSelling(String stockCode) {
         String token = kisAuthService.getAccessToken();
-        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-investor"
-                + "?FID_COND_MRKT_DIV_CODE=" + marketDiv
-                + "&FID_INPUT_ISCD=" + stockCode;
-                
+        
+        // [v23.8] 시장 구분 'J' 고정 및 날짜 파라미터 (최근 30일치)
+        String today = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String startDate = java.time.LocalDate.now().minusDays(30).format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/daily-short-sale"
+                + "?FID_COND_MRKT_DIV_CODE=J"
+                + "&FID_INPUT_ISCD=" + stockCode
+                + "&FID_PERIOD_DIV_CODE=D"
+                + "&FID_INPUT_DATE_1=" + startDate
+                + "&FID_INPUT_DATE_2=" + today;
+
         return webClientBuilder.build().get().uri(uri)
                 .header("authorization", "Bearer " + token)
                 .header("appkey", kisAuthService.getAppKey())
                 .header("appsecret", kisAuthService.getAppSecret())
-                .header("tr_id", "FHKST01010900") // 투자자/프로그램 통합 TR 시도
+                .header("tr_id", "FHPST04830000")
                 .header("content-type", "application/json")
                 .header("custtype", "P")
                 .retrieve()
                 .bodyToMono(String.class)
-                .doOnNext(res -> log.info(">>> [KIS API] Investor/PGM Raw Response for {}: {}", stockCode, res))
-                .onErrorResume(e -> {
-                    log.error(">>> [KIS API] Error fetching investor for {}: {}", stockCode, e.getMessage());
-                    return Mono.just("");
-                });
+                .doOnNext(json -> log.info(">>> [KIS API] Short Selling Raw Response for {}: {}", stockCode, json))
+                .map(json -> {
+                    try {
+                        JsonNode root = objectMapper.readTree(json);
+                        List<ShortSellingDto.ShortSellingItem> items = new java.util.ArrayList<>();
+                        JsonNode output = root.path("output2"); // [v24.1] 실전 응답 데이터 매핑 확정
+                        if (output.isArray()) {
+                            for (JsonNode n : output) {
+                                items.add(ShortSellingDto.ShortSellingItem.builder()
+                                        .date(n.path("stck_bsop_date").asText(""))
+                                        .shortCntgQty(n.path("ssts_cntg_qty").asText("0"))
+                                        .shortRatio(n.path("ssts_vol_rlim").asText("0"))
+                                        .shortAmtRatio(n.path("ssts_tr_pbmn_rlim").asText("0"))
+                                        .shortCntgAmt(n.path("ssts_tr_pbmn").asText("0"))
+                                        .totalShortCntgQty(n.path("acml_ssts_cntg_qty").asText("0"))
+                                        .totalShortRatio(n.path("acml_ssts_cntg_qty_rlim").asText("0"))
+                                        .totalShortAmtRatio(n.path("acml_ssts_tr_pbmn_rlim").asText("0"))
+                                        .totalShortAmt(n.path("acml_ssts_tr_pbmn").asText("0"))
+                                        .avgShortPrice(n.path("avrg_prc").asText("0"))
+                                        .build());
+                            }
+                        }
+                        return ShortSellingDto.builder().stockCode(stockCode).items(items).build();
+                    } catch (Exception e) {
+                        log.error(">>> [KIS API] Error parsing short selling for {}: {}", stockCode, e.getMessage());
+                        return ShortSellingDto.builder().stockCode(stockCode).items(java.util.Collections.emptyList()).build();
+                    }
+                })
+                .onErrorResume(e -> Mono.just(ShortSellingDto.builder().stockCode(stockCode).items(java.util.Collections.emptyList()).build()));
     }
 }

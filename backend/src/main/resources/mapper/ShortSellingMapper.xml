@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.stockPlus.mapper.ShortSellingMapper">
+
+    <insert id="insertOrUpdateShortSelling" parameterType="map">
+        INSERT INTO daily_short_selling (
+            stock_code, bsop_date, short_cntg_qty, short_ratio, short_amt_ratio,
+            short_cntg_amt, total_short_cntg_qty, total_short_ratio, total_short_amt_ratio,
+            total_short_amt, avg_short_price, short_balance, created_at
+        ) VALUES (
+            #{stockCode}, #{bsopDate}, #{shortCntgQty}, #{shortRatio}, #{shortAmtRatio},
+            #{shortCntgAmt}, #{totalShortCntgQty}, #{totalShortRatio}, #{totalShortAmtRatio},
+            #{totalShortAmt}, #{avgShortPrice}, #{shortBalance}, NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            short_cntg_qty = #{shortCntgQty},
+            short_ratio = #{shortRatio},
+            short_amt_ratio = #{shortAmtRatio},
+            short_cntg_amt = #{shortCntgAmt},
+            total_short_cntg_qty = #{totalShortCntgQty},
+            total_short_ratio = #{totalShortRatio},
+            total_short_amt_ratio = #{totalShortAmtRatio},
+            total_short_amt = #{totalShortAmt},
+            avg_short_price = #{avgShortPrice},
+            short_balance = #{shortBalance},
+            created_at = NOW()
+    </insert>
+
+</mapper>
