@@ -56,40 +56,85 @@ class BlackBoxAnalyst:
 
     def calculate_smart_money(self, code, price, volume):
         """
-        [v23.0] 스마트머니 초정밀 유입 점수 (S-Score) - 블랙박스 리포트용
+        [v26.0] 스마트머니 초정밀 유입 점수 (S-Score) 얼티밋 에디션
         """
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 프로그램 (40)
+                # 1. 프로그램 (30)
                 cursor.execute("SELECT program_net_buy FROM stock_intraday_history WHERE stock_code=%s AND DATE(captured_at)=CURDATE() ORDER BY id DESC LIMIT 1", (code,))
                 curr_pgm = float(cursor.fetchone()['program_net_buy'] or 0) if cursor.rowcount > 0 else 0
-                p_score = min(30.0, (curr_pgm / volume) * 150) if volume > 0 else 0
+                p_score = min(20.0, (curr_pgm / volume) * 100) if volume > 0 else 0
                 
                 cursor.execute("SELECT program_net_buy, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
                 days = cursor.fetchall()
                 if len(days) >= 3 and all(d['program_net_buy'] > 0 for d in days): p_score += 10.0
 
-                # 2. OBV (30)
+                # 2. 숏스퀴즈 (30) [v26.0 NEW]
+                cursor.execute("SELECT avg_short_price, total_short_ratio FROM daily_short_selling WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 1", (code,))
+                sd = cursor.fetchone()
+                s_score = 0.0
+                if sd and sd['avg_short_price']:
+                    avg_p = float(sd['avg_short_price'])
+                    if price > avg_p:
+                        s_score += min(20.0, ((price - avg_p) / avg_p) * 200) # 10% 돌파 시 20점
+                    if float(sd['total_short_ratio'] or 0) > 10.0: s_score += 10.0 # 고농축 가점
+
+                # 3. OBV (20)
                 cursor.execute("SELECT obv FROM stock_intraday_history WHERE stock_code=%s ORDER BY id DESC LIMIT 1", (code,))
-                curr_obv = float(cursor.fetchone()['obv'] or 0)
+                curr_obv = float(cursor.fetchone()['obv'] or 0) if cursor.rowcount > 0 else 0
                 cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
                 o_rng = cursor.fetchone()
                 o_score = 0.0
                 if o_rng and o_rng['max_o'] is not None:
                     max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
-                    if max_o > min_o: o_score += min(20.0, (curr_obv - min_o) / (max_o - min_o) * 20)
+                    if max_o > min_o: o_score += min(15.0, (curr_obv - min_o) / (max_o - min_o) * 15)
                     
                 cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
                 p_max = cursor.fetchone()
-                if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): o_score += 10.0
+                if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): o_score += 5.0
 
-                # 3. 회전율 (30)
+                # 4. 회전율 (20)
                 cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
-                avg_tr = float(cursor.fetchone()['avg_tr'] or 0)
-                t_score = min(30.0, ((price * volume) / avg_tr) * 10.0) if avg_tr > 0 else 0
+                avg_tr_row = cursor.fetchone()
+                avg_tr = float(avg_tr_row['avg_tr'] or 0) if avg_tr_row else 0
+                t_score = min(20.0, ((price * volume) / avg_tr) * 6.6) if avg_tr > 0 else 0
 
-                return round(p_score + o_score + t_score, 2)
+                return round(p_score + s_score + o_score + t_score, 2)
         except: return 0.0
+        except: return 0.0
+
+    def calculate_short_sentiment(self, code, current_price):
+        """
+        [v25.0] 공매도 및 숏커버링 심리 분석
+        """
+        try:
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                sql = "SELECT short_balance, avg_short_price, short_ratio FROM daily_short_selling WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 2"
+                cursor.execute(sql, (code,))
+                rows = cursor.fetchall()
+                if len(rows) < 2: return {"status": "중립", "comment": "", "bonus": 0}
+
+                curr = rows[0]; prev = rows[1]
+                avg_short_price = float(curr['avg_short_price'] or 0)
+                
+                status = "중립"
+                comment = ""
+                bonus = 0
+
+                # 1. 숏커버링 감지 (잔고 감소)
+                if float(curr['short_balance'] or 0) < float(prev['short_balance'] or 0):
+                    status = "숏커버링"
+                    comment = "공매도 세력의 상환(숏커버링)이 시작되었습니다. "
+                    bonus = 5
+                
+                # 2. 숏스퀴즈 가능성 (현재가 > 평단가)
+                if avg_short_price > 0 and current_price > avg_short_price:
+                    status = "숏스퀴즈임박"
+                    comment += f"현재가가 공매도 평단가({int(avg_short_price):,})를 상회하며 세력의 압박이 가중되고 있습니다. "
+                    bonus += 7
+
+                return {"status": status, "comment": comment, "bonus": bonus}
+        except: return {"status": "중립", "comment": "", "bonus": 0}
 
     def calculate_earnings_momentum(self, code):
         # [v28.7.1] 데이터 무결성 패치: 동일 report_code끼리만 비교 (착시 방지)
@@ -277,6 +322,11 @@ class BlackBoxAnalyst:
                     data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)
                     # [v23.0] 스마트머니 초정밀 점수 반영
                     data['smart_money'] = self.calculate_smart_money(clean_code, price, vol)
+                    
+                    # [v25.0] 공매도 및 숏커버링 심리 분석
+                    short_data = self.calculate_short_sentiment(clean_code, price)
+                    data['short_sentiment'] = short_data
+                    data['xgb'] = round(max(0, min(100, data['xgb'] + short_data['bonus'])), 1)
                 # 3. AI 적중률(Hit Rate) 조회
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()
@@ -335,8 +385,11 @@ class BlackBoxAnalyst:
                 smart_part = f"현재 스마트머니 유입 점수가 {int(s_score)}%로 임계치(90%)를 돌파하는 압도적 매집 신호가 포착되었습니다. " if s_score >= 90 else ""
                 pgm_part = "프로그램의 강력한 선취매가 감지되어 수급의 질이 매우 우수하며, " if "스마트머니유입" in data['reason'] and s_score < 90 else ""
                 
+                # [v25.0] 공매도 및 숏커버링 리포트 문구 추가
+                short_part = data['short_sentiment']['comment'] if data['short_sentiment']['comment'] else ""
+                
                 strategy_txt = f"[{self.strategy_config['mode']}] 모드 기반 "
-                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{smart_part}{pgm_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
+                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{smart_part}{pgm_part}{short_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
                 
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,

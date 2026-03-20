@@ -120,14 +120,13 @@ class NextLeaderEngine(AIEngine):
 
     def get_smart_money_score(self, code, price, volume, current_obv):
         """
-        [v23.0] 스마트머니 초정밀 유입 점수 (S-Score) 산출
-        Recipe: 프로그램(40) : OBV(30) : 거래대금회전율(30)
+        [v26.0] 스마트머니 초정밀 유입 점수 (S-Score) 얼티밋 에디션
+        Recipe: 프로그램(30) : 숏스퀴즈(30) : OBV(20) : 회전율(20)
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 프로그램 순매수 (Max 40)
-                # 당일 비중 점수 (30점 만점) + 3일 연속 가점 (10점)
+                # 1. 프로그램 순매수 (Max 30)
                 sql_pgm = """
                     SELECT program_net_buy, captured_at 
                     FROM stock_intraday_history 
@@ -136,14 +135,12 @@ class NextLeaderEngine(AIEngine):
                 """
                 cursor.execute(sql_pgm, (code,))
                 pgm_rows = cursor.fetchall()
-                
                 p_score = 0.0
                 if pgm_rows:
                     curr_pgm = float(pgm_rows[0]['program_net_buy'] or 0)
-                    pgm_ratio = (curr_pgm / volume) * 150 if volume > 0 else 0
-                    p_score += min(30.0, max(0, pgm_ratio))
+                    pgm_ratio = (curr_pgm / volume) * 100 if volume > 0 else 0
+                    p_score += min(20.0, pgm_ratio * 1.5) # 15% 이상 시 20점
                     
-                    # 3일 연속 순매수 체크
                     df_pgm = pd.DataFrame(pgm_rows)
                     df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
                     daily_pgm = df_pgm.groupby('date')['program_net_buy'].last().reset_index()
@@ -154,44 +151,85 @@ class NextLeaderEngine(AIEngine):
                     if consecutive_days >= 3: p_score += 10.0
                     elif consecutive_days == 2: p_score += 5.0
 
-                # 2. OBV 추세 (Max 30)
-                # 상대 위치 (20점 만점) + 전고점 돌파 (10점)
+                # 2. 숏스퀴즈 및 공매도 (Max 30) [v26.0 NEW]
+                s_boost, _ = self.get_short_cover_boost(code, price)
+                s_score = min(30.0, s_boost)
+
+                # 3. OBV 추세 (Max 20)
                 sql_obv = "SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)"
                 cursor.execute(sql_obv, (code,))
                 o_range = cursor.fetchone()
-                
                 o_score = 0.0
                 if o_range and o_range['max_o'] is not None:
-                    max_o = float(o_range['max_o']); min_o = float(o_range['min_o'])
-                    if max_o > min_o:
-                        rel_pos = (current_obv - min_o) / (max_o - min_o) * 20
-                        o_score += min(20.0, max(0, rel_pos))
+                    max_o, min_o = float(o_range['max_o']), float(o_range['min_o'])
+                    if max_o > min_o: o_score += min(15.0, (current_obv - min_o) / (max_o - min_o) * 15)
                     
-                    # 전고점 돌파 체크 (최근 9일 최고치보다 오늘이 높으면)
                     sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
                     cursor.execute(sql_prev_max, (code,))
                     p_max_row = cursor.fetchone()
-                    if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']):
-                        o_score += 10.0
+                    if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']): o_score += 5.0
 
-                # 3. 거래대금 회전율 (Max 30)
-                # 5일 평균 거래대금 대비 오늘 급증도
+                # 4. 거래대금 회전율 (Max 20)
                 sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
                 cursor.execute(sql_avg_tr, (code,))
                 avg_tr_row = cursor.fetchone()
-                
                 t_score = 0.0
-                curr_tr = price * volume
                 if avg_tr_row and avg_tr_row['avg_tr']:
-                    avg_tr = float(avg_tr_row['avg_tr'])
-                    if avg_tr > 0:
-                        surge_ratio = curr_tr / avg_tr
-                        t_score = min(30.0, surge_ratio * 10.0) # 3배 급증 시 30점 만점
+                    surge = (price * volume) / float(avg_tr_row['avg_tr'])
+                    t_score = min(20.0, surge * 6.6) # 3배 급증 시 20점 만점
 
-                return round(p_score + o_score + t_score, 2)
+                return round(p_score + s_score + o_score + t_score, 2)
+        except Exception as e:
+            print(f">>> [Ultimate S-Score Error] {e}")
+            return 0.0
         except Exception as e:
             print(f">>> [S-Score Error] {e}")
             return 0.0
+
+    def get_short_cover_boost(self, code, current_price):
+        """
+        [v26.0] 숏커버링 및 숏스퀴즈 정밀 분석 (수집 데이터 기반)
+        핵심: 현재가와 공매도 세력 평단가(avg_short_price)의 격차 분석
+        """
+        try:
+            if not self.conn or not self.conn.open: self.connect()
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 1. 공매도 데이터 조회 (평단가 및 누적 비중)
+                sql = "SELECT avg_short_price, short_ratio, total_short_ratio FROM daily_short_selling WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 1"
+                cursor.execute(sql, (code,))
+                curr = cursor.fetchone()
+                if not curr or not curr['avg_short_price']: return 0.0, ""
+
+                avg_price = float(curr['avg_short_price'])
+                total_ratio = float(curr['total_short_ratio'] or 0)
+                curr_ratio = float(curr['short_ratio'] or 0)
+
+                boost = 0.0
+                tags = []
+
+                # A. 숏스퀴즈 압박 점수 (현재가 vs 공매도 평단가)
+                # 평단가보다 현재가가 높을수록 세력의 패닉(숏커버) 유도
+                if current_price > avg_price:
+                    diff_pct = ((current_price - avg_price) / avg_price) * 100
+                    # 10% 돌파 시 20점 만점 부여 (1%당 2점)
+                    boost += min(20.0, diff_pct * 2.0)
+                    if diff_pct > 5.0: tags.append("숏스퀴즈임박")
+                    elif diff_pct > 2.0: tags.append("세력손실전환")
+
+                # B. 누적 에너지 가점 (누적 비중이 높을수록 폭발력 증가)
+                if total_ratio > 15.0:
+                    boost += 10.0
+                    tags.append("고농축공매도")
+                elif total_ratio > 10.0:
+                    boost += 5.0
+
+                # C. 공격 중단 가점 (당일 공매도 비중 급감 시)
+                if curr_ratio < 3.0 and total_ratio > 8.0:
+                    boost += 5.0
+                    tags.append("공매도항복")
+
+                return round(boost, 2), ",".join(tags)
+        except: return 0.0, ""
 
     def analyze_next_leaders(self):
         if not self.conn or not self.conn.open: self.connect()
@@ -271,7 +309,11 @@ class NextLeaderEngine(AIEngine):
                 p_boost, p_tag = self.get_program_boost(code, float(curr['volume']))
                 if p_tag: reason = f"{p_tag}, {reason}"
                 
-                # E. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
+                # E. 공매도 및 숏커버링 가점 (S-Boost) [v25.0]
+                s_boost, s_tag = self.get_short_cover_boost(code, float(curr['price']))
+                if s_tag: reason = f"{s_tag}, {reason}"
+                
+                # F. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
                 intuition_bonus = 0.0
                 tag = feedback_map.get(code)
                 if tag == '성공' or tag == '매집':
@@ -287,15 +329,15 @@ class NextLeaderEngine(AIEngine):
                     intuition_bonus = -15.0
                     reason = f"✖오판주의, {reason}"
 
-                # E. 최종 합산 (실적 및 프로그램 가점 반영)
-                # [v21.6] 프로그램 매매(P-Boost)를 퀀트(Q)와 AI(L,T,X) 점수 전체에 깊게 투영
-                # 퀀트(Q) 점수에 프로그램 수급 직접 반영
-                algo_score = max(0, min(100, algo_score + p_boost))
+                # G. 최종 합산 (실적, 프로그램, 공매도 가점 반영)
+                # [v25.0] 숏커버 가점(s_boost)까지 모든 레이어에 투영
+                # 퀀트(Q) 점수에 수급 및 공매도 데이터 직접 반영
+                algo_score = max(0, min(100, algo_score + p_boost + s_boost))
 
-                # AI 모델(L, T, X) 각각의 점수에 프로그램 및 실적 가점 반영
-                lstm_f = max(0, min(100, e_data['lstm'] + f_boost + p_boost))
-                tcn_f = max(0, min(100, e_data['tcn'] + f_boost + p_boost))
-                xgb_f = max(0, min(100, e_data['xgb'] + f_boost + p_boost))
+                # AI 모델(L, T, X) 각각의 점수에 통합 가점 반영
+                lstm_f = max(0, min(100, e_data['lstm'] + f_boost + p_boost + s_boost))
+                tcn_f = max(0, min(100, e_data['tcn'] + f_boost + p_boost + s_boost))
+                xgb_f = max(0, min(100, e_data['xgb'] + f_boost + p_boost + s_boost))
                 
                 e_score = (lstm_f * w_l) + (tcn_f * w_t) + (xgb_f * w_x)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
