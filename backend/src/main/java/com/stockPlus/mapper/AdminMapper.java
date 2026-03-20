@@ -82,4 +82,7 @@ public interface AdminMapper {
     void deleteHoliday(@Param("id") int id);
 
     int checkIsHoliday(@Param("date") String date);
+
+    // [v23.5] 스마트머니 90점 돌파 종목 조회 (최근 30일)
+    List<Map<String, Object>> getSmartMoneyStocks();
 }

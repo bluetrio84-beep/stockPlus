@@ -8,6 +8,7 @@ import AdminSystemManagement from "./components/AdminSystemManagement";
 import AdminIntelligenceDashboard from "./components/AdminIntelligenceDashboard";
 import NextLeaderDashboard from "./components/NextLeaderDashboard";
 import AdminChartDashboard from "./components/AdminChartDashboard";
+import SmartMoneyDashboard from "./components/SmartMoneyDashboard";
 import AdminTheDailyMagazine from "./components/AdminTheDailyMagazine";
 import AdminFailureManagement from "./components/AdminFailureManagement";
 import MyPortfolioDashboard from "./components/MyPortfolioDashboard";
@@ -52,6 +53,7 @@ function App() {
         <Route path="/admin/intel" element={<AdminRoute><AdminIntelligenceDashboard /></AdminRoute>} />
         <Route path="/admin/next-leaders" element={<AdminRoute><NextLeaderDashboard /></AdminRoute>} />
         <Route path="/admin/chart" element={<AdminRoute><AdminChartDashboard /></AdminRoute>} />
+        <Route path="/admin/smart-money" element={<AdminRoute><SmartMoneyDashboard /></AdminRoute>} />
         <Route path="/admin/system" element={<AdminRoute><AdminSystemManagement /></AdminRoute>} />
         <Route path="/admin/failure" element={<AdminRoute><AdminFailureManagement /></AdminRoute>} />
         <Route path="/admin/magazine" element={<AdminRoute><AdminTheDailyMagazine /></AdminRoute>} />

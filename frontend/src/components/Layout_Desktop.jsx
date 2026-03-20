@@ -23,6 +23,7 @@ const LayoutDesktop = ({ logic }) => {
         navItems.push({ name: 'DAILY 매거진', path: '/admin/magazine', icon: Newspaper });
         navItems.push({ name: 'NEXT LEADERS', path: '/admin/next-leaders', icon: Award });
         navItems.push({ name: 'MARKET BUBBLE CHART', path: '/admin/chart', icon: BarChart2 });
+        navItems.push({ name: 'SMART MONEY', path: '/admin/smart-money', icon: Sparkles });
         navItems.push({ name: '데이터 수집 관리', path: '/admin', icon: Activity });
         navItems.push({ name: '장애 관리', path: '/admin/failure', icon: ShieldAlert });
         navItems.push({ name: '시스템 관리', path: '/admin/system', icon: Settings });

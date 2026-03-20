@@ -318,6 +318,12 @@ public class AdminController {
         }
     }
 
+    // [v23.5] 스마트머니 90점 돌파 종목 리스트 조회 (최근 30일)
+    @GetMapping("/intelligence/smart-money")
+    public List<Map<String, Object>> getSmartMoneyStocks() {
+        return adminMapper.getSmartMoneyStocks();
+    }
+
     // [v36.10] 시스템 장애 관제 (NOC) 데이터 조회
     @GetMapping("/system/metrics")
     public Map<String, Object> getSystemMetrics() {
