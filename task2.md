@@ -2,6 +2,17 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v37.30 Ultra-Precise Smart Money S-Score Engine (2026-03-20 완료) 🔥
+*   **초정밀 스마트머니 유입 점수(S-Score) 알고리즘 구축 (v23.0)**:
+    - **40:30:30 황금 레시피** 적용: 프로그램 매집(40), OBV 에너지(30), 거래대금 회전율(30)을 결합한 통합 지표 개발.
+    - **1점 단위 세분화**: 단순히 가점을 주는 방식에서 벗어나, 프로그램 비중 침투율 및 5일 평균 거래대금 대비 급증도(Turnover)를 연속 수치로 계산하여 97~98점과 같은 정밀 변별력 확보.
+*   **고도화된 수급 필터링 및 가점 로직**:
+    - **연속성(Continuity)**: 3일 연속 프로그램 순매수 유지 시 가산점(+10점) 부여 로직 주입.
+    - **돌파(Breakout)**: 현재 OBV가 최근 10일 최고치를 경신하는 순간을 실시간 포착하여 돌파 가점 반영.
+*   **AI 리포트 및 DB 통합**:
+    - `ai_next_leaders` 테이블에 `smart_money_score` 전용 컬럼 신설 및 데이터 영구 기록 체계 완성.
+    - `BlackBoxAnalyst` 리포트에 90점 이상 종목 대상 "압도적 매집 신호(S-Score 90%+) 돌파" 분석 코멘트 자동 생성 엔진 탑재.
+
 ## 🚀 v37.20 BlackBox AI Intelligence & Smart Money Report (2026-03-19 완료) 🔥
 *   **AI 지휘 보고(BlackBox) 스마트머니 로직 주입 (v21.8)**:
     - `BlackBoxAnalyst.py`의 `calculate_tactical_tags`를 정밀 타격하여 실시간 프로그램 매수세(`program_net_buy`) 감지 로직 추가.

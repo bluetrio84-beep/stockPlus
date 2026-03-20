@@ -118,6 +118,81 @@ class NextLeaderEngine(AIEngine):
                 return boost, ",".join(reasons)
         except: return 0.0, ""
 
+    def get_smart_money_score(self, code, price, volume, current_obv):
+        """
+        [v23.0] 스마트머니 초정밀 유입 점수 (S-Score) 산출
+        Recipe: 프로그램(40) : OBV(30) : 거래대금회전율(30)
+        """
+        try:
+            if not self.conn or not self.conn.open: self.connect()
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 1. 프로그램 순매수 (Max 40)
+                # 당일 비중 점수 (30점 만점) + 3일 연속 가점 (10점)
+                sql_pgm = """
+                    SELECT program_net_buy, captured_at 
+                    FROM stock_intraday_history 
+                    WHERE stock_code = %s AND DATE(captured_at) >= DATE_SUB(CURDATE(), INTERVAL 5 DAY)
+                    ORDER BY captured_at DESC
+                """
+                cursor.execute(sql_pgm, (code,))
+                pgm_rows = cursor.fetchall()
+                
+                p_score = 0.0
+                if pgm_rows:
+                    curr_pgm = float(pgm_rows[0]['program_net_buy'] or 0)
+                    pgm_ratio = (curr_pgm / volume) * 150 if volume > 0 else 0
+                    p_score += min(30.0, max(0, pgm_ratio))
+                    
+                    # 3일 연속 순매수 체크
+                    df_pgm = pd.DataFrame(pgm_rows)
+                    df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
+                    daily_pgm = df_pgm.groupby('date')['program_net_buy'].last().reset_index()
+                    consecutive_days = 0
+                    for val in daily_pgm.sort_values('date', ascending=False)['program_net_buy']:
+                        if val > 0: consecutive_days += 1
+                        else: break
+                    if consecutive_days >= 3: p_score += 10.0
+                    elif consecutive_days == 2: p_score += 5.0
+
+                # 2. OBV 추세 (Max 30)
+                # 상대 위치 (20점 만점) + 전고점 돌파 (10점)
+                sql_obv = "SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)"
+                cursor.execute(sql_obv, (code,))
+                o_range = cursor.fetchone()
+                
+                o_score = 0.0
+                if o_range and o_range['max_o'] is not None:
+                    max_o = float(o_range['max_o']); min_o = float(o_range['min_o'])
+                    if max_o > min_o:
+                        rel_pos = (current_obv - min_o) / (max_o - min_o) * 20
+                        o_score += min(20.0, max(0, rel_pos))
+                    
+                    # 전고점 돌파 체크 (최근 9일 최고치보다 오늘이 높으면)
+                    sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
+                    cursor.execute(sql_prev_max, (code,))
+                    p_max_row = cursor.fetchone()
+                    if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']):
+                        o_score += 10.0
+
+                # 3. 거래대금 회전율 (Max 30)
+                # 5일 평균 거래대금 대비 오늘 급증도
+                sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
+                cursor.execute(sql_avg_tr, (code,))
+                avg_tr_row = cursor.fetchone()
+                
+                t_score = 0.0
+                curr_tr = price * volume
+                if avg_tr_row and avg_tr_row['avg_tr']:
+                    avg_tr = float(avg_tr_row['avg_tr'])
+                    if avg_tr > 0:
+                        surge_ratio = curr_tr / avg_tr
+                        t_score = min(30.0, surge_ratio * 10.0) # 3배 급증 시 30점 만점
+
+                return round(p_score + o_score + t_score, 2)
+        except Exception as e:
+            print(f">>> [S-Score Error] {e}")
+            return 0.0
+
     def analyze_next_leaders(self):
         if not self.conn or not self.conn.open: self.connect()
         try:
@@ -228,12 +303,17 @@ class NextLeaderEngine(AIEngine):
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
                 if total_score >= min_threshold:
+                    # [v23.0] 스마트머니 초정밀 점수 산출 (40:30:30 레시피)
+                    s_score = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
+                    if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
+
                     results.append({
                         'code': code, 'name': curr['stock_name'],
                         'total': round(total_score, 1), 'algo': round(algo_score, 1),
                         'lstm': round(lstm_f, 1), 'tcn': round(tcn_f, 1),
                         'xgb': round(xgb_f, 1), 'ensemble': round(e_score, 1),
-                        'price_at': float(curr['price']), 'reason': reason
+                        'price_at': float(curr['price']), 'reason': reason,
+                        'smart_score': s_score
                     })
 
             top_20 = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
@@ -244,12 +324,12 @@ class NextLeaderEngine(AIEngine):
                     sql = """INSERT INTO ai_next_leaders 
                              (stock_code, stock_name, total_score, algo_score, 
                               lstm_score, tcn_score, xgb_score, ensemble_score, 
-                              reason, price_at_recom, is_top10, captured_at) 
-                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
+                              reason, price_at_recom, is_top10, smart_money_score, captured_at) 
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())"""
                     cursor.execute(sql, (
                         item['code'], item['name'], item['total'], item['algo'], 
                         item['lstm'], item['tcn'], item['xgb'], item['ensemble'], 
-                        item['reason'], item['price_at'], is_top10
+                        item['reason'], item['price_at'], is_top10, item['smart_score']
                     ))
             self.conn.commit()
             print(f">>> [Success] Hybrid AI (Quant + DeepLearning + Financial + Human) Sync Complete.")

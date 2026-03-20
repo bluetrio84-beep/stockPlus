@@ -54,6 +54,43 @@ class BlackBoxAnalyst:
             """)
             return cursor.fetchall()
 
+    def calculate_smart_money(self, code, price, volume):
+        """
+        [v23.0] 스마트머니 초정밀 유입 점수 (S-Score) - 블랙박스 리포트용
+        """
+        try:
+            with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 1. 프로그램 (40)
+                cursor.execute("SELECT program_net_buy FROM stock_intraday_history WHERE stock_code=%s AND DATE(captured_at)=CURDATE() ORDER BY id DESC LIMIT 1", (code,))
+                curr_pgm = float(cursor.fetchone()['program_net_buy'] or 0) if cursor.rowcount > 0 else 0
+                p_score = min(30.0, (curr_pgm / volume) * 150) if volume > 0 else 0
+                
+                cursor.execute("SELECT program_net_buy, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
+                days = cursor.fetchall()
+                if len(days) >= 3 and all(d['program_net_buy'] > 0 for d in days): p_score += 10.0
+
+                # 2. OBV (30)
+                cursor.execute("SELECT obv FROM stock_intraday_history WHERE stock_code=%s ORDER BY id DESC LIMIT 1", (code,))
+                curr_obv = float(cursor.fetchone()['obv'] or 0)
+                cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
+                o_rng = cursor.fetchone()
+                o_score = 0.0
+                if o_rng and o_rng['max_o'] is not None:
+                    max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
+                    if max_o > min_o: o_score += min(20.0, (curr_obv - min_o) / (max_o - min_o) * 20)
+                    
+                cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
+                p_max = cursor.fetchone()
+                if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): o_score += 10.0
+
+                # 3. 회전율 (30)
+                cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
+                avg_tr = float(cursor.fetchone()['avg_tr'] or 0)
+                t_score = min(30.0, ((price * volume) / avg_tr) * 10.0) if avg_tr > 0 else 0
+
+                return round(p_score + o_score + t_score, 2)
+        except: return 0.0
+
     def calculate_earnings_momentum(self, code):
         # [v28.7.1] 데이터 무결성 패치: 동일 report_code끼리만 비교 (착시 방지)
         result = {"status": "데이터 대기", "comment": "", "bonus": 0}
@@ -237,7 +274,9 @@ class BlackBoxAnalyst:
                         if mw['foreigner']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 외인 매집 시 가산
                         if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
 
-                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)                
+                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)
+                    # [v23.0] 스마트머니 초정밀 점수 반영
+                    data['smart_money'] = self.calculate_smart_money(clean_code, price, vol)
                 # 3. AI 적중률(Hit Rate) 조회
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()
@@ -291,11 +330,13 @@ class BlackBoxAnalyst:
                 sector_part = f"{industry} 섹터 내 주도권을 장악한 상태입니다." if "Leader" in data['sector']['status'] or "Outperformer" in data['sector']['status'] else f"{industry} 섹터 흐름에 안정적으로 동조화되었습니다."
                 tag_str = f"{', '.join(data['reason'][:2])} 시그널을 바탕으로 " if data['reason'] else ""
                 
-                # [v21.8] 프로그램 수급(스마트머니) 리포트 문구 추가
-                pgm_part = "특히 스마트머니(프로그램)의 강력한 선취매가 포착되어 수급의 질이 매우 우수하며, " if "스마트머니유입" in data['reason'] else ""
+                # [v23.0] 스마트머니(S-Score) 초정밀 분석 문구 (40:30:30 레시피 적용)
+                s_score = data.get('smart_money', 0)
+                smart_part = f"현재 스마트머니 유입 점수가 {int(s_score)}%로 임계치(90%)를 돌파하는 압도적 매집 신호가 포착되었습니다. " if s_score >= 90 else ""
+                pgm_part = "프로그램의 강력한 선취매가 감지되어 수급의 질이 매우 우수하며, " if "스마트머니유입" in data['reason'] and s_score < 90 else ""
                 
                 strategy_txt = f"[{self.strategy_config['mode']}] 모드 기반 "
-                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{pgm_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
+                interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{smart_part}{pgm_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
                 
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,
