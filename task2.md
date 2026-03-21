@@ -2,6 +2,15 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v38.00 Full-System Score Recalibration & Inflation Control (2026-03-20 완료) 🔥
+*   **AI 엔진 점수 다이어트 및 변별력 극대화 (v27.0)**:
+    - `NextLeaderEngine` 및 `BlackBoxAnalyst`의 기초 시작 점수를 기존 50.0점에서 **40.0점**으로 전격 하향 조정하여 무분별한 점수 상향 평준화(Inflation) 차단.
+    - 차트나 수급이 평범한 종목들을 하위권으로 밀어내고, 진짜 '스마트머니'와 '숏커버링' 에너지가 결집된 종목만 80~90점 위로 노출되도록 밸런싱 완료.
+*   **임계값 유지 및 퀄리티 필터링 최적화**:
+    - 기본 임계값(`min_threshold = 60`)은 유지하여 리스트의 양적 균형을 맞추되, 낮아진 기본 점수 체계와 결합하여 질적인 필터링 강도는 대폭 강화.
+*   **전 시스템 데이터 정합성 통일**:
+    - 추천 리스트(NextLeader)와 보유 종목 리포트(BlackBox)의 스코어링 기준점을 40점으로 통일하여 사용자에게 일관된 분석 지표 제공.
+
 ## 🚀 v37.90 Terminal Connection Stability & Infrastructure Tuning (2026-03-20 완료) 🔥
 *   **웹 터미널 커넥션 팅김 현상 원천 해결**:
     - **Heartbeat 매커니즘 도입**: `terminal-server.js`에 30초 단위 Ping-Pong 로직을 주입하여 WebSocket 세션 유휴 상태로 인한 강제 종료 방지.

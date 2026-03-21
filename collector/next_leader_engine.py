@@ -50,7 +50,7 @@ class NextLeaderEngine(AIEngine):
         except: return 0.0, ""
 
     def calculate_turnaround_score(self, row, prev_row):
-        score = 50.0
+        score = 40.0 # [v27.0] 50.0 -> 40.0 하향 (거품 제거)
         reasons = []
         rsi = float(row['rsi'] or 50)
         prev_rsi = float(prev_row['rsi'] or 50) if prev_row is not None else 50

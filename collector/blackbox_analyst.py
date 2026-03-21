@@ -243,7 +243,8 @@ class BlackBoxAnalyst:
         return clean
 
     def calculate_tactical_tags(self, code, curr_price, curr_vol, f_buy):
-        score, tags = 50.0 + random.uniform(-0.5, 0.5), []
+        # [v27.0] 기본 시작 점수 40.0으로 하향 (변별력 강화)
+        score, tags = 40.0 + random.uniform(-0.5, 0.5), []
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 # [v21.8] 프로그램 매수세(program_net_buy) 필드 추가 조회
@@ -269,9 +270,10 @@ class BlackBoxAnalyst:
         return round(min(100, max(0, score)), 1), tags
 
     def get_stock_data(self, stock_code, industry):
+        # [v27.0] 초기 점수 40.0으로 통일 (거품 제거)
         data = {
-            'quant': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0, 'reason': [], 'hit_rate': 70.0, 
-            'supply': {'foreign': 0}, 'whale': {'cost': 0, 'advice': ''}, 'sector': {'status': '분석중', 'score': 50, 'advice': ''}, 
+            'quant': 40.0, 'lstm': 40.0, 'tcn': 40.0, 'xgb': 40.0, 'reason': [], 'hit_rate': 70.0, 
+            'supply': {'foreign': 0}, 'whale': {'cost': 0, 'advice': ''}, 'sector': {'status': '분석중', 'score': 40, 'advice': ''}, 
             'multiWhale': {'foreigner': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}, 'institution': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}}, 
             'earnings': {'status': '분석중', 'comment': '', 'bonus': 0}
         }
