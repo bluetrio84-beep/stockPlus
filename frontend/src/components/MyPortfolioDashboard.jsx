@@ -221,7 +221,7 @@ const MyPortfolioDashboard = () => {
                                                 <span className="w-10 text-[9px] font-black text-slate-500 uppercase">{key}</span>
                                                 <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden">
                                                     <div 
-                                                        className={`h-full ${key==='lstm' ? 'bg-indigo-500' : key==='tcn' ? 'bg-rose-500' : key==='quant' ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                                                        className={`h-full ${key==='lstm' ? 'bg-indigo-500' : key==='tcn' ? 'bg-rose-500' : key==='quant' ? 'bg-amber-500' : key==='smart' ? 'bg-orange-500' : 'bg-emerald-500'}`} 
                                                         style={{width: `${val}%`}}
                                                     ></div>
                                                 </div>
@@ -340,14 +340,14 @@ const MyPortfolioDashboard = () => {
                             <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-800 hover:bg-rose-600 text-white rounded-2xl transition-all shadow-lg"><X size={28} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 custom-scrollbar text-white">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 {Object.entries(selectedInsight.radar).filter(([k]) => k !== 'interpretation').map(([key, val]) => (
                                     <div key={key} className="bg-slate-950/50 border border-slate-800 rounded-3xl p-6 flex flex-col items-center gap-4 relative group hover:border-indigo-500/30 transition-all">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{key} Energy</span>
                                         <div className="relative w-24 h-24 flex items-center justify-center">
                                             <svg className="w-full h-full transform -rotate-90">
                                                 <circle cx="50%" cy="50%" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-800" />
-                                                <circle cx="50%" cy="50%" r="40" stroke={key==='lstm' ? '#6366f1' : key==='tcn' ? '#f43f5e' : key==='quant' ? '#f59e0b' : '#10b981'} strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (val / 100 * 251)} strokeLinecap="round" className="transition-all duration-1000 shadow-2xl" />
+                                                <circle cx="50%" cy="50%" r="40" stroke={key==='lstm' ? '#6366f1' : key==='tcn' ? '#f43f5e' : key==='quant' ? '#f59e0b' : key==='smart' ? '#f97316' : '#10b981'} strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (val / 100 * 251)} strokeLinecap="round" className="transition-all duration-1000 shadow-2xl" />
                                             </svg>
                                             <span className="absolute text-xl font-black font-mono italic">{val}</span>
                                         </div>

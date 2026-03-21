@@ -131,7 +131,7 @@ const NextLeaderDashboard = () => {
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X)</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X / S)</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[150px] bg-slate-900">
                                 <div className="flex items-center gap-1">
                                     Reason
@@ -161,7 +161,8 @@ const NextLeaderDashboard = () => {
                                                 { label: 'Q', score: item.algo_score, color: 'bg-rose-500' },
                                                 { label: 'L', score: item.lstm_score, color: 'bg-indigo-500' },
                                                 { label: 'T', score: item.tcn_score, color: 'bg-pink-500' },
-                                                { label: 'X', score: item.xgb_score, color: 'bg-cyan-500' }
+                                                { label: 'X', score: item.xgb_score, color: 'bg-cyan-500' },
+                                                { label: 'S', score: item.smart_money_score, color: 'bg-orange-500' }
                                             ].map((m, i) => (
                                                 <div key={i} className="flex flex-col gap-0.5 w-10 lg:w-14">
                                                     <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>{m.label}</span><span>{(m.score || 0).toFixed(0)}</span></div>
@@ -482,7 +483,11 @@ const NextLeaderDashboard = () => {
                             </div>
                             <div className="flex gap-4">
                                 <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0 font-black text-cyan-400">X</div>
-                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">XGBoost (Statistical Verdict)</h4><p className="text-slate-400 text-xs leading-relaxed">과거 수만 개의 성공/실패 사례를 학습한 냉철한 통계학자입니다. 모든 지표를 종합하여 현재 시장에서의 '성공 확률'을 최종 판정합니다.</p></div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">XGBoost (Statistical Verdict)</h4><p className="text-slate-400 text-xs leading-relaxed">과거 수만 개의 성공/실패 사례를 학습한 냉철한 통계학자입니다. 모든 지표를 종합하여 현재 시장에서의 '성공 확률' 최종 판정.</p></div>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0 font-black text-orange-400">S</div>
+                                <div><h4 className="text-white font-bold text-sm mb-1 uppercase">Smart Money (S-Power)</h4><p className="text-slate-400 text-xs leading-relaxed">프로그램 매집 강도와 공매도 세력의 항복(숏스퀴즈) 에너지를 정밀 측정합니다. 세력이 대놓고 개입한 종목을 찾아내는 특급 엔진입니다.</p></div>
                             </div>
                         </div>
                         <div className="p-6 bg-slate-850 border-t border-slate-800">

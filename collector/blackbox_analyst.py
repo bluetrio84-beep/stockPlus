@@ -67,10 +67,10 @@ class BlackBoxAnalyst:
                 curr_pgm = float(row['program_net_buy'] or 0) if row else 0
                 p_score = min(20.0, (curr_pgm / volume) * 100 * 1.5) if volume > 0 else 0
                 
-                cursor.execute("SELECT program_net_buy, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
+                cursor.execute("SELECT SUM(program_net_buy) as daily_pgm, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
                 days = cursor.fetchall()
-                if len(days) >= 3 and all(float(d['program_net_buy'] or 0) > 0 for d in days): p_score += 10.0
-                elif len(days) >= 2 and all(float(d['program_net_buy'] or 0) > 0 for d in days[:2]): p_score += 5.0
+                if len(days) >= 3 and all(float(d['daily_pgm'] or 0) > 0 for d in days): p_score += 10.0
+                elif len(days) >= 2 and all(float(d['daily_pgm'] or 0) > 0 for d in days[:2]): p_score += 5.0
 
                 # 2. 숏스퀴즈 (20) [v32.0 하향]
                 cursor.execute("SELECT avg_short_price, total_short_ratio FROM daily_short_selling WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 1", (code,))
@@ -104,9 +104,9 @@ class BlackBoxAnalyst:
                 t_score = min(25.0, ((price * volume) / avg_tr) * 8.3) if avg_tr > 0 else 0
 
                 return round(p_score + s_score + o_score + t_score, 2)
-        except: return 0.0
-        except: return 0.0
-        except: return 0.0
+        except Exception as e:
+            print(f">>> [S-Score Error] {e}")
+            return 0.0
 
     def calculate_short_sentiment(self, code, current_price):
         """
@@ -256,18 +256,18 @@ class BlackBoxAnalyst:
                 cursor.execute("SELECT price, volume, rsi, ma5, ma20, program_net_buy FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 5", (code,))
                 history = cursor.fetchall()
                 if len(history) > 1:
-                    # [v30.0] 통합 스마트머니(S-Power) 하이브리드 판정
+                    # [v33.0] 통합 스마트머니(S-Power) 하이브리드 판정 (기준 상향)
                     curr_pgm = float(history[0]['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / curr_vol) * 100 if curr_vol > 0 else 0
                     pgm_amt = curr_price * curr_pgm
                     
-                    if pgm_ratio >= 10 or pgm_amt >= 5000000000:
+                    if pgm_ratio >= 15 or pgm_amt >= 10000000000:
                         score += 20; tags.append("🔥메가스마트머니")
-                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
+                    elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
                         score += 15; tags.append("기관수급폭발")
-                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
+                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
                         score += 10; tags.append("스마트머니유입")
-                    elif pgm_amt >= 500000000:
+                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
                         score += 5; tags.append("프로그램매수")
                     
                     if curr_vol > float(history[1]['volume'] or 1) * 1.3: score += 10; tags.append("거래량포착")
@@ -405,10 +405,16 @@ class BlackBoxAnalyst:
                 strategy_txt = f"[{self.strategy_config['mode']}] 모드 기반 "
                 interpretation = f"지휘 보고: {strategy_txt}{name} 종목은 {earnings_part}{tag_str}{rotation_part}{mw_part}{smart_part}{pgm_part}{short_part}{whale_part}{sector_part} 종합 분석 결과 기술적 에너지가 결집되며 견고한 추세를 형성 중입니다."
                 
+                # [v32.5] 태그 중복 제거 및 클린업
+                full_reason_list = [r.strip() for r in data['reason'] if r.strip()]
+                unique_reasoning = []
+                for r in full_reason_list:
+                    if r not in unique_reasoning: unique_reasoning.append(r)
+                
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,
-                    "radar": {"quant": data['quant'], "lstm": data['lstm'], "tcn": data['tcn'], "xgb": final_xgb, "interpretation": interpretation},
-                    "reasoning": data['reason'] + [f"News: {sentiment}", f"HitRate: {data['hit_rate']}%", f"Earnings: {data['earnings']['status']}"],
+                    "radar": {"quant": data['quant'], "lstm": data['lstm'], "tcn": data['tcn'], "xgb": final_xgb, "smart": data.get('smart_money', 0), "interpretation": interpretation},
+                    "reasoning": unique_reasoning + [f"News: {sentiment}", f"HitRate: {data['hit_rate']}%", f"Earnings: {data['earnings']['status']}"],
                     "hitRate": data['hit_rate'], "scenario": f"분석 결과, 향후 3거래일 내 수급 폭발 확률 {int(final_xgb*1.1)}%로 산출됨.",
                     "deep": { "news": news_list[:6], "supply": data['supply'], "whale": data['whale'], "sector": data['sector'], "multiWhale": data['multiWhale'], "earnings": data['earnings'] }
                 }

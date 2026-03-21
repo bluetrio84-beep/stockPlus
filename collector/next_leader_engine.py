@@ -99,14 +99,14 @@ class NextLeaderEngine(AIEngine):
                 pgm_ratio = (curr_net / total_volume) * 100 if total_volume > 0 else 0
                 pgm_amt = curr_net * current_price
                 
-                # [v30.0] 하이브리드 판정 로직 (Ratio OR Amount)
-                if pgm_ratio >= 10 or pgm_amt >= 5000000000:
+                # [v33.0] 통합 스마트머니(S-Power) 하이브리드 판정 (기준 상향 및 변별력 강화)
+                if pgm_ratio >= 15 or pgm_amt >= 10000000000:
                     boost += 20.0; reasons.append("🔥메가스마트머니")
-                elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
+                elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
                     boost += 15.0; reasons.append("기관수급폭발")
-                elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
+                elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
                     boost += 10.0; reasons.append("스마트머니유입")
-                elif pgm_amt >= 500000000:
+                elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
                     boost += 5.0; reasons.append("프로그램매수")
 
                 # 전회차 대비 순매수 강화 여부 (보너스)
@@ -141,7 +141,7 @@ class NextLeaderEngine(AIEngine):
                     
                     df_pgm = pd.DataFrame(pgm_rows)
                     df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
-                    daily_pgm = df_pgm.groupby('date')['program_net_buy'].last().reset_index()
+                    daily_pgm = df_pgm.groupby('date')['program_net_buy'].sum().reset_index() # sum()으로 집계
                     consecutive_days = 0
                     for val in daily_pgm.sort_values('date', ascending=False)['program_net_buy']:
                         if val > 0: consecutive_days += 1
@@ -315,7 +315,7 @@ class NextLeaderEngine(AIEngine):
                 intuition_bonus = 0.0
                 tag = feedback_map.get(code)
                 if tag == '성공' or tag == '매집':
-                    intuition_bonus = 5.0
+                    intuition_bonus = 1.0  # [v36.0] 5.0 -> 1.0 하향 (상징적 점수만 유지)
                     reason = f"★직관강화, {reason}"
                 elif tag == '시황':
                     intuition_bonus = 0.0 # 시황은 중립
@@ -342,17 +342,41 @@ class NextLeaderEngine(AIEngine):
                 # 최종 합산 및 직관 보너스 적용
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
+                # [v35.0] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터
+                # RSI가 높아질수록 삭감 폭을 세밀하게 조정하여 랭킹 변별력 극대화
+                rsi = float(curr['rsi'] or 50)
+                if rsi >= 75:
+                    total_score *= 0.7  # 심각과열: -30%
+                    reason = f"⚠️심각과열, {reason}"
+                elif rsi >= 65:
+                    total_score *= 0.85 # 고점경계: -15%
+                    reason = f"⚠️고점경계, {reason}"
+                elif rsi >= 60:
+                    total_score *= 0.92 # 주의국면: -8% (사용자 제안)
+                    reason = f"⚠️추세주의, {reason}"
+                elif rsi >= 55:
+                    total_score *= 0.95 # 과열시작: -5%
+                    reason = f"⚠️과열진입, {reason}"
+                # RSI 55 미만은 '완벽한 바닥 탈출' 구간으로 간주하여 점수 100% 보존
+
                 if total_score >= min_threshold:
                     # [v23.0] 스마트머니 초정밀 점수 산출 (40:30:30 레시피)
                     s_score = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
                     if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
+
+                    # [v32.5] 태그 중복 제거 및 클린업 (모든 사유 노출)
+                    reason_list = [r.strip() for r in reason.split(',') if r.strip()]
+                    unique_reasons = []
+                    for r in reason_list:
+                        if r not in unique_reasons: unique_reasons.append(r)
+                    final_reason = ", ".join(unique_reasons) # 제한 없이 전체 노출
 
                     results.append({
                         'code': code, 'name': curr['stock_name'],
                         'total': round(total_score, 1), 'algo': round(algo_score, 1),
                         'lstm': round(lstm_f, 1), 'tcn': round(tcn_f, 1),
                         'xgb': round(xgb_f, 1), 'ensemble': round(e_score, 1),
-                        'price_at': float(curr['price']), 'reason': reason,
+                        'price_at': float(curr['price']), 'reason': final_reason,
                         'smart_score': s_score
                     })
 
