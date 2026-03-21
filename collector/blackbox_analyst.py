@@ -56,50 +56,55 @@ class BlackBoxAnalyst:
 
     def calculate_smart_money(self, code, price, volume):
         """
-        [v26.0] 스마트머니 초정밀 유입 점수 (S-Score) 얼티밋 에디션
+        [v32.0] 스마트머니 초정밀 유입 점수 (S-Score) 에너지 집중 튜닝
+        Recipe: 프로그램(30) : 숏스퀴즈(20) : OBV(25) : 회전율(25)
         """
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 # 1. 프로그램 (30)
                 cursor.execute("SELECT program_net_buy FROM stock_intraday_history WHERE stock_code=%s AND DATE(captured_at)=CURDATE() ORDER BY id DESC LIMIT 1", (code,))
-                curr_pgm = float(cursor.fetchone()['program_net_buy'] or 0) if cursor.rowcount > 0 else 0
-                p_score = min(20.0, (curr_pgm / volume) * 100) if volume > 0 else 0
+                row = cursor.fetchone()
+                curr_pgm = float(row['program_net_buy'] or 0) if row else 0
+                p_score = min(20.0, (curr_pgm / volume) * 100 * 1.5) if volume > 0 else 0
                 
                 cursor.execute("SELECT program_net_buy, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
                 days = cursor.fetchall()
-                if len(days) >= 3 and all(d['program_net_buy'] > 0 for d in days): p_score += 10.0
+                if len(days) >= 3 and all(float(d['program_net_buy'] or 0) > 0 for d in days): p_score += 10.0
+                elif len(days) >= 2 and all(float(d['program_net_buy'] or 0) > 0 for d in days[:2]): p_score += 5.0
 
-                # 2. 숏스퀴즈 (30) [v26.0 NEW]
+                # 2. 숏스퀴즈 (20) [v32.0 하향]
                 cursor.execute("SELECT avg_short_price, total_short_ratio FROM daily_short_selling WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 1", (code,))
                 sd = cursor.fetchone()
                 s_score = 0.0
                 if sd and sd['avg_short_price']:
                     avg_p = float(sd['avg_short_price'])
                     if price > avg_p:
-                        s_score += min(20.0, ((price - avg_p) / avg_p) * 200) # 10% 돌파 시 20점
-                    if float(sd['total_short_ratio'] or 0) > 10.0: s_score += 10.0 # 고농축 가점
+                        s_score += min(15.0, ((price - avg_p) / avg_p) * 150) # 10% 돌파 시 15점
+                    if float(sd['total_short_ratio'] or 0) > 10.0: s_score += 5.0 # 고농축 가점 조정
 
-                # 3. OBV (20)
+                # 3. OBV (25) [v31.0 유지]
                 cursor.execute("SELECT obv FROM stock_intraday_history WHERE stock_code=%s ORDER BY id DESC LIMIT 1", (code,))
-                curr_obv = float(cursor.fetchone()['obv'] or 0) if cursor.rowcount > 0 else 0
+                o_row = cursor.fetchone()
+                curr_obv = float(o_row['obv'] or 0) if o_row else 0
                 cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
                 o_rng = cursor.fetchone()
                 o_score = 0.0
                 if o_rng and o_rng['max_o'] is not None:
                     max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
-                    if max_o > min_o: o_score += min(15.0, (curr_obv - min_o) / (max_o - min_o) * 15)
+                    if max_o > min_o: o_score += min(20.0, (curr_obv - min_o) / (max_o - min_o) * 20)
                     
                 cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
                 p_max = cursor.fetchone()
                 if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): o_score += 5.0
 
-                # 4. 회전율 (20)
+                # 4. 회전율 (25) [v32.0 상향]
                 cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
                 avg_tr_row = cursor.fetchone()
                 avg_tr = float(avg_tr_row['avg_tr'] or 0) if avg_tr_row else 0
-                t_score = min(20.0, ((price * volume) / avg_tr) * 6.6) if avg_tr > 0 else 0
+                t_score = min(25.0, ((price * volume) / avg_tr) * 8.3) if avg_tr > 0 else 0
 
                 return round(p_score + s_score + o_score + t_score, 2)
+        except: return 0.0
         except: return 0.0
         except: return 0.0
 
@@ -251,11 +256,18 @@ class BlackBoxAnalyst:
                 cursor.execute("SELECT price, volume, rsi, ma5, ma20, program_net_buy FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 5", (code,))
                 history = cursor.fetchall()
                 if len(history) > 1:
-                    # 스마트머니(프로그램) 유입 포착
+                    # [v30.0] 통합 스마트머니(S-Power) 하이브리드 판정
                     curr_pgm = float(history[0]['program_net_buy'] or 0)
-                    if curr_pgm > 10000: # 1만 주 이상 프로그램 순매수 시 강력 가점
-                        score += 12; tags.append("스마트머니유입")
-                    elif curr_pgm > 0:
+                    pgm_ratio = (curr_pgm / curr_vol) * 100 if curr_vol > 0 else 0
+                    pgm_amt = curr_price * curr_pgm
+                    
+                    if pgm_ratio >= 10 or pgm_amt >= 5000000000:
+                        score += 20; tags.append("🔥메가스마트머니")
+                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
+                        score += 15; tags.append("기관수급폭발")
+                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
+                        score += 10; tags.append("스마트머니유입")
+                    elif pgm_amt >= 500000000:
                         score += 5; tags.append("프로그램매수")
                     
                     if curr_vol > float(history[1]['volume'] or 1) * 1.3: score += 10; tags.append("거래량포착")

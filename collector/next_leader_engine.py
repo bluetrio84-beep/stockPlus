@@ -75,10 +75,10 @@ class NextLeaderEngine(AIEngine):
             reasons.append("거래량폭발")
         return min(100, score), ", ".join(reasons)
 
-    def get_program_boost(self, stock_code, total_volume):
+    def get_program_boost(self, stock_code, total_volume, current_price):
         """
-        [v21.7] 스마트머니(프로그램) 유입 강도 분석
-        전체 거래량 대비 프로그램 순매수 비중을 계산하여 Q 점수에 강력 반영
+        [v30.0] 통합 스마트머니(S-Power) 분석
+        비중(Ratio) OR 절대금액(Amount) 중 하나만 충족해도 세력급 수급으로 인정
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
@@ -96,32 +96,30 @@ class NextLeaderEngine(AIEngine):
                 boost = 0.0
                 reasons = []
                 curr_net = int(rows[0]['program_net_buy'] or 0)
+                pgm_ratio = (curr_net / total_volume) * 100 if total_volume > 0 else 0
+                pgm_amt = curr_net * current_price
                 
-                # 1. 프로그램 순매수 비중 계산 (스마트머니 강도)
-                if total_volume > 0:
-                    pgm_ratio = (curr_net / total_volume) * 100
-                    if pgm_ratio > 10: # 10% 돌파 (압도적 스마트머니)
-                        boost += 15.0
-                        reasons.append("스마트머니폭발")
-                    elif pgm_ratio > 5: # 5% 돌파 (강력 유입)
-                        boost += 8.0
-                        reasons.append("스마트머니유입")
-                    elif pgm_ratio > 2: # 2% 돌파 (의미있는 수급)
-                        boost += 4.0
-                        reasons.append("수급개선")
+                # [v30.0] 하이브리드 판정 로직 (Ratio OR Amount)
+                if pgm_ratio >= 10 or pgm_amt >= 5000000000:
+                    boost += 20.0; reasons.append("🔥메가스마트머니")
+                elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
+                    boost += 15.0; reasons.append("기관수급폭발")
+                elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
+                    boost += 10.0; reasons.append("스마트머니유입")
+                elif pgm_amt >= 500000000:
+                    boost += 5.0; reasons.append("프로그램매수")
 
-                # 2. 전회차 대비 순매수 강화 여부
+                # 전회차 대비 순매수 강화 여부 (보너스)
                 if len(rows) > 1 and curr_net > int(rows[1]['program_net_buy'] or 0):
-                    boost += 3.0
-                    reasons.append("수급강화")
+                    boost += 3.0; reasons.append("수급강화")
                 
                 return boost, ",".join(reasons)
         except: return 0.0, ""
 
     def get_smart_money_score(self, code, price, volume, current_obv):
         """
-        [v26.0] 스마트머니 초정밀 유입 점수 (S-Score) 얼티밋 에디션
-        Recipe: 프로그램(30) : 숏스퀴즈(30) : OBV(20) : 회전율(20)
+        [v32.0] 스마트머니 초정밀 유입 점수 (S-Score) 에너지 집중 튜닝
+        Recipe: 프로그램(30) : 숏스퀴즈(20) : OBV(25) : 회전율(25)
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
@@ -151,32 +149,32 @@ class NextLeaderEngine(AIEngine):
                     if consecutive_days >= 3: p_score += 10.0
                     elif consecutive_days == 2: p_score += 5.0
 
-                # 2. 숏스퀴즈 및 공매도 (Max 30) [v26.0 NEW]
+                # 2. 숏스퀴즈 및 공매도 (Max 20) [v32.0 하향]
                 s_boost, _ = self.get_short_cover_boost(code, price)
-                s_score = min(30.0, s_boost)
+                s_score = min(20.0, s_boost)
 
-                # 3. OBV 추세 (Max 20)
+                # 3. OBV 추세 (Max 25)
                 sql_obv = "SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)"
                 cursor.execute(sql_obv, (code,))
                 o_range = cursor.fetchone()
                 o_score = 0.0
                 if o_range and o_range['max_o'] is not None:
                     max_o, min_o = float(o_range['max_o']), float(o_range['min_o'])
-                    if max_o > min_o: o_score += min(15.0, (current_obv - min_o) / (max_o - min_o) * 15)
+                    if max_o > min_o: o_score += min(20.0, (current_obv - min_o) / (max_o - min_o) * 20)
                     
                     sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
                     cursor.execute(sql_prev_max, (code,))
                     p_max_row = cursor.fetchone()
                     if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']): o_score += 5.0
 
-                # 4. 거래대금 회전율 (Max 20)
+                # 4. 거래대금 회전율 (Max 25) [v32.0 상향]
                 sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
                 cursor.execute(sql_avg_tr, (code,))
                 avg_tr_row = cursor.fetchone()
                 t_score = 0.0
                 if avg_tr_row and avg_tr_row['avg_tr']:
                     surge = (price * volume) / float(avg_tr_row['avg_tr'])
-                    t_score = min(20.0, surge * 6.6) # 3배 급증 시 20점 만점
+                    t_score = min(25.0, surge * 8.3) # 3배 급증 시 25점 만점
 
                 return round(p_score + s_score + o_score + t_score, 2)
         except Exception as e:
@@ -306,7 +304,7 @@ class NextLeaderEngine(AIEngine):
                 if f_tag: reason = f"{f_tag}, {reason}"
                 
                 # D. 프로그램 매매 가점 (P-Boost) [v21.0]
-                p_boost, p_tag = self.get_program_boost(code, float(curr['volume']))
+                p_boost, p_tag = self.get_program_boost(code, float(curr['volume']), float(curr['price']))
                 if p_tag: reason = f"{p_tag}, {reason}"
                 
                 # E. 공매도 및 숏커버링 가점 (S-Boost) [v25.0]
