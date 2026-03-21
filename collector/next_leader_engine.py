@@ -158,6 +158,7 @@ class NextLeaderEngine(AIEngine):
                 cursor.execute(sql_obv, (code,))
                 o_range = cursor.fetchone()
                 o_score = 0.0
+                obv_tag = "" 
                 if o_range and o_range['max_o'] is not None:
                     max_o, min_o = float(o_range['max_o']), float(o_range['min_o'])
                     if max_o > min_o: o_score += min(20.0, (current_obv - min_o) / (max_o - min_o) * 20)
@@ -165,9 +166,11 @@ class NextLeaderEngine(AIEngine):
                     sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
                     cursor.execute(sql_prev_max, (code,))
                     p_max_row = cursor.fetchone()
-                    if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']): o_score += 5.0
+                    if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']): 
+                        o_score += 5.0
+                        obv_tag = "💎OBV매집포착"
 
-                # 4. 거래대금 회전율 (Max 25) [v32.0 상향]
+                # 4. 거래대금 회전율 (Max 25) [v32.0 상향 - 복구 완료]
                 sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
                 cursor.execute(sql_avg_tr, (code,))
                 avg_tr_row = cursor.fetchone()
@@ -176,13 +179,10 @@ class NextLeaderEngine(AIEngine):
                     surge = (price * volume) / float(avg_tr_row['avg_tr'])
                     t_score = min(25.0, surge * 8.3) # 3배 급증 시 25점 만점
 
-                return round(p_score + s_score + o_score + t_score, 2)
+                return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:
             print(f">>> [Ultimate S-Score Error] {e}")
-            return 0.0
-        except Exception as e:
-            print(f">>> [S-Score Error] {e}")
-            return 0.0
+            return 0.0, ""
 
     def get_short_cover_boost(self, code, current_price):
         """
@@ -361,8 +361,9 @@ class NextLeaderEngine(AIEngine):
 
                 if total_score >= min_threshold:
                     # [v23.0] 스마트머니 초정밀 점수 산출 (40:30:30 레시피)
-                    s_score = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
+                    s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
                     if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
+                    if obv_tag: reason = f"{obv_tag}, {reason}"
 
                     # [v32.5] 태그 중복 제거 및 클린업 (모든 사유 노출)
                     reason_list = [r.strip() for r in reason.split(',') if r.strip()]

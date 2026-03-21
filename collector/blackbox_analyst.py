@@ -82,31 +82,34 @@ class BlackBoxAnalyst:
                         s_score += min(15.0, ((price - avg_p) / avg_p) * 150) # 10% 돌파 시 15점
                     if float(sd['total_short_ratio'] or 0) > 10.0: s_score += 5.0 # 고농축 가점 조정
 
-                # 3. OBV (25) [v31.0 유지]
+                # 3. OBV (25)
                 cursor.execute("SELECT obv FROM stock_intraday_history WHERE stock_code=%s ORDER BY id DESC LIMIT 1", (code,))
                 o_row = cursor.fetchone()
                 curr_obv = float(o_row['obv'] or 0) if o_row else 0
                 cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
                 o_rng = cursor.fetchone()
                 o_score = 0.0
+                obv_tag = "" # [v37.0] 태그 신설
                 if o_rng and o_rng['max_o'] is not None:
                     max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
                     if max_o > min_o: o_score += min(20.0, (curr_obv - min_o) / (max_o - min_o) * 20)
                     
                 cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
                 p_max = cursor.fetchone()
-                if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): o_score += 5.0
+                if p_max and p_max['p_max'] and curr_obv > float(p_max['p_max']): 
+                    o_score += 5.0
+                    obv_tag = "💎OBV매집포착"
 
-                # 4. 회전율 (25) [v32.0 상향]
+                # 4. 회전율 (25)
                 cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
                 avg_tr_row = cursor.fetchone()
                 avg_tr = float(avg_tr_row['avg_tr'] or 0) if avg_tr_row else 0
                 t_score = min(25.0, ((price * volume) / avg_tr) * 8.3) if avg_tr > 0 else 0
 
-                return round(p_score + s_score + o_score + t_score, 2)
+                return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:
             print(f">>> [S-Score Error] {e}")
-            return 0.0
+            return 0.0, ""
 
     def calculate_short_sentiment(self, code, current_price):
         """
@@ -334,13 +337,17 @@ class BlackBoxAnalyst:
                         if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
 
                     data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)
-                    # [v23.0] 스마트머니 초정밀 점수 반영
-                    data['smart_money'] = self.calculate_smart_money(clean_code, price, vol)
+                    
+                    # [v23.0] 스마트머니 초정밀 점수 반영 (OBV 태그 포함)
+                    s_score, obv_tag = self.calculate_smart_money(clean_code, price, vol)
+                    data['smart_money'] = s_score
+                    if obv_tag: data['reason'].append(obv_tag)
                     
                     # [v25.0] 공매도 및 숏커버링 심리 분석
                     short_data = self.calculate_short_sentiment(clean_code, price)
                     data['short_sentiment'] = short_data
                     data['xgb'] = round(max(0, min(100, data['xgb'] + short_data['bonus'])), 1)
+                
                 # 3. AI 적중률(Hit Rate) 조회
                 cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
                 hr_row = cursor.fetchone()

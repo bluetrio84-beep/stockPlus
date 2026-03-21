@@ -371,19 +371,23 @@ const NextLeaderDashboard = () => {
                 </div>
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar-thin pr-2">
                     <section>
-                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">📊 기술적 분석 (퀀트)</h4>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">📊 기술적 분석 (퀀트 & 국면)</h4>
                         <div className="grid grid-cols-1 gap-2">
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-                                <span className="text-xs font-bold text-white">RSI바닥탈출</span>
-                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35 이하 침체권에서 반등 신호 포착</span>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/30 flex justify-between items-center shadow-lg shadow-emerald-500/5">
+                                <span className="text-xs font-bold text-emerald-400">RSI바닥탈출</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35 이하 침체권에서 반등 시작 (가산점 +20)</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-                                <span className="text-xs font-bold text-white">과매도진입</span>
-                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 30 이하 역사적 저점 도달</span>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-blue-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-blue-400">과매도진입</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 30 이하 역사적 저점 도달 (가산점 +10)</span>
                             </div>
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">이평선수렴</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">5일/20일선 간격 2% 이내 밀착 (에너지 응축)</span>
+                            </div>
+                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                                <span className="text-xs font-bold text-white">추세안정</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35~55 구간의 건강한 상승 초입</span>
                             </div>
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">골든크로스</span>
@@ -392,6 +396,44 @@ const NextLeaderDashboard = () => {
                             <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">거래량폭발</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">직전 대비 거래량 2.5배 이상 급증</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2 px-1">🔥 스마트머니 (수급 등급)</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-orange-400">🔥메가스마트머니</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">100억 유입 또는 비중 15% 돌파 (S급)</span>
+                            </div>
+                            <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-orange-400">기관수급폭발</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">50억 유입 또는 비중 10% 돌파 (A급)</span>
+                            </div>
+                            <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-orange-400">스마트머니유입</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">20억 유입 또는 비중 5% 돌파 (B급)</span>
+                            </div>
+                            <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-orange-400">수급강화</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">전일 대비 프로그램 순매수세가 강화된 국면</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-cyan-500 uppercase tracking-widest mb-2 px-1">⚔️ 공매도 & 숏스퀴즈</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-cyan-400">숏스퀴즈임박</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">현재가가 공매도 평단가 상향 돌파</span>
+                            </div>
+                            <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-cyan-400">공매도항복</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">공매도 공격 중단 및 숏커버링 감지</span>
+                            </div>
+                            <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-cyan-400">고농축공매도</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">누적 공매도 비중 10% 이상의 폭발 대기주</span>
                             </div>
                         </div>
                     </section>
