@@ -56,43 +56,48 @@ class BlackBoxAnalyst:
 
     def calculate_smart_money(self, code, price, volume):
         """
-        [v32.0] 스마트머니 초정밀 유입 점수 (S-Score) 에너지 집중 튜닝
-        Recipe: 프로그램(30) : 숏스퀴즈(20) : OBV(25) : 회전율(25)
+        [v39.0] 지능형 스마트머니 S-Score (Adaptive Scoring)
+        공매도 미대상 종목은 4:3:3 (40:30:30) 레시피로 자동 전환
         """
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 프로그램 (30)
+                # 0. 공매도 데이터 존재 여부 확인
+                cursor.execute("SELECT avg_short_price FROM daily_short_selling WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 1", (code,))
+                sd_row = cursor.fetchone()
+                has_short = True if sd_row and float(sd_row['avg_short_price'] or 0) > 0 else False
+
+                # 1. 프로그램 (35 or 40)
                 cursor.execute("SELECT program_net_buy FROM stock_intraday_history WHERE stock_code=%s AND DATE(captured_at)=CURDATE() ORDER BY id DESC LIMIT 1", (code,))
                 row = cursor.fetchone()
                 curr_pgm = float(row['program_net_buy'] or 0) if row else 0
-                p_score = min(20.0, (curr_pgm / volume) * 100 * 1.5) if volume > 0 else 0
+                p_limit = 25.0 if has_short else 30.0
+                p_score = min(p_limit, (curr_pgm / volume) * 100 * 1.8) if volume > 0 else 0
                 
                 cursor.execute("SELECT SUM(program_net_buy) as daily_pgm, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
                 days = cursor.fetchall()
                 if len(days) >= 3 and all(float(d['daily_pgm'] or 0) > 0 for d in days): p_score += 10.0
                 elif len(days) >= 2 and all(float(d['daily_pgm'] or 0) > 0 for d in days[:2]): p_score += 5.0
 
-                # 2. 숏스퀴즈 (20) [v32.0 하향]
-                cursor.execute("SELECT avg_short_price, total_short_ratio FROM daily_short_selling WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 1", (code,))
-                sd = cursor.fetchone()
+                # 2. 숏스퀴즈 (15 or 0)
                 s_score = 0.0
-                if sd and sd['avg_short_price']:
-                    avg_p = float(sd['avg_short_price'])
+                if has_short:
+                    avg_p = float(sd_row['avg_short_price'])
                     if price > avg_p:
-                        s_score += min(15.0, ((price - avg_p) / avg_p) * 150) # 10% 돌파 시 15점
-                    if float(sd['total_short_ratio'] or 0) > 10.0: s_score += 5.0 # 고농축 가점 조정
+                        s_score += min(10.0, ((price - avg_p) / avg_p) * 100)
+                    s_score += 5.0 # 고농축 베이스 가점
 
-                # 3. OBV (25)
+                # 3. OBV (25 or 30)
                 cursor.execute("SELECT obv FROM stock_intraday_history WHERE stock_code=%s ORDER BY id DESC LIMIT 1", (code,))
                 o_row = cursor.fetchone()
                 curr_obv = float(o_row['obv'] or 0) if o_row else 0
                 cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
                 o_rng = cursor.fetchone()
                 o_score = 0.0
-                obv_tag = "" # [v37.0] 태그 신설
+                obv_tag = "" 
                 if o_rng and o_rng['max_o'] is not None:
                     max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
-                    if max_o > min_o: o_score += min(20.0, (curr_obv - min_o) / (max_o - min_o) * 20)
+                    o_limit = 20.0 if has_short else 25.0
+                    if max_o > min_o: o_score += min(o_limit, (curr_obv - min_o) / (max_o - min_o) * o_limit)
                     
                 cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
                 p_max = cursor.fetchone()
@@ -100,11 +105,12 @@ class BlackBoxAnalyst:
                     o_score += 5.0
                     obv_tag = "💎OBV매집포착"
 
-                # 4. 회전율 (25)
+                # 4. 회전율 (25 or 30)
                 cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
                 avg_tr_row = cursor.fetchone()
                 avg_tr = float(avg_tr_row['avg_tr'] or 0) if avg_tr_row else 0
-                t_score = min(25.0, ((price * volume) / avg_tr) * 8.3) if avg_tr > 0 else 0
+                t_limit = 25.0 if has_short else 30.0
+                t_score = min(t_limit, ((price * volume) / avg_tr) * (t_limit / 3)) if avg_tr > 0 else 0
 
                 return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:

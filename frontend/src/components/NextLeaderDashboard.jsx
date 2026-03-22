@@ -132,13 +132,13 @@ const NextLeaderDashboard = () => {
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
                             <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X / S)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest min-w-[150px] bg-slate-900">
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 min-w-[380px] lg:min-w-[550px]">
                                 <div className="flex items-center gap-1">
                                     Reason
                                     <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
                                 </div>
                             </th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900 min-w-[250px]">
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900 min-w-[250px] lg:min-w-[280px]">
                                 <div className="flex items-center justify-center gap-1.5">
                                     AI Feedback (Review)
                                     <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={14} /></button>
@@ -171,7 +171,7 @@ const NextLeaderDashboard = () => {
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 min-w-[380px] lg:min-w-[550px]">
                                         <div className="flex flex-wrap gap-1">
                                             {item.reason.split(',').map((r, i) => {
                                                 const txt = r.trim();
@@ -195,13 +195,13 @@ const NextLeaderDashboard = () => {
                                             })}
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 min-w-[250px] lg:min-w-[280px]">
                                         <div className="flex items-center justify-center gap-1">
-                                            <button onClick={() => handleFeedback(item.stock_code, '성공')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '성공' ? "bg-emerald-600 text-white border-emerald-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-emerald-400")}><ThumbsUp size={10} /> 성공</button>
-                                            <button onClick={() => handleFeedback(item.stock_code, '매집')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '매집' ? "bg-indigo-600 text-white border-indigo-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-indigo-400")}><Package size={10} /> 매집</button>
-                                            <button onClick={() => handleFeedback(item.stock_code, '실패')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '실패' ? "bg-rose-600 text-white border-rose-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-rose-400")}><ThumbsDown size={10} /> 실패</button>
-                                            <button onClick={() => handleFeedback(item.stock_code, '노이즈')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '노이즈' ? "bg-slate-600 text-white border-slate-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-slate-300")}><Ghost size={10} /> 노이즈</button>
-                                            <button onClick={() => handleFeedback(item.stock_code, '시황')} className={classNames("px-2 py-1 rounded-lg text-[9px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '시황' ? "bg-amber-600 text-white border-amber-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-amber-400")}><CloudRain size={10} /> 시황</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '성공')} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '성공' ? "bg-emerald-600 text-white border-emerald-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-emerald-400")}><ThumbsUp size={8} /> 성공</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '매집')} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '매집' ? "bg-indigo-600 text-white border-indigo-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-indigo-400")}><Package size={8} /> 매집</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '실패')} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '실패' ? "bg-rose-600 text-white border-rose-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-rose-400")}><ThumbsDown size={8} /> 실패</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '노이즈')} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '노이즈' ? "bg-slate-600 text-white border-slate-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-slate-300")}><Ghost size={8} /> 노이즈</button>
+                                            <button onClick={() => handleFeedback(item.stock_code, '시황')} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", item.feedback_tag === '시황' ? "bg-amber-600 text-white border-amber-500 shadow-lg" : "bg-slate-800 text-slate-500 border-slate-700 hover:text-amber-400")}><CloudRain size={8} /> 시황</button>
                                         </div>
                                     </td>
                                 </tr>

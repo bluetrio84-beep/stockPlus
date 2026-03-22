@@ -118,13 +118,19 @@ class NextLeaderEngine(AIEngine):
 
     def get_smart_money_score(self, code, price, volume, current_obv):
         """
-        [v32.0] 스마트머니 초정밀 유입 점수 (S-Score) 에너지 집중 튜닝
-        Recipe: 프로그램(30) : 숏스퀴즈(20) : OBV(25) : 회전율(25)
+        [v39.0] 지능형 스마트머니 S-Score (Adaptive Scoring)
+        공매도 미대상 종목은 4:3:3 (40:30:30) 레시피로 자동 전환
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 프로그램 순매수 (Max 30)
+                # 0. 공매도 데이터 존재 여부 확인
+                sql_sd = "SELECT avg_short_price FROM daily_short_selling WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 1"
+                cursor.execute(sql_sd, (code,))
+                sd_row = cursor.fetchone()
+                has_short = True if sd_row and float(sd_row['avg_short_price'] or 0) > 0 else False
+
+                # 1. 프로그램 순매수 (Max 35 or 40)
                 sql_pgm = """
                     SELECT program_net_buy, captured_at 
                     FROM stock_intraday_history 
@@ -134,14 +140,17 @@ class NextLeaderEngine(AIEngine):
                 cursor.execute(sql_pgm, (code,))
                 pgm_rows = cursor.fetchall()
                 p_score = 0.0
+                p_max_base = 30.0 if has_short else 30.0 # 기본 30점 베이스 유지
                 if pgm_rows:
                     curr_pgm = float(pgm_rows[0]['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / volume) * 100 if volume > 0 else 0
-                    p_score += min(20.0, pgm_ratio * 1.5) # 15% 이상 시 20점
+                    # 공매도 없으면 비중 점수 만점을 30점으로 상향 (총 40점 만점)
+                    p_limit = 25.0 if has_short else 30.0
+                    p_score += min(p_limit, pgm_ratio * 1.8)
                     
                     df_pgm = pd.DataFrame(pgm_rows)
                     df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
-                    daily_pgm = df_pgm.groupby('date')['program_net_buy'].sum().reset_index() # sum()으로 집계
+                    daily_pgm = df_pgm.groupby('date')['program_net_buy'].sum().reset_index()
                     consecutive_days = 0
                     for val in daily_pgm.sort_values('date', ascending=False)['program_net_buy']:
                         if val > 0: consecutive_days += 1
@@ -149,11 +158,13 @@ class NextLeaderEngine(AIEngine):
                     if consecutive_days >= 3: p_score += 10.0
                     elif consecutive_days == 2: p_score += 5.0
 
-                # 2. 숏스퀴즈 및 공매도 (Max 20) [v32.0 하향]
-                s_boost, _ = self.get_short_cover_boost(code, price)
-                s_score = min(20.0, s_boost)
+                # 2. 숏스퀴즈 및 공매도 (Max 15 or 0)
+                s_score = 0.0
+                if has_short:
+                    s_boost, _ = self.get_short_cover_boost(code, price)
+                    s_score = min(15.0, s_boost)
 
-                # 3. OBV 추세 (Max 25)
+                # 3. OBV 추세 (Max 25 or 30)
                 sql_obv = "SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)"
                 cursor.execute(sql_obv, (code,))
                 o_range = cursor.fetchone()
@@ -161,7 +172,8 @@ class NextLeaderEngine(AIEngine):
                 obv_tag = "" 
                 if o_range and o_range['max_o'] is not None:
                     max_o, min_o = float(o_range['max_o']), float(o_range['min_o'])
-                    if max_o > min_o: o_score += min(20.0, (current_obv - min_o) / (max_o - min_o) * 20)
+                    o_limit = 20.0 if has_short else 25.0 # 공매도 없으면 5점 상향
+                    if max_o > min_o: o_score += min(o_limit, (current_obv - min_o) / (max_o - min_o) * o_limit)
                     
                     sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
                     cursor.execute(sql_prev_max, (code,))
@@ -170,14 +182,15 @@ class NextLeaderEngine(AIEngine):
                         o_score += 5.0
                         obv_tag = "💎OBV매집포착"
 
-                # 4. 거래대금 회전율 (Max 25) [v32.0 상향 - 복구 완료]
+                # 4. 거래대금 회전율 (Max 25 or 30)
                 sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
                 cursor.execute(sql_avg_tr, (code,))
                 avg_tr_row = cursor.fetchone()
                 t_score = 0.0
                 if avg_tr_row and avg_tr_row['avg_tr']:
                     surge = (price * volume) / float(avg_tr_row['avg_tr'])
-                    t_score = min(25.0, surge * 8.3) # 3배 급증 시 25점 만점
+                    t_limit = 25.0 if has_short else 30.0 # 공매도 없으면 5점 상향
+                    t_score = min(t_limit, surge * (t_limit / 3)) # 3배 급증 시 만점
 
                 return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:
