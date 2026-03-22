@@ -105,12 +105,26 @@ class BlackBoxAnalyst:
                     o_score += 5.0
                     obv_tag = "💎OBV매집포착"
 
-                # 4. 회전율 (25 or 30)
-                cursor.execute("SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code=%s ORDER BY bsop_date DESC LIMIT 5", (code,))
-                avg_tr_row = cursor.fetchone()
-                avg_tr = float(avg_tr_row['avg_tr'] or 0) if avg_tr_row else 0
-                t_limit = 25.0 if has_short else 30.0
-                t_score = min(t_limit, ((price * volume) / avg_tr) * (t_limit / 3)) if avg_tr > 0 else 0
+                # 4. 회전율 (25 or 30) [v40.0: 실시간 테이블로 단일화 & 50억 Floor]
+                t_score = 0.0
+                current_energy = price * volume
+                if current_energy < 5000000000: # [v40.0] 거래대금 50억 미만 0점
+                    t_score = 0.0
+                else:
+                    cursor.execute("""
+                        SELECT AVG(energy) as avg_tr FROM (
+                            SELECT MAX(volume * price) as energy 
+                            FROM stock_intraday_history 
+                            WHERE stock_code = %s AND captured_at < DATE(NOW())
+                            GROUP BY DATE(captured_at)
+                            ORDER BY DATE(captured_at) DESC LIMIT 5
+                        ) as sub
+                    """, (code,))
+                    avg_tr_row = cursor.fetchone()
+                    if avg_tr_row and avg_tr_row['avg_tr'] and float(avg_tr_row['avg_tr']) > 0:
+                        avg_tr = float(avg_tr_row['avg_tr'])
+                        t_limit = 25.0 if has_short else 30.0
+                        t_score = min(t_limit, (current_energy / avg_tr) * (t_limit / 3))
 
                 return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:

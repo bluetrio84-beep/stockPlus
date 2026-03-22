@@ -182,15 +182,27 @@ class NextLeaderEngine(AIEngine):
                         o_score += 5.0
                         obv_tag = "💎OBV매집포착"
 
-                # 4. 거래대금 회전율 (Max 25 or 30)
-                sql_avg_tr = "SELECT AVG(close_price * volume) as avg_tr FROM daily_stock_investor WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 5"
-                cursor.execute(sql_avg_tr, (code,))
-                avg_tr_row = cursor.fetchone()
+                # 4. 거래대금 회전율 (Max 25 or 30) [v40.0: 데이터 출처 실시간 테이블로 단일화 & 50억 Floor]
                 t_score = 0.0
-                if avg_tr_row and avg_tr_row['avg_tr']:
-                    surge = (price * volume) / float(avg_tr_row['avg_tr'])
-                    t_limit = 25.0 if has_short else 30.0 # 공매도 없으면 5점 상향
-                    t_score = min(t_limit, surge * (t_limit / 3)) # 3배 급증 시 만점
+                current_energy = price * volume
+                if current_energy < 5000000000: # [v40.0] 거래대금 50억 미만은 노이즈로 간주 (0점)
+                    t_score = 0.0
+                else:
+                    sql_avg_tr = """
+                        SELECT AVG(energy) as avg_tr FROM (
+                            SELECT MAX(volume * price) as energy 
+                            FROM stock_intraday_history 
+                            WHERE stock_code = %s AND captured_at < DATE(NOW())
+                            GROUP BY DATE(captured_at)
+                            ORDER BY DATE(captured_at) DESC LIMIT 5
+                        ) as sub
+                    """
+                    cursor.execute(sql_avg_tr, (code,))
+                    avg_tr_row = cursor.fetchone()
+                    if avg_tr_row and avg_tr_row['avg_tr'] and float(avg_tr_row['avg_tr']) > 0:
+                        surge = current_energy / float(avg_tr_row['avg_tr'])
+                        t_limit = 25.0 if has_short else 30.0
+                        t_score = min(t_limit, surge * (t_limit / 3)) # 3배 급증 시 만점
 
                 return round(p_score + s_score + o_score + t_score, 2), obv_tag
         except Exception as e:
