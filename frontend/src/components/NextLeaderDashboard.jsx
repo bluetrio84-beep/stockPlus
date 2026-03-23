@@ -407,7 +407,7 @@ const NextLeaderDashboard = () => {
                                 <span className="text-[10px] text-slate-200 text-right font-medium">100억 유입 또는 비중 15% 돌파 (S급)</span>
                             </div>
                             <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
-                                <span className="text-xs font-bold text-orange-400">기관수급폭발</span>
+                                <span className="text-xs font-bold text-orange-400">스마트수급폭발</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">50억 유입 또는 비중 10% 돌파 (A급)</span>
                             </div>
                             <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
@@ -476,6 +476,27 @@ const NextLeaderDashboard = () => {
                         <div className="bg-indigo-500/10 p-3 rounded-xl border border-indigo-500/20 flex justify-between items-center">
                             <span className="text-xs font-bold text-indigo-400">수급포착</span>
                             <span className="text-[10px] text-slate-200 text-right font-medium">OBV 지표 기반 세력의 매집 에너지 포착</span>
+                        </div>
+                    </section>
+                    <section>
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">⚠️ 과열 및 리스크 (RSI)</h4>
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-rose-500">⚠️심각과열</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 75 이상 단기 급등 (점수 -30% 삭감)</span>
+                            </div>
+                            <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-orange-500">⚠️고점경계</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 65~75 구간 진입 (점수 -15% 삭감)</span>
+                            </div>
+                            <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-amber-500">⚠️추세주의</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 60~65 구간 진입 (점수 -8% 삭감)</span>
+                            </div>
+                            <div className="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20 flex justify-between items-center">
+                                <span className="text-xs font-bold text-yellow-500">⚠️과열진입</span>
+                                <span className="text-[10px] text-slate-200 text-right font-medium">RSI 55~60 구간 진입 (점수 -5% 삭감)</span>
+                            </div>
                         </div>
                     </section>
                 </div>

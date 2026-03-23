@@ -103,7 +103,7 @@ class NextLeaderEngine(AIEngine):
                 if pgm_ratio >= 15 or pgm_amt >= 10000000000:
                     boost += 20.0; reasons.append("🔥메가스마트머니")
                 elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
-                    boost += 15.0; reasons.append("기관수급폭발")
+                    boost += 15.0; reasons.append("스마트수급폭발")
                 elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
                     boost += 10.0; reasons.append("스마트머니유입")
                 elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
@@ -367,22 +367,34 @@ class NextLeaderEngine(AIEngine):
                 # 최종 합산 및 직관 보너스 적용
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
-                # [v35.0] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터
-                # RSI가 높아질수록 삭감 폭을 세밀하게 조정하여 랭킹 변별력 극대화
+                # [v41.0] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터 + 눌림목 구제 로직
+                # RSI가 높아질수록 삭감하되, 최근 20일 고점 대비 -10% 이상 하락 시 '눌림목'으로 간주하여 필터 제외
                 rsi = float(curr['rsi'] or 50)
-                if rsi >= 75:
-                    total_score *= 0.7  # 심각과열: -30%
-                    reason = f"⚠️심각과열, {reason}"
-                elif rsi >= 65:
-                    total_score *= 0.85 # 고점경계: -15%
-                    reason = f"⚠️고점경계, {reason}"
-                elif rsi >= 60:
-                    total_score *= 0.92 # 주의국면: -8% (사용자 제안)
-                    reason = f"⚠️추세주의, {reason}"
-                elif rsi >= 55:
-                    total_score *= 0.95 # 과열시작: -5%
-                    reason = f"⚠️과열진입, {reason}"
-                # RSI 55 미만은 '완벽한 바닥 탈출' 구간으로 간주하여 점수 100% 보존
+                price = float(curr['price'])
+                
+                # 최근 20일 고가 조회 (눌림목 판정용)
+                sql_20h = "SELECT MAX(price) as h20 FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)"
+                with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    cursor.execute(sql_20h, (code,))
+                    h20_row = cursor.fetchone()
+                    h20 = float(h20_row['h20']) if h20_row and h20_row['h20'] else price
+                
+                is_pullback = (price < h20 * 0.9) # 고점 대비 10% 이상 하락 시 눌림목
+                
+                if not is_pullback: # 눌림목이 아닐 때만 과열 필터 작동
+                    if rsi >= 75:
+                        total_score *= 0.7  # 심각과열: -30%
+                        reason = f"⚠️심각과열, {reason}"
+                    elif rsi >= 65:
+                        total_score *= 0.85 # 고점경계: -15%
+                        reason = f"⚠️고점경계, {reason}"
+                    elif rsi >= 60:
+                        total_score *= 0.92 # 주의국면: -8%
+                        reason = f"⚠️추세주의, {reason}"
+                    elif rsi >= 55:
+                        total_score *= 0.95 # 과열시작: -5%
+                        reason = f"⚠️과열진입, {reason}"
+                # RSI 55 미만이거나 눌림목(Pullback) 구간은 점수 100% 보존
 
                 if total_score >= min_threshold:
                     # [v23.0] 스마트머니 초정밀 점수 산출 (40:30:30 레시피)

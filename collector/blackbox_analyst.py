@@ -287,7 +287,7 @@ class BlackBoxAnalyst:
                     if pgm_ratio >= 15 or pgm_amt >= 10000000000:
                         score += 20; tags.append("🔥메가스마트머니")
                     elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
-                        score += 15; tags.append("기관수급폭발")
+                        score += 15; tags.append("스마트수급폭발")
                     elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
                         score += 10; tags.append("스마트머니유입")
                     elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
@@ -356,7 +356,22 @@ class BlackBoxAnalyst:
                         if mw['foreigner']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 외인 매집 시 가산
                         if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
 
-                    data['xgb'] = round(max(0, min(100, (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus)), 1)
+                    # [v41.0] 바닥 탈출 초정밀 슬라이딩 필터 + 눌림목 구제
+                    rsi = float(history[0]['rsi'] or 50)
+                    cursor.execute("SELECT MAX(price) as h20 FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)", (clean_code,))
+                    h20_row = cursor.fetchone()
+                    h20 = float(h20_row['h20']) if h20_row and h20_row['h20'] else price
+                    is_pullback = (price < h20 * 0.9) # 고점 대비 10% 이상 하락 시 눌림목
+
+                    final_score = (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus
+                    
+                    if not is_pullback:
+                        if rsi >= 75: final_score *= 0.7; tags.append("⚠️심각과열")
+                        elif rsi >= 65: final_score *= 0.85; tags.append("⚠️고점경계")
+                        elif rsi >= 60: final_score *= 0.92; tags.append("⚠️추세주의")
+                        elif rsi >= 55: final_score *= 0.95; tags.append("⚠️과열진입")
+
+                    data['xgb'] = round(max(0, min(100, final_score)), 1)
                     
                     # [v23.0] 스마트머니 초정밀 점수 반영 (OBV 태그 포함)
                     s_score, obv_tag = self.calculate_smart_money(clean_code, price, vol)
