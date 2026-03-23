@@ -264,8 +264,7 @@ const MyPortfolioDashboard = () => {
                     const profit = (Number(stock.currentPrice || 0) - Number(stock.avgPrice || 0)) * Number(stock.quantity || 0);
                     const profitRate = ((Number(stock.currentPrice || 0) - Number(stock.avgPrice || 0)) / Number(stock.avgPrice || 1)) * 100;
                     const stockInsight = parsedInsights ? parsedInsights.find(i => String(i.stockCode).trim() === String(stock.stockCode).trim()) : null;
-                    const tacticalTags = stock.aiReason ? stock.aiReason.split(',').map(t => t.trim()) : 
-                                         (stockInsight ? stockInsight.reasoning.filter(r => !r.includes(':')) : []);
+                    const tacticalTags = stockInsight ? stockInsight.reasoning.filter(r => !r.includes(':')) : [];
 
                     return (
                         <div key={idx} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl hover:border-indigo-500/40 transition-all group flex flex-col gap-5">
@@ -336,6 +335,17 @@ const MyPortfolioDashboard = () => {
                                 <div>
                                     <h2 className="text-2xl lg:text-3xl font-black text-white tracking-tighter uppercase">{selectedInsight.stockName} 심층 분석 보고서</h2>
                                     <p className="text-indigo-400 text-xs font-bold uppercase tracking-[0.4em]">Tactical Deep Intelligence Analysis</p>
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                        {selectedInsight.reasoning.filter(r => !r.includes(':')).map((r, i) => (
+                                            <span key={i} className={classNames(
+                                                "px-2.5 py-1 text-[10px] font-black rounded border uppercase tracking-tighter leading-none transition-all",
+                                                r.includes('고수익') || r.includes('고성장') || r.includes('★') ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : 
+                                                r.includes('수급') || r.includes('폭발') ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
+                                                r.includes('과매도') || r.includes('주의') || r.includes('과열') ? "bg-rose-500/20 text-rose-400 border-rose-500/30" :
+                                                "bg-slate-800 text-slate-400 border-slate-700"
+                                            )}>{r}</span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-800 hover:bg-rose-600 text-white rounded-2xl transition-all shadow-lg"><X size={28} /></button>
