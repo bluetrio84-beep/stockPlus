@@ -422,8 +422,8 @@ class BlackBoxAnalyst:
 
     def generate_intelligent_narrative(self, data, name, industry):
         """
-        [v44.2] 얼티밋 AI 서사 매트릭스 (초대형 확장판)
-        100개 이상의 문구 변형과 다차원 로직을 결합하여 '단 하나뿐인 리포트'를 생성합니다.
+        [v44.4] 얼티밋 AI 서사 매트릭스 (Total Score & Reason 통합판)
+        종합 점수의 의미와 전술 태그의 배경을 전문가 시각에서 해설합니다.
         """
         try:
             # 1. 고도화된 수치 분석
@@ -435,6 +435,8 @@ class BlackBoxAnalyst:
             short_avg = data['short_sentiment'].get('avg_short_price', 0)
             rsi = data.get('rsi', 50)
             prob = data.get('ai_probability', 50)
+            total = data.get('total_score', 0)
+            reasons = data.get('reason', [])
             
             # 2. 레이어 1: 오프닝 (시장 국면 & 섹터 위치)
             openings = [
@@ -446,7 +448,23 @@ class BlackBoxAnalyst:
                 f"현재 {name}은(는) {industry} 산업군의 기류를 바꾸는 '게임 체인저' 역할을 자처하고 있습니다."
             ]
             
-            # 3. 레이어 2: 수급의 심연 (S-Score 10점 단위 정밀 분석)
+            # 3. 레이어 2: 종합 점수 비평 (Total Score 10점 단위 정밀 분석)
+            if total >= 95:
+                t_critique = f"종합 점수 {total}점은 시장에 단 0.1%만 존재하는 '천상의 타점'입니다. 모든 알고리즘이 완벽한 일치를 보이고 있습니다."
+            elif total >= 90:
+                t_critique = f"종합 {total}점은 가히 '대장주의 관상'이라 할 만합니다. 퀀트와 AI가 동시에 최상위 등급을 부여한 것은 매우 이례적인 강세 시그널입니다."
+            elif total >= 80:
+                t_critique = f"종합 {total}점의 고득점은 주도권이 이 종목으로 완전히 넘어왔음을 시사하는 강력한 '수급의 요새'가 구축되었음을 의미합니다."
+            elif total >= 70:
+                t_critique = f"종합 {total}점으로 상위권에 안착했습니다. 기술적 지표들이 정배열로 정렬되며 '우량한 추세'의 기틀을 마련했습니다."
+            elif total >= 60:
+                t_critique = f"종합 {total}점은 하방 경직성을 확보하고 반등의 모멘텀을 축적 중인 '적정 가치' 구간임을 나타냅니다."
+            elif total >= 50:
+                t_critique = f"종합 {total}점대로 중립 이상의 기운을 내뿜고 있습니다. 특정 수급의 트리거가 당겨지는 순간 폭발적 상향이 기대되는 자리입니다."
+            else:
+                t_critique = f"종합 {total}점의 낮은 점수는 아직 시장의 소외를 의미하며, 보수적인 관점에서 '에너지의 응축'을 더 기다려야 하는 인내의 단계입니다."
+
+            # 4. 레이어 3: 수급의 심연 (S-Score 10점 단위 정밀 분석)
             if s_score >= 100:
                 supply = [f"경이로운 수급입니다. S-Score 100% 만점은 전 시장의 자금을 블랙홀처럼 빨아들이는 '무결점 매집'을 의미합니다. {pgm_amt:.1f}억의 화력은 파괴적입니다."]
             elif s_score >= 90:
@@ -470,7 +488,17 @@ class BlackBoxAnalyst:
             else:
                 supply = [f"수급 공백 상태({int(s_score)}%)입니다. {pgm_amt:.1f}억 원 규모의 이탈은 주도 세력이 부재함을 증명하며, 보수적인 관점에서의 관망이 필수적입니다."]
 
-            # 4. 레이어 3: 심리전과 고지전 (생략 없이 유지)
+            # 5. 레이어 4: 전술 태그 상세 해설 (Reason Tag Integration)
+            tag_details = []
+            for tag in reasons:
+                if "스마트수급폭발" in tag: tag_details.append("기관급 대규모 자금이 유입되는 '스마트수급폭발' 현상은 시세의 연속성을 보장하는 핵심 열쇠입니다.")
+                if "💎" in tag: tag_details.append("OBV 다이아몬드 매집 포착은 주가는 속여도 돈의 궤적은 속일 수 없음을 입증하는 강력한 지표입니다.")
+                if "⚠️과열" in tag: tag_details.append("단기 과열 꼬리표가 붙었으나, 이는 역설적으로 시세의 탄력이 살아있음을 보여주는 '건강한 발열'입니다.")
+                if "RSI바닥" in tag: tag_details.append("바닥의 저주를 끝내고 상승으로 고개를 드는 RSI 궤적은 완벽한 '역발상 매수' 기회를 제공합니다.")
+                if "이평선수렴" in tag: tag_details.append("이평선 응축은 곧 거대한 발산의 시작이며, 현재 그 변곡점의 한복판에 서 있습니다.")
+                if "고수익성" in tag: tag_details.append("탁월한 수익 구조를 바탕으로 한 펀더멘털의 우위는 어떤 하락장에서도 버틸 수 있는 '종목의 맷집'이 됩니다.")
+
+            # 6. 레이어 5: 심리전과 고지전 (Short Squeeze & Whales)
             psychology = []
             if whale_c > 0:
                 if curr_p > whale_c * 1.05:
@@ -485,16 +513,7 @@ class BlackBoxAnalyst:
                 elif gap < -10:
                     psychology.append(f"공매도 세력이 수익을 거두며 압박 중이나, 지지선 확인 시 역습의 기회가 올 수 있습니다.")
 
-            # 5. 레이어 4: 기술적 관상 (생략 없이 유지)
-            tech = []
-            if "💎" in str(data['reason']):
-                tech.append("OBV 매집 시그널이 '다이아몬드'급으로 견고하게 쌓여 있어 하방 경직성이 탁월합니다.")
-            if "RSI바닥" in str(data['reason']):
-                tech.append("바닥의 저주를 끝내고 상승으로 고개를 드는 RSI의 궤적이 매우 인상적입니다.")
-            if "이평선수렴" in str(data['reason']):
-                tech.append("이평선들이 한곳으로 응축되며 발산의 에너지를 축적하고 있는 모습입니다.")
-
-            # 6. 레이어 5: AI 최종 예보 (확률 10점 단위 정밀 분석)
+            # 7. 레이어 6: AI 최종 예보 (확률 10점 단위 정밀 분석)
             if prob >= 100:
                 prediction = [f"AI 신뢰도 100%의 '완벽한 확률'입니다. 수학적, 통계적 모든 지표가 이 종목의 폭등을 확신하고 있습니다."]
             elif prob >= 90:
@@ -518,12 +537,12 @@ class BlackBoxAnalyst:
             else:
                 prediction = [f"최악의 가성비를 보이는 {prob}% 확률입니다. AI는 이 종목에 대해 '진입 금지' 수준의 경고 시그널을 보내고 있습니다."]
 
-            # 7. 서사 조립 (다차원 랜덤 조합)
-            body = " ".join(random.sample(psychology + tech, min(len(psychology + tech), 2))) if (psychology + tech) else ""
-            res = f"{random.choice(openings)} {random.choice(supply)} {body} {random.choice(prediction)}"
+            # 8. 최종 서사 조립 (다차원 랜덤 조합)
+            body = " ".join(random.sample(psychology + tag_details, min(len(psychology + tag_details), 2))) if (psychology + tag_details) else ""
+            res = f"{random.choice(openings)} {t_critique} {random.choice(supply)} {body} {random.choice(prediction)}"
             return res
-        except:
-            return f"지휘 보고: {name} 종목은 현재 데이터 기반의 정밀 분석 중이며, {industry} 섹터의 핵심 흐름을 반영하고 있습니다."
+        except Exception as e:
+            return f"지휘 보고: {name} 종목은 현재 데이터 기반의 정밀 분석 중이며, {industry} 섹터의 핵심 흐름을 충실히 반영하고 있습니다."
 
     def execute(self):
         self.connect()
