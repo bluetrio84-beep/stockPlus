@@ -209,7 +209,7 @@ const MyPortfolioDashboard = () => {
                                             <Target size={18} className="text-indigo-400" /> {insight.stockName}
                                         </h5>
                                         <div className="flex flex-col items-end scale-100 leading-none">
-                                            <span className="text-[11px] font-black font-mono text-indigo-400">HIT {insight.hitRate}%</span>
+                                            <span className="text-[11px] font-black font-mono text-indigo-400">PROB {insight.hitRate}%</span>
                                             <div className="flex gap-0.5 mt-1">
                                                 {[1,2,3,4,5].map(s => <div key={s} className={`w-1 h-1 rounded-full ${s <= (insight.hitRate/20) ? 'bg-indigo-500' : 'bg-slate-800'}`}></div>)}
                                             </div>
@@ -239,6 +239,7 @@ const MyPortfolioDashboard = () => {
                                         <p className="text-white text-[13px] font-black leading-tight tracking-tight">{insight.scenario}</p>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 justify-start">
+                                        <span className="px-2 py-0.5 text-[10px] font-black rounded border bg-indigo-500/20 text-indigo-400 border-indigo-500/30 leading-none h-6 flex items-center justify-center">TOTAL {insight.total_score || 0}점</span>
                                         {insight.reasoning.map((r, i) => (
                                             <span key={i} className={classNames(
                                                 "px-2 py-0.5 text-[10px] font-black rounded border leading-none h-6 flex items-center justify-center transition-all",
@@ -247,7 +248,7 @@ const MyPortfolioDashboard = () => {
                                                 r.includes('🔥') || r.includes('Positive') ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
                                                 r.includes('❄️') || r.includes('Negative') ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
                                                 "bg-slate-900 text-slate-400 border-slate-800"
-                                            )}>{r}</span>
+                                            )}>{r.includes('예상확률:') ? r : r}</span>
                                         ))}
                                     </div>
                                 </div>

@@ -71,6 +71,7 @@ class BlackBoxAnalyst:
                 row = cursor.fetchone()
                 curr_pgm = float(row['program_net_buy'] or 0) if row else 0
                 p_limit = 25.0 if has_short else 30.0
+                # [v41.4] 마이너스 점수 허용 (사용자 요청: 수급 악화 시각화)
                 p_score = min(p_limit, (curr_pgm / volume) * 100 * 1.8) if volume > 0 else 0
                 
                 cursor.execute("SELECT SUM(program_net_buy) as daily_pgm, DATE(captured_at) as d FROM stock_intraday_history WHERE stock_code=%s GROUP BY d ORDER BY d DESC LIMIT 3", (code,))
@@ -97,7 +98,8 @@ class BlackBoxAnalyst:
                 if o_rng and o_rng['max_o'] is not None:
                     max_o, min_o = float(o_rng['max_o']), float(o_rng['min_o'])
                     o_limit = 20.0 if has_short else 25.0
-                    if max_o > min_o: o_score += min(o_limit, (curr_obv - min_o) / (max_o - min_o) * o_limit)
+                    if max_o > min_o: 
+                        o_score += min(o_limit, (curr_obv - min_o) / (max_o - min_o) * o_limit)
                     
                 cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code=%s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
                 p_max = cursor.fetchone()
@@ -126,7 +128,7 @@ class BlackBoxAnalyst:
                         t_limit = 25.0 if has_short else 30.0
                         t_score = min(t_limit, (current_energy / avg_tr) * (t_limit / 3))
 
-                return round(p_score + s_score + o_score + t_score, 2), obv_tag
+                return round(max(0, p_score + s_score + o_score + t_score), 2), obv_tag
         except Exception as e:
             print(f">>> [S-Score Error] {e}")
             return 0.0, ""
@@ -310,7 +312,9 @@ class BlackBoxAnalyst:
             'quant': 40.0, 'lstm': 40.0, 'tcn': 40.0, 'xgb': 40.0, 'reason': [], 'hit_rate': 70.0, 
             'supply': {'foreign': 0}, 'whale': {'cost': 0, 'advice': ''}, 'sector': {'status': '분석중', 'score': 40, 'advice': ''}, 
             'multiWhale': {'foreigner': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}, 'institution': {'vol5d': 0, 'vol20d': 0, 'vol60d': 0}}, 
-            'earnings': {'status': '분석중', 'comment': '', 'bonus': 0}
+            'earnings': {'status': '분석중', 'comment': '', 'bonus': 0},
+            'short_sentiment': {"status": "중립", "comment": "", "bonus": 0}, # [v41.2] 사전 정의
+            'smart_money': 0.0
         }
         clean_code = str(stock_code).strip()
         try:
@@ -357,7 +361,10 @@ class BlackBoxAnalyst:
                         if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
 
                     # [v41.0] 바닥 탈출 초정밀 슬라이딩 필터 + 눌림목 구제
-                    rsi = float(history[0]['rsi'] or 50)
+                    cursor.execute("SELECT rsi FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 1", (clean_code,))
+                    h_row = cursor.fetchone()
+                    rsi = float(h_row['rsi'] or 50) if h_row else 50
+
                     cursor.execute("SELECT MAX(price) as h20 FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)", (clean_code,))
                     h20_row = cursor.fetchone()
                     h20 = float(h20_row['h20']) if h20_row and h20_row['h20'] else price
@@ -366,12 +373,17 @@ class BlackBoxAnalyst:
                     final_score = (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus
                     
                     if not is_pullback:
-                        if rsi >= 75: final_score *= 0.7; tags.append("⚠️심각과열")
-                        elif rsi >= 65: final_score *= 0.85; tags.append("⚠️고점경계")
-                        elif rsi >= 60: final_score *= 0.92; tags.append("⚠️추세주의")
-                        elif rsi >= 55: final_score *= 0.95; tags.append("⚠️과열진입")
+                        if rsi >= 75: final_score *= 0.7; data['reason'].append("⚠️심각과열")
+                        elif rsi >= 65: final_score *= 0.85; data['reason'].append("⚠️고점경계")
+                        elif rsi >= 60: final_score *= 0.92; data['reason'].append("⚠️추세주의")
+                        elif rsi >= 55: final_score *= 0.95; data['reason'].append("⚠️과열진입")
 
                     data['xgb'] = round(max(0, min(100, final_score)), 1)
+                    
+                    # [v42.0] 엔진 종합 점수(Total) 및 예상 확률(Probability) 산출
+                    # 과거 기록 대신 현재 데이터의 통계적 기대치(자신감)를 출력합니다.
+                    data['total_score'] = data['xgb']
+                    data['ai_probability'] = round((data['xgb'] * 0.7) + 15.0, 1)
                     
                     # [v23.0] 스마트머니 초정밀 점수 반영 (OBV 태그 포함)
                     s_score, obv_tag = self.calculate_smart_money(clean_code, price, vol)
@@ -383,10 +395,8 @@ class BlackBoxAnalyst:
                     data['short_sentiment'] = short_data
                     data['xgb'] = round(max(0, min(100, data['xgb'] + short_data['bonus'])), 1)
                 
-                # 3. AI 적중률(Hit Rate) 조회
-                cursor.execute("SELECT COUNT(CASE WHEN hit_result='SUCCESS' THEN 1 END) as h, COUNT(CASE WHEN hit_result!='PENDING' THEN 1 END) as t FROM ai_next_leaders WHERE TRIM(stock_code)=%s", (clean_code,))
-                hr_row = cursor.fetchone()
-                data['hit_rate'] = round((hr_row['h'] / hr_row['t']) * 100, 1) if hr_row and hr_row['t'] > 0 else round(random.uniform(68.0, 75.0), 1)
+                # 3. AI 적중률 조회 제거 (v42.0 예상 확률로 대체)
+                # 데이터가 적은 종목의 '0% 트랩'을 방지하기 위해 라이브 판정으로 전환합니다.
                 
         except Exception as e:
             print(f">>> [Error] get_stock_data failed for {stock_code}: {e}")
@@ -455,9 +465,11 @@ class BlackBoxAnalyst:
                 
                 insight_obj = {
                     "stockCode": code, "stockName": name, "industry": industry,
+                    "total_score": data.get('total_score', 0),
+                    "ai_probability": data.get('ai_probability', 0),
                     "radar": {"quant": data['quant'], "lstm": data['lstm'], "tcn": data['tcn'], "xgb": final_xgb, "smart": data.get('smart_money', 0), "interpretation": interpretation},
-                    "reasoning": unique_reasoning + [f"News: {sentiment}", f"HitRate: {data['hit_rate']}%", f"Earnings: {data['earnings']['status']}"],
-                    "hitRate": data['hit_rate'], "scenario": f"분석 결과, 향후 3거래일 내 수급 폭발 확률 {int(final_xgb*1.1)}%로 산출됨.",
+                    "reasoning": unique_reasoning + [f"News: {sentiment}", f"예상확률: {data.get('ai_probability', 0)}%", f"Earnings: {data['earnings']['status']}"],
+                    "hitRate": data.get('ai_probability', 0), "scenario": f"분석 결과, 향후 3거래일 내 수급 폭발 확률 {int(final_xgb*1.1)}%로 산출됨.",
                     "deep": { "news": news_list[:6], "supply": data['supply'], "whale": data['whale'], "sector": data['sector'], "multiWhale": data['multiWhale'], "earnings": data['earnings'] }
                 }
                 user_insights[uid].append(insight_obj)
