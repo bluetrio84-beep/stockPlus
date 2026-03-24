@@ -44,6 +44,15 @@ public class StockDashboardController {
         log.info("Watchlist Fetch Request - Group: {}", groupId);
         return dashboardService.getWatchlist(groupId);
     }
+
+    /**
+     * [v44.7] 종목 마스터 상세 정보 조회 (소분류 업종명 확인용)
+     */
+    @GetMapping("/stocks/{stockCode}/master-detail")
+    public Mono<Map<String, Object>> getStockMasterDetail(@PathVariable String stockCode) {
+        log.info(">>> [Master-Detail Request] Code: {}", stockCode);
+        return kisStockService.fetchStockMasterDetail(stockCode);
+    }
     
     /**
      * 특정 종목의 거래원 수급 데이터를 조회합니다. (v13 Daum 데이터 활용)

@@ -367,19 +367,19 @@ class NextLeaderEngine(AIEngine):
                 # 최종 합산 및 직관 보너스 적용
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
-                # [v41.0] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터 + 눌림목 구제 로직
-                # RSI가 높아질수록 삭감하되, 최근 20일 고점 대비 -10% 이상 하락 시 '눌림목'으로 간주하여 필터 제외
+                # [v44.7] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터 + 눌림목 구제 로직
+                # RSI가 높아질수록 삭감하되, 최근 60일 고점 대비 -10% 이상 하락 시 '눌림목'으로 간주하여 필터 제외
                 rsi = float(curr['rsi'] or 50)
                 price = float(curr['price'])
                 
-                # 최근 20일 고가 조회 (눌림목 판정용)
-                sql_20h = "SELECT MAX(price) as h20 FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 20 DAY)"
+                # 최근 60일 고가 조회 (눌림목 판정용)
+                sql_60h = "SELECT MAX(price) as h60 FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 60 DAY)"
                 with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute(sql_20h, (code,))
-                    h20_row = cursor.fetchone()
-                    h20 = float(h20_row['h20']) if h20_row and h20_row['h20'] else price
+                    cursor.execute(sql_60h, (code,))
+                    h60_row = cursor.fetchone()
+                    h60 = float(h60_row['h60']) if h60_row and h60_row['h60'] else price
                 
-                is_pullback = (price < h20 * 0.9) # 고점 대비 10% 이상 하락 시 눌림목
+                is_pullback = (price < h60 * 0.97) # [v44.7] 고점 대비 3% 이상 하락 시 눌림목으로 간주 (기준 완화)
                 
                 if not is_pullback: # 눌림목이 아닐 때만 과열 필터 작동
                     if rsi >= 75:

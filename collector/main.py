@@ -74,9 +74,10 @@ class MegaCollector:
                         with conn.cursor() as cursor:
                             cursor.execute("""
                                 UPDATE stock_master 
-                                SET market_cap = %s, industry_name = %s 
+                                SET market_cap = %s 
+                                -- industry_name = %s  [v44.7] 업종명 덮어쓰기 방지를 위해 주석 처리
                                 WHERE stock_code = %s
-                            """, (m_cap, ind_name, code))
+                            """, (m_cap, code))
                         conn.commit()
                     
                     # [v19.0] 실적 데이터 동기화 API 호출 추가

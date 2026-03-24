@@ -540,4 +540,52 @@ public class KisStockService {
                 })
                 .onErrorResume(e -> Mono.just(ShortSellingDto.builder().stockCode(stockCode).items(java.util.Collections.emptyList()).build()));
     }
+
+    /**
+     * [v44.7] 주식정보조회 (마스터 상세)
+     * TR: CTPF1002R
+     * 목적: 현재가 API에서 누락되기 쉬운 정밀한 소분류 업종명(idx_bztp_scls_cd_name) 확보
+     */
+    public Mono<Map<String, Object>> fetchStockMasterDetail(String stockCode) {
+        String token = kisAuthService.getAccessToken();
+        String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/search-stock-info"
+                + "?PRDT_TYPE_CD=300"
+                + "&PDNO=" + stockCode;
+
+        return webClientBuilder.build().get().uri(uri)
+                .header("authorization", "Bearer " + token)
+                .header("appkey", kisAuthService.getAppKey())
+                .header("appsecret", kisAuthService.getAppSecret())
+                .header("tr_id", "CTPF1002R")
+                .header("content-type", "application/json")
+                .header("custtype", "P")
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(json -> {
+                    try {
+                        JsonNode root = objectMapper.readTree(json);
+                        JsonNode output = root.path("output");
+                        Map<String, Object> result = new java.util.HashMap<>();
+                        if (!output.isMissingNode()) {
+                            // 디버깅을 위해 모든 필드를 맵에 담아 반환
+                            java.util.Iterator<Map.Entry<String, JsonNode>> fields = output.fields();
+                            while (fields.hasNext()) {
+                                Map.Entry<String, JsonNode> entry = fields.next();
+                                result.put(entry.getKey(), entry.getValue().asText(""));
+                            }
+                            
+                            // 기본 필드 매핑 유지 (기존 필드가 덮어씌워지지 않도록 함)
+                            result.put("industryName", output.path("idx_bztp_scls_cd_name").asText(""));
+                        }
+                        return result;
+                    } catch (Exception e) {
+                        log.error(">>> [KIS API] Error parsing master detail for {}: {}", stockCode, e.getMessage());
+                        return new java.util.HashMap<String, Object>();
+                    }
+                })
+                .onErrorResume(e -> {
+                    log.error(">>> [KIS API] Master Detail Connection Error for {}: {}", stockCode, e.getMessage());
+                    return Mono.just(new java.util.HashMap<String, Object>());
+                });
+    }
 }
