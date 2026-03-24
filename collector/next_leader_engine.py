@@ -101,11 +101,11 @@ class NextLeaderEngine(AIEngine):
                 
                 # [v33.0] 통합 스마트머니(S-Power) 하이브리드 판정 (기준 상향 및 변별력 강화)
                 if pgm_ratio >= 15 or pgm_amt >= 10000000000:
-                    boost += 20.0; reasons.append("🔥메가스마트머니")
+                    boost += 12.5; reasons.append("🔥메가스마트머니")
                 elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
-                    boost += 15.0; reasons.append("스마트수급폭발")
+                    boost += 10.0; reasons.append("스마트수급폭발")
                 elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
-                    boost += 10.0; reasons.append("스마트머니유입")
+                    boost += 7.5; reasons.append("스마트머니유입")
                 elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
                     boost += 5.0; reasons.append("프로그램매수")
 
@@ -234,21 +234,21 @@ class NextLeaderEngine(AIEngine):
                 # 평단가보다 현재가가 높을수록 세력의 패닉(숏커버) 유도
                 if current_price > avg_price:
                     diff_pct = ((current_price - avg_price) / avg_price) * 100
-                    # 10% 돌파 시 20점 만점 부여 (1%당 2점)
-                    boost += min(20.0, diff_pct * 2.0)
+                    # [v44.6] 맥스 가점 하향: 10% 돌파 시 12.5점 (1%당 1.25점)
+                    boost += min(12.5, diff_pct * 1.25)
                     if diff_pct > 5.0: tags.append("숏스퀴즈임박")
                     elif diff_pct > 2.0: tags.append("세력손실전환")
 
                 # B. 누적 에너지 가점 (누적 비중이 높을수록 폭발력 증가)
                 if total_ratio > 15.0:
-                    boost += 10.0
+                    boost += 7.5  # 10.0 -> 7.5
                     tags.append("고농축공매도")
                 elif total_ratio > 10.0:
-                    boost += 5.0
+                    boost += 4.0  # 5.0 -> 4.0
 
                 # C. 공격 중단 가점 (당일 공매도 비중 급감 시)
                 if curr_ratio < 3.0 and total_ratio > 8.0:
-                    boost += 5.0
+                    boost += 4.0  # 5.0 -> 4.0
                     tags.append("공매도항복")
 
                 return round(boost, 2), ",".join(tags)

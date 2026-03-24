@@ -155,16 +155,15 @@ class BlackBoxAnalyst:
                 if float(curr['short_balance'] or 0) < float(prev['short_balance'] or 0):
                     status = "숏커버링"
                     comment = "공매도 세력의 상환(숏커버링)이 시작되었습니다. "
-                    bonus = 5
-                
+                    bonus = 3.5
+
                 # 2. 숏스퀴즈 가능성 (현재가 > 평단가)
                 if avg_short_price > 0 and current_price > avg_short_price:
                     status = "숏스퀴즈임박"
                     comment += f"현재가가 공매도 평단가({int(avg_short_price):,})를 상회하며 세력의 압박이 가중되고 있습니다. "
-                    bonus += 7
+                    bonus += 5.0
 
-                return {"status": status, "comment": comment, "bonus": bonus}
-        except: return {"status": "중립", "comment": "", "bonus": 0}
+                return {"status": status, "comment": comment, "bonus": bonus}        except: return {"status": "중립", "comment": "", "bonus": 0}
 
     def calculate_earnings_momentum(self, code):
         # [v28.7.1] 데이터 무결성 패치: 동일 report_code끼리만 비교 (착시 방지)
@@ -287,11 +286,11 @@ class BlackBoxAnalyst:
                     pgm_amt = curr_price * curr_pgm
                     
                     if pgm_ratio >= 15 or pgm_amt >= 10000000000:
-                        score += 20; tags.append("🔥메가스마트머니")
+                        score += 12.5; tags.append("🔥메가스마트머니")
                     elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
-                        score += 15; tags.append("스마트수급폭발")
+                        score += 10; tags.append("스마트수급폭발")
                     elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
-                        score += 10; tags.append("스마트머니유입")
+                        score += 7.5; tags.append("스마트머니유입")
                     elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
                         score += 5; tags.append("프로그램매수")
                     
