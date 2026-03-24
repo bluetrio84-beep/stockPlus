@@ -69,15 +69,17 @@ class MegaCollector:
                     res = requests.get(f"{BACKEND_API_URL}/stocks/{code}/price?exchangeCode=UN", timeout=5).json()
                     m_cap = int(float(str(res.get('marketCap', '0')).replace(',', '')))
                     ind_name = res.get('industryName', '')
+                    h52 = float(res.get('high52w', '0') or 0)
+                    l52 = float(res.get('low52w', '0') or 0)
                     
                     if m_cap > 0 or ind_name:
                         with conn.cursor() as cursor:
                             cursor.execute("""
                                 UPDATE stock_master 
-                                SET market_cap = %s 
+                                SET market_cap = %s, h52_price = %s, l52_price = %s
                                 -- industry_name = %s  [v44.7] 업종명 덮어쓰기 방지를 위해 주석 처리
                                 WHERE stock_code = %s
-                            """, (m_cap, code))
+                            """, (m_cap, h52, l52, code))
                         conn.commit()
                     
                     # [v19.0] 실적 데이터 동기화 API 호출 추가

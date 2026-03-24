@@ -359,15 +359,15 @@ class BlackBoxAnalyst:
                         if mw['foreigner']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 외인 매집 시 가산
                         if mw['institution']['vol5d'] > 0: agg_bonus += 2 # 최근 5일 기관 매집 시 가산
 
-                    # [v44.7] 바닥 탈출 초정밀 슬라이딩 필터 + 눌림목 구제
+                    # [v44.8] 진정한 바닥 탈출(52주 고점 기준) 눌림목 구제
                     cursor.execute("SELECT rsi FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 1", (clean_code,))
                     h_row = cursor.fetchone()
                     rsi = float(h_row['rsi'] or 50) if h_row else 50
 
-                    cursor.execute("SELECT MAX(price) as h60 FROM stock_intraday_history WHERE stock_code=%s AND captured_at >= DATE_SUB(NOW(), INTERVAL 60 DAY)", (clean_code,))
-                    h60_row = cursor.fetchone()
-                    h60 = float(h60_row['h60']) if h60_row and h60_row['h60'] else price
-                    is_pullback = (price < h60 * 0.97) # [v44.7] 고점 대비 3% 이상 하락 시 눌림목 (기준 완화)
+                    cursor.execute("SELECT h52_price FROM stock_master WHERE stock_code=%s", (clean_code,))
+                    h52_row = cursor.fetchone()
+                    h52 = float(h52_row['h52_price']) if h52_row and h52_row['h52_price'] > 0 else price
+                    is_pullback = (price < h52 * 0.85) # [v44.8] 52주 고점 대비 15% 이상 하락 시 눌림목 간주 (바닥 탈출 적극 우대)
                     final_score = (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus
                     if not is_pullback:
                         if rsi >= 75: final_score *= 0.7; data['reason'].append("⚠️심각과열")

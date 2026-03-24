@@ -367,19 +367,19 @@ class NextLeaderEngine(AIEngine):
                 # 최종 합산 및 직관 보너스 적용
                 total_score = max(0, min(100, total_score + intuition_bonus))
 
-                # [v44.7] 바닥 탈출(Bottom Breakout) 초정밀 슬라이딩 필터 + 눌림목 구제 로직
-                # RSI가 높아질수록 삭감하되, 최근 60일 고점 대비 -10% 이상 하락 시 '눌림목'으로 간주하여 필터 제외
+                # [v44.8] 진정한 바닥 탈출(52주 고점 기준) 눌림목 구제 로직
+                # RSI가 높아질수록 삭감하되, 52주 고점 대비 -3% 이상 하락 시 '눌림목'으로 간주하여 필터 제외
                 rsi = float(curr['rsi'] or 50)
                 price = float(curr['price'])
                 
-                # 최근 60일 고가 조회 (눌림목 판정용)
-                sql_60h = "SELECT MAX(price) as h60 FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 60 DAY)"
+                # 52주 고가 조회 (stock_master에 박제된 정밀 데이터 활용)
+                sql_h52 = "SELECT h52_price FROM stock_master WHERE stock_code = %s"
                 with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute(sql_60h, (code,))
-                    h60_row = cursor.fetchone()
-                    h60 = float(h60_row['h60']) if h60_row and h60_row['h60'] else price
+                    cursor.execute(sql_h52, (code,))
+                    h52_row = cursor.fetchone()
+                    h52 = float(h52_row['h52_price']) if h52_row and h52_row['h52_price'] > 0 else price
                 
-                is_pullback = (price < h60 * 0.97) # [v44.7] 고점 대비 3% 이상 하락 시 눌림목으로 간주 (기준 완화)
+                is_pullback = (price < h52 * 0.85) # [v44.8] 52주 고점 대비 15% 이상 하락 시 눌림목 간주 (바닥 탈출 적극 우대)
                 
                 if not is_pullback: # 눌림목이 아닐 때만 과열 필터 작동
                     if rsi >= 75:
