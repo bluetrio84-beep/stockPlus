@@ -163,7 +163,8 @@ class BlackBoxAnalyst:
                     comment += f"현재가가 공매도 평단가({int(avg_short_price):,})를 상회하며 세력의 압박이 가중되고 있습니다. "
                     bonus += 5.0
 
-                return {"status": status, "comment": comment, "bonus": bonus}        except: return {"status": "중립", "comment": "", "bonus": 0}
+                return {"status": status, "comment": comment, "bonus": bonus}
+        except: return {"status": "중립", "comment": "", "bonus": 0}
 
     def calculate_earnings_momentum(self, code):
         # [v28.7.1] 데이터 무결성 패치: 동일 report_code끼리만 비교 (착시 방지)
