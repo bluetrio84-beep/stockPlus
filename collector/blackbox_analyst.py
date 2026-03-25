@@ -274,37 +274,56 @@ class BlackBoxAnalyst:
 
     def calculate_tactical_tags(self, code, curr_price, curr_vol, f_buy):
         # [v27.0] 기본 시작 점수 40.0으로 하향 (변별력 강화)
-        score, tags = 40.0 + random.uniform(-0.5, 0.5), []
+        score, tags, s_score = 40.0 + random.uniform(-0.5, 0.5), [], 0.0
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # [v21.8] 프로그램 매수세(program_net_buy) 필드 추가 조회
+                # [v21.8] 프로그램 매수세 필드 추가 조회
                 cursor.execute("SELECT price, volume, rsi, ma5, ma20, program_net_buy FROM stock_intraday_history WHERE stock_code = %s ORDER BY id DESC LIMIT 5", (code,))
                 history = cursor.fetchall()
+                
                 if len(history) > 1:
-                    # [v33.0] 통합 스마트머니(S-Power) 하이브리드 판정 (기준 상향)
+                    # [v45.6] 실시간 스마트머니 4:3:3 정규화 레시피 (프로그램 40 : OBV 30 : 거래량 30)
+                    s_score = 0.0
+                    
+                    # 1. 프로그램 수급 (Max 40.0)
                     curr_pgm = float(history[0]['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / curr_vol) * 100 if curr_vol > 0 else 0
                     pgm_amt = curr_price * curr_pgm
+                    # A. 비중 점수 (30)
+                    if pgm_ratio >= 15 or pgm_amt >= 10000000000: s_score += 30.0; tags.append("🔥메가스마트머니")
+                    elif pgm_ratio >= 10 or pgm_amt >= 5000000000: s_score += 22.5; tags.append("스마트수급폭발")
+                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000: s_score += 15.0; tags.append("스마트머니유입")
+                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000: s_score += 7.5; tags.append("프로그램매수")
+                    # B. 연속성/수급강화 (10)
+                    if f_buy > 1000: s_score += 10.0; tags.append("수급포착")
                     
-                    if pgm_ratio >= 15 or pgm_amt >= 10000000000:
-                        score += 12.5; tags.append("🔥메가스마트머니")
-                    elif pgm_ratio >= 10 or pgm_amt >= 5000000000:
-                        score += 10; tags.append("스마트수급폭발")
-                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000:
-                        score += 7.5; tags.append("스마트머니유입")
-                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000:
-                        score += 5; tags.append("프로그램매수")
+                    # 2. OBV 매집 추세 (Max 30.0)
+                    cursor.execute("SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)", (code,))
+                    o_row = cursor.fetchone()
+                    if o_row and o_row['max_o'] is not None:
+                        curr_obv = float(history[0]['obv'] or 0)
+                        max_o, min_o = float(o_row['max_o']), float(o_row['min_o'])
+                        if max_o > min_o: 
+                            o_ratio = min(25.0, (curr_obv - min_o) / (max_o - min_o) * 25.0)
+                            s_score += o_ratio
+                        if curr_obv >= max_o: s_score += 5.0; tags.append("💎OBV매집포착")
+
+                    # 3. 거래 폭발력 (Max 30.0)
+                    if curr_vol > float(history[1]['volume'] or 1) * 1.5: 
+                        s_score += 20.0; tags.append("거래량포착")
+                    # 거래대금 50억 Floor 및 급증 가점 (10)
+                    if (curr_price * curr_vol) >= 5000000000: s_score += 10.0
                     
-                    if curr_vol > float(history[1]['volume'] or 1) * 1.3: score += 10; tags.append("거래량포착")
-                    if f_buy > 1000: score += 7; tags.append("수급포착")
-                    if float(history[0]['rsi'] or 50) <= 40: score += 12; tags.append("RSI바닥탈출")
-                    if float(history[0]['ma5'] or 0) > float(history[0]['ma20'] or 0) and (float(history[1]['ma5'] or 0) <= float(history[1]['ma20'] or 0)): score += 15; tags.append("골든크로스")
-                    if curr_price > float(history[1]['price']): score += 5; tags.append("추세반전")
-                cursor.execute("SELECT op_profit, revenue FROM company_financials WHERE stock_code=%s ORDER BY report_year DESC LIMIT 1", (code,))
-                f = cursor.fetchone()
-                if f and f['revenue'] > 0 and (float(f['op_profit'])/float(f['revenue'])) > 0.10: score += 5; tags.append("고수익성")
-        except: pass
-        return round(min(100, max(0, score)), 1), tags
+                    # 4. 차트 및 재무 가점 (종합 점수용 보너스)
+                    t_bonus = 0.0
+                    if float(history[0]['rsi'] or 50) <= 45: t_bonus += 15.0; tags.append("RSI바닥탈출")
+                    if float(history[0]['ma5'] or 0) > float(history[0]['ma20'] or 0) and (float(history[1]['ma5'] or 0) <= float(history[1]['ma20'] or 0)): t_bonus += 15.0; tags.append("골든크로스")
+                    
+                    # 최종 종합 점수 합산
+                    score += (s_score + t_bonus)
+        except Exception as e:
+            print(f">>> [BlackBox Score Error] {e}")
+        return round(min(100, max(0, score)), 1), tags, round(s_score, 1)
 
     def get_stock_data(self, stock_code, industry):
         # [v27.0] 초기 점수 40.0으로 통일 (거품 제거)
@@ -331,8 +350,9 @@ class BlackBoxAnalyst:
                 if info:
                     price, vol, f_buy = float(info['current_price']), float(info['volume']), float(info['foreign_net_buy'] or 0)
                     data['supply'] = {'foreign': int(f_buy)}
-                    q_score, tags = self.calculate_tactical_tags(clean_code, price, vol, f_buy)
+                    q_score, tags, s_score = self.calculate_tactical_tags(clean_code, price, vol, f_buy)
                     data['quant'] = q_score; data['reason'] = tags
+                    data['smart_money'] = s_score
                     
                     # 세력 평단가 및 섹터 모멘텀
                     w_cost, w_advice = self.calculate_whale_cost(clean_code, price)

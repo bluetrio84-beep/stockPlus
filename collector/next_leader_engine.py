@@ -156,7 +156,7 @@ class NextLeaderEngine(AIEngine):
                         if val > 0: consecutive_days += 1
                         else: break
                     if consecutive_days >= 3: p_score += 10.0
-                    elif consecutive_days == 2: p_score += 5.0
+                    elif consecutive_days >= 2: p_score += 5.0
 
                 # 2. 숏스퀴즈 및 공매도 (Max 15 or 0)
                 s_score = 0.0
@@ -396,9 +396,10 @@ class NextLeaderEngine(AIEngine):
                         reason = f"⚠️과열진입, {reason}"
                 # RSI 55 미만이거나 눌림목(Pullback) 구간은 점수 100% 보존
 
-                if total_score >= min_threshold:
-                    # [v23.0] 스마트머니 초정밀 점수 산출 (40:30:30 레시피)
-                    s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
+                # [v45.8] 수급 주도주 보호를 위해 스마트머니 점수 선제적 계산
+                s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
+
+                if total_score >= min_threshold or s_score >= 90.0:
                     if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
                     if obv_tag: reason = f"{obv_tag}, {reason}"
 
@@ -418,10 +419,16 @@ class NextLeaderEngine(AIEngine):
                         'smart_score': s_score
                     })
 
-            top_20 = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
+            # [v45.9] 랭킹 필터링 고도화 (종합 TOP 20 + 수급 대장주 합산)
+            top_by_total = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
+            high_smart_money = [r for r in results if r['smart_score'] >= 90.0]
+            
+            # 중복 제거하며 두 리스트 합산 (수급 대장주 보호)
+            final_list = {item['code']: item for item in (top_by_total + high_smart_money)}.values()
+            
             with self.conn.cursor() as cursor:
                 cursor.execute("DELETE FROM ai_next_leaders WHERE DATE(captured_at) = CURDATE()")
-                for idx, item in enumerate(top_20):
+                for idx, item in enumerate(final_list):
                     is_top10 = 'Y' if idx < 10 else 'N' # [v28.9.17] TOP 10 종목 별도 표시
                     sql = """INSERT INTO ai_next_leaders 
                              (stock_code, stock_name, total_score, algo_score, 
@@ -435,7 +442,7 @@ class NextLeaderEngine(AIEngine):
                     ))
             self.conn.commit()
             print(f">>> [Success] Hybrid AI (Quant + DeepLearning + Financial + Human) Sync Complete.")
-            return len(top_20)
+            return len(final_list)
         except Exception as e:
             print(f">>> [Error] {e}")
             return 0

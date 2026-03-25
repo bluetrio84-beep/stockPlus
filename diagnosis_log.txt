@@ -1,0 +1,5 @@
+>>> [AI Engine] Ensemble Ready (LSTM:True, TCN:True, XGB:True)
+>>> [NextLeader Engine] Initialization Complete.
+>>> [NextLeader] Mode: NEUTRAL | Dynamic Weights: L(33%) T(33%) X(34%)
+>>> [NextLeader] Human-in-the-Loop Analysis for 1855 stocks...
+>>> [Success] Hybrid AI (Quant + DeepLearning + Financial + Human) Sync Complete.
