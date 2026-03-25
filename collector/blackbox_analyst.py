@@ -113,8 +113,14 @@ class BlackBoxAnalyst:
                     o_row = cursor.fetchone()
                     if o_row and o_row['max_o'] is not None:
                         c_obv, max_o, min_o = float(curr['obv'] or 0), float(o_row['max_o']), float(o_row['min_o'])
-                        if max_o > min_o: s_score += min(25.0, (c_obv - min_o) / (max_o - min_o) * 25.0)
-                        if c_obv >= max_o: s_score += 5.0; tags.append("💎OBV매집포착")
+                        if max_o > min_o:
+                            s_score += min(25.0, (c_obv - min_o) / (max_o - min_o) * 25.0)
+                        
+                        # [v52.3] 진짜 돌파 포착: 오늘 이전의 10일 최고치와 비교 (추천 엔진 동기화)
+                        cursor.execute("SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)", (code,))
+                        p_max_row = cursor.fetchone()
+                        if p_max_row and p_max_row['p_max'] and c_obv > float(p_max_row['p_max']): 
+                            s_score += 5.0; tags.append("💎OBV매집포착")
                     # [v52.2] 수급 화력 제한 해제 (공매도 체크 제외, 30점 만점 고정)
                     current_energy = curr_price * curr_vol
                     if current_energy >= 5000000000: # 50억 Floor
