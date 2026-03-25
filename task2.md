@@ -2,6 +2,18 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v45.0 Full-Stack Security & Infrastructure Automation (2026-03-25 완료) 🔥
+*   **보안의 정점: HTTPS(SSL) 전격 도입 및 자동화**:
+    - **Let's Encrypt 무료 인증서 적용**: `stockplus.158.180.66.45.nip.io` 도메인에 대해 정식 보안 인증서(SSL) 발급 완료.
+    - **무중단 자동 갱신(Zero-Downtime Auto-Renewal) 구축**: Certbot 컨테이너가 12일 주기로 만료를 체크하고, 인증서 갱신 시 Nginx에 `-s reload` 신호를 자동으로 보내 서버 중단 없이 보안 상태 유지.
+    - **보안 프로토콜 강화**: TLS 1.2/1.3 강제 및 모든 HTTP 요청의 HTTPS 자동 리다이렉트 로직 구현.
+*   **도메인 기반 접근 체계 (nip.io) 완성**:
+    - IP 기반의 투박한 접근 방식을 탈피하고 전문적인 도메인 체계(`https://stockplus...`)로 완벽 이전.
+    - 루트 경로(`/`) 서빙을 통해 사용자 접근성 극대화 및 서브패스 종속성 제거.
+*   **인프라 오케스트레이션 고도화**:
+    - `docker-compose.yml`: 443 포트 개방 및 Certbot 서비스 신설, 도커 소켓 공유를 통한 컨테이너 간 신호 전달 체계 확립.
+    - `nginx.conf`: SSL 인증서 적용 및 ACME 챌린지 경로 최적화로 인증서 발급 무결성 확보.
+
 ## 🚀 v44.9 Root Domain Migration & nip.io Integration (2026-03-25 완료) 🔥
 *   **사용자 경험(UX) 혁신: 도메인 기반 접근 체계 구축**:
     - 기존 IP/서브패스 방식(`158.180.66.45/stockPlus`)을 폐지하고, **`stockplus.158.180.66.45.nip.io`** 루트 도메인 접근 환경 전격 도입.
