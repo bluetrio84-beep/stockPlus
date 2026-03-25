@@ -399,8 +399,8 @@ class NextLeaderEngine(AIEngine):
                 # [v45.8] 수급 주도주 보호를 위해 스마트머니 점수 선제적 계산
                 s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
 
-                # [v46.3] 리스크 관리 필터: 심각과열 또는 고점경계 종목은 대시보드에서 전격 배제
-                is_dangerous = "⚠️심각과열" in reason or "⚠️고점경계" in reason
+                # [v46.4] 리스크 관리 필터: '심각과열' 종목만 전격 배제 (고점경계는 추세로 인정하여 노출)
+                is_dangerous = "⚠️심각과열" in reason
 
                 if (total_score >= min_threshold or s_score >= 90.0) and not is_dangerous:
                     if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
