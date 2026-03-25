@@ -2,6 +2,18 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v50.4 AI Control Tower 'Full Masterpiece' Restoration (2026-03-25 완료) 🔥
+*   **UI 핵심 요소 100% 부활 (Feature Restoration)**:
+    - **실시간 뉴스 엔진 재가동**: 네이버 뉴스 API 연동을 통해 실시간 뉴스 6건 및 긍부정 감성 분석(Sentiment) 필드 복구.
+    - **AI 예측 및 시나리오 복구**: `hitRate`(성공 확률) 및 `scenario`(향후 전망) 텍스트를 다시 생성하여 대시보드 하단 영역의 전문성 확보.
+    - **입체적 뱃지(Reasoning) 시스템**: 전술 태그, 뉴스 상태, 실적 점수를 통합하여 `reasoning` 배열로 재조립. 관제탑 화면의 가시성 극대화.
+*   **S-Score 90.3 화력 고정 및 정밀화**:
+    - **OBV 배점 상한선 복구**: 20점에서 25점으로 상향하여 CMG제약 기준 90.3점의 강력한 수급 화력을 완벽히 재현.
+    - **정밀 반올림(`round`) 적용**: 소수점이 길게 늘어지던 현상을 박멸하고 소수점 첫째 자리까지 깔끔하게 표시되도록 UI 최적화.
+*   **시스템 동기화 및 안정성 마침표**:
+    - **추천 엔진 로직 이식**: `p_boost`, `s_boost` 가점 메서드를 관제탑에 이식하여 Quant 및 Total Score를 추천 엔진과 100% 일치시킴.
+    - **데이터 파이프라인 무결성**: 덮어쓰기 과정에서 발생했던 변수 정의 오류(NameError) 및 들여쓰기 오류(IndentationError)를 최종 수리 완료.
+
 ## 🚀 v49.0 Control Tower Masterpiece & Narrative Matrix Separation (2026-03-25 완료) 🔥
 *   **서사 엔진 아키텍처 혁신 (Narrative Matrix Separation)**:
     - **전문 라이브러리 독립**: `blackbox_analyst.py`에 내장되어 있던 방대한 문구 리스트(openings, critiques, supply, prediction 등)를 **`narrative_matrix.py`**로 완벽하게 분리.
