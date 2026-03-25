@@ -146,7 +146,7 @@ class NextLeaderEngine(AIEngine):
                     pgm_ratio = (curr_pgm / volume) * 100 if volume > 0 else 0
                     # 공매도 없으면 비중 점수 만점을 30점으로 상향 (총 40점 만점)
                     p_limit = 25.0 if has_short else 30.0
-                    p_score += min(p_limit, pgm_ratio * 1.8)
+                    p_score += min(p_limit, pgm_ratio * 1.7)
                     
                     df_pgm = pd.DataFrame(pgm_rows)
                     df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
@@ -399,7 +399,10 @@ class NextLeaderEngine(AIEngine):
                 # [v45.8] 수급 주도주 보호를 위해 스마트머니 점수 선제적 계산
                 s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
 
-                if total_score >= min_threshold or s_score >= 90.0:
+                # [v46.3] 리스크 관리 필터: 심각과열 또는 고점경계 종목은 대시보드에서 전격 배제
+                is_dangerous = "⚠️심각과열" in reason or "⚠️고점경계" in reason
+
+                if (total_score >= min_threshold or s_score >= 90.0) and not is_dangerous:
                     if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
                     if obv_tag: reason = f"{obv_tag}, {reason}"
 

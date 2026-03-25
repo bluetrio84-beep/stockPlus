@@ -289,11 +289,13 @@ class BlackBoxAnalyst:
                     curr_pgm = float(history[0]['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / curr_vol) * 100 if curr_vol > 0 else 0
                     pgm_amt = curr_price * curr_pgm
-                    # A. 비중 점수 (30)
-                    if pgm_ratio >= 15 or pgm_amt >= 10000000000: s_score += 30.0; tags.append("🔥메가스마트머니")
-                    elif pgm_ratio >= 10 or pgm_amt >= 5000000000: s_score += 22.5; tags.append("스마트수급폭발")
-                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000: s_score += 15.0; tags.append("스마트머니유입")
-                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000: s_score += 7.5; tags.append("프로그램매수")
+                    # A. 비중 점수 (30) - [v46.2] 가중치 1.7 정규화 적용
+                    s_score += min(30.0, pgm_ratio * 1.7)
+                    
+                    if pgm_ratio >= 15 or pgm_amt >= 10000000000: tags.append("🔥메가스마트머니")
+                    elif pgm_ratio >= 10 or pgm_amt >= 5000000000: tags.append("스마트수급폭발")
+                    elif pgm_ratio >= 5 or pgm_amt >= 2000000000: tags.append("스마트머니유입")
+                    elif pgm_ratio >= 2 or pgm_amt >= 1000000000: tags.append("프로그램매수")
                     # B. 연속성/수급강화 (10)
                     if f_buy > 1000: s_score += 10.0; tags.append("수급포착")
                     
