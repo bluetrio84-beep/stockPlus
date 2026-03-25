@@ -23,8 +23,8 @@ FROM nginx:stable-alpine
 # Copy the custom Nginx configuration
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the build output from the builder stage into a 'stockPlus' directory
-COPY --from=builder /app/dist /usr/share/nginx/html/stockPlus
+# Copy the build output from the builder stage into the Nginx document root
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

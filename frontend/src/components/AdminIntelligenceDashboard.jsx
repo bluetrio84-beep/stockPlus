@@ -31,7 +31,7 @@ const AdminIntelligenceDashboard = () => {
 
     const fetchConfig = async () => {
         try {
-            const res = await fetch('/stockPlus/api/admin/collector/config', { headers: getAuthHeader() });
+            const res = await fetch('/api/admin/collector/config', { headers: getAuthHeader() });
             if (res.ok) {
                 const cfg = await res.json();
                 if (cfg.collect_interval) setPollInterval(cfg.collect_interval * 1000); 
@@ -41,7 +41,7 @@ const AdminIntelligenceDashboard = () => {
 
     const fetchIntelData = async () => {
         try {
-            const res = await fetch('/stockPlus/api/admin/intelligence/dashboard', { headers: getAuthHeader() });
+            const res = await fetch('/api/admin/intelligence/dashboard', { headers: getAuthHeader() });
             if (res.ok) setData(await res.json());
         } catch (e) {} 
         finally { setIsLoading(false); }

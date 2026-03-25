@@ -16,7 +16,7 @@ const AiKeywordManager = () => {
     // 키워드 목록 로드
     const fetchKeywords = async () => {
         try {
-            const res = await fetch('/stockPlus/api/dashboard/keywords', { headers: getAuthHeader() });
+            const res = await fetch('/api/dashboard/keywords', { headers: getAuthHeader() });
             if (res.ok) {
                 const data = await res.json();
                 setKeywords(data);
@@ -40,7 +40,7 @@ const AiKeywordManager = () => {
         if (!newKeyword.trim() || isLimitReached) return;
 
         try {
-            const res = await fetch('/stockPlus/api/dashboard/keywords', {
+            const res = await fetch('/api/dashboard/keywords', {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ keyword: newKeyword.trim() })
@@ -57,7 +57,7 @@ const AiKeywordManager = () => {
     // 키워드 삭제
     const handleDeleteKeyword = async (keyword) => {
         try {
-            const res = await fetch(`/stockPlus/api/dashboard/keywords?keyword=${encodeURIComponent(keyword)}`, {
+            const res = await fetch(`/api/dashboard/keywords?keyword=${encodeURIComponent(keyword)}`, {
                 method: 'DELETE',
                 headers: getAuthHeader()
             });

@@ -51,7 +51,7 @@ const AdminSystemManagement = () => {
         try {
             setIsLoading(true);
             const offset = p * pageSize;
-            const res = await fetch(`/stockPlus/api/admin/stocks?limit=${pageSize}&offset=${offset}&marketType=${marketFilter}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/stocks?limit=${pageSize}&offset=${offset}&marketType=${marketFilter}`, { headers: getAuthHeader() });
             if (res.ok) { setStocks(await res.json()); setPage(p); }
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
@@ -59,7 +59,7 @@ const AdminSystemManagement = () => {
 
     const fetchStockCount = async () => {
         try {
-            const res = await fetch(`/stockPlus/api/admin/stocks/count?marketType=${marketFilter}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/stocks/count?marketType=${marketFilter}`, { headers: getAuthHeader() });
             if (res.ok) setTotalStockCount(await res.json());
         } catch (e) {}
     };
@@ -67,7 +67,7 @@ const AdminSystemManagement = () => {
     const fetchHolidays = async (year) => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/admin/holidays?year=${year}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/holidays?year=${year}`, { headers: getAuthHeader() });
             if (res.ok) setHolidays(await res.json());
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
@@ -76,7 +76,7 @@ const AdminSystemManagement = () => {
     const fetchUsers = async (keyword = '') => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/admin/users?keyword=${encodeURIComponent(keyword)}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/users?keyword=${encodeURIComponent(keyword)}`, { headers: getAuthHeader() });
             if (res.ok) setUsers(await res.json());
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
@@ -92,7 +92,7 @@ const AdminSystemManagement = () => {
         if (!searchKeyword.trim()) { fetchStocks(0); fetchStockCount(); return; }
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/stocks/search?keyword=${encodeURIComponent(searchKeyword)}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/stocks/search?keyword=${encodeURIComponent(searchKeyword)}`, { headers: getAuthHeader() });
             if (res.ok) {
                 let data = await res.json();
                 if (marketFilter !== 'ALL') data = data.filter(s => s.marketType === marketFilter);
@@ -113,7 +113,7 @@ const AdminSystemManagement = () => {
 
         const method = editingStock ? 'PUT' : 'POST';
         try {
-            const res = await fetch('/stockPlus/api/admin/stocks', {
+            const res = await fetch('/api/admin/stocks', {
                 method,
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -136,7 +136,7 @@ const AdminSystemManagement = () => {
 
         const method = editingHoliday ? 'PUT' : 'POST';
         try {
-            const res = await fetch('/stockPlus/api/admin/holidays', {
+            const res = await fetch('/api/admin/holidays', {
                 method,
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(holidayFormData)
@@ -164,7 +164,7 @@ const AdminSystemManagement = () => {
 
         const method = editingUser ? 'PUT' : 'POST';
         try {
-            const res = await fetch('/stockPlus/api/admin/users', {
+            const res = await fetch('/api/admin/users', {
                 method,
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify(userFormData)
@@ -177,7 +177,7 @@ const AdminSystemManagement = () => {
     const confirmDelete = async () => {
         if (!deleteTarget) return;
         try {
-            const res = await fetch(`/stockPlus/api/admin/stocks/${deleteTarget.stockCode}`, { method: 'DELETE', headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/stocks/${deleteTarget.stockCode}`, { method: 'DELETE', headers: getAuthHeader() });
             if (res.ok) { setDeleteConfirm(null); fetchStocks(page); fetchStockCount(); }
         } catch (e) {}
     };
@@ -185,7 +185,7 @@ const AdminSystemManagement = () => {
     const confirmDeleteHoliday = async () => {
         if (!deleteHolidayTarget) return;
         try {
-            const res = await fetch(`/stockPlus/api/admin/holidays/${deleteHolidayTarget.id}`, { method: 'DELETE', headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/holidays/${deleteHolidayTarget.id}`, { method: 'DELETE', headers: getAuthHeader() });
             if (res.ok) { setDeleteHolidayConfirm(null); fetchHolidays(holidayYear); }
         } catch (e) {}
     };
@@ -193,7 +193,7 @@ const AdminSystemManagement = () => {
     const confirmDeleteUser = async () => {
         if (!deleteUserTarget) return;
         try {
-            const res = await fetch(`/stockPlus/api/admin/users/${deleteUserTarget.usrId}`, { method: 'DELETE', headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/users/${deleteUserTarget.usrId}`, { method: 'DELETE', headers: getAuthHeader() });
             if (res.ok) { setDeleteUserConfirm(null); fetchUsers(userSearchKeyword); }
         } catch (e) {}
     };
@@ -203,7 +203,7 @@ const AdminSystemManagement = () => {
         if (!gitUrl.trim()) return setErrorPopup("Git URL을 입력하세요.");
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/admin/doc/scan?gitUrl=${encodeURIComponent(gitUrl)}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/doc/scan?gitUrl=${encodeURIComponent(gitUrl)}`, { headers: getAuthHeader() });
             if (!res.ok) throw new Error("스캔 엔진 구동 실패");
             const data = await res.json();
             setScannedData(data);

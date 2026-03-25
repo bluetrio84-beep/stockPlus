@@ -61,7 +61,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // [v36.52] 관리자 전용 API (접두어 포함 대응)
-                .requestMatchers("/api/admin/**", "/stockPlus/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin/**", "/api/admin/**").hasRole("ADMIN")
                 
                 // 3. 그 외 모든 요청 (대시보드, 포트폴리오 등)은 이제 반드시 로그인 필요
                 .anyRequest().authenticated()

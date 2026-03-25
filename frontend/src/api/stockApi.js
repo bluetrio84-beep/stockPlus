@@ -14,7 +14,7 @@ export const getAuthHeader = () => {
 
 // API 요청을 안전하게 수행하는 래퍼 함수 (공통 에러 처리 및 URL 보정)
 async function safeFetch(url, options = {}) {
-    const fullUrl = url.startsWith('/') ? url : `/stockPlus/${url}`;
+    const fullUrl = url.startsWith('/') ? url : `/${url}`;
     const headers = { ...getAuthHeader(), ...options.headers };
     
     console.log(`>>> [API CALL] ${options.method || 'GET'} ${fullUrl}`);
@@ -136,7 +136,7 @@ export function fetchStockAnalysis(stockCode, onChunk) {
     (async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/stockPlus/api/sse/stocks/${stockCode}/ai-analysis`, {
+            const response = await fetch(`/api/sse/stocks/${stockCode}/ai-analysis`, {
                 method: 'GET', // SSE는 GET 방식 사용
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -11,11 +11,7 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   // React.StrictMode: 개발 모드에서 잠재적인 문제를 감지하기 위한 도구입니다.
   <React.StrictMode>
-    {/* 
-      BrowserRouter: 브라우저의 URL과 연동된 라우팅을 가능하게 합니다.
-      basename="/stockPlus": 서브 디렉토리(/stockPlus) 경로에서 앱이 동작하도록 설정합니다.
-    */}
-    <BrowserRouter basename="/stockPlus">
+    <BrowserRouter>
       <App />
     </BrowserRouter>
   </React.StrictMode>,

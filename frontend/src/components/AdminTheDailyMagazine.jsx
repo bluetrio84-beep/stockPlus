@@ -54,7 +54,7 @@ const AdminTheDailyMagazine = () => {
     const fetchMagazineData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/stockPlus/api/admin/magazine/data', { headers: getAuthHeader() });
+            const res = await fetch('/api/admin/magazine/data', { headers: getAuthHeader() });
             if (res.ok) {
                 const data = await res.json();
                 const parsed = parseBriefing(data.briefing);
@@ -284,7 +284,7 @@ const AdminTheDailyMagazine = () => {
                             <Map style={{color: '#4f46e5'}} size={32} />
                             <h3 className="text-xl lg:text-3xl font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Industry Mapping</h3>
                         </div>
-                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10 cursor-pointer group relative" onClick={() => setZoomImage('/stockPlus/api/snapshots/heatmap_latest.png')}>
+                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10 cursor-pointer group relative" onClick={() => setZoomImage('/api/snapshots/heatmap_latest.png')}>
                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
                                 <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={48} />
                             </div>
@@ -293,7 +293,7 @@ const AdminTheDailyMagazine = () => {
                                 <span className="text-[8px] lg:text-[9px] font-bold italic tracking-widest uppercase" style={{color: '#94a3b8'}}>23:00 Capture</span>
                             </div>
                             <div className="max-w-[95%] mx-auto bg-[#f8fafc] relative overflow-hidden flex flex-col items-center justify-center border border-[#f1f5f9]">
-                                <img src="/stockPlus/api/snapshots/heatmap_latest.png" alt="Heatmap" className="w-full h-auto" crossOrigin="anonymous" />
+                                <img src="/api/snapshots/heatmap_latest.png" alt="Heatmap" className="w-full h-auto" crossOrigin="anonymous" />
                                 <ImageIcon size={64} style={{color: '#e2e8f0'}} className="absolute z-0" />
                             </div>
                         </div>
@@ -326,7 +326,7 @@ const AdminTheDailyMagazine = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-12 cursor-pointer group relative" onClick={() => setZoomImage('/stockPlus/api/snapshots/ranking_latest.png')}>
+                        <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-12 cursor-pointer group relative" onClick={() => setZoomImage('/api/snapshots/ranking_latest.png')}>
                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
                                 <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={48} />
                             </div>
@@ -335,7 +335,7 @@ const AdminTheDailyMagazine = () => {
                                 <span className="text-[8px] lg:text-[9px] font-bold italic tracking-widest uppercase" style={{color: '#94a3b8'}}>08:00 Capture</span>
                             </div>
                             <div className="max-w-[95%] mx-auto bg-[#f8fafc] relative overflow-hidden flex flex-col items-center justify-center border border-[#f1f5f9]">
-                                <img src="/stockPlus/api/snapshots/ranking_latest.png" alt="Ranking Board" className="w-full h-auto" crossOrigin="anonymous" />
+                                <img src="/api/snapshots/ranking_latest.png" alt="Ranking Board" className="w-full h-auto" crossOrigin="anonymous" />
                                 <ImageIcon size={64} style={{color: '#e2e8f0'}} className="absolute z-0" />
                             </div>
                         </div>

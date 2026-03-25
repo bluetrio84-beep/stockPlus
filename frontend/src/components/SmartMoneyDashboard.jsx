@@ -22,7 +22,7 @@ const SmartMoneyDashboard = () => {
     const fetchSmartMoneyStocks = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/stockPlus/api/admin/intelligence/smart-money', {
+            const res = await fetch('/api/admin/intelligence/smart-money', {
                 headers: getAuthHeader()
             });
             if (res.ok) {

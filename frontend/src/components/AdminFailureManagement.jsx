@@ -129,7 +129,7 @@ const AdminFailureManagement = () => {
 
     const fetchMetrics = async () => {
         try {
-            const res = await fetch('/stockPlus/api/admin/system/metrics', { headers: getAuthHeader() });
+            const res = await fetch('/api/admin/system/metrics', { headers: getAuthHeader() });
             if (res.ok) {
                 const data = await res.json();
                 setMetrics(data);
@@ -155,7 +155,7 @@ const AdminFailureManagement = () => {
         setAiAnalysis("");
 
         try {
-            const res = await fetch('/stockPlus/api/admin/system/analyze-log', {
+            const res = await fetch('/api/admin/system/analyze-log', {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ log: logContent })
@@ -174,7 +174,7 @@ const AdminFailureManagement = () => {
     const handleRestartSystem = async () => {
         if (!window.confirm("정말로 시스템을 긴급 재시작하시겠습니까?")) return;
         try {
-            const res = await fetch('/stockPlus/api/admin/system/restart', { method: 'POST', headers: getAuthHeader() });
+            const res = await fetch('/api/admin/system/restart', { method: 'POST', headers: getAuthHeader() });
             if (res.ok) alert("재시작 명령이 전송되었습니다.");
         } catch (err) {
             alert("명령 전송 실패");

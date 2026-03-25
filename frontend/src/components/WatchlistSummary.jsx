@@ -96,7 +96,7 @@ const WatchlistSummary = () => {
     useEffect(() => { loadFavoriteStocks(globalMarketMode); }, [globalMarketMode, loadFavoriteStocks]);
 
     useEffect(() => {
-        const eventSource = new EventSource('/stockPlus/api/sse/stocks');
+        const eventSource = new EventSource('/api/sse/stocks');
         eventSource.addEventListener('priceUpdate', (e) => {
             try {
                 let updates = JSON.parse(e.data);

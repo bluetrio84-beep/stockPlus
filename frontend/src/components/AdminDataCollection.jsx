@@ -31,10 +31,10 @@ const AdminDataCollection = () => {
     const fetchData = async () => {
         try {
             const [configRes, logsRes, statsRes, dataRes] = await Promise.all([
-                fetch('/stockPlus/api/admin/collector/config', { headers: getAuthHeader() }),
-                fetch('/stockPlus/api/admin/collector/logs', { headers: getAuthHeader() }),
-                fetch('/stockPlus/api/admin/collector/stats/hourly', { headers: getAuthHeader() }),
-                fetch('/stockPlus/api/admin/collector/data/all', { headers: getAuthHeader() })
+                fetch('/api/admin/collector/config', { headers: getAuthHeader() }),
+                fetch('/api/admin/collector/logs', { headers: getAuthHeader() }),
+                fetch('/api/admin/collector/stats/hourly', { headers: getAuthHeader() }),
+                fetch('/api/admin/collector/data/all', { headers: getAuthHeader() })
             ]);
             if (configRes.ok) {
                 const conf = await configRes.json();
@@ -62,7 +62,7 @@ const AdminDataCollection = () => {
 
     const handleIntervalChange = async (newVal) => {
         try {
-            await fetch('/stockPlus/api/admin/collector/interval', {
+            await fetch('/api/admin/collector/interval', {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ interval: newVal })
@@ -74,7 +74,7 @@ const AdminDataCollection = () => {
     const handleStrategyChange = async (newMode) => {
         try {
             setAiMode(newMode);
-            await fetch('/stockPlus/api/admin/collector/strategy', {
+            await fetch('/api/admin/collector/strategy', {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mode: newMode })
@@ -88,7 +88,7 @@ const AdminDataCollection = () => {
             // [v18.4] UI 즉시 반영 (Optimistic Update)
             setConfig(prev => ({ ...prev, collect_on_weekend: weekend, collect_on_holiday: holiday }));
             
-            const res = await fetch('/stockPlus/api/admin/collector/policy', {
+            const res = await fetch('/api/admin/collector/policy', {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ collectOnWeekend: weekend, collectOnHoliday: holiday })

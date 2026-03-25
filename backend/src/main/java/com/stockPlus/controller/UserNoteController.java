@@ -56,7 +56,7 @@ public class UserNoteController {
             log.info(">>> [Journal] Image Saved: {} by {}", fileName, usrId);
 
             // 4. 접근 URL 반환
-            return ResponseEntity.ok(Collections.singletonMap("url", "/stockPlus/api/notes/images/" + fileName));
+            return ResponseEntity.ok(Collections.singletonMap("url", "/api/notes/images/" + fileName));
         } catch (Exception e) {
             log.error(">>> [Journal] Upload Error", e);
             return ResponseEntity.internalServerError().build();

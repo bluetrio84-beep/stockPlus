@@ -31,7 +31,7 @@ const NextLeaderDashboard = () => {
     const fetchNextLeaders = async (date) => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/admin/intelligence/next-leaders?date=${date}`, {
+            const res = await fetch(`/api/admin/intelligence/next-leaders?date=${date}`, {
                 headers: getAuthHeader()
             });
             if (res.ok) {
@@ -51,7 +51,7 @@ const NextLeaderDashboard = () => {
                 item.stock_code === stockCode ? { ...item, feedback_tag: feedbackTag } : item
             ));
 
-            const res = await fetch(`/stockPlus/api/admin/intelligence/next-leaders/feedback`, {
+            const res = await fetch(`/api/admin/intelligence/next-leaders/feedback`, {
                 method: 'POST',
                 headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ stockCode, date: selectedDate, feedbackTag })
@@ -68,7 +68,7 @@ const NextLeaderDashboard = () => {
     const fetchReviewData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/stockPlus/api/admin/intelligence/ai-review`, {
+            const res = await fetch(`/api/admin/intelligence/ai-review`, {
                 headers: getAuthHeader()
             });
             if (res.ok) {

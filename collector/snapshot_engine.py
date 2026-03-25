@@ -15,7 +15,7 @@ DB_CONFIG = {
 }
 
 # 캡처 옵션 (Host 모드 최적화)
-BASE_URL = "http://127.0.0.1:80/stockPlus" 
+BASE_URL = "http://127.0.0.1:80/" 
 BACKEND_API_URL = "http://127.0.0.1:8080/api/dashboard"
 SAVE_DIR = "/app/snapshots"
 

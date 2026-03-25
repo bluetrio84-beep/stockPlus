@@ -1,4 +1,4 @@
-export const API_BASE_URL = '/stockPlus';
+export const API_BASE_URL = '';
 
 export const login = async (usrId, password) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {

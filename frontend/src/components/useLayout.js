@@ -41,12 +41,12 @@ export const useLayout = () => {
 
     const fetchNotifications = useCallback(async () => {
         try {
-            const res = await fetch('/stockPlus/api/dashboard/notifications', { headers: getAuthHeader() });
+            const res = await fetch('/api/dashboard/notifications', { headers: getAuthHeader() });
             if (res.ok) {
                 const data = await res.json();
                 setNotifications(data);
             }
-            const countRes = await fetch('/stockPlus/api/dashboard/notifications/unread-count', { headers: getAuthHeader() });
+            const countRes = await fetch('/api/dashboard/notifications/unread-count', { headers: getAuthHeader() });
             if (countRes.ok) {
                 const count = await countRes.json();
                 setUnreadCount(count);
@@ -72,7 +72,7 @@ export const useLayout = () => {
         setIsUserMenuOpen(false);
         if (!isNotificationOpen && unreadCount > 0) {
             setUnreadCount(0);
-            await fetch('/stockPlus/api/dashboard/notifications/read', { method: 'POST', headers: getAuthHeader() });
+            await fetch('/api/dashboard/notifications/read', { method: 'POST', headers: getAuthHeader() });
         }
     };
 

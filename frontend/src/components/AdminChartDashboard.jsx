@@ -15,7 +15,7 @@ const AdminChartDashboard = () => {
     const fetchChartData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/stockPlus/api/admin/intelligence/dashboard', { headers: getAuthHeader() });
+            const res = await fetch('/api/admin/intelligence/dashboard', { headers: getAuthHeader() });
             if (res.ok) {
                 const json = await res.json();
                 if (json.heatmap) {
@@ -46,7 +46,7 @@ const AdminChartDashboard = () => {
     const fetchLeadStocks = async (industryName) => {
         try {
             setIsFetchingLead(true);
-            const res = await fetch(`/stockPlus/api/admin/intelligence/industry?industryName=${encodeURIComponent(industryName)}`, { headers: getAuthHeader() });
+            const res = await fetch(`/api/admin/intelligence/industry?industryName=${encodeURIComponent(industryName)}`, { headers: getAuthHeader() });
             if (res.ok) {
                 const json = await res.json();
                 setLeadStocksInfo(json.leadStocks || "정보 없음");

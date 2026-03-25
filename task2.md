@@ -2,6 +2,21 @@
 
 > 본 파일은 v36.72 이후의 개발 현황을 관리합니다. 이전 기록은 `task.md` 및 `task_backup_v36.72_FINAL.md`를 참조하세요.
 
+## 🚀 v44.9 Root Domain Migration & nip.io Integration (2026-03-25 완료) 🔥
+*   **사용자 경험(UX) 혁신: 도메인 기반 접근 체계 구축**:
+    - 기존 IP/서브패스 방식(`158.180.66.45/stockPlus`)을 폐지하고, **`stockplus.158.180.66.45.nip.io`** 루트 도메인 접근 환경 전격 도입.
+    - HTTPS(SSL) 적용이 가능한 도메인 체계를 확보하여 시스템의 전문성 및 보안 확장성 강화.
+*   **Nginx & 라우팅 인프라 최적화**:
+    - `nginx.conf`: 루트 경로(`/`)에서 React 앱을 즉시 서빙하도록 구조 개편.
+    - **405 Method Not Allowed 해결**: API 프록시 경로의 트레일링 슬래시(`/`) 처리를 정교화하여 POST 요청 시 리다이렉트로 인한 메서드 변조 문제 완벽 차단.
+*   **전 시스템 경로 하드코딩 일괄 정화 (Global Purification)**:
+    - **Frontend**: `vite.config.js`의 `base` 경로를 `/`로 변경하고, React Router의 `basename="/stockPlus"` 설정을 제거하여 완전한 루트 라우팅 구현.
+    - **API Layer**: `stockApi.js`, `authApi.js` 내부에 숨어있던 하드코딩된 `/stockPlus/api` 경로 및 동적 URL 조립 로직을 `/api` 기준으로 전수 수정.
+    - **Backend**: 이미지 업로드 URL 반환(`UserNoteController`) 및 Spring Security 권한 설정(`SecurityConfig`) 내의 잔여 서브패스 경로 완전 제거.
+    - **Collector**: 스냅샷 엔진(`SnapshotEngine`)의 접속 주소를 루트 도메인으로 동기화하여 자동 분석 캡처 기능 정상화.
+*   **배포 아키텍처 정밀 수정**:
+    - `Dockerfile`: 프론트엔드 빌드 결과물의 복사 대상을 Nginx 루트(`/usr/share/nginx/html`)로 변경하여 도메인 접속 시 즉시 로드되도록 최적화.
+
 ## 🚀 v44.8 52-Week High/Low Integration & Pullback Innovation (2026-03-24 완료) 🔥
 *   **52주 최고/최저가 데이터 자산화 (Infrastructure)**:
     - `stock_master` 테이블에 `h52_price`(52주 고가), `l52_price`(52주 저가) 컬럼 신설 및 데이터 정합성 확보.
