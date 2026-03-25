@@ -391,12 +391,17 @@ class BlackBoxAnalyst:
                     h52_row = cursor.fetchone()
                     h52 = float(h52_row['h52_price']) if h52_row and h52_row['h52_price'] > 0 else price
                     is_pullback = (price < h52 * 0.85) # [v44.8] 52주 고점 대비 15% 이상 하락 시 눌림목 간주 (바닥 탈출 적극 우대)
-                    final_score = (q_score * w_algo) + (s_xgb * w_ai) + mw_adj + data['earnings']['bonus'] + agg_bonus
+                    # [v46.5] 관제탑 종합 점수(Total) 고출력 엔진 개조 (추천 엔진과 동기화)
+                    # 알고리즘(Q)과 AI(XGB)의 밸런스 합산 후, 수급 및 실적 보너스를 '다이렉트'로 가산
+                    # 이렇게 해야 수급 폭발 종목이 가중치에 의해 점수가 깎이는 현상을 막을 수 있음
+                    base_combined = (q_score * w_algo) + (s_xgb * w_ai)
+                    final_score = base_combined + mw_adj + data['earnings']['bonus'] + agg_bonus
+                    
                     if not is_pullback:
+                        # [v46.4] 리스크 관리 필터 동기화
                         if rsi >= 75: final_score *= 0.7; data['reason'].append("⚠️심각과열")
                         elif rsi >= 65: final_score *= 0.85; data['reason'].append("⚠️고점경계")
-                        elif rsi >= 60: final_score *= 0.92; data['reason'].append("⚠️추세주의")
-                        elif rsi >= 55: final_score *= 0.95; data['reason'].append("⚠️과열진입")
+                        # (65점 이하는 삭감 없이 100% 보존)
 
                     data['xgb'] = round(max(0, min(100, final_score)), 1)
                     
@@ -450,7 +455,9 @@ class BlackBoxAnalyst:
             f_buy = data['supply']['foreign']
             whale_c = data['whale'].get('cost', 0)
             curr_p = whale_c if whale_c > 0 else 0 # 현재가 대용
-            pgm_amt = (f_buy * curr_p) / 100000000 # 억 단위
+            # [v45.8] 자금 유입 문구 정교화: 외국인이 아닌 '프로그램 전체 순매수' 기반으로 금액 산출
+            curr_pgm = float(history[0]['program_net_buy'] or 0)
+            pgm_amt = (curr_pgm * curr_p) / 100000000 # 억 단위
             s_score = data.get('smart_money', 0)
             short_avg = data['short_sentiment'].get('avg_short_price', 0)
             rsi = data.get('rsi', 50)
