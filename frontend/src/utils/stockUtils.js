@@ -29,11 +29,11 @@ export const getColorClass = (sign, change) => {
 
 export const getMarketDisplay = (marketMode) => {
     if (marketMode === 'NX') {
-        return { name: 'NXT', colorClass: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+        return { name: 'NXT', colorClass: 'bg-purple-600/10 text-purple-600 border-purple-600/30' };
     } else if (marketMode === 'UN') {
-        return { name: 'UN', colorClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+        return { name: 'UN', colorClass: 'bg-emerald-600/10 text-emerald-600 border-emerald-600/30' };
     } else {
-        return { name: 'KRX', colorClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+        return { name: 'KRX', colorClass: 'bg-blue-600/10 text-blue-600 border-blue-600/30' };
     }
 };
 

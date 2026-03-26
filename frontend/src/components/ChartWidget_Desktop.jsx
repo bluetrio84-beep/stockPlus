@@ -106,11 +106,11 @@ const ChartWidgetDesktop = (props) => {
 
   return (
     <div id="stock-chart-area" className="w-full h-full flex flex-col bg-[var(--theme-header)] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-xl relative min-h-0">
-      <div className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] shrink-0">
+      <div className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] shrink-0 transition-colors duration-500">
             <div>
-                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[var(--theme-text)] flex items-center gap-2 transition-colors">
                     {stock.name}
-                    {isKosdaq(stock) && <span className="text-indigo-400 -ml-1">*</span>}
+                    {isKosdaq(stock) && <span className="text-[var(--theme-point)] -ml-1">*</span>}
                     {getStockStatusBadge(stock) && (
                         <span className={classNames("text-xs px-1.5 py-0.5 rounded border leading-tight", getStockStatusBadge(stock).color)}>
                             {getStockStatusBadge(stock).label}
@@ -118,19 +118,19 @@ const ChartWidgetDesktop = (props) => {
                     )}
                     <span className="text-sm font-normal text-slate-500 flex items-center gap-2">
                         {stock.code}
-                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-[var(--theme-bg)]/50 px-1.5 py-0.5 rounded">
+                        <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1 bg-[var(--theme-bg)]/50 px-1.5 py-0.5 rounded transition-colors">
                             {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
-                            {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
+                            {stock.indexName && <span className="text-[var(--theme-point)]/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
                         {stock.aiScore !== undefined && stock.aiScore !== null && (
                             <span className={classNames("text-[10px] font-black px-2 py-0.5 rounded-full border leading-tight flex items-center gap-1.5 shadow-sm transition-all", 
-                                stock.aiScore >= 80 ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : 
-                                (stock.aiScore >= 50 ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30")
+                                stock.aiScore >= 80 ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : 
+                                (stock.aiScore >= 50 ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-[var(--theme-point)]/10 text-[var(--theme-point)] border-[var(--theme-point)]/20")
                             )}>
                                 <span className={classNames("w-1.5 h-1.5 rounded-full", 
                                     stock.aiScore >= 90 ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]" : 
                                     (stock.aiScore >= 80 ? "bg-rose-400 shadow-[0_0_5px_rgba(244,63,94,0.5)]" : 
-                                    (stock.aiScore >= 50 ? "bg-amber-400 animate-pulse" : "bg-indigo-400"))
+                                    (stock.aiScore >= 50 ? "bg-amber-400 animate-pulse" : "bg-[var(--theme-point)]"))
                                 )}></span>
                                 AI {Math.round(stock.aiScore)}
                             </span>
@@ -144,23 +144,23 @@ const ChartWidgetDesktop = (props) => {
             </div>
             <div className="flex flex-col items-end gap-2 text-[11px]">
                 <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-end"><span className="text-slate-500">전일</span><span className="font-bold text-slate-300">{parseFloat(stock.prevClose || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end"><span className="text-slate-500">시가</span><span className="font-bold text-slate-300">{parseFloat(stock.open || 0).toLocaleString()}</span></div>
+                    <div className="flex flex-col items-end"><span className="text-slate-500 opacity-80">전일</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.prevClose || 0).toLocaleString()}</span></div>
+                    <div className="flex flex-col items-end"><span className="text-slate-500 opacity-80">시가</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.open || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-trade-up opacity-80">고가</span><span className="font-bold text-trade-up">{parseFloat(stock.high || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-trade-down opacity-80">저가</span><span className="font-bold text-trade-down">{parseFloat(stock.low || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end"><span className="text-slate-500">거래량</span><span className="font-bold text-slate-300">{parseFloat(stock.volume || 0).toLocaleString()}</span></div>
+                    <div className="flex flex-col items-end"><span className="text-slate-500 opacity-80">거래량</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.volume || 0).toLocaleString()}</span></div>
                 </div>
                 <div className="flex items-center gap-4 border-t border-[var(--theme-border)]/50 pt-1.5">
-                    <div className="flex flex-col items-end"><span className="text-slate-500">시총</span><span className="font-bold text-slate-300">{parseFloat(stock.marketCap || 0).toLocaleString()}억</span></div>
-                    <div className="flex flex-col items-end"><span className="text-slate-500">상장주식</span><span className="font-bold text-slate-300">{parseFloat(stock.listedShares || 0).toLocaleString()}</span></div>
+                    <div className="flex flex-col items-end"><span className="text-slate-500 opacity-80">시총</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.marketCap || 0).toLocaleString()}억</span></div>
+                    <div className="flex flex-col items-end"><span className="text-slate-500 opacity-80">상장주식</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.listedShares || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-trade-up opacity-60">52주 최고</span><span className="font-bold text-trade-up">{parseFloat(stock.high52w || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-trade-down opacity-60">52주 최저</span><span className="font-bold text-trade-down">{parseFloat(stock.low52w || 0).toLocaleString()}</span></div>
                 </div>
             </div>
       </div>
-      <div className="flex bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0">
+      <div className="flex bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0 transition-colors duration-500">
         {[ { id: 'chart', name: '차트' }, { id: 'daily', name: '일별' }, { id: 'investors', name: '투자자' }, { id: 'traders', name: '거래원' } ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-xs font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-[var(--theme-bg)]/50" : "border-transparent text-slate-500 hover:text-slate-300")}>{tab.name}</button>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-xs font-black border-b-2 transition-all", activeTab === tab.id ? "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50" : "border-transparent text-slate-500 hover:text-[var(--theme-text)]")}>{tab.name}</button>
         ))}
       </div>
       <div className="flex-1 min-h-0 relative bg-[var(--theme-header)]">

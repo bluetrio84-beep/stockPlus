@@ -5,33 +5,29 @@ import "ag-grid-community/styles/ag-theme-quartz.css";
 import '../index.css';
 
 const InvestorTable = ({ data, isDataLoaded }) => {
-  // 로딩 중 표시
   if (!isDataLoaded) {
     return (
-      <div className="flex-1 flex items-center justify-center h-full bg-slate-900/20">
-        <div className="animate-spin text-indigo-500 border-4 border-t-transparent border-indigo-500 rounded-full w-8 h-8"></div>
+      <div className="flex-1 flex items-center justify-center h-full bg-[var(--theme-bg)] transition-colors duration-500">
+        <div className="animate-spin text-[var(--theme-point)] border-4 border-t-transparent border-[var(--theme-point)] rounded-full w-8 h-8"></div>
       </div>
     );
   }
 
-  // 데이터 없음 표시
   if (!data || !data.items || data.items.length === 0) {
     return (
-      <div className="flex items-center justify-center text-slate-500 text-xs h-full bg-slate-900/20">
+      <div className="flex items-center justify-center text-slate-500 text-xs h-full bg-[var(--theme-bg)] transition-colors duration-500">
         투자자 데이터가 없습니다.
       </div>
     );
   }
 
-  // 컬럼 정의
   const colDefs = useMemo(() => [
     { 
       field: 'date', 
       headerName: '일자', 
-      flex: 0.8, // 축소
-      minWidth: 60, // 축소
-      cellClass: 'text-left font-medium text-white text-[11px] md:text-xs flex items-center', 
-      // MM.DD 포맷인지 확인 (이미 백엔드에서 MM.DD로 오지만 확실하게)
+      flex: 0.8, 
+      minWidth: 60, 
+      cellClass: 'text-left font-medium text-[var(--theme-text)] text-[11px] md:text-xs flex items-center transition-colors', 
       valueFormatter: (params) => params.value
     },
     { 
@@ -41,8 +37,8 @@ const InvestorTable = ({ data, isDataLoaded }) => {
       minWidth: 80, 
       cellClass: (params) => {
         const change = parseFloat(params.data.change || 0);
-        const color = change > 0 ? 'text-rose-400' : change < 0 ? 'text-blue-400' : 'text-white';
-        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${color}`;
+        const color = change > 0 ? 'text-rose-500' : change < 0 ? 'text-blue-500' : 'text-[var(--theme-text)]';
+        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${color} transition-colors`;
       },
       valueFormatter: (params) => Number(params.value).toLocaleString()
     },
@@ -51,10 +47,10 @@ const InvestorTable = ({ data, isDataLoaded }) => {
       headerName: '개인', 
       flex: 1.3, 
       minWidth: 80,
-      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
+      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end transition-colors',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white'; 
+        const color = val > 0 ? 'text-rose-500' : val < 0 ? 'text-blue-500' : 'text-[var(--theme-text)]'; 
         return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     },
@@ -63,10 +59,10 @@ const InvestorTable = ({ data, isDataLoaded }) => {
       headerName: '외인', 
       flex: 1.3, 
       minWidth: 80, 
-      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
+      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end transition-colors',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white';
+        const color = val > 0 ? 'text-rose-500' : val < 0 ? 'text-blue-500' : 'text-[var(--theme-text)]';
         return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     },
@@ -75,43 +71,42 @@ const InvestorTable = ({ data, isDataLoaded }) => {
       headerName: '기관', 
       flex: 1.3, 
       minWidth: 80, 
-      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
+      cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end transition-colors',
       cellRenderer: (params) => {
         const val = parseInt(params.value || 0);
-        const color = val > 0 ? 'text-rose-400' : val < 0 ? 'text-blue-400' : 'text-white';
+        const color = val > 0 ? 'text-rose-500' : val < 0 ? 'text-blue-500' : 'text-[var(--theme-text)]';
         return <span className={color}>{Math.round(val).toLocaleString()}</span>;
       }
     }
   ], []);
 
-  // 기본 컬럼 설정
   const defaultColDef = useMemo(() => ({
     sortable: true,
     resizable: true,
     suppressMenu: true,
-    headerClass: 'bg-slate-900/50 text-white font-bold border-b border-slate-800 text-[11px] md:text-xs'
+    headerClass: 'bg-[var(--theme-header)] text-[var(--theme-text)] font-bold border-b border-[var(--theme-border)] text-[11px] md:text-xs transition-colors'
   }), []);
 
   const getRowClass = (params) => {
-    return params.node.rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-800/20';
+    return params.node.rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-[var(--theme-point)]/5';
   };
 
   return (
-    <div className="absolute inset-0 w-full flex flex-col bg-slate-900/20 ag-theme-quartz-dark">
+    <div className="absolute inset-0 w-full flex flex-col bg-[var(--theme-bg)] ag-theme-quartz transition-colors duration-500">
       <style>{`
-        .ag-theme-quartz-dark {
+        .ag-theme-quartz {
           --ag-background-color: transparent;
-          --ag-header-background-color: #0f172a;
-          --ag-row-hover-color: rgba(30, 41, 59, 0.5);
-          --ag-border-color: #1e293b;
-          --ag-header-foreground-color: white;
+          --ag-header-background-color: var(--theme-header);
+          --ag-row-hover-color: var(--theme-point-alpha, rgba(99, 102, 241, 0.1));
+          --ag-border-color: var(--theme-border);
+          --ag-header-foreground-color: var(--theme-text);
           --ag-font-family: 'Pretendard', sans-serif;
           --ag-font-size: 12px;
-          --ag-header-cell-hover-background-color: #1e293b;
-          --ag-data-color: white;
+          --ag-header-cell-hover-background-color: var(--theme-border);
+          --ag-data-color: var(--theme-text);
         }
         .ag-root-wrapper { border: none !important; }
-        .ag-header-cell-label { justify-content: flex-start !important; } /* 헤더 좌측 정렬 */
+        .ag-header-cell-label { justify-content: flex-start !important; }
       `}</style>
       <div className="flex-1 w-full">
         <AgGridReact

@@ -14,7 +14,7 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
         <div 
             onClick={() => onStockClick && onStockClick(stock)} 
             className={classNames("flex justify-between items-center p-3 cursor-pointer border-b border-[var(--theme-border)] transition-colors relative group", {
-                "bg-slate-800": isSelected,
+                "bg-[var(--theme-point)]/10": isSelected,
                 "hover:bg-[var(--theme-bg)]/50": !isSelected
             })}
         >
@@ -24,7 +24,7 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                         e.stopPropagation();
                         onToggleFavorite(stock.code, stock.exchangeCode, !stock.isFavorite);
                     }}
-                    className="p-1 text-slate-600 hover:text-yellow-400 z-10"
+                    className="p-1 text-slate-500 hover:text-yellow-400 z-10"
                 >
                     <Star size={16} className={classNames("transition-all", {
                         "fill-yellow-400 text-yellow-400": stock.isFavorite,
@@ -32,12 +32,12 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                     })} />
                 </button>
                 <div>
-                    <div className="font-bold text-slate-200 flex items-center gap-1.5">
+                    <div className="font-bold text-[var(--theme-text)] flex items-center gap-1.5 transition-colors">
                         {stock.name}
-                        {isKosdaq(stock) && <span className="text-indigo-400">*</span>}
+                        {isKosdaq(stock) && <span className="text-[var(--theme-point)]">*</span>}
                         {badge && <span className={classNames("text-[10px] px-1 rounded border leading-tight", badge.color)}>{badge.label}</span>}
                     </div>
-                    <div className="text-xs text-slate-500">{stock.code}</div>
+                    <div className="text-xs text-slate-500 opacity-80">{stock.code}</div>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-0.5">

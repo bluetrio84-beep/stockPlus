@@ -7,7 +7,7 @@ import '../index.css';
 const DailyPriceTable = ({ prices }) => {
   if (!prices || prices.length === 0) {
     return (
-      <div className="flex items-center justify-center text-slate-500 text-xs h-full bg-slate-900/20">
+      <div className="flex items-center justify-center text-slate-500 text-xs h-full bg-[var(--theme-bg)]">
         시세 데이터가 없습니다.
       </div>
     );
@@ -17,13 +17,12 @@ const DailyPriceTable = ({ prices }) => {
     { 
       field: 'date', 
       headerName: '일자', 
-      flex: 0.8, // 너비 비율 축소
-      minWidth: 60, // 최소 너비 축소 (4자리 MM.DD 충분)
-      cellClass: 'text-left font-medium text-white text-[11px] md:text-xs flex items-center', 
+      flex: 0.8, 
+      minWidth: 60, 
+      cellClass: 'text-left font-medium text-[var(--theme-text)] text-[11px] md:text-xs flex items-center transition-colors', 
       valueFormatter: (params) => {
         if (!params.value) return '-';
         const date = new Date(params.value * 1000); 
-        // MM.DD 형식으로 직접 변환 (공백 제거)
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${month}.${day}`;
@@ -36,7 +35,7 @@ const DailyPriceTable = ({ prices }) => {
       minWidth: 90,
       cellClass: (params) => {
         const change = params.data.change || 0;
-        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${change > 0 ? 'text-trade-up' : change < 0 ? 'text-trade-down' : 'text-white'}`;
+        return `font-bold text-[11px] md:text-xs flex items-center justify-end ${change > 0 ? 'text-trade-up' : change < 0 ? 'text-trade-down' : 'text-[var(--theme-text)]'}`;
       },
       valueFormatter: (params) => Number(params.value).toLocaleString()
     },
@@ -48,7 +47,7 @@ const DailyPriceTable = ({ prices }) => {
       cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
       cellRenderer: (params) => {
         const val = params.value || 0;
-        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-white';
+        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-[var(--theme-text)]';
         const sign = val > 0 ? '▲' : val < 0 ? '▼' : '';
         return <span className={color}>{sign} {Math.abs(val).toLocaleString()}</span>;
       }
@@ -61,7 +60,7 @@ const DailyPriceTable = ({ prices }) => {
       cellClass: 'font-bold text-[11px] md:text-xs flex items-center justify-end',
       cellRenderer: (params) => {
         const val = params.value || 0;
-        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-white';
+        const color = val > 0 ? 'text-trade-up' : val < 0 ? 'text-trade-down' : 'text-[var(--theme-text)]';
         const sign = val > 0 ? '+' : '';
         return <span className={color}>{sign}{Number(val).toFixed(2)}%</span>;
       }
@@ -71,7 +70,7 @@ const DailyPriceTable = ({ prices }) => {
       headerName: '거래량', 
       flex: 1.3, 
       minWidth: 100, 
-      cellClass: 'text-white text-[11px] md:text-xs flex items-center justify-end',
+      cellClass: 'text-[var(--theme-text)] text-[11px] md:text-xs flex items-center justify-end transition-colors',
       valueFormatter: (params) => Number(params.value).toLocaleString()
     }
   ], []);
@@ -80,26 +79,26 @@ const DailyPriceTable = ({ prices }) => {
     sortable: true,
     resizable: true,
     suppressMenu: true,
-    headerClass: 'bg-slate-900/50 text-white font-bold border-b border-slate-800 text-[11px] md:text-xs'
+    headerClass: 'bg-[var(--theme-header)] text-[var(--theme-text)] font-bold border-b border-[var(--theme-border)] text-[11px] md:text-xs transition-colors'
   }), []);
 
   const getRowClass = (params) => {
-    return params.node.rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-slate-800/20';
+    return params.node.rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-[var(--theme-point)]/5';
   };
 
   return (
-    <div className="absolute inset-0 w-full flex flex-col bg-slate-900/20 ag-theme-quartz-dark">
+    <div className="absolute inset-0 w-full flex flex-col bg-[var(--theme-bg)] ag-theme-quartz transition-colors duration-500">
       <style>{`
-        .ag-theme-quartz-dark {
+        .ag-theme-quartz {
           --ag-background-color: transparent;
-          --ag-header-background-color: #0f172a;
-          --ag-row-hover-color: rgba(30, 41, 59, 0.5);
-          --ag-border-color: #1e293b;
-          --ag-header-foreground-color: white; /* 헤더 텍스트 흰색 */
+          --ag-header-background-color: var(--theme-header);
+          --ag-row-hover-color: var(--theme-point-alpha, rgba(99, 102, 241, 0.1));
+          --ag-border-color: var(--theme-border);
+          --ag-header-foreground-color: var(--theme-text);
           --ag-font-family: 'Pretendard', sans-serif;
           --ag-font-size: 12px;
-          --ag-header-cell-hover-background-color: #1e293b;
-          --ag-data-color: white; /* 기본 데이터 텍스트 흰색 */
+          --ag-header-cell-hover-background-color: var(--theme-border);
+          --ag-data-color: var(--theme-text);
         }
         .ag-root-wrapper { border: none !important; }
         .ag-header-cell-label { justify-content: flex-start !important; }

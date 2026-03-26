@@ -57,11 +57,11 @@ function Dashboard() {
         <div key={index} className={classNames("mb-2.5 last:mb-0 leading-relaxed", { "pl-1": !isNumbered })}>
           {isNumbered ? (
             <div className="flex gap-2">
-              <span className="text-indigo-400 font-black shrink-0 text-[13px]">{line.match(/^\d+\./)[0]}</span>
-              <span className="text-white font-semibold text-[13px]">{line.replace(/^\d+\./, '').trim()}</span>
+              <span className="text-[var(--theme-point)] font-black shrink-0 text-[13px]">{line.match(/^\d+\./)[0]}</span>
+              <span className="text-[var(--theme-text)] font-semibold text-[13px] transition-colors">{line.replace(/^\d+\./, '').trim()}</span>
             </div>
           ) : (
-            <span className="text-slate-100 text-[13px]">{line}</span>
+            <span className="text-[var(--theme-text)] opacity-90 text-[13px] transition-colors">{line}</span>
           )}
         </div>
       );

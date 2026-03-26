@@ -56,9 +56,9 @@ const LayoutDesktop = ({ logic }) => {
                     )}
                     <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--theme-bg)] hover:bg-slate-700 border border-[var(--theme-border)] transition-all shadow-sm">
                         <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-xs font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
-                        <span className="text-xs font-bold text-slate-300">{usrName}님</span>
+                        <span className="text-xs font-bold text-[var(--theme-text)] opacity-90 transition-colors">{usrName}님</span>
                     </button>
-                    <button onClick={handleNotificationToggle} className="p-2 text-slate-400 hover:text-white relative group">
+                    <button onClick={handleNotificationToggle} className="p-2 text-slate-400 hover:text-[var(--theme-text)] relative group transition-colors">
                         <Bell size={22} />
                         {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>}
                     </button>
@@ -149,13 +149,13 @@ const LayoutDesktop = ({ logic }) => {
                     </nav>
                 </aside>
 
-                <div className="flex-1 flex flex-col min-w-0 bg-[var(--theme-bg)] relative transition-colors duration-500">
+                <div className="flex-1 flex flex-col min-0 bg-[var(--theme-bg)] relative transition-colors duration-500">
                     <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-6 py-2 flex items-center gap-8 overflow-hidden shrink-0 transition-colors duration-500">
                         <div className="flex gap-8 shrink-0">
                             {marketIndices.map(index => (
                                 <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit">
                                     <span className="text-xs font-black text-slate-500">{index.name}</span>
-                                    <span className="text-sm font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
+                                    <span className="text-sm font-bold font-mono text-[var(--theme-text)]">{parseFloat(index.price || 0).toLocaleString()}</span>
                                     <span className={classNames("text-[10px] font-bold font-mono", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                         {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                                     </span>
