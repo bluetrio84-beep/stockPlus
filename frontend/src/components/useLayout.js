@@ -17,6 +17,16 @@ export const useLayout = () => {
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     
+    // [v52.5] 테마 관리 상태 추가
+    const [theme, setTheme] = useState(localStorage.getItem('app-theme') || 'midnight');
+    const [isThemeOpen, setIsThemeOpen] = useState(false);
+
+    useEffect(() => {
+        // [v52.5] 테마 변경 시 HTML 속성에 반영 및 저장
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('app-theme', theme);
+    }, [theme]);
+    
     const usrName = localStorage.getItem('usrName') || '사용자';
 
     const loadMarketIndices = useCallback(async () => {
@@ -96,6 +106,7 @@ export const useLayout = () => {
         usrName,
         handleNotificationToggle,
         handleUserMenuToggle,
-        handleLogout
+        handleLogout,
+        theme, setTheme, isThemeOpen, setIsThemeOpen
     };
 };

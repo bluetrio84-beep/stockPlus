@@ -40,3 +40,61 @@
   /* 스크롤바 핸들 색상 및 둥근 모서리 처리 */
   @apply bg-slate-700 rounded-full hover:bg-slate-600;
 }
+
+/** 
+ * [v52.5] 테마 시스템 (6종) - 전역 CSS 변수 정의
+ * 네이버 스타일 테마 스위처용 색상 팔레트
+ */
+:root {
+  --theme-bg: #020617;        /* Midnight (Default) */
+  --theme-header: #0f172a;
+  --theme-point: #6366f1;     /* Indigo */
+  --theme-sub-point: #22d3ee; /* Cyan */
+  --theme-text: #e2e8f0;
+  --theme-border: #1e293b;
+}
+
+[data-theme='pure-white'] {
+  --theme-bg: #ffffff;
+  --theme-header: #f8fafc;
+  --theme-point: #4f46e5;
+  --theme-sub-point: #0ea5e9;
+  --theme-text: #0f172a;
+  --theme-border: #e2e8f0;
+}
+
+[data-theme='pitch-black'] {
+  --theme-bg: #000000;
+  --theme-header: #0a0a0a;
+  --theme-point: #f8fafc;
+  --theme-sub-point: #94a3b8;
+  --theme-text: #ffffff;
+  --theme-border: #262626;
+}
+
+[data-theme='forest-green'] {
+  --theme-bg: #064e3b;
+  --theme-header: #065f46;
+  --theme-point: #10b981;
+  --theme-sub-point: #34d399;
+  --theme-text: #ecfdf5;
+  --theme-border: #065f46;
+}
+
+[data-theme='royal-wine'] {
+  --theme-bg: #450a0a;
+  --theme-header: #7f1d1d;
+  --theme-point: #fb7185;
+  --theme-sub-point: #fda4af;
+  --theme-text: #fff1f2;
+  --theme-border: #7f1d1d;
+}
+
+[data-theme='deep-ocean'] {
+  --theme-bg: #0c4a6e;
+  --theme-header: #075985;
+  --theme-point: #38bdf8;
+  --theme-sub-point: #7dd3fc;
+  --theme-text: #f0f9ff;
+  --theme-border: #075985;
+}

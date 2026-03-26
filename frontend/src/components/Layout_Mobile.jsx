@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book, ShieldAlert } from 'lucide-react';
+import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book, ShieldAlert, Palette } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -42,8 +42,8 @@ const LayoutMobile = ({ logic }) => {
     };
 
     return (
-        <div className="flex flex-col h-[100dvh] bg-slate-950 text-slate-200 font-sans overflow-hidden select-none">
-            <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 sticky top-0 z-40 relative shadow-lg">
+        <div className="flex flex-col h-[100dvh] bg-[var(--theme-bg)] text-[var(--theme-text)] font-sans overflow-hidden select-none transition-colors duration-500">
+            <header className="h-14 bg-[var(--theme-header)] border-b border-[var(--theme-border)] flex items-center justify-between px-4 sticky top-0 z-40 relative shadow-lg transition-colors duration-500">
                 <div className="flex items-center gap-3">
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 active:bg-slate-800 rounded-full transition-colors">
                         <Menu size={24} />
@@ -113,7 +113,7 @@ const LayoutMobile = ({ logic }) => {
                 </div>
             </header>
 
-            <div className="bg-slate-900/50 border-b border-slate-800 px-4 py-1.5 shrink-0 overflow-hidden">
+            <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-4 py-1.5 shrink-0 overflow-hidden transition-colors duration-500">
                 <div className="flex items-center justify-start gap-5">
                     {marketIndices.map(index => (
                         <div key={index.name} className="flex items-center gap-2">
@@ -130,7 +130,7 @@ const LayoutMobile = ({ logic }) => {
             {isMenuOpen && (
                 <>
                     <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-                    <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-slate-900 shadow-2xl py-4 animate-in slide-in-from-left duration-200 border-r border-slate-800 flex flex-col">
+                    <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-[var(--theme-header)] shadow-2xl py-4 animate-in slide-in-from-left duration-200 border-r border-[var(--theme-border)] flex flex-col transition-colors duration-500">
                         <div className="px-6 py-4 flex justify-between items-center border-b border-slate-800 mb-2">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span>
                             <button onClick={() => setIsMenuOpen(false)}><X size={20} className="text-slate-500" /></button>
@@ -166,6 +166,51 @@ const LayoutMobile = ({ logic }) => {
             )}
 
             <main className="flex-1 overflow-hidden relative pb-4"><Outlet /></main>
+
+            {/* [v52.5] 네이버 스타일 테마 스위처 (Mobile Floating) */}
+            <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
+                {logic.isThemeOpen && (
+                    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 p-4 rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 flex flex-col gap-4">
+                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Style Theme</div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {[
+                                { id: 'midnight', color: 'bg-[#020617]', name: 'Midnight' },
+                                { id: 'pure-white', color: 'bg-[#ffffff]', name: 'White' },
+                                { id: 'pitch-black', color: 'bg-[#000000]', name: 'Black' },
+                                { id: 'forest-green', color: 'bg-[#064e3b]', name: 'Forest' },
+                                { id: 'royal-wine', color: 'bg-[#450a0a]', name: 'Wine' },
+                                { id: 'deep-ocean', color: 'bg-[#0c4a6e]', name: 'Ocean' }
+                            ].map(t => (
+                                <button 
+                                    key={t.id} 
+                                    onClick={() => logic.setTheme(t.id)}
+                                    className={classNames(
+                                        "group flex flex-col items-center gap-1.5 active:scale-90 transition-all",
+                                        logic.theme === t.id ? "opacity-100" : "opacity-60"
+                                    )}
+                                >
+                                    <div className={classNames(
+                                        "w-10 h-10 rounded-full border-2 transition-all shadow-lg",
+                                        t.color,
+                                        logic.theme === t.id ? "border-indigo-400 scale-110 ring-4 ring-indigo-400/20" : "border-slate-700"
+                                    )}></div>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase">{t.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <button 
+                    onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)}
+                    className={classNames(
+                        "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 relative overflow-hidden border border-white/10",
+                        logic.isThemeOpen ? "bg-indigo-600 rotate-90" : "bg-slate-800"
+                    )}
+                >
+                    <Palette size={20} className={classNames("transition-colors", logic.isThemeOpen ? "text-white" : "text-indigo-400")} />
+                    {!logic.isThemeOpen && <span className="absolute top-2.5 right-2.5 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-slate-900 text-[7px] font-black flex items-center justify-center text-white animate-bounce">6</span>}
+                </button>
+            </div>
         </div>
     );
 };
