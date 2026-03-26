@@ -46,7 +46,7 @@ const SmartMoneyDashboard = () => {
     });
 
     return (
-        <div className="flex-1 bg-slate-950 pt-4 px-4 lg:pt-8 lg:px-10 h-[100dvh] lg:h-full flex flex-col gap-6 overflow-hidden relative animate-in fade-in duration-500 pb-20 lg:pb-8">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 pt-4 px-4 lg:pt-8 lg:px-10 h-[100dvh] lg:h-full flex flex-col gap-6 overflow-hidden relative animate-in fade-in duration-500 pb-20 lg:pb-8">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/30 shadow-lg shadow-amber-500/10">
@@ -70,12 +70,12 @@ const SmartMoneyDashboard = () => {
                             placeholder="종목명 또는 코드 검색..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 text-white text-xs lg:text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-amber-500/50 transition-all font-bold"
+                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 text-white text-xs lg:text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-amber-500/50 transition-all font-bold"
                         />
                     </div>
                     <button 
                         onClick={fetchSmartMoneyStocks}
-                        className="p-2.5 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-all active:scale-95"
+                        className="p-2.5 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 text-slate-400 hover:text-white rounded-xl transition-all active:scale-95"
                     >
                         <TrendingUp size={20} />
                     </button>
@@ -111,7 +111,7 @@ const SmartMoneyDashboard = () => {
                                 <div 
                                     key={stock.stock_code} 
                                     onClick={() => navigate(`/stock/${stock.stock_code}`)}
-                                    className="group relative bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-amber-500/40 transition-all cursor-pointer shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
+                                    className="group relative bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl p-5 hover:border-amber-500/40 transition-all cursor-pointer shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col">
@@ -135,7 +135,7 @@ const SmartMoneyDashboard = () => {
                                             ))}
                                         </div>
 
-                                        <div className="pt-3 border-t border-slate-800/50 flex items-center justify-between relative">
+                                        <div className="pt-3 border-t border-[var(--theme-border)] transition-colors duration-500/50 flex items-center justify-between relative">
                                             <div className="flex items-center gap-2">
                                                 <Calendar size={12} className="text-slate-600" />
                                                 <span className="text-[10px] font-bold text-slate-500">포착일: {dateStr}</span>
@@ -158,7 +158,7 @@ const SmartMoneyDashboard = () => {
                         })}
                     </div>
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center gap-6 py-32 bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
+                    <div className="h-full flex flex-col items-center justify-center gap-6 py-32 bg-[var(--theme-header)] transition-colors duration-500/20 rounded-3xl border border-dashed border-[var(--theme-border)] transition-colors duration-500">
                         <AlertCircle size={64} className="text-slate-800" />
                         <div className="text-center">
                             <p className="text-slate-500 text-sm font-black uppercase tracking-widest mb-2">No Smart Money Stocks Found</p>

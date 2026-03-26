@@ -70,10 +70,10 @@ const AiKeywordManager = () => {
     };
 
     return (
-        <div className="h-full bg-slate-950 p-4 lg:p-8 flex flex-col items-center custom-scrollbar overflow-y-auto">
+        <div className="h-full bg-[var(--theme-bg)] p-4 lg:p-8 flex flex-col items-center custom-scrollbar overflow-y-auto transition-colors duration-500">
             <div className="w-full max-w-2xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* 헤더 섹션 */}
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden">
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-6 lg:p-8 shadow-2xl relative overflow-hidden transition-colors duration-500">
                     <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                         <Sparkles size={120} className="text-indigo-500" />
                     </div>
@@ -97,7 +97,7 @@ const AiKeywordManager = () => {
                             <input 
                                 type="text" 
                                 placeholder={isLimitReached ? "키워드는 최대 10개까지 가능합니다" : "새로운 분석 키워드 입력 (예: 반도체, 부동산정책...)"}
-                                className={classNames("w-full bg-slate-900 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-xl", {
+                                className={classNames("w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-xl", {
                                     "opacity-50 cursor-not-allowed": isLimitReached
                                 })}
                                 value={newKeyword}
@@ -141,7 +141,7 @@ const AiKeywordManager = () => {
                             {keywords.map((keyword, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="group bg-slate-900 border border-slate-800 rounded-2xl p-4 flex justify-between items-center hover:border-indigo-500/50 transition-all shadow-md"
+                                    className="group bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl p-4 flex justify-between items-center hover:border-indigo-500/50 transition-all shadow-md"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
@@ -157,7 +157,7 @@ const AiKeywordManager = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 bg-slate-900/50 border border-dashed border-slate-800 rounded-3xl text-slate-600">
+                        <div className="flex flex-col items-center justify-center py-20 bg-[var(--theme-header)] transition-colors duration-500/50 border border-dashed border-[var(--theme-border)] transition-colors duration-500 rounded-3xl text-slate-600">
                             <AlertCircle size={40} className="mb-4 opacity-20" />
                             <p className="text-sm font-medium">등록된 키워드가 없습니다.</p>
                             <p className="text-xs mt-1">위 검색창에서 첫 번째 키워드를 추가해 보세요!</p>

@@ -69,7 +69,7 @@ const AdminChartDashboard = () => {
         if (activeBubble) {
             const d = activeBubble;
             return (
-                <div className="bg-slate-900 border border-slate-700 p-5 rounded-2xl shadow-2xl z-50 pointer-events-auto min-w-[220px] relative transition-all duration-300">
+                <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-slate-700 p-5 rounded-2xl shadow-2xl z-50 pointer-events-auto min-w-[220px] relative transition-all duration-300">
                     <button 
                         onClick={(e) => {
                             e.preventDefault(); e.stopPropagation();
@@ -81,7 +81,7 @@ const AdminChartDashboard = () => {
                         <X size={18} />
                     </button>
 
-                    <p className="text-base font-black text-white mb-3 pb-2 border-b border-slate-800 flex justify-between items-center gap-2 pr-8">
+                    <p className="text-base font-black text-white mb-3 pb-2 border-b border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center gap-2 pr-8">
                         <span>{d.name}</span>
                     </p>
                     
@@ -138,7 +138,7 @@ const AdminChartDashboard = () => {
     };
 
     return (
-        <div className="flex-1 bg-slate-950 p-2 lg:p-8 h-full flex flex-col gap-4 lg:gap-6 overflow-hidden relative pb-20 lg:pb-5">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 p-2 lg:p-8 h-full flex flex-col gap-4 lg:gap-6 overflow-hidden relative pb-20 lg:pb-5">
             <header className="flex justify-between items-end shrink-0">
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
@@ -157,17 +157,17 @@ const AdminChartDashboard = () => {
                         </span>
                     )}
                     <div className="flex gap-2">
-                        <div className="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-md border border-slate-800 shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-[var(--theme-header)] transition-colors duration-500 px-2 py-1 rounded-md border border-[var(--theme-border)] transition-colors duration-500 shadow-sm">
                             <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_5px_rgba(244,63,94,0.5)]"></div><span className="text-[9px] text-slate-400 font-bold uppercase">Rising</span>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-md border border-slate-800 shadow-sm">
+                        <div className="flex items-center gap-1.5 bg-[var(--theme-header)] transition-colors duration-500 px-2 py-1 rounded-md border border-[var(--theme-border)] transition-colors duration-500 shadow-sm">
                             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]"></div><span className="text-[9px] text-slate-400 font-bold uppercase">Falling</span>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-1 lg:p-6 shadow-2xl relative overflow-hidden flex flex-col">
+            <div className="flex-1 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl p-1 lg:p-6 shadow-2xl relative overflow-hidden flex flex-col">
                 {isLoading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500">
                         <Loader2 size={32} className="animate-spin text-indigo-500" />

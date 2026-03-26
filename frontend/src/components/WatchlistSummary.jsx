@@ -321,19 +321,19 @@ const WatchlistSummary = () => {
     };
 
     return (
-        <div className="h-full bg-slate-950 flex flex-col items-center overflow-hidden">
-            <div className="w-full flex lg:hidden bg-slate-900 border-b border-slate-800 shrink-0">
-                <button onClick={() => setActiveSubTab('list')} className={classNames("flex-1 py-4 text-sm font-bold border-b-2 transition-all", { "border-indigo-500 text-white bg-slate-800/50": activeSubTab === 'list', "border-transparent text-slate-500": activeSubTab !== 'list' })}>관심종목</button>
-                <button onClick={() => setActiveSubTab('ai')} className={classNames("flex-1 py-4 text-sm font-bold border-b-2 transition-all", { "border-indigo-500 text-white bg-slate-800/50": activeSubTab === 'ai', "border-transparent text-slate-500": activeSubTab !== 'ai' })}>AI 분석</button>
+        <div className="h-full bg-[var(--theme-bg)] flex flex-col items-center overflow-hidden transition-colors duration-500">
+            <div className="w-full flex lg:hidden bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0 transition-colors duration-500">
+                <button onClick={() => setActiveSubTab('list')} className={classNames("flex-1 py-4 text-sm font-bold border-b-2 transition-all", { "border-indigo-500 text-white bg-[var(--theme-header)] opacity-90": activeSubTab === 'list', "border-transparent text-slate-500": activeSubTab !== 'list' })}>관심종목</button>
+                <button onClick={() => setActiveSubTab('ai')} className={classNames("flex-1 py-4 text-sm font-bold border-b-2 transition-all", { "border-indigo-500 text-white bg-[var(--theme-header)] opacity-90": activeSubTab === 'ai', "border-transparent text-slate-500": activeSubTab !== 'ai' })}>AI 분석</button>
             </div>
 
             <div className="w-full max-w-7xl flex-1 overflow-hidden p-4 lg:grid lg:grid-cols-2 lg:gap-6">
-                <div className={classNames("flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden h-full relative", {
+                <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden h-full relative transition-colors duration-500", {
                     "flex": activeSubTab === 'list' || window.innerWidth >= 1024, "hidden lg:flex": activeSubTab !== 'list'
                 })}>
                     {selectedStock ? renderDetailView() : (
                         <>
-                            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-850 shrink-0">
+                            <div className="p-5 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] opacity-95 shrink-0 transition-colors duration-500">
                                 <div><h1 className="text-xl font-black text-white mb-1 flex items-center gap-2"><TrendingUp className="text-indigo-500" size={24} /> 관심종목 시세</h1><p className="text-slate-500 text-xs font-medium">매매내역 관리: 종목 클릭</p></div>
                                 <button onClick={() => setGlobalMarketMode(m => m === 'J' ? 'NX' : (m === 'NX' ? 'UN' : 'J'))} className={classNames("flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg border transition-all", marketInfo.colorClass)}><Repeat size={14} />{marketInfo.name}</button>
                             </div>

@@ -113,8 +113,8 @@ const NextLeaderDashboard = () => {
     };
 
     const renderRankingTab = () => (
-        <div id="next-leader-ranking-area" className="flex-1 min-h-0 bg-slate-900/50 border border-slate-800 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
-            <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-900/80 shrink-0">
+        <div id="next-leader-ranking-area" className="flex-1 min-h-0 bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
+            <div className="p-3 border-b border-[var(--theme-border)] transition-colors duration-500 flex items-center justify-between bg-[var(--theme-header)] transition-colors duration-500/80 shrink-0">
                 <div className="flex items-center gap-2">
                     <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">
                         <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 10
@@ -126,19 +126,19 @@ const NextLeaderDashboard = () => {
 
             <div className="flex-1 overflow-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
-                    <thead className="sticky top-0 z-10 bg-slate-900 shadow-sm">
+                    <thead className="sticky top-0 z-10 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
                         <tr>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Rank</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 w-32 lg:w-40">Stock</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900">Total</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900">Score Breakdown (Q / L / T / X / S)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 min-w-[380px] lg:min-w-[550px]">
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Rank</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 w-32 lg:w-40">Stock</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Total</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Score Breakdown (Q / L / T / X / S)</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 min-w-[380px] lg:min-w-[550px]">
                                 <div className="flex items-center gap-1">
                                     Reason
                                     <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
                                 </div>
                             </th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-slate-900 min-w-[250px] lg:min-w-[280px]">
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500 min-w-[250px] lg:min-w-[280px]">
                                 <div className="flex items-center justify-center gap-1.5">
                                     AI Feedback (Review)
                                     <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={14} /></button>
@@ -225,7 +225,7 @@ const NextLeaderDashboard = () => {
                     const circumference = 2 * Math.PI * radius;
 
                     return (
-                        <div key={i} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col items-center gap-6 group hover:border-indigo-500/30 transition-all">
+                        <div key={i} className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-6 shadow-xl flex flex-col items-center gap-6 group hover:border-indigo-500/30 transition-all">
                             <div className="flex justify-center w-full items-center">
                                 <h4 className="text-white font-black text-sm lg:text-base uppercase tracking-[0.2em] flex items-center gap-2">
                                     <Brain size={18} style={{ color }} /> {m.model_name} Engine
@@ -256,7 +256,7 @@ const NextLeaderDashboard = () => {
                                 </div>
                             </div>
 
-                            <div className="w-full pt-4 border-t border-slate-800/50 flex flex-col items-center gap-1">
+                            <div className="w-full pt-4 border-t border-[var(--theme-border)] transition-colors duration-500/50 flex flex-col items-center gap-1">
                                 <p className="text-[10px] text-white font-bold uppercase tracking-widest text-center">
                                     {m.hit_rate >= 70 ? "High Reliability" : (m.hit_rate >= 50 ? "Stable Performance" : "Calibration Required")}
                                 </p>
@@ -283,8 +283,8 @@ const NextLeaderDashboard = () => {
                 </div>
             )}
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl p-5 lg:p-8 shadow-2xl flex flex-col gap-6">
+                <div className="flex items-center justify-between border-b border-[var(--theme-border)] transition-colors duration-500 pb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                             <CheckCircle2 className="text-emerald-500" size={22} />
@@ -302,9 +302,9 @@ const NextLeaderDashboard = () => {
                 
                 <div className="space-y-3">
                     {reviewData.pastRecommendations.length > 0 ? reviewData.pastRecommendations.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all group shadow-inner">
+                        <div key={idx} className="flex items-center justify-between p-4 bg-[var(--theme-bg)] transition-colors duration-500/50 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 hover:border-indigo-500/30 transition-all group shadow-inner">
                             <div className="flex items-center gap-4">
-                                <div className="text-[10px] font-black text-slate-500 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 shadow-sm group-hover:text-indigo-400 transition-colors">{item.date}</div>
+                                <div className="text-[10px] font-black text-slate-500 bg-[var(--theme-header)] transition-colors duration-500 px-3 py-1.5 rounded-lg border border-[var(--theme-border)] transition-colors duration-500 shadow-sm group-hover:text-indigo-400 transition-colors">{item.date}</div>
                                 <div>
                                     <div className="text-sm lg:text-base font-black text-white mb-0.5">{item.stock_name}</div>
                                     <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ const NextLeaderDashboard = () => {
                             <div className="flex items-center gap-4 lg:gap-10">
                                 <div className="text-right hidden md:block">
                                     <div className="text-[9px] text-slate-500 uppercase font-black mb-1">Price Trajectory</div>
-                                    <div className="text-xs text-white font-bold flex items-center gap-2 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800">
+                                    <div className="text-xs text-white font-bold flex items-center gap-2 bg-[var(--theme-header)] transition-colors duration-500 px-2 py-1 rounded-lg border border-[var(--theme-border)] transition-colors duration-500">
                                         <span>{item.price_at_recom.toLocaleString()}</span>
                                         <ArrowUpRight size={12} className="text-slate-600" />
                                         <span>{item.price_after_3d.toLocaleString()}</span>
@@ -364,7 +364,7 @@ const NextLeaderDashboard = () => {
     const renderReasonHelp = () => (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsReasonHelpOpen(false)}></div>
-            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-lg bg-[var(--theme-header)] transition-colors duration-500 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden p-6 animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-black text-white flex items-center gap-2"><Brain className="text-indigo-400" size={20} /> AI 분석 키워드 가이드</h3>
                     <button onClick={() => setIsReasonHelpOpen(false)} className="p-1.5 bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"><X size={18} /></button>
@@ -373,27 +373,27 @@ const NextLeaderDashboard = () => {
                     <section>
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">📊 기술적 분석 (퀀트 & 국면)</h4>
                         <div className="grid grid-cols-1 gap-2">
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/30 flex justify-between items-center shadow-lg shadow-emerald-500/5">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-emerald-500/30 flex justify-between items-center shadow-lg shadow-emerald-500/5">
                                 <span className="text-xs font-bold text-emerald-400">RSI바닥탈출</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35 이하 침체권에서 반등 시작 (가산점 +20)</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-blue-500/20 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-blue-500/20 flex justify-between items-center">
                                 <span className="text-xs font-bold text-blue-400">과매도진입</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">RSI 30 이하 역사적 저점 도달 (가산점 +10)</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">이평선수렴</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">5일/20일선 간격 2% 이내 밀착 (에너지 응축)</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">추세안정</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">RSI 35~55 구간의 건강한 상승 초입</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">골든크로스</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">5일선이 20일선을 상향 돌파 (추세 전환)</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center">
                                 <span className="text-xs font-bold text-white">거래량폭발</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">직전 대비 거래량 2.5배 이상 급증</span>
                             </div>
@@ -440,11 +440,11 @@ const NextLeaderDashboard = () => {
                     <section>
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">💰 실적 분석 (펀더멘털)</h4>
                         <div className="grid grid-cols-1 gap-2">
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
                                 <span className="text-xs font-bold text-emerald-400">고수익</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">영업이익률 10% 초과 우량 실적 기업</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-emerald-500/10 flex justify-between items-center">
                                 <span className="text-xs font-bold text-emerald-400">고성장</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">ROE 15% 초과 초고속 성장 기업</span>
                             </div>
@@ -453,19 +453,19 @@ const NextLeaderDashboard = () => {
                     <section>
                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">🧠 인적 직관 (피드백)</h4>
                         <div className="grid grid-cols-1 gap-2">
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-rose-500/10 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-rose-500/10 flex justify-between items-center">
                                 <span className="text-xs font-bold text-rose-400">★직관강화</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">사용자 피드백(성공/매집) 반영 가점</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 flex justify-between items-center">
                                 <span className="text-xs font-bold text-slate-400">★시황반영</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">개별 호재보다 시장 전체 흐름 반영</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-blue-500/10 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-blue-500/10 flex justify-between items-center">
                                 <span className="text-xs font-bold text-blue-400">⚠노이즈제외</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">가짜 수급 및 허수 물량 필터링 감점</span>
                             </div>
-                            <div className="bg-slate-950/50 p-3 rounded-xl border border-rose-500/20 flex justify-between items-center">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-rose-500/20 flex justify-between items-center">
                                 <span className="text-xs font-bold text-rose-600">✖오판주의</span>
                                 <span className="text-[10px] text-slate-200 text-right font-medium">사용자 피드백(실패)에 따른 강력 경고</span>
                             </div>
@@ -505,20 +505,20 @@ const NextLeaderDashboard = () => {
     );
 
     return (
-        <div className="flex-1 bg-slate-950 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-27 lg:pb-5">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-27 lg:pb-5">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1">
                 <div className="flex items-center gap-3">
                     <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30"><Award className="text-indigo-400" size={20} /></div>
                     <div><h1 className="text-base lg:text-2xl font-black text-white tracking-tight uppercase italic flex items-center gap-1.5">Next Leaders <span className="text-indigo-500 not-italic font-sans">AI</span></h1><p className="text-slate-500 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest mt-0.5">Daily Turn-around Briefing</p></div>
                 </div>
                 <div className="flex items-center justify-end gap-2 w-full lg:w-auto pr-1">
-                    <div className="relative w-[130px] lg:w-[160px] shrink-0"><Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white text-[11px] lg:text-sm rounded-xl pl-8 pr-1 py-1.5 lg:py-2.5 focus:outline-none cursor-pointer font-bold tracking-tighter" /></div>
+                    <div className="relative w-[130px] lg:w-[160px] shrink-0"><Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-slate-700 text-white text-[11px] lg:text-sm rounded-xl pl-8 pr-1 py-1.5 lg:py-2.5 focus:outline-none cursor-pointer font-bold tracking-tighter" /></div>
                     <button onClick={downloadExcel} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 lg:py-2.5 rounded-xl font-black text-[10px] lg:text-sm flex items-center gap-1 shadow-lg shrink-0"><Download size={14} /> EXCEL</button>
                 </div>
             </header>
 
             <div className="flex justify-end lg:mt-[-8px] shrink-0">
-                <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl w-full lg:w-fit shadow-lg">
+                <div className="flex bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 p-1 rounded-xl w-full lg:w-fit shadow-lg">
                     <button onClick={() => setActiveTab('ranking')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2", activeTab === 'ranking' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><TrendingUp size={12} /> RANKING</button>
                     <button onClick={() => setActiveTab('review')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2", activeTab === 'review' ? "bg-rose-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}><Brain size={12} /> AI REVIEW</button>
                 </div>
@@ -529,8 +529,8 @@ const NextLeaderDashboard = () => {
             {isHelpModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsHelpModalOpen(false)}></div>
-                    <div className="relative w-full max-w-lg bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Info className="text-indigo-400" size={20} /> AI Breakdown Guide</h3><button onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
+                    <div className="relative w-full max-w-lg bg-[var(--theme-header)] transition-colors duration-500 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-[var(--theme-border)] transition-colors duration-500 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Info className="text-indigo-400" size={20} /> AI Breakdown Guide</h3><button onClick={() => setIsHelpModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
                         <div className="p-8 space-y-6">
                             <div className="flex gap-4">
                                 <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0 font-black text-rose-400">Q</div>
@@ -553,7 +553,7 @@ const NextLeaderDashboard = () => {
                                 <div><h4 className="text-white font-bold text-sm mb-1 uppercase">Smart Money (S-Power)</h4><p className="text-slate-400 text-xs leading-relaxed">프로그램 매집 강도와 공매도 세력의 항복(숏스퀴즈) 에너지를 정밀 측정합니다. 세력이 대놓고 개입한 종목을 찾아내는 특급 엔진입니다.</p></div>
                             </div>
                         </div>
-                        <div className="p-6 bg-slate-850 border-t border-slate-800">
+                        <div className="p-6 bg-slate-850 border-t border-[var(--theme-border)] transition-colors duration-500">
                             <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-4 text-left">
                                 <h4 className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
                                     <Activity size={14} /> 균형분석 Total Score Formula (데이터 수집에서 변경 가능)
@@ -574,8 +574,8 @@ const NextLeaderDashboard = () => {
             {isFeedbackHelpOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsFeedbackHelpOpen(false)}></div>
-                    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-800 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Brain className="text-rose-400" size={20} /> AI Feedback Guide</h3><button onClick={() => setIsFeedbackHelpOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
+                    <div className="relative w-full max-w-md bg-[var(--theme-header)] transition-colors duration-500 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-[var(--theme-border)] transition-colors duration-500 bg-slate-850 flex justify-between items-center text-white"><h3 className="text-lg font-black uppercase italic flex items-center gap-2"><Brain className="text-rose-400" size={20} /> AI Feedback Guide</h3><button onClick={() => setIsFeedbackHelpOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button></div>
                         <div className="p-8 space-y-5">
                             {[ 
                                 { icon: <ThumbsUp className="text-emerald-400" />, title: '성공 / 매집', desc: '상승 적중 또는 매집 포착. 차기 분석 시 가산점(+5) 부여.' },
@@ -586,7 +586,7 @@ const NextLeaderDashboard = () => {
                                 <div key={i} className="flex gap-4"><div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/5 flex items-center justify-center shrink-0">{m.icon}</div><div><h4 className="text-white font-bold text-sm mb-1">{m.title}</h4><p className="text-slate-400 text-xs">{m.desc}</p></div></div>
                             ))}
                         </div>
-                        <div className="p-6 bg-slate-850 border-t border-slate-800"><button onClick={() => setIsFeedbackHelpOpen(false)} className="w-full py-3 bg-rose-600 text-white font-bold rounded-xl">확인 완료</button></div>
+                        <div className="p-6 bg-slate-850 border-t border-[var(--theme-border)] transition-colors duration-500"><button onClick={() => setIsFeedbackHelpOpen(false)} className="w-full py-3 bg-rose-600 text-white font-bold rounded-xl">확인 완료</button></div>
                     </div>
                 </div>
             )}

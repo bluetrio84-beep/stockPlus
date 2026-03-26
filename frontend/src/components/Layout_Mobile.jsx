@@ -172,14 +172,11 @@ const LayoutMobile = ({ logic }) => {
                 {logic.isThemeOpen && (
                     <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 p-4 rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 flex flex-col gap-4">
                         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Style Theme</div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-3">
                             {[
                                 { id: 'midnight', color: 'bg-[#020617]', name: 'Midnight' },
                                 { id: 'pure-white', color: 'bg-[#ffffff]', name: 'White' },
-                                { id: 'pitch-black', color: 'bg-[#000000]', name: 'Black' },
-                                { id: 'forest-green', color: 'bg-[#064e3b]', name: 'Forest' },
-                                { id: 'royal-wine', color: 'bg-[#450a0a]', name: 'Wine' },
-                                { id: 'deep-ocean', color: 'bg-[#0c4a6e]', name: 'Ocean' }
+                                { id: 'pitch-black', color: 'bg-[#000000]', name: 'Black' }
                             ].map(t => (
                                 <button 
                                     key={t.id} 
@@ -190,11 +187,11 @@ const LayoutMobile = ({ logic }) => {
                                     )}
                                 >
                                     <div className={classNames(
-                                        "w-10 h-10 rounded-full border-2 transition-all shadow-lg",
+                                        "w-9 h-9 rounded-full border-2 transition-all shadow-lg",
                                         t.color,
                                         logic.theme === t.id ? "border-indigo-400 scale-110 ring-4 ring-indigo-400/20" : "border-slate-700"
                                     )}></div>
-                                    <span className="text-[9px] font-black text-slate-400 uppercase">{t.name}</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase">{t.name}</span>
                                 </button>
                             ))}
                         </div>
@@ -203,12 +200,12 @@ const LayoutMobile = ({ logic }) => {
                 <button 
                     onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)}
                     className={classNames(
-                        "w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 relative overflow-hidden border border-white/10",
+                        "w-11 h-11 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 relative overflow-hidden border border-white/10",
                         logic.isThemeOpen ? "bg-indigo-600 rotate-90" : "bg-slate-800"
                     )}
                 >
-                    <Palette size={20} className={classNames("transition-colors", logic.isThemeOpen ? "text-white" : "text-indigo-400")} />
-                    {!logic.isThemeOpen && <span className="absolute top-2.5 right-2.5 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-slate-900 text-[7px] font-black flex items-center justify-center text-white animate-bounce">6</span>}
+                    <Palette size={18} className={classNames("transition-colors", logic.isThemeOpen ? "text-white" : "text-indigo-400")} />
+                    {!logic.isThemeOpen && <span className="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full border-2 border-slate-900 text-[6px] font-black flex items-center justify-center text-white animate-bounce">3</span>}
                 </button>
             </div>
         </div>

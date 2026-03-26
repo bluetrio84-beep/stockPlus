@@ -284,7 +284,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col w-full h-full relative overflow-hidden bg-slate-950">
+    <div className="flex flex-col w-full h-full relative overflow-hidden bg-[var(--theme-bg)] transition-colors duration-500">
         <Dashboard_Desktop 
             displayStocks={displayStocks} selectedStock={selectedStock} marketInsight={marketInsight} news={news} rankings={rankings}
             searchKeyword={searchKeyword} searchResults={searchResults} isEditMode={isEditMode} globalMarketMode={globalMarketMode}
@@ -306,11 +306,11 @@ function Dashboard() {
         />
         {showDeleteConfirm && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6">
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6 transition-colors duration-500">
                     <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="text-red-500" size={24} /></div>
                     <h3 className="text-lg font-bold text-white mb-2">{deleteTarget === 'ALL' ? `전체 삭제` : '관심종목 삭제'}</h3>
                     <p className="text-sm text-slate-400 mb-6">{deleteTarget === 'ALL' ? `관심 그룹의 모든 종목을 삭제하시겠습니까?` : '선택한 종목을 삭제하시겠습니까?'}</p>
-                    <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl">취소</button><button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">삭제</button></div>
+                    <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-3 bg-[var(--theme-bg)] text-slate-300 font-bold rounded-xl border border-[var(--theme-border)]">취소</button><button onClick={executeDelete} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl">삭제</button></div>
                 </div>
             </div>
         )}

@@ -51,13 +51,13 @@ const InvestmentJournalMobile = ({
     });
 
     return (
-        <div className="flex flex-col h-full bg-slate-950 text-slate-200 font-sans overflow-hidden relative">
+        <div className="flex flex-col h-full bg-[var(--theme-bg)] transition-colors duration-500 text-slate-200 font-sans overflow-hidden relative">
             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
 
             {/* Delete Modal */}
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-md px-6 animate-in fade-in duration-200">
-                    <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-8 w-full shadow-2xl">
+                    <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[32px] p-8 w-full shadow-2xl">
                         <div className="flex flex-col items-center text-center space-y-4">
                             <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2"><AlertTriangle size={32} /></div>
                             <h3 className="text-xl font-black text-white">기록을 삭제할까요?</h3>
@@ -87,23 +87,23 @@ const InvestmentJournalMobile = ({
 
             {viewMode === 'LIST' && (
                 <div className="flex flex-col h-full animate-in fade-in duration-300">
-                    <header className="shrink-0 h-14 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-30">
+                    <header className="shrink-0 h-14 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-header)] transition-colors duration-500/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-30">
                         <div className="flex items-center gap-2"><Book size={18} className="text-indigo-400" /><h1 className="text-sm font-black uppercase tracking-widest text-white italic">Journal</h1></div>
                         <button onClick={onCreateClick} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg active:scale-90"><Plus size={18} /></button>
                     </header>
                     <div className="p-4 space-y-4 overflow-y-auto flex-1 pb-20">
                         <div className="relative group">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                            <input type="text" placeholder="기록 수색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white outline-none font-bold placeholder:text-slate-700" />
+                            <input type="text" placeholder="기록 수색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white outline-none font-bold placeholder:text-slate-700" />
                         </div>
                         <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
                             {categories.map(cat => (
-                                <button key={cat.id} onClick={() => setCategory(cat.id)} className={classNames("px-3 py-1.5 rounded-lg text-[10px] font-black shrink-0 transition-all border whitespace-nowrap", filterCategory === cat.id ? `${cat.color} text-white border-transparent shadow-lg` : "bg-slate-900 text-slate-500 border-slate-800")}>{cat.label}</button>
+                                <button key={cat.id} onClick={() => setCategory(cat.id)} className={classNames("px-3 py-1.5 rounded-lg text-[10px] font-black shrink-0 transition-all border whitespace-nowrap", filterCategory === cat.id ? `${cat.color} text-white border-transparent shadow-lg` : "bg-[var(--theme-header)] transition-colors duration-500 text-slate-500 border-[var(--theme-border)] transition-colors duration-500")}>{cat.label}</button>
                             ))}
                         </div>
                         <div className="grid grid-cols-1 gap-3">
                             {filteredNotes.map(note => (
-                                <div key={note.id} onClick={() => onNoteClick(note)} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 active:bg-white/5 transition-all relative overflow-hidden">
+                                <div key={note.id} onClick={() => onNoteClick(note)} className="bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl p-4 active:bg-white/5 transition-all relative overflow-hidden">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className={classNames("px-2 py-0.5 rounded-[4px] text-[8px] font-black text-white", categories.find(c => c.id === note.category)?.color || 'bg-slate-500')}>{categories.find(c => c.id === note.category)?.label}</span>
                                         {note.isImportant && <Star size={12} className="fill-amber-400 text-amber-400" />}
@@ -121,8 +121,8 @@ const InvestmentJournalMobile = ({
             )}
 
             {viewMode === 'VIEW' && selectedNote && (
-                <div className="flex flex-col h-full bg-slate-950 animate-in slide-in-from-right-full duration-300">
-                    <header className="shrink-0 h-14 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between px-4 sticky top-0 z-30">
+                <div className="flex flex-col h-full bg-[var(--theme-bg)] transition-colors duration-500 animate-in slide-in-from-right-full duration-300">
+                    <header className="shrink-0 h-14 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-header)] transition-colors duration-500/80 flex items-center justify-between px-4 sticky top-0 z-30">
                         <button onClick={onBackToList} className="p-2 -ml-2 text-slate-400 active:text-white"><ChevronLeft size={24} /></button>
                         <div className="flex gap-2">
                             <button onClick={() => confirmDelete(selectedNote.id)} className="p-2 text-slate-500 active:text-rose-500"><Trash2 size={18} /></button>
@@ -146,32 +146,32 @@ const InvestmentJournalMobile = ({
             )}
 
             {viewMode === 'FORM' && selectedNote && (
-                <div className="flex flex-col h-full bg-slate-900">
-                    <header className="shrink-0 h-14 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between px-4 sticky top-0 z-30">
+                <div className="flex flex-col h-full bg-[var(--theme-header)] transition-colors duration-500">
+                    <header className="shrink-0 h-14 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500/80 flex items-center justify-between px-4 sticky top-0 z-30">
                         <button onClick={() => setViewMode(selectedNote.id ? 'VIEW' : 'LIST')} className="p-2 -ml-2 text-slate-400 active:text-white"><X size={24} /></button>
                         <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">{selectedNote.id ? '수정' : '기록'}</h2>
                         <button onClick={onSave} className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-[11px] font-black shadow-lg active:scale-90">저장</button>
                     </header>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-10">
                         <div className="grid grid-cols-2 gap-3">
-                            <select value={selectedNote.category} onChange={(e) => setSelectedNote({...selectedNote, category: e.target.value})} className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-white font-bold outline-none">{categories.filter(c => c.id !== 'ALL').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
+                            <select value={selectedNote.category} onChange={(e) => setSelectedNote({...selectedNote, category: e.target.value})} className="bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-white font-bold outline-none">{categories.filter(c => c.id !== 'ALL').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
                             <div className="relative">
-                                <input type="text" placeholder="종목명/코드" value={selectedNote.stockName ? `${selectedNote.stockName} (${selectedNote.refCode})` : selectedNote.refCode} onChange={(e) => { const v = e.target.value; setSelectedNote({...selectedNote, refCode: v, stockName: ''}); searchStocks(v); }} onFocus={() => setShowStockSearch(true)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[11px] text-white font-mono font-black outline-none" />
+                                <input type="text" placeholder="종목명/코드" value={selectedNote.stockName ? `${selectedNote.stockName} (${selectedNote.refCode})` : selectedNote.refCode} onChange={(e) => { const v = e.target.value; setSelectedNote({...selectedNote, refCode: v, stockName: ''}); searchStocks(v); }} onFocus={() => setShowStockSearch(true)} className="w-full bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-white font-mono font-black outline-none" />
                                 {showStockSearch && stockSearchResults.length > 0 && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-[50] overflow-hidden max-h-40 overflow-y-auto">
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl shadow-2xl z-[50] overflow-hidden max-h-40 overflow-y-auto">
                                         {stockSearchResults.slice(0, 5).map(s => (
-                                            <div key={s.stockCode} onClick={() => selectStock(s)} className="px-4 py-3 hover:bg-white/10 cursor-pointer flex justify-between items-center border-b border-slate-800 last:border-none">
+                                            <div key={s.stockCode} onClick={() => selectStock(s)} className="px-4 py-3 hover:bg-white/10 cursor-pointer flex justify-between items-center border-b border-[var(--theme-border)] transition-colors duration-500 last:border-none">
                                                 <span className="text-xs font-black text-white">{s.stockName}</span>
-                                                <span className="text-[10px] font-mono text-slate-500 bg-slate-950 px-1 rounded">{s.stockCode}</span>
+                                                <span className="text-[10px] font-mono text-slate-500 bg-[var(--theme-bg)] transition-colors duration-500 px-1 rounded">{s.stockCode}</span>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        <input type="text" placeholder="제목..." value={selectedNote.title} onChange={(e) => setSelectedNote({...selectedNote, title: e.target.value})} className="w-full bg-transparent border-b border-slate-800 text-xl font-black text-white outline-none py-2 placeholder:text-slate-700" />
+                        <input type="text" placeholder="제목..." value={selectedNote.title} onChange={(e) => setSelectedNote({...selectedNote, title: e.target.value})} className="w-full bg-transparent border-b border-[var(--theme-border)] transition-colors duration-500 text-xl font-black text-white outline-none py-2 placeholder:text-slate-700" />
                         
-                        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-950 border border-slate-800 rounded-t-xl sticky top-0 z-20 overflow-x-auto no-scrollbar">
+                        <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-t-xl sticky top-0 z-20 overflow-x-auto no-scrollbar">
                             <button onClick={() => execCommand('bold')} className="p-2 text-slate-400 active:text-white" title="Bold"><Bold size={16} /></button>
                             <button onClick={() => execCommand('italic')} className="p-2 text-slate-400 active:text-white" title="Italic"><Italic size={16} /></button>
                             <button onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 text-amber-400" title="Highlight"><Palette size={16} /></button>
@@ -182,7 +182,7 @@ const InvestmentJournalMobile = ({
                             contentEditable 
                             suppressContentEditableWarning={true}
                             placeholder="여기에 통찰을 기록하세요..." 
-                            className="w-full min-h-[400px] bg-slate-950/50 border-x border-b border-slate-800 rounded-b-xl p-4 outline-none text-white text-sm leading-relaxed ql-editor" 
+                            className="w-full min-h-[400px] bg-[var(--theme-bg)] transition-colors duration-500/50 border-x border-b border-[var(--theme-border)] transition-colors duration-500 rounded-b-xl p-4 outline-none text-white text-sm leading-relaxed ql-editor" 
                             dangerouslySetInnerHTML={{ __html: selectedNote.content }} 
                         />
                     </div>
