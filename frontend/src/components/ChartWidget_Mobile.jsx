@@ -82,8 +82,8 @@ const ChartWidgetMobile = (props) => {
   const marketInfo = getMarketDisplay(marketMode);
 
   return (
-    <div id="stock-chart-area" className="w-full h-full flex flex-col bg-slate-900 rounded-lg overflow-hidden border border-slate-800 shadow-xl relative min-h-0">
-      <div className="p-2.5 border-b border-slate-800 flex justify-between items-center bg-slate-850 shrink-0">
+    <div id="stock-chart-area" className="w-full h-full flex flex-col bg-[var(--theme-header)] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-xl relative min-h-0">
+      <div className="p-2.5 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] shrink-0">
             <div>
                 <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                     {stock.name}
@@ -95,7 +95,7 @@ const ChartWidgetMobile = (props) => {
                     )}
                     <span className="text-xs font-normal text-slate-500 flex items-center gap-1.5">
                         {stock.code}
-                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-0.5 bg-slate-800/50 px-1 rounded">
+                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-0.5 bg-[var(--theme-bg)]/50 px-1 rounded">
                             {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
                             {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
@@ -120,31 +120,31 @@ const ChartWidgetMobile = (props) => {
                 </div>
             </div>
       </div>
-      <div className="flex bg-slate-900 border-b border-slate-800 shrink-0">
+      <div className="flex bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0">
         {[ { id: 'chart', name: '차트' }, { id: 'daily', name: '일별' }, { id: 'investors', name: '투자자' }, { id: 'traders', name: '거래원' } ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-[11px] font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-slate-800/50" : "border-transparent text-slate-500")}>{tab.name}</button>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-[11px] font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-[var(--theme-bg)]/50" : "border-transparent text-slate-500")}>{tab.name}</button>
         ))}
       </div>
-      <div className="flex-1 min-h-0 relative bg-slate-900">
+      <div className="flex-1 min-h-0 relative bg-[var(--theme-header)]">
         {activeTab === 'chart' && (
           <div className="flex flex-col h-full">
-            <div className="px-2 py-1.5 border-b border-slate-800 bg-slate-900 flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+            <div className="px-2 py-1.5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
               <button onClick={() => handleAiAnalysis && handleAiAnalysis()} className="flex items-center gap-1 text-[10px] font-bold text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-lg shrink-0"><Sparkles size={12} /> AI 분석</button>
               <div className="h-3 w-px bg-slate-700 mx-0.5"></div>
               <button onClick={() => onExchangeChange && onExchangeChange()} className={classNames("flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-lg border shrink-0", marketInfo.colorClass)}><Repeat size={10} /> {marketInfo.name}</button>
-              <div className="flex items-center gap-1.5 px-1.5 border-l border-slate-800 shrink-0 ml-0.5">
+              <div className="flex items-center gap-1.5 px-1.5 border-l border-[var(--theme-border)] shrink-0 ml-0.5">
                   <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold"><div className="w-1.5 h-1.5 bg-green-500 rounded-sm"></div>5</div>
                   <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold"><div className="w-1.5 h-1.5 bg-fuchsia-500 rounded-sm"></div>10</div>
                   <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold"><div className="w-1.5 h-1.5 bg-amber-500 rounded-sm"></div>20</div>
                   <div className="flex items-center gap-1 text-[9px] text-slate-400 font-bold"><div className="w-1.5 h-1.5 bg-sky-500 rounded-sm"></div>60</div>
               </div>
-              <div className="flex gap-1 ml-0.5 border-l border-slate-800 pl-1.5">
-                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-2 py-1 text-[10px] font-bold rounded-lg transition-all", currentPeriod === p ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-800 text-slate-500 hover:text-slate-300")}>{p}</button> ))}
+              <div className="flex gap-1 ml-0.5 border-l border-[var(--theme-border)] pl-1.5">
+                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-2 py-1 text-[10px] font-bold rounded-lg transition-all", currentPeriod === p ? "bg-indigo-600 text-white shadow-lg" : "bg-[var(--theme-bg)] text-slate-500 hover:text-slate-300")}>{p}</button> ))}
               </div>
             </div>
             <div className="flex-1 w-full relative">
                 <div ref={chartContainerRef} className="w-full h-full absolute inset-0" />
-                {!isDataLoaded && <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 z-10 backdrop-blur-sm"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>}
+                {!isDataLoaded && <div className="absolute inset-0 flex items-center justify-center bg-[var(--theme-header)]/50 z-10 backdrop-blur-sm"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>}
             </div>
           </div>
         )}

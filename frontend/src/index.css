@@ -66,8 +66,8 @@
 [data-theme='pitch-black'] {
   --theme-bg: #000000;
   --theme-header: #0a0a0a;
-  --theme-point: #f8fafc;
-  --theme-sub-point: #94a3b8;
+  --theme-point: #8b5cf6;     /* 보라색 (Violet-500)으로 변경 */
+  --theme-sub-point: #22d3ee; /* 사이언 (Cyan) 유지 */
   --theme-text: #ffffff;
   --theme-border: #262626;
 }

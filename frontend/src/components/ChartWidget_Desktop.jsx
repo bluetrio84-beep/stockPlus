@@ -27,7 +27,7 @@ const ChartWidgetDesktop = (props) => {
     if (activeTab !== 'chart' || !chartContainerRef.current) return;
     const container = chartContainerRef.current;
     const tooltip = document.createElement('div');
-    tooltip.className = 'absolute z-50 pointer-events-none bg-slate-800/90 backdrop-blur-md border border-slate-700 p-2.5 rounded-lg text-[11px] text-slate-200 shadow-2xl hidden';
+    tooltip.className = 'absolute z-50 pointer-events-none bg-[var(--theme-bg)]/90 backdrop-blur-md border border-slate-700 p-2.5 rounded-lg text-[11px] text-slate-200 shadow-2xl hidden';
     tooltip.style.width = '140px';
     container.appendChild(tooltip);
 
@@ -105,8 +105,8 @@ const ChartWidgetDesktop = (props) => {
   const marketInfo = getMarketDisplay(marketMode);
 
   return (
-    <div id="stock-chart-area" className="w-full h-full flex flex-col bg-slate-900 rounded-lg overflow-hidden border border-slate-800 shadow-xl relative min-h-0">
-      <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-850 shrink-0">
+    <div id="stock-chart-area" className="w-full h-full flex flex-col bg-[var(--theme-header)] rounded-lg overflow-hidden border border-[var(--theme-border)] shadow-xl relative min-h-0">
+      <div className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] shrink-0">
             <div>
                 <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                     {stock.name}
@@ -118,7 +118,7 @@ const ChartWidgetDesktop = (props) => {
                     )}
                     <span className="text-sm font-normal text-slate-500 flex items-center gap-2">
                         {stock.code}
-                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-slate-800/50 px-1.5 py-0.5 rounded">
+                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-[var(--theme-bg)]/50 px-1.5 py-0.5 rounded">
                             {stock.marketName || (isKosdaq(stock) ? 'KOSDAQ' : 'KOSPI')}
                             {stock.indexName && <span className="text-indigo-400/90">{stock.indexName.replace('KOSPI ', '').replace('KOSDAQ ', '')}</span>}
                         </span>
@@ -150,7 +150,7 @@ const ChartWidgetDesktop = (props) => {
                     <div className="flex flex-col items-end"><span className="text-trade-down opacity-80">저가</span><span className="font-bold text-trade-down">{parseFloat(stock.low || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-slate-500">거래량</span><span className="font-bold text-slate-300">{parseFloat(stock.volume || 0).toLocaleString()}</span></div>
                 </div>
-                <div className="flex items-center gap-4 border-t border-slate-800/50 pt-1.5">
+                <div className="flex items-center gap-4 border-t border-[var(--theme-border)]/50 pt-1.5">
                     <div className="flex flex-col items-end"><span className="text-slate-500">시총</span><span className="font-bold text-slate-300">{parseFloat(stock.marketCap || 0).toLocaleString()}억</span></div>
                     <div className="flex flex-col items-end"><span className="text-slate-500">상장주식</span><span className="font-bold text-slate-300">{parseFloat(stock.listedShares || 0).toLocaleString()}</span></div>
                     <div className="flex flex-col items-end"><span className="text-trade-up opacity-60">52주 최고</span><span className="font-bold text-trade-up">{parseFloat(stock.high52w || 0).toLocaleString()}</span></div>
@@ -158,31 +158,31 @@ const ChartWidgetDesktop = (props) => {
                 </div>
             </div>
       </div>
-      <div className="flex bg-slate-900 border-b border-slate-800 shrink-0">
+      <div className="flex bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0">
         {[ { id: 'chart', name: '차트' }, { id: 'daily', name: '일별' }, { id: 'investors', name: '투자자' }, { id: 'traders', name: '거래원' } ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-xs font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-slate-800/50" : "border-transparent text-slate-500 hover:text-slate-300")}>{tab.name}</button>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={classNames("flex-1 py-2 text-xs font-black border-b-2 transition-all", activeTab === tab.id ? "border-indigo-500 text-white bg-[var(--theme-bg)]/50" : "border-transparent text-slate-500 hover:text-slate-300")}>{tab.name}</button>
         ))}
       </div>
-      <div className="flex-1 min-h-0 relative bg-slate-900">
+      <div className="flex-1 min-h-0 relative bg-[var(--theme-header)]">
         {activeTab === 'chart' && (
           <div className="flex flex-col h-full">
-            <div className="px-3 py-2 border-b border-slate-800 bg-slate-900 flex items-center gap-2 shrink-0">
+            <div className="px-3 py-2 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-2 shrink-0">
               <button onClick={() => handleAiAnalysis && handleAiAnalysis()} className="flex items-center gap-1.5 text-xs font-bold text-yellow-400 bg-yellow-400/10 px-3 py-1.5 rounded-lg hover:bg-yellow-400/20 transition-colors shrink-0"><Sparkles size={14} /> AI 분석</button>
               <div className="h-4 w-px bg-slate-700 mx-1"></div>
               <button onClick={() => onExchangeChange && onExchangeChange()} className={classNames("flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all shrink-0 shadow-sm", marketInfo.colorClass)}><Repeat size={10} /> {marketInfo.name}</button>
-              <div className="flex items-center gap-2.5 px-2.5 border-l border-slate-800 shrink-0 ml-1">
+              <div className="flex items-center gap-2.5 px-2.5 border-l border-[var(--theme-border)] shrink-0 ml-1">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-green-500 rounded-sm"></div>5</div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-fuchsia-500 rounded-sm"></div>10</div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-amber-500 rounded-sm"></div>20</div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-sky-500 rounded-sm"></div>60</div>
               </div>
-              <div className="flex gap-1.5 ml-1 border-l border-slate-800 pl-2.5">
-                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-3 py-1.5 text-xs font-bold rounded-lg transition-all", currentPeriod === p ? "bg-indigo-600 text-white shadow-lg" : "bg-slate-800 text-slate-500 hover:text-slate-300")}>{p}</button> ))}
+              <div className="flex gap-1.5 ml-1 border-l border-[var(--theme-border)] pl-2.5">
+                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-3 py-1.5 text-xs font-bold rounded-lg transition-all", currentPeriod === p ? "bg-indigo-600 text-white shadow-lg" : "bg-[var(--theme-bg)] text-slate-500 hover:text-slate-300")}>{p}</button> ))}
               </div>
             </div>
             <div className="flex-1 w-full relative">
                 <div ref={chartContainerRef} className="w-full h-full absolute inset-0" />
-                {!isDataLoaded && <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 z-10 backdrop-blur-sm"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>}
+                {!isDataLoaded && <div className="absolute inset-0 flex items-center justify-center bg-[var(--theme-header)]/50 z-10 backdrop-blur-sm"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>}
             </div>
           </div>
         )}

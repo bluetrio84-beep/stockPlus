@@ -45,7 +45,7 @@ const LayoutMobile = ({ logic }) => {
         <div className="flex flex-col h-[100dvh] bg-[var(--theme-bg)] text-[var(--theme-text)] font-sans overflow-hidden select-none transition-colors duration-500">
             <header className="h-14 bg-[var(--theme-header)] border-b border-[var(--theme-border)] flex items-center justify-between px-4 sticky top-0 z-40 relative shadow-lg transition-colors duration-500">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 active:bg-slate-800 rounded-full transition-colors">
+                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 active:bg-[var(--theme-bg)] rounded-full transition-colors">
                         <Menu size={24} />
                     </button>
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
@@ -65,7 +65,7 @@ const LayoutMobile = ({ logic }) => {
                             <LayoutDashboard size={18} />
                         </button>
                     )}
-                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/50 mr-1 shadow-sm active:bg-slate-700">
+                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-[var(--theme-bg)]/50 border border-[var(--theme-border)]/50 mr-1 shadow-sm active:bg-slate-700">
                         <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
                         <span className="text-[11px] font-bold text-slate-300 max-w-[60px] truncate">{usrName}님</span>
                     </button>
@@ -73,17 +73,17 @@ const LayoutMobile = ({ logic }) => {
                     {logic.isNotificationOpen && (
                         <>
                             <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" onClick={() => logic.setIsNotificationOpen(false)}></div>
-                            <div className="absolute top-12 right-0 z-50 w-[calc(100vw-32px)] max-w-[300px] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="p-4 border-b border-slate-800 bg-slate-850 flex justify-between items-center">
+                            <div className="absolute top-12 right-0 z-50 w-[calc(100vw-32px)] max-w-[300px] bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 flex justify-between items-center">
                                     <h3 className="text-sm font-bold text-white">최신 알림</h3>
                                     <button onClick={() => logic.setIsNotificationOpen(false)}><X size={18} className="text-slate-500" /></button>
                                 </div>
-                                <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-slate-900">
+                                <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-[var(--theme-header)]">
                                     {logic.notifications.length > 0 ? logic.notifications.map((notif, idx) => {
                                         const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
                                         const timeStr = date && !isNaN(date) ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}` : '';
                                         return (
-                                            <div key={idx} onClick={() => handleNotificationClick(notif)} className="py-2.5 px-4 border-b border-slate-800/50 active:bg-slate-800 transition-colors cursor-pointer hover:bg-slate-800/50">
+                                            <div key={idx} onClick={() => handleNotificationClick(notif)} className="py-2.5 px-4 border-b border-[var(--theme-border)]/50 active:bg-[var(--theme-bg)] transition-colors cursor-pointer hover:bg-[var(--theme-bg)]/50">
                                                 <div className="flex gap-3 items-start text-white">
                                                     <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-700")}></div>
                                                     <div className="flex-1">
@@ -101,12 +101,12 @@ const LayoutMobile = ({ logic }) => {
                     {isUserMenuOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
-                            <div className="absolute top-12 right-0 z-50 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="p-5 flex flex-col items-center border-b border-slate-800 bg-slate-850">
+                            <div className="absolute top-12 right-0 z-50 w-56 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="p-5 flex flex-col items-center border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95">
                                     <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-black text-white mb-2 shadow-lg">{usrName.charAt(0).toUpperCase()}</div>
                                     <p className="text-sm font-bold text-white">안녕하세요, <span className="text-indigo-400">{usrName}</span>님</p>
                                 </div>
-                                <div className="p-2 bg-slate-900"><button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"><LogOut size={16} />로그아웃</button></div>
+                                <div className="p-2 bg-[var(--theme-header)]"><button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"><LogOut size={16} />로그아웃</button></div>
                             </div>
                         </>
                     )}
@@ -131,7 +131,7 @@ const LayoutMobile = ({ logic }) => {
                 <>
                     <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
                     <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-[var(--theme-header)] shadow-2xl py-4 animate-in slide-in-from-left duration-200 border-r border-[var(--theme-border)] flex flex-col transition-colors duration-500">
-                        <div className="px-6 py-4 flex justify-between items-center border-b border-slate-800 mb-2">
+                        <div className="px-6 py-4 flex justify-between items-center border-b border-[var(--theme-border)] mb-2">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span>
                             <button onClick={() => setIsMenuOpen(false)}><X size={20} className="text-slate-500" /></button>
                         </div>
@@ -140,7 +140,7 @@ const LayoutMobile = ({ logic }) => {
                                 {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
-                                        <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-indigo-600 shadow-lg shadow-indigo-600/20" : "text-slate-400 active:bg-slate-800")}>
+                                        <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-400 active:bg-[var(--theme-bg)]")}>
                                             <item.icon size={18} className={isActive ? "text-white" : "text-slate-500"} />{item.name}
                                         </button>
                                     );
@@ -148,12 +148,12 @@ const LayoutMobile = ({ logic }) => {
                             </div>
 
                             {isAdmin() && (
-                                <div className="mt-10 pt-8 border-t border-slate-800/60 space-y-1.5">
+                                <div className="mt-10 pt-8 border-t border-[var(--theme-border)]/60 space-y-1.5">
                                     <div className="px-4 pb-2"><span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
                                     {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                         const isActive = location.pathname === item.path;
                                         return (
-                                            <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-rose-600 shadow-lg shadow-rose-600/20" : "text-slate-400 active:bg-slate-800")}>
+                                            <button key={item.path} onClick={() => { navigate(item.path); setIsMenuOpen(false); }} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-bold rounded-xl transition-all", isActive ? "text-white bg-rose-600 shadow-lg shadow-rose-600/20" : "text-slate-400 active:bg-[var(--theme-bg)]")}>
                                                 <item.icon size={18} className={isActive ? "text-white" : "text-slate-500"} />{item.name}
                                             </button>
                                         );
@@ -170,7 +170,7 @@ const LayoutMobile = ({ logic }) => {
             {/* [v52.5] 네이버 스타일 테마 스위처 (Mobile Floating) */}
             <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3">
                 {logic.isThemeOpen && (
-                    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 p-4 rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 flex flex-col gap-4">
+                    <div className="bg-[var(--theme-header)]/95 backdrop-blur-md border border-[var(--theme-border)]/50 p-4 rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 flex flex-col gap-4">
                         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Style Theme</div>
                         <div className="grid grid-cols-3 gap-3">
                             {[
@@ -189,7 +189,7 @@ const LayoutMobile = ({ logic }) => {
                                     <div className={classNames(
                                         "w-9 h-9 rounded-full border-2 transition-all shadow-lg",
                                         t.color,
-                                        logic.theme === t.id ? "border-indigo-400 scale-110 ring-4 ring-indigo-400/20" : "border-slate-700"
+                                        logic.theme === t.id ? "border-indigo-400 scale-110 ring-4 ring-indigo-400/20" : "border-[var(--theme-border)]"
                                     )}></div>
                                     <span className="text-[8px] font-black text-slate-400 uppercase">{t.name}</span>
                                 </button>
@@ -201,7 +201,7 @@ const LayoutMobile = ({ logic }) => {
                     onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)}
                     className={classNames(
                         "w-11 h-11 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 relative overflow-hidden border border-white/10",
-                        logic.isThemeOpen ? "bg-indigo-600 rotate-90" : "bg-slate-800"
+                        logic.isThemeOpen ? "bg-indigo-600 rotate-90" : "bg-[var(--theme-bg)]"
                     )}
                 >
                     <Palette size={18} className={classNames("transition-colors", logic.isThemeOpen ? "text-white" : "text-indigo-400")} />

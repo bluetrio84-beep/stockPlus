@@ -13,9 +13,9 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
     return (
         <div 
             onClick={() => onStockClick && onStockClick(stock)} 
-            className={classNames("flex justify-between items-center p-3 cursor-pointer border-b border-slate-800 transition-colors relative group", {
+            className={classNames("flex justify-between items-center p-3 cursor-pointer border-b border-[var(--theme-border)] transition-colors relative group", {
                 "bg-slate-800": isSelected,
-                "hover:bg-slate-800/50": !isSelected
+                "hover:bg-[var(--theme-bg)]/50": !isSelected
             })}
         >
             <div className="flex items-center gap-2">
