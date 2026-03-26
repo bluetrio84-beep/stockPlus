@@ -92,7 +92,7 @@ const GaugeChart = ({ value, label, colorClass, icon: Icon, subValue }) => {
     const offset = circumference - (Math.min(value, 100) / 100) * circumference;
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 group hover:border-slate-700 transition-all shadow-lg text-center">
+        <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-4 flex flex-col items-center justify-center gap-2 group hover:border-[var(--theme-border)] transition-colors duration-500 transition-all shadow-lg text-center">
             <div className="relative w-20 h-20 flex items-center justify-center mx-auto">
                 <svg className="w-full h-full transform -rotate-90">
                     <circle cx="40" cy="40" r={radius} fill="transparent" stroke="currentColor" strokeWidth="6" className="text-slate-800" />
@@ -185,7 +185,7 @@ const AdminFailureManagement = () => {
     const statusColor = prob > 70 ? 'text-rose-500' : (prob > 45 ? 'text-amber-500' : 'text-emerald-500');
 
     return (
-        <div className="flex-1 bg-slate-950 p-4 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-4 lg:gap-6 relative pb-40 lg:pb-5">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 p-4 lg:p-8 overflow-hidden h-[100dvh] lg:h-full flex flex-col gap-4 lg:gap-6 relative pb-40 lg:pb-5">
             {/* ... 헤더 생략 ... */}
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10">
@@ -196,7 +196,7 @@ const AdminFailureManagement = () => {
                         <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1 lg:ml-10 hidden lg:block">NOC ACTIVE | {lastUpdated.toLocaleTimeString()}</p>
                     </div>
 
-                    <div className="hidden lg:flex bg-slate-900 p-1 rounded-xl border border-slate-800 mr-4 shadow-inner">
+                    <div className="hidden lg:flex bg-[var(--theme-header)] transition-colors duration-500 p-1 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 mr-4 shadow-inner">
                         <button 
                             onClick={() => setActiveTab('metrics')}
                             className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", 
@@ -218,7 +218,7 @@ const AdminFailureManagement = () => {
                     <button onClick={handleRestartSystem} className="flex-1 lg:flex-none px-4 py-2 bg-rose-600/10 border border-rose-500/30 text-rose-500 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
                         <Power size={14} /> Restart
                     </button>
-                    <button onClick={fetchMetrics} className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-md">
+                    <button onClick={fetchMetrics} className="p-2.5 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl text-slate-400 hover:text-white transition-all active:scale-95 shadow-md">
                         <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
                     </button>
                 </div>
@@ -235,12 +235,12 @@ const AdminFailureManagement = () => {
                             "lg:col-span-4 flex flex-col gap-4 overflow-y-auto no-scrollbar transition-all duration-300",
                             activeTab === 'logs' && 'hidden lg:flex'
                         )}>
-                            <div className={classNames("rounded-[2rem] p-6 border flex flex-col items-center justify-center gap-4 shadow-2xl bg-slate-900/40", prob > 70 ? "border-rose-500/30" : "border-slate-800")}>
+                            <div className={classNames("rounded-[2rem] p-6 border flex flex-col items-center justify-center gap-4 shadow-2xl bg-[var(--theme-header)] transition-colors duration-500/40", prob > 70 ? "border-rose-500/30" : "border-[var(--theme-border)] transition-colors duration-500")}>
                                 <div className="text-center">
                                     <h3 className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">장애 위험도 지수</h3>
                                     <div className={classNames("text-5xl font-black tracking-tighter", statusColor)}>{prob}%</div>
                                 </div>
-                                <div className={classNames("px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border", prob > 70 ? "bg-rose-500 text-white border-rose-400" : "bg-slate-800 text-slate-400 border-slate-700")}>
+                                <div className={classNames("px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border", prob > 70 ? "bg-rose-500 text-white border-rose-400" : "bg-slate-800 text-slate-400 border-[var(--theme-border)] transition-colors duration-500")}>
                                     {metrics?.status} PHASE
                                 </div>
                             </div>
@@ -248,14 +248,14 @@ const AdminFailureManagement = () => {
                                 <GaugeChart value={metrics?.cpuLoad || 0} label="CPU LOAD" colorClass="text-indigo-500" icon={Cpu} />
                                 <GaugeChart value={metrics?.memoryUsage || 0} label="MEM USAGE" colorClass="text-cyan-500" icon={HardDrive} />
                                 <GaugeChart value={metrics?.dbSessions || 0} label="DB SESSIONS" colorClass="text-amber-500" icon={Database} subValue="Active Conn" />
-                                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex flex-col items-center justify-center gap-2">
+                                <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-4 flex flex-col items-center justify-center gap-2">
                                      <Globe size={24} className={metrics?.kisStatus?.connected ? "text-emerald-500" : "text-rose-500"} />
                                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">KIS ONLINE</p>
                                 </div>
                             </div>
-                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-lg">
+                            <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-5 space-y-3 shadow-lg">
                                 <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><Brain size={12} className="text-indigo-400" /> AI System Verdict</h4>
-                                <p className="text-[11px] text-slate-300 font-bold leading-relaxed bg-slate-950/50 p-3 rounded-xl border border-slate-800 shadow-inner">
+                                <p className="text-[11px] text-slate-300 font-bold leading-relaxed bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 shadow-inner">
                                      {prob > 70 ? "치명적 부하 감지. 즉시 긴급 재시작을 수행하십시오." : 
                                       (prob > 45 ? "주의 단계. 로그 에러 빈도가 증가하고 있습니다." : 
                                       "모든 지표가 청정 구역입니다. 엔진이 정상 가동 중입니다.")}
@@ -264,10 +264,10 @@ const AdminFailureManagement = () => {
                         </div>
 
                         <div className={classNames(
-                            "lg:col-span-8 flex flex-col bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300",
+                            "lg:col-span-8 flex flex-col bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300",
                             activeTab === 'metrics' && 'hidden lg:flex'
                         )}>
-                            <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center shrink-0">
+                            <div className="px-6 py-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500/50 flex justify-between items-center shrink-0">
                                 <div className="flex items-center gap-3">
                                     <Terminal size={18} className="text-indigo-400" />
                                     <h3 className="text-sm font-black text-white uppercase italic tracking-tight">System Blackbox Feed</h3>
@@ -280,7 +280,7 @@ const AdminFailureManagement = () => {
                                 {metrics?.recentErrors?.map((log, idx) => {
                                     const isCritical = log.includes('Critical') || log.includes('ERROR');
                                     return (
-                                        <div key={idx} className={classNames("p-3 rounded-xl border transition-all group relative", isCritical ? "bg-rose-500/5 border-rose-500/20 text-rose-200" : "bg-slate-800/30 border-slate-800 text-slate-400")}>
+                                        <div key={idx} className={classNames("p-3 rounded-xl border transition-all group relative", isCritical ? "bg-rose-500/5 border-rose-500/20 text-rose-200" : "bg-slate-800/30 border-[var(--theme-border)] transition-colors duration-500 text-slate-400")}>
                                             <div className="flex items-start gap-3 select-text">
                                                 <span className={classNames("mt-0.5 shrink-0", isCritical ? "text-rose-500" : "text-amber-500")}><Zap size={14} /></span>
                                                 <span className="break-all cursor-text">{log}</span>
@@ -291,16 +291,16 @@ const AdminFailureManagement = () => {
                                 })}
                             </div>
 
-                            <div className={classNames("absolute inset-y-0 right-0 w-full lg:w-[450px] bg-slate-900 border-l border-slate-800 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-30 transition-transform duration-500 ease-in-out transform flex flex-col", isSidebarOpen ? "translate-x-0" : "translate-x-full")}>
-                                <div className="p-5 border-b border-slate-800 bg-slate-950 flex justify-between items-center shrink-0">
+                            <div className={classNames("absolute inset-y-0 right-0 w-full lg:w-[450px] bg-[var(--theme-header)] transition-colors duration-500 border-l border-[var(--theme-border)] transition-colors duration-500 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-30 transition-transform duration-500 ease-in-out transform flex flex-col", isSidebarOpen ? "translate-x-0" : "translate-x-full")}>
+                                <div className="p-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500 flex justify-between items-center shrink-0">
                                      <div className="flex items-center gap-3"><Brain className="text-indigo-400" size={20} /><h3 className="text-sm font-black text-white uppercase tracking-tighter italic">AI Debugging Report</h3></div>
                                      <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-slate-500 hover:text-white"><X size={20} /></button>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-900">
+                                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[var(--theme-header)] transition-colors duration-500">
                                      {selectedLog && (
                                          <div className="mb-6">
                                              <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Target Incident Log</h4>
-                                             <div className="bg-black/40 p-3 rounded-xl border border-slate-800 font-mono text-[10px] text-rose-300 break-all">{selectedLog}</div>
+                                             <div className="bg-black/40 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 font-mono text-[10px] text-rose-300 break-all">{selectedLog}</div>
                                          </div>
                                      )}
                                      <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Activity size={12} /> Analysis & Resolution</h4>
@@ -313,7 +313,7 @@ const AdminFailureManagement = () => {
                                          <div className="text-[12px] text-slate-200 leading-relaxed whitespace-pre-wrap font-medium">{aiAnalysis || "로그를 클릭하여 AI 분석을 시작하세요."}</div>
                                      )}
                                 </div>
-                                <div className="p-4 bg-slate-950 border-t border-slate-800 shrink-0">
+                                <div className="p-4 bg-[var(--theme-bg)] transition-colors duration-500 border-t border-[var(--theme-border)] transition-colors duration-500 shrink-0">
                                      <button onClick={() => setIsSidebarOpen(false)} className="w-full py-3 bg-slate-800 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg">Close Report</button>
                                 </div>
                             </div>
@@ -323,7 +323,7 @@ const AdminFailureManagement = () => {
 
                 {/* 3. AI Dev Center Panel (v36.114 마스터 키 가드 적용) */}
                 {activeTab === 'aidev' && (
-                    <div className="flex-1 flex flex-col bg-slate-950 border border-indigo-500/30 rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full">
+                    <div className="flex-1 flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-indigo-500/30 rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full">
                         <div className="px-6 py-5 border-b border-indigo-500/20 bg-indigo-500/5 flex justify-between items-center shrink-0">
                             <div className="flex items-center gap-3">
                                 <Brain size={20} className="text-indigo-400 animate-pulse" />
@@ -341,7 +341,7 @@ const AdminFailureManagement = () => {
                             {!isTerminalUnlocked ? (
                                 // [v36.114] 마스터 키 입력 화면
                                 <div className="flex-1 flex flex-col items-center justify-center gap-6">
-                                    <div className="p-6 bg-slate-900 border border-slate-800 rounded-full shadow-2xl">
+                                    <div className="p-6 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-full shadow-2xl">
                                         <ShieldAlert size={48} className="text-indigo-500 animate-bounce" />
                                     </div>
                                     <div className="text-center">
@@ -356,7 +356,7 @@ const AdminFailureManagement = () => {
                                             onKeyDown={(e) => e.key === 'Enter' && setIsTerminalUnlocked(true)}
                                             placeholder="••••••••"
                                             autoFocus
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-6 py-4 text-center text-white font-mono tracking-widest focus:border-indigo-500 outline-none transition-all shadow-inner"
+                                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl px-6 py-4 text-center text-white font-mono tracking-widest focus:border-indigo-500 outline-none transition-all shadow-inner"
                                         />
                                         <button 
                                             onClick={() => setIsTerminalUnlocked(true)}
@@ -376,7 +376,7 @@ const AdminFailureManagement = () => {
             </main>
 
             {/* Mobile Bottom Navigation */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 h-16 flex items-center justify-around px-6 z-40 pb-safe shadow-2xl">
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--theme-header)] transition-colors duration-500/90 backdrop-blur-xl border-t border-[var(--theme-border)] transition-colors duration-500 h-16 flex items-center justify-around px-6 z-40 pb-safe shadow-2xl">
                 <button onClick={() => setActiveTab('metrics')} className={classNames("flex flex-col items-center gap-1 transition-all", activeTab === 'metrics' ? "text-indigo-400" : "text-slate-500")}>
                     <Activity size={18} /><span className="text-[9px] font-black uppercase tracking-tighter">지표</span>
                 </button>

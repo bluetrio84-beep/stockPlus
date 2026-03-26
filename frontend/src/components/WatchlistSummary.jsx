@@ -242,7 +242,7 @@ const WatchlistSummary = () => {
 
         return (
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-left-4 duration-300">
-                <div className="p-4 border-b border-slate-800 flex items-center gap-3 bg-slate-850 shrink-0">
+                <div className="p-4 border-b border-[var(--theme-border)] flex items-center gap-3 bg-[var(--theme-header)] shrink-0">
                     <button onClick={() => setSelectedStock(null)} className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400"><ArrowLeft size={20} /></button>
                     <div>
                         <h2 className="text-base font-bold text-white leading-tight flex items-center gap-1.5">
@@ -255,7 +255,7 @@ const WatchlistSummary = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar pb-24">
-                    <div className="p-5 text-center bg-gradient-to-b from-slate-800/20 to-transparent border-b border-slate-800/30">
+                    <div className="p-5 text-center bg-gradient-to-b from-slate-800/20 to-transparent border-b border-[var(--theme-border)]/30">
                         <div className={classNames("text-3xl font-black tracking-tight mb-0.5", getColorClass(selectedStock.priceSign, selectedStock.change))}>{selectedStock.price?.toLocaleString()}</div>
                         <div className={classNames("text-xs font-bold flex justify-center gap-1 items-center", getColorClass(selectedStock.priceSign, selectedStock.change))}>
                             <span>{getSignSymbol(selectedStock.priceSign, selectedStock.change)}</span>
@@ -265,11 +265,11 @@ const WatchlistSummary = () => {
                     </div>
 
                     <div className="p-4 grid grid-cols-2 gap-3">
-                        <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-700/20"><p className="text-[10px] text-slate-500 font-bold mb-1 uppercase">보유수량</p><p className="text-sm font-bold text-white">{holding.quantity}주</p></div>
-                        <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-700/20"><p className="text-[10px] text-slate-500 font-bold mb-1 uppercase">평균단가</p><p className="text-sm font-bold text-white">{holding.avgPrice?.toLocaleString()}원</p></div>
-                        <div className="bg-slate-800/40 p-3 rounded-xl col-span-2 flex justify-between items-center border border-slate-700/20">
+                        <div className="bg-[var(--theme-header)] opacity-90 p-3 rounded-xl border border-slate-700/20"><p className="text-[10px] text-slate-500 font-bold mb-1 uppercase">보유수량</p><p className="text-sm font-bold text-white">{holding.quantity}주</p></div>
+                        <div className="bg-[var(--theme-header)] opacity-90 p-3 rounded-xl border border-slate-700/20"><p className="text-[10px] text-slate-500 font-bold mb-1 uppercase">평균단가</p><p className="text-sm font-bold text-white">{holding.avgPrice?.toLocaleString()}원</p></div>
+                        <div className="bg-[var(--theme-header)] opacity-90 p-3 rounded-xl col-span-2 flex justify-between items-center border border-slate-700/20">
                             <div><p className="text-[10px] text-slate-500 font-bold mb-0.5 uppercase">평가손익</p><p className={classNames("text-base font-black", profit >= 0 ? 'text-red-400' : 'text-blue-400')}>{profit > 0 ? '+' : ''}{profit.toLocaleString()}원</p></div>
-                            <div className={classNames("text-xs font-black px-2 py-1 rounded bg-slate-950 border border-slate-800", profitRate >= 0 ? 'text-red-400' : 'text-blue-400')}>{profitRate.toFixed(2)}%</div>
+                            <div className={classNames("text-xs font-black px-2 py-1 rounded bg-slate-950 border border-[var(--theme-border)]", profitRate >= 0 ? 'text-red-400' : 'text-blue-400')}>{profitRate.toFixed(2)}%</div>
                         </div>
                     </div>
 
@@ -281,9 +281,9 @@ const WatchlistSummary = () => {
                                     <div 
                                         key={item.id} 
                                         onClick={() => handleHistoryItemClick(item)}
-                                        className={classNames("bg-slate-800/20 border border-slate-800/50 rounded-lg p-2.5 flex justify-between items-center group cursor-pointer transition-colors", {
+                                        className={classNames("bg-slate-800/20 border border-[var(--theme-border)]/50 rounded-lg p-2.5 flex justify-between items-center group cursor-pointer transition-colors", {
                                             "border-indigo-500 bg-indigo-500/5": editingTrade?.id === item.id,
-                                            "hover:bg-slate-800/40": editingTrade?.id !== item.id
+                                            "hover:bg-[var(--theme-header)] opacity-90": editingTrade?.id !== item.id
                                         })}
                                     >
                                         <div className="flex items-center gap-2.5"><div className="bg-slate-800 p-1.5 rounded-md"><Calendar size={12} className="text-slate-500" /></div><div><p className="text-[11px] font-bold text-slate-300">{item.tradeDate}</p><p className="text-[10px] text-slate-500">{item.quantity}주 · {item.price.toLocaleString()}원</p></div></div>
@@ -291,20 +291,20 @@ const WatchlistSummary = () => {
                                     </div>
                                 ))}
                             </div>
-                        ) : <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl"><p className="text-[10px] text-slate-600 font-medium">기록된 내역이 없습니다.</p></div>}
+                        ) : <div className="text-center py-8 border border-dashed border-[var(--theme-border)] rounded-xl"><p className="text-[10px] text-slate-600 font-medium">기록된 내역이 없습니다.</p></div>}
                     </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 backdrop-blur-md">
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-[var(--theme-header)] border-t border-[var(--theme-border)] backdrop-blur-md">
                     {!isTradeFormOpen ? (
                         <button onClick={() => setIsTradeFormOpen(true)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/10"><Plus size={18} /> 매매내역 추가</button>
                     ) : (
                         <div className="bg-slate-800 border border-slate-700 rounded-xl p-3 animate-in slide-in-from-bottom-2 duration-300">
                             <h4 className="text-[10px] font-black text-indigo-400 uppercase mb-2">{editingTrade ? '매매 내역 수정' : '매매 내역 추가'}</h4>
                             <div className="grid grid-cols-2 gap-2 mb-3">
-                                <div className="col-span-2"><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">매수일자</label><input type="date" value={tradeFormData.tradeDate} onChange={e => setTradeFormData({...tradeFormData, tradeDate: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
-                                <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">단가</label><input type="number" value={tradeFormData.price} onChange={e => setTradeFormData({...tradeFormData, price: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
-                                <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">수량</label><input type="number" value={tradeFormData.quantity} onChange={e => setTradeFormData({...tradeFormData, quantity: e.target.value})} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
+                                <div className="col-span-2"><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">매수일자</label><input type="date" value={tradeFormData.tradeDate} onChange={e => setTradeFormData({...tradeFormData, tradeDate: e.target.value})} className="w-full bg-[var(--theme-header)] border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
+                                <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">단가</label><input type="number" value={tradeFormData.price} onChange={e => setTradeFormData({...tradeFormData, price: e.target.value})} className="w-full bg-[var(--theme-header)] border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
+                                <div><label className="text-[9px] font-black text-slate-500 uppercase block mb-1">수량</label><input type="number" value={tradeFormData.quantity} onChange={e => setTradeFormData({...tradeFormData, quantity: e.target.value})} className="w-full bg-[var(--theme-header)] border border-slate-700 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-indigo-500"/></div>
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={resetTradeForm} className="flex-1 py-2 bg-slate-700 text-slate-300 font-bold rounded-lg text-xs">취소</button>
@@ -348,7 +348,7 @@ const WatchlistSummary = () => {
                                             const badge = getStockStatusBadge(stock);
 
                                             return (
-                                                <div key={stock.code} onClick={() => handleStockClick(stock)} className="bg-slate-800/40 border border-slate-800/60 rounded-xl p-4 flex justify-between items-center hover:bg-slate-800/60 transition-all cursor-pointer group">
+                                                <div key={stock.code} onClick={() => handleStockClick(stock)} className="bg-[var(--theme-header)] opacity-90 border border-[var(--theme-border)]/60 rounded-xl p-4 flex justify-between items-center hover:bg-slate-800/60 transition-all cursor-pointer group">
                                                     <div className="flex-1 min-w-0 mr-4">
                                                         <div className="text-base font-bold text-slate-100 group-hover:text-indigo-300 transition-colors truncate flex items-center gap-1.5">
                                                             {stock.name}
@@ -357,7 +357,7 @@ const WatchlistSummary = () => {
                                                         </div>
                                                         {holding ? (
                                                             // [수정] 라벨 너비를 고정(w-8)하여 수치 데이터의 세로 줄을 딱 맞춤
-                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px] font-bold border-t border-slate-800/50 pt-2">
+                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px] font-bold border-t border-[var(--theme-border)]/50 pt-2">
                                                                 <div className="flex items-center">
                                                                     <span className="text-[9px] text-slate-600 font-medium uppercase w-8 shrink-0">손익</span>
                                                                     <span className={profit >= 0 ? 'text-red-400' : 'text-blue-400'}>
@@ -396,24 +396,24 @@ const WatchlistSummary = () => {
                                     </div>
                                 ) : <div className="flex flex-col items-center justify-center h-64 text-slate-600"><p className="text-sm font-medium">즐겨찾기된 종목이 없습니다.</p></div>}
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.4)] z-20">
+                            <div className="absolute bottom-0 left-0 right-0 bg-[var(--theme-header)]/95 backdrop-blur-md border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.4)] z-20">
                                 <div className="flex items-center gap-2 mb-3"><Wallet className="text-indigo-400" size={16} /><h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">나의 보유현황 (KRW)</h3></div>
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                                    <div className="flex justify-between items-center border-b border-slate-800/50 pb-1.5"><span className="text-[11px] text-slate-500 font-bold">총 매수금</span><span className="text-sm font-black text-slate-200">{summary.totalInvested.toLocaleString()}</span></div>
-                                    <div className="flex justify-between items-center border-b border-slate-800/50 pb-1.5"><span className="text-[11px] text-slate-500 font-bold">총 평가금</span><span className="text-sm font-black text-slate-200">{summary.totalEvaluation.toLocaleString()}</span></div>
+                                    <div className="flex justify-between items-center border-b border-[var(--theme-border)]/50 pb-1.5"><span className="text-[11px] text-slate-500 font-bold">총 매수금</span><span className="text-sm font-black text-slate-200">{summary.totalInvested.toLocaleString()}</span></div>
+                                    <div className="flex justify-between items-center border-b border-[var(--theme-border)]/50 pb-1.5"><span className="text-[11px] text-slate-500 font-bold">총 평가금</span><span className="text-sm font-black text-slate-200">{summary.totalEvaluation.toLocaleString()}</span></div>
                                     <div className="flex justify-between items-center"><span className="text-[11px] text-slate-500 font-bold">평가손익</span><span className={classNames("text-sm font-black", summary.totalProfit >= 0 ? 'text-red-400' : 'text-blue-400')}>{summary.totalProfit > 0 ? '+' : ''}{summary.totalProfit.toLocaleString()}</span></div>
-                                    <div className="flex justify-between items-center"><span className="text-[11px] text-slate-500 font-bold">수익률</span><span className={classNames("text-sm font-black px-2 py-0.5 rounded bg-slate-950 border border-slate-800", summary.returnRate >= 0 ? 'text-red-400' : 'text-blue-400')}>{summary.returnRate.toFixed(2)}%</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-[11px] text-slate-500 font-bold">수익률</span><span className={classNames("text-sm font-black px-2 py-0.5 rounded bg-slate-950 border border-[var(--theme-border)]", summary.returnRate >= 0 ? 'text-red-400' : 'text-blue-400')}>{summary.returnRate.toFixed(2)}%</span></div>
                                 </div>
                             </div>
                         </>
                     )}
                 </div>
 
-                <div className={classNames("flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden relative h-full", {
+                <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden relative h-full", {
                     "flex": activeSubTab === 'ai' || window.innerWidth >= 1024, "hidden lg:flex": activeSubTab !== 'ai'
                 })}>
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
-                    <div className="p-5 border-b border-slate-800 bg-slate-850 flex items-center gap-3 relative z-10 shrink-0"><div className="p-2 bg-indigo-500/10 rounded-lg"><Brain className="text-indigo-400" size={24} /></div><div><h2 className="text-xl font-black !text-white">전담 AI 분석가</h2><p className="text-xs text-indigo-400 font-bold">전략적 투자 브리핑</p></div></div>
+                    <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 relative z-10 shrink-0"><div className="p-2 bg-indigo-500/10 rounded-lg"><Brain className="text-indigo-400" size={24} /></div><div><h2 className="text-xl font-black !text-white">전담 AI 분석가</h2><p className="text-xs text-indigo-400 font-bold">전략적 투자 브리핑</p></div></div>
                     <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-10 text-sm leading-relaxed text-slate-200">
                         {aiReport.split('\n').filter(l => l.trim()).map((line, i) => (
                             <div key={i} className="mb-3 last:mb-0">

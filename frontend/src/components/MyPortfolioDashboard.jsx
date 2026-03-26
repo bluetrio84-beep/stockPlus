@@ -83,14 +83,14 @@ const MyPortfolioDashboard = () => {
     };
 
     return (
-        <div className="flex-1 bg-slate-950 p-4 lg:p-8 h-full overflow-y-auto custom-scrollbar flex flex-col gap-8 animate-in fade-in duration-700 relative">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 p-4 lg:p-8 h-full overflow-y-auto custom-scrollbar flex flex-col gap-8 animate-in fade-in duration-700 relative">
             {/* 🔝 HEADER */}
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     {/* [v28.9.18] 뒤로가기 버튼: 최좌측 배치 */}
                     <button 
                         onClick={() => navigate('/')} 
-                        className="w-12 h-12 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-lg group"
+                        className="w-12 h-12 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 text-slate-400 hover:text-white rounded-2xl flex items-center justify-center transition-all active:scale-90 shadow-lg group"
                     >
                         <ChevronRight size={24} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
                     </button>
@@ -107,7 +107,7 @@ const MyPortfolioDashboard = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button onClick={fetchData} className="p-3 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-2xl transition-all active:scale-95 shadow-lg">
+                    <button onClick={fetchData} className="p-3 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 text-slate-400 hover:text-white rounded-2xl transition-all active:scale-95 shadow-lg">
                         <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
                     </button>
                 </div>
@@ -115,7 +115,7 @@ const MyPortfolioDashboard = () => {
 
             {/* 🍩 TOP SECTION: DONUTS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-5 lg:p-6 shadow-2xl flex flex-col items-center gap-2 relative overflow-hidden group">
+                <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[2.5rem] p-5 lg:p-6 shadow-2xl flex flex-col items-center gap-2 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-cyan-500"></div>
                     <h3 className="text-white font-black text-sm uppercase tracking-[0.3em] flex items-center gap-2 mt-1">
                         <PieChart size={18} className="text-indigo-400" /> Asset Allocation
@@ -141,7 +141,7 @@ const MyPortfolioDashboard = () => {
                             <span className="text-2xl lg:text-3xl font-black text-white font-mono">{(totalEvaluation/10000).toFixed(0)}만</span>
                         </div>
                     </div>
-                    <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 w-full pt-4 border-t border-slate-800/50 mb-1">
+                    <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 w-full pt-4 border-t border-[var(--theme-border)] transition-colors duration-500/50 mb-1">
                         {holdings.map((h, i) => {
                             const ratio = totalEvaluation > 0 ? (Number(h.currentPrice || 0) * Number(h.quantity || 0) / totalEvaluation) * 100 : 0;
                             const colors = ["#6366f1", "#f43f5e", "#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#14b8a6"];
@@ -157,7 +157,7 @@ const MyPortfolioDashboard = () => {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-5 lg:p-6 shadow-2xl flex flex-col items-center gap-2 relative overflow-hidden group">
+                <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[2.5rem] p-5 lg:p-6 shadow-2xl flex flex-col items-center gap-2 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
                     <h3 className="text-white font-black text-sm uppercase tracking-[0.3em] flex items-center gap-2 mt-1">
                         <Target size={18} className="text-emerald-400" /> Profit Tracker
@@ -174,7 +174,7 @@ const MyPortfolioDashboard = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="w-full pt-4 border-t border-slate-800/50 flex flex-col items-center gap-0.5 mb-1">
+                    <div className="w-full pt-4 border-t border-[var(--theme-border)] transition-colors duration-500/50 flex flex-col items-center gap-0.5 mb-1">
                         <p className="text-[10px] text-white font-bold uppercase tracking-[0.2em]">Strategy Influence Level</p>
                         <span className="text-[10px] text-slate-500 font-mono italic">Real-time Performance Monitoring</span>
                     </div>
@@ -182,7 +182,7 @@ const MyPortfolioDashboard = () => {
             </div>
 
             {/* 🤖 AI 관제탑: FULL FONT SCALE-UP v3.9 */}
-            <div className="bg-slate-900/80 border border-indigo-500/40 rounded-[2.5rem] p-4 lg:p-6 flex flex-col gap-2 shadow-2xl relative overflow-hidden min-h-[500px] max-h-[650px]">
+            <div className="bg-[var(--theme-header)] transition-colors duration-500/80 border border-indigo-500/40 rounded-[2.5rem] p-4 lg:p-6 flex flex-col gap-2 shadow-2xl relative overflow-hidden min-h-[500px] max-h-[650px]">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                     <Brain size={100} className="text-indigo-500" />
                 </div>
@@ -202,8 +202,8 @@ const MyPortfolioDashboard = () => {
                         <p className="text-white text-[12px] font-black italic opacity-50 py-10 text-center">Awaiting Battle Data...</p>
                     ) : (
                         parsedInsights.map((insight, idx) => (
-                            <div key={idx} className="bg-slate-950/50 border border-slate-800 rounded-xl p-3 lg:p-4 flex flex-col xl:flex-row gap-4 w-full hover:border-indigo-500/30 transition-all duration-300">
-                                <div className="flex-[1.2] border-b xl:border-b-0 xl:border-r border-slate-800/50 pb-3 xl:pb-0 xl:pr-4">
+                            <div key={idx} className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl p-3 lg:p-4 flex flex-col xl:flex-row gap-4 w-full hover:border-indigo-500/30 transition-all duration-300">
+                                <div className="flex-[1.2] border-b xl:border-b-0 xl:border-r border-[var(--theme-border)] transition-colors duration-500/50 pb-3 xl:pb-0 xl:pr-4">
                                     <div className="flex justify-between items-center mb-2">
                                         <h5 className="text-lg lg:text-xl font-black text-white flex items-center gap-2">
                                             <Target size={18} className="text-indigo-400" /> {insight.stockName}
@@ -219,7 +219,7 @@ const MyPortfolioDashboard = () => {
                                         {Object.entries(insight.radar).filter(([k]) => k !== 'interpretation').map(([key, val]) => (
                                             <div key={key} className="flex items-center gap-3">
                                                 <span className="w-10 text-[9px] font-black text-slate-500 uppercase">{key}</span>
-                                                <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                                                <div className="flex-1 h-1.5 bg-[var(--theme-header)] transition-colors duration-500 rounded-full overflow-hidden">
                                                     <div 
                                                         className={`h-full ${key==='lstm' ? 'bg-indigo-500' : key==='tcn' ? 'bg-rose-500' : key==='quant' ? 'bg-amber-500' : key==='smart' ? 'bg-orange-500' : 'bg-emerald-500'}`} 
                                                         style={{width: `${val}%`}}
@@ -247,7 +247,7 @@ const MyPortfolioDashboard = () => {
                                                 r.includes('수급포착') || r.includes('폭발') ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                                                 r.includes('🔥') || r.includes('Positive') ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
                                                 r.includes('❄️') || r.includes('Negative') ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
-                                                "bg-slate-900 text-slate-400 border-slate-800"
+                                                "bg-[var(--theme-header)] transition-colors duration-500 text-slate-400 border-[var(--theme-border)] transition-colors duration-500"
                                             )}>{r.includes('예상확률:') ? r : r}</span>
                                         ))}
                                     </div>
@@ -267,7 +267,7 @@ const MyPortfolioDashboard = () => {
                     const tacticalTags = stockInsight ? stockInsight.reasoning.filter(r => !r.includes(':')) : [];
 
                     return (
-                        <div key={idx} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl hover:border-indigo-500/40 transition-all group flex flex-col gap-5">
+                        <div key={idx} className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-6 shadow-xl hover:border-indigo-500/40 transition-all group flex flex-col gap-5">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h5 className="text-white font-black text-lg group-hover:text-indigo-400 transition-colors">{stock.stockName}</h5>
@@ -278,7 +278,7 @@ const MyPortfolioDashboard = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 bg-slate-950/50 p-4 rounded-2xl border border-white/5">
+                            <div className="grid grid-cols-2 gap-4 bg-[var(--theme-bg)] transition-colors duration-500/50 p-4 rounded-2xl border border-white/5">
                                 <div>
                                     <span className="text-[9px] font-black text-slate-500 uppercase block mb-1">Avg Price</span>
                                     <span className="text-sm font-bold text-white font-mono">{Number(stock.avgPrice || 0).toLocaleString()}₩</span>
@@ -303,7 +303,7 @@ const MyPortfolioDashboard = () => {
                                         tag.includes('고수익') || tag.includes('고성장') || tag.includes('★') ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : 
                                         tag.includes('수급') || tag.includes('폭발') ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                                         tag.includes('과매도') || tag.includes('주의') ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
-                                        "bg-slate-800 text-slate-400 border-slate-800"
+                                        "bg-slate-800 text-slate-400 border-[var(--theme-border)] transition-colors duration-500"
                                     )}>
                                         {tag}
                                     </span>
@@ -325,8 +325,8 @@ const MyPortfolioDashboard = () => {
             {/* 🛡️ DEEP ANALYSIS MODAL */}
             {isModalOpen && selectedInsight && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-10 animate-in fade-in zoom-in-95 duration-300">
-                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={() => setIsModalOpen(false)}></div>
-                    <div className="relative bg-slate-900 border-2 border-indigo-500/30 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                    <div className="absolute inset-0 bg-[var(--theme-bg)] transition-colors duration-500/90 backdrop-blur-xl" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="relative bg-[var(--theme-header)] transition-colors duration-500 border-2 border-indigo-500/30 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
                         <div className="p-6 lg:p-8 border-b border-white/5 flex items-center justify-between bg-indigo-600/10">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10">
@@ -342,7 +342,7 @@ const MyPortfolioDashboard = () => {
                                                 r.includes('고수익') || r.includes('고성장') || r.includes('★') ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : 
                                                 r.includes('수급') || r.includes('폭발') ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
                                                 r.includes('과매도') || r.includes('주의') || r.includes('과열') ? "bg-rose-500/20 text-rose-400 border-rose-500/30" :
-                                                "bg-slate-800 text-slate-400 border-slate-700"
+                                                "bg-slate-800 text-slate-400 border-[var(--theme-border)] transition-colors duration-500"
                                             )}>{r}</span>
                                         ))}
                                     </div>
@@ -353,7 +353,7 @@ const MyPortfolioDashboard = () => {
                         <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 custom-scrollbar text-white">
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 {Object.entries(selectedInsight.radar).filter(([k]) => k !== 'interpretation').map(([key, val]) => (
-                                    <div key={key} className="bg-slate-950/50 border border-slate-800 rounded-3xl p-6 flex flex-col items-center gap-4 relative group hover:border-indigo-500/30 transition-all">
+                                    <div key={key} className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-6 flex flex-col items-center gap-4 relative group hover:border-indigo-500/30 transition-all">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{key} Energy</span>
                                         <div className="relative w-24 h-24 flex items-center justify-center">
                                             <svg className="w-full h-full transform -rotate-90">
@@ -373,7 +373,7 @@ const MyPortfolioDashboard = () => {
                             {/* 2. Deep Stats Row: Whale | Supply | Sector */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Whale Tracker */}
-                                <div className="bg-slate-950/50 border border-amber-500/20 rounded-[2rem] p-6 space-y-4">
+                                <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-amber-500/20 rounded-[2rem] p-6 space-y-4">
                                     <div className="flex items-center gap-2 text-amber-400">
                                         <ShieldCheck size={20} />
                                         <h4 className="text-[11px] font-black uppercase tracking-widest">Whale Tracker</h4>
@@ -389,7 +389,7 @@ const MyPortfolioDashboard = () => {
                                 </div>
 
                                 {/* Supply Flow */}
-                                <div className="bg-slate-950/50 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4">
+                                <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4">
                                     <div className="flex items-center gap-2 text-indigo-400">
                                         <TrendingUp size={20} />
                                         <h4 className="text-[11px] font-black uppercase tracking-widest">Supply Momentum</h4>
@@ -403,7 +403,7 @@ const MyPortfolioDashboard = () => {
                                 </div>
 
                                 {/* Sector Intelligence - New v28.2 */}
-                                <div className="bg-slate-950/50 border border-emerald-500/20 rounded-[2rem] p-6 space-y-4">
+                                <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-emerald-500/20 rounded-[2rem] p-6 space-y-4">
                                     <div className="flex items-center gap-2 text-emerald-400">
                                         <Globe size={20} />
                                         <h4 className="text-[11px] font-black uppercase tracking-widest">Sector Intelligence</h4>
@@ -420,17 +420,17 @@ const MyPortfolioDashboard = () => {
                             </div>
 
                             {/* 3. Multi-Whale Intelligence Comparison - New v28.5 */}
-                            <div className="bg-slate-950/50 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <TrendingUp size={24} className="text-indigo-400" />
                                         <h3 className="text-white font-black text-lg uppercase tracking-widest">Multi-Whale Intelligence</h3>
                                     </div>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-slate-900 px-3 py-1 rounded-full border border-white/5">Live Flow Analysis</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 px-3 py-1 rounded-full border border-white/5">Live Flow Analysis</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Foreigner Stats */}
-                                    <div className="bg-slate-900 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4 group/f">
+                                    <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-indigo-500/20 rounded-[2rem] p-6 space-y-4 group/f">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover/f:bg-indigo-600 group-hover/f:text-white transition-all">
                                                 <Globe size={24} />
@@ -441,19 +441,19 @@ const MyPortfolioDashboard = () => {
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">5D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol5d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.foreigner?.vol5d || 0).toLocaleString()}
                                                 </span>
                                             </div>
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">20D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol20d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.foreigner?.vol20d || 0).toLocaleString()}
                                                 </span>
                                             </div>
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">60D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.foreigner?.vol60d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.foreigner?.vol60d || 0).toLocaleString()}
@@ -463,7 +463,7 @@ const MyPortfolioDashboard = () => {
                                     </div>
 
                                     {/* Institution Stats */}
-                                    <div className="bg-slate-900 border border-cyan-500/20 rounded-[2rem] p-6 space-y-4 group/i">
+                                    <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-cyan-500/20 rounded-[2rem] p-6 space-y-4 group/i">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 flex items-center justify-center text-cyan-400 group-hover/i:bg-cyan-600 group-hover/i:text-white transition-all">
                                                 <Activity size={24} />
@@ -474,19 +474,19 @@ const MyPortfolioDashboard = () => {
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">5D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol5d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.institution?.vol5d || 0).toLocaleString()}
                                                 </span>
                                             </div>
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">20D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol20d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.institution?.vol20d || 0).toLocaleString()}
                                                 </span>
                                             </div>
-                                            <div className="bg-slate-950/50 p-3 rounded-xl border border-white/5 text-center">
+                                            <div className="bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-white/5 text-center">
                                                 <span className="text-[8px] text-slate-500 font-bold block mb-1">60D</span>
                                                 <span className={classNames("text-xs font-black font-mono", (selectedInsight.deep?.multiWhale?.institution?.vol60d || 0) >= 0 ? "text-emerald-400" : "text-rose-400")}>
                                                     {(selectedInsight.deep?.multiWhale?.institution?.vol60d || 0).toLocaleString()}
@@ -498,14 +498,14 @@ const MyPortfolioDashboard = () => {
                             </div>
 
                             {/* 4. 요약 뉴스: Full Width */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 space-y-6">
+                            <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[2.5rem] p-8 space-y-6">
                                 <div className="flex items-center gap-3">
                                     <Newspaper size={24} className="text-indigo-400" />
                                     <h3 className="text-white font-black text-lg uppercase tracking-widest">분석 근거 및 요약 뉴스</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {(selectedInsight.deep?.news || []).map((news, i) => (
-                                        <div key={i} onClick={() => news.link && window.open(news.link, '_blank')} className={classNames("p-4 bg-slate-950/50 rounded-2xl border border-white/5 flex items-start gap-3 transition-all duration-300", news.link ? "cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 group/news" : "")}>
+                                        <div key={i} onClick={() => news.link && window.open(news.link, '_blank')} className={classNames("p-4 bg-[var(--theme-bg)] transition-colors duration-500/50 rounded-2xl border border-white/5 flex items-start gap-3 transition-all duration-300", news.link ? "cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 group/news" : "")}>
                                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0 group-hover/news:scale-125 transition-transform"></div>
                                             <p className="text-slate-200 text-[11px] font-bold leading-relaxed group-hover/news:text-white transition-colors">{typeof news === 'string' ? news : news.title}</p>
                                         </div>
@@ -513,7 +513,7 @@ const MyPortfolioDashboard = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="p-8 border-t border-white/5 bg-slate-950 flex justify-end">
+                        <div className="p-8 border-t border-white/5 bg-[var(--theme-bg)] transition-colors duration-500 flex justify-end">
                             <button onClick={() => setIsModalOpen(false)} className="px-14 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest rounded-[2rem] transition-all">지휘 확인</button>
                         </div>
                     </div>
