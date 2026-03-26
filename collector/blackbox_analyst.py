@@ -103,8 +103,26 @@ class BlackBoxAnalyst:
                 history = cursor.fetchall()
                 if len(history) > 1:
                     curr = history[0]
-                    if float(curr['rsi'] or 50) <= 45: tags.append("RSI바닥탈출")
-                    if float(curr['ma5'] or 0) > float(curr['ma20'] or 0) and float(history[1].get('ma5',0)) <= float(history[1].get('ma20',0)): tags.append("골든크로스")
+                    prev = history[1]
+                    # [v52.4] 퀀트(Algo) 가산점 로직 정밀 타격 (NextLeaderEngine 동기화)
+                    rsi = float(curr['rsi'] or 50)
+                    prev_rsi = float(prev['rsi'] or 50)
+                    if prev_rsi <= 35 and rsi > prev_rsi:
+                        q_base += 20; tags.append("RSI바닥탈출")
+                    elif rsi <= 30:
+                        q_base += 10; tags.append("과매도진입")
+
+                    ma5, ma20 = float(curr['ma5'] or 0), float(curr['ma20'] or 0)
+                    if ma5 > 0 and ma20 > 0:
+                        gap = abs(ma5 - ma20) / ma20
+                        if gap < 0.02:
+                            q_base += 10; tags.append("이평선수렴")
+                        if ma5 > ma20 and float(prev.get('ma5', 0)) <= float(prev.get('ma20', 0)):
+                            q_base += 10; tags.append("골든크로스")
+
+                    curr_v, prev_v = float(curr['volume'] or 0), float(prev['volume'] or 1)
+                    if curr_v > prev_v * 2.5:
+                        q_base += 15; tags.append("거래량폭발")
                     curr_pgm = float(curr['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / curr_vol) * 100 if curr_vol > 0 else 0
                     s_score += min(30.0, pgm_ratio * 1.7) 
