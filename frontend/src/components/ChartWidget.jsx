@@ -10,9 +10,26 @@ import ChartWidgetDesktop from './ChartWidget_Desktop';
  */
 const ChartWidget = (props) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [theme, setTheme] = useState(document.documentElement.getAttribute('data-theme') || 'midnight');
   
   // 비즈니스 로직 분리 (커스텀 훅)
   const logic = useStockWidget(props.stock, props.currentPeriod);
+
+  // 테마 변경 감지 (MutationObserver 활용)
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-theme') {
+          setTheme(document.documentElement.getAttribute('data-theme'));
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
+
+  // logic 객체에 theme 추가
+  const logicWithTheme = { ...logic, theme };
 
   // 화면 리사이즈 감지 최적화
   useEffect(() => {
@@ -32,10 +49,10 @@ const ChartWidget = (props) => {
 
   // 분기 렌더링 (디자인 보존을 위해 props와 logic을 모두 전달)
   if (isMobile) {
-    return <ChartWidgetMobile {...props} logic={logic} />;
+    return <ChartWidgetMobile {...props} logic={logicWithTheme} />;
   }
 
-  return <ChartWidgetDesktop {...props} logic={logic} />;
+  return <ChartWidgetDesktop {...props} logic={logicWithTheme} />;
 };
 
 export default ChartWidget;

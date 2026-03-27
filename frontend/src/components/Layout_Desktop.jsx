@@ -32,8 +32,8 @@ const LayoutDesktop = ({ logic }) => {
     return (
         <div className="flex flex-col h-[100dvh] bg-[var(--theme-bg)] text-[var(--theme-text)] font-sans overflow-hidden select-none transition-colors duration-500">
             <header className="h-14 bg-[var(--theme-header)] border-b border-[var(--theme-border)] flex items-center justify-between px-6 shrink-0 z-40 shadow-md transition-colors duration-500">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-[var(--theme-bg)] rounded-full transition-colors">
+                <div className="flex items-center gap-4 transition-colors">
+                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-500 hover:text-[var(--theme-text)] hover:bg-[var(--theme-bg)]/80 rounded-full transition-all">
                         {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => navigate('/')}>

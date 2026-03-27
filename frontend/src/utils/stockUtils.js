@@ -69,3 +69,21 @@ export const isKosdaq = (stock) => {
     const market = (stock.marketType || stock.market_type)?.toUpperCase();
     return market === 'KOSDAQ';
 };
+
+// [추가] 테마별 차트 전용 색상 맵핑 (실시간 전환용)
+export const getThemeColors = (theme) => {
+    switch (theme) {
+        case 'pure-white':
+            return { bg: '#f8fafc', text: '#0f172a', border: '#e2e8f0' };
+        case 'pitch-black':
+            return { bg: '#0a0a0a', text: '#94a3b8', border: '#262626' };
+        case 'forest-green':
+            return { bg: '#065f46', text: '#ecfdf5', border: '#065f46' };
+        case 'royal-wine':
+            return { bg: '#7f1d1d', text: '#fff1f2', border: '#7f1d1d' };
+        case 'deep-ocean':
+            return { bg: '#075985', text: '#f0f9ff', border: '#075985' };
+        default: // midnight (default)
+            return { bg: '#0f172a', text: '#94a3b8', border: '#334155' };
+    }
+};
