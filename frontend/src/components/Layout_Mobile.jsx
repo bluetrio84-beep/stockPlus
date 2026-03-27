@@ -129,11 +129,11 @@ const LayoutMobile = ({ logic }) => {
 
             {isMenuOpen && (
                 <>
-                    <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-                    <div className="fixed top-0 left-0 bottom-0 z-50 w-72 bg-[var(--theme-header)] shadow-2xl py-4 animate-in slide-in-from-left duration-200 border-r border-[var(--theme-border)] flex flex-col transition-colors duration-500">
+                    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+                    <div className="fixed top-0 left-0 bottom-0 z-60 w-72 bg-[var(--theme-header)] shadow-2xl py-4 animate-in slide-in-from-left duration-200 border-r border-[var(--theme-border)] flex flex-col transition-colors duration-500">
                         <div className="px-6 py-4 flex justify-between items-center border-b border-[var(--theme-border)] mb-2">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span>
-                            <button onClick={() => setIsMenuOpen(false)}><X size={20} className="text-slate-500" /></button>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] transition-colors">Navigation</span>
+                            <button onClick={() => setIsMenuOpen(false)} className="text-slate-500 hover:text-[var(--theme-text)]"><X size={20} /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-8">
                             <div className="space-y-1.5">

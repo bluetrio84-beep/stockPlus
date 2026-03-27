@@ -14,7 +14,7 @@ const MobileNav = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex justify-around items-center z-50 md:hidden pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 h-16 bg-[var(--theme-header)] border-t border-[var(--theme-border)] flex justify-around items-center z-50 md:hidden pb-safe transition-colors duration-500 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
       {tabs.map(tab => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -22,20 +22,20 @@ const MobileNav = ({ activeTab, setActiveTab }) => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="flex flex-col items-center justify-center w-full h-full space-y-1"
+            className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all active:scale-90"
           >
             {/* 아이콘: 활성화 상태에 따라 색상 변경 */}
             <Icon 
-                size={24} 
+                size={22} 
                 className={classNames("transition-colors", {
-                    "text-slate-200": isActive,
-                    "text-slate-600": !isActive
+                    "text-[var(--theme-point)]": isActive,
+                    "text-slate-500": !isActive
                 })}
             />
             {/* 라벨 텍스트 */}
-            <span className={classNames("text-[10px] font-medium", {
-                "text-slate-200": isActive,
-                "text-slate-600": !isActive
+            <span className={classNames("text-[10px] font-black uppercase tracking-tighter transition-colors", {
+                "text-[var(--theme-point)]": isActive,
+                "text-slate-500": !isActive
             })}>
                 {tab.label}
             </span>
