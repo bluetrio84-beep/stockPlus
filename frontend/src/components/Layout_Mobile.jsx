@@ -65,35 +65,35 @@ const LayoutMobile = ({ logic }) => {
                             <LayoutDashboard size={18} />
                         </button>
                     )}
-                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-[var(--theme-bg)]/50 border border-[var(--theme-border)]/50 mr-1 shadow-sm active:bg-slate-700">
-                        <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
-                        <span className="text-[11px] font-bold text-slate-300 max-w-[60px] truncate">{usrName}님</span>
+                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-[var(--theme-bg)]/50 border border-[var(--theme-border)]/50 mr-1 shadow-sm active:bg-slate-700/20 transition-colors">
+                        <div className="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center text-[11px] font-black text-white shadow-sm">{usrName.charAt(0).toUpperCase()}</div>
+                        <span className="text-[11px] font-black text-[var(--theme-text)] max-w-[60px] truncate transition-colors">{usrName}님</span>
                     </button>
                     <button onClick={handleNotificationToggle} className="p-2 text-slate-400 relative"><Bell size={20} />{unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>}</button>
                     {logic.isNotificationOpen && (
                         <>
                             <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" onClick={() => logic.setIsNotificationOpen(false)}></div>
                             <div className="absolute top-12 right-0 z-50 w-[calc(100vw-32px)] max-w-[300px] bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-white">최신 알림</h3>
+                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 flex justify-between items-center transition-colors">
+                                    <h3 className="text-sm font-black text-[var(--theme-text)] transition-colors">최신 알림</h3>
                                     <button onClick={() => logic.setIsNotificationOpen(false)}><X size={18} className="text-slate-500" /></button>
                                 </div>
-                                <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-[var(--theme-header)]">
+                                <div className="max-h-[350px] overflow-y-auto no-scrollbar bg-[var(--theme-header)] transition-colors">
                                     {logic.notifications.length > 0 ? logic.notifications.map((notif, idx) => {
                                         const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
                                         const timeStr = date && !isNaN(date) ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}` : '';
                                         return (
                                             <div key={idx} onClick={() => handleNotificationClick(notif)} className="py-2.5 px-4 border-b border-[var(--theme-border)]/50 active:bg-[var(--theme-bg)] transition-colors cursor-pointer hover:bg-[var(--theme-bg)]/50">
-                                                <div className="flex gap-3 items-start text-white">
-                                                    <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-700")}></div>
+                                                <div className="flex gap-3 items-start transition-colors text-[var(--theme-text)]">
+                                                    <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0", (notif.is_read === 0 || !notif.isRead) ? "bg-[var(--theme-point)] shadow-[0_0_8px_var(--theme-point)]" : "bg-slate-500/30")}></div>
                                                     <div className="flex-1">
-                                                        <p className="text-[11px] font-bold leading-normal mb-1">{notif.message}</p>
-                                                        <span className="text-[10px] text-white/60 font-mono block">{timeStr}</span>
+                                                        <p className="text-[11px] font-bold leading-normal mb-1 transition-colors">{notif.message}</p>
+                                                        <span className="text-[10px] text-slate-500 font-black font-mono block">{timeStr}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         );
-                                    }) : <div className="p-10 text-center text-white text-xs font-bold flex flex-col items-center gap-2"><Bell size={24} className="opacity-20 mb-1" />새로운 알림이 없습니다.</div>}
+                                    }) : <div className="p-10 text-center text-slate-500 text-xs font-black flex flex-col items-center gap-2 transition-colors"><Bell size={24} className="opacity-20 mb-1" />새로운 알림이 없습니다.</div>}
                                 </div>
                             </div>
                         </>
@@ -117,8 +117,8 @@ const LayoutMobile = ({ logic }) => {
                 <div className="flex items-center justify-start gap-5">
                     {marketIndices.map(index => (
                         <div key={index.name} className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-slate-500">{index.name}</span>
-                            <span className="text-[11px] font-bold font-mono text-slate-200">{parseFloat(index.price || 0).toLocaleString()}</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase">{index.name}</span>
+                            <span className="text-[11px] font-black font-mono text-[var(--theme-text)] transition-colors">{parseFloat(index.price || 0).toLocaleString()}</span>
                             <span className={classNames("text-[9px] font-bold font-mono flex items-center gap-0.5", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                 {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                             </span>

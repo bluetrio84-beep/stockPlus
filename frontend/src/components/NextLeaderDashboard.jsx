@@ -116,7 +116,7 @@ const NextLeaderDashboard = () => {
         <div id="next-leader-ranking-area" className="flex-1 min-h-0 bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
             <div className="p-3 border-b border-[var(--theme-border)] transition-colors duration-500 flex items-center justify-between bg-[var(--theme-header)] transition-colors duration-500/80 shrink-0">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-white text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter">
+                    <h3 className="text-[var(--theme-text)] text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter transition-colors">
                         <TrendingUp className="text-rose-500" size={16} /> 바닥 탈출 Top 10
                     </h3>
                     <button onClick={() => setIsHelpModalOpen(true)} className="text-slate-500 hover:text-indigo-400 transition-colors"><HelpCircle size={16} /></button>
@@ -152,9 +152,9 @@ const NextLeaderDashboard = () => {
                         ) : nextLeaders.length > 0 ? (
                             nextLeaders.map((item, idx) => (
                                 <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400")}>{idx + 1}</div></td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40"><div className="flex flex-col"><span className="text-white font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px]">{item.stock_code}</span></div></td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center"><div className="inline-block px-3 py-1 bg-slate-800 rounded-full border border-slate-700"><span className="text-indigo-400 font-black text-sm lg:text-base">{item.total_score.toFixed(1)}</span></div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>{idx + 1}</div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40"><div className="flex flex-col transition-colors"><span className="text-[var(--theme-text)] font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px] font-black">{item.stock_code}</span></div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center"><div className="inline-block px-3 py-1 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors"><span className="text-indigo-600 font-black text-sm lg:text-base transition-colors">{item.total_score.toFixed(1)}</span></div></td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                         <div className="flex items-center gap-3">
                                             {[ 

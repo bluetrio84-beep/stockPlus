@@ -1,3 +1,24 @@
+# StockPlus Project Development Task - v13.1 (Phase 3) 🔥
+
+## 🚀 최신 업데이트 현황 (v13.1) - Precision Visibility & Regression Fix 🛠️
+
+### 1. 모바일 상단 헤더 가독성 완결 (Header & Global Bar)
+- **사용자 정보 시인성 확보**: `Layout_Mobile.jsx`에서 사용자명(질풍님)과 지수 가격 텍스트를 `text-[var(--theme-text)]` 및 **font-black**으로 교체하여 화이트 테마에서 완벽한 가독성 구현.
+- **알림 팝업 정밀 튜닝**: 알림 아이콘 클릭 시 나타나는 팝업 내부의 '최신 알림' 제목과 개별 메시지 텍스트를 모두 테마 변수 기반으로 전환하여 화이트 모드 시인성 100% 확보.
+
+### 2. 관리자 모듈 정밀 가독성 강화 (Admin & Intelligence)
+- **Admin Intelligence Dashboard**: 상단 요약 카드의 ADR, 시장 강도, Top Sector 지표 텍스트를 테마 변수화하여 화이트 배경에서도 묻히지 않도록 정밀 수정.
+- **Next Leaders AI**: 랭킹 테이블의 '바닥 탈출 Top 10' 제목, 순위 배경, 종목명 및 모든 수치 텍스트를 테마 가변형으로 전격 교체 및 폰트 강화.
+
+### 3. 소스 코드 무결성 및 정밀 타격 원칙 확립
+- **전체 덮어쓰기 금지**: 파일 전체를 다시 쓰는 방식에서 발생할 수 있는 로직 누락 방지를 위해, 스타일 수정 시 오직 `replace` 도구만을 사용하는 **"정밀 타격(Precision Strike)"** 원칙 재정립 및 적용.
+- **로직 보존형 스타일링**: 기존의 모든 기능 로직은 100% 보존하면서 오직 CSS 클래스와 테마 변수 매핑만을 수정하여 안정성 극대화.
+
+### 4. 시스템 배포 및 검증
+- **프론트엔드 컨테이너 재빌드**: 모바일 상단 및 관리자 페이지의 정밀 가독성 개선 사항이 반영된 Docker 프론트엔드 컨테이너 최종 재배포 및 검증 완료.
+
+---
+
 # StockPlus Project Development Task - v13.0 (Phase 3) 🔥
 
 ## 🚀 최신 업데이트 현황 (v13.0) - UI/UX Grand Polishing 💎
