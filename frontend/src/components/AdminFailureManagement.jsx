@@ -98,14 +98,14 @@ const GaugeChart = ({ value, label, colorClass, icon: Icon, subValue }) => {
                     <circle cx="40" cy="40" r={radius} fill="transparent" stroke="currentColor" strokeWidth="6" className="text-slate-800" />
                     <circle cx="40" cy="40" r={radius} fill="transparent" stroke="currentColor" strokeWidth="6" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className={classNames("transition-all duration-1000", colorClass)} />
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Icon size={16} className={classNames("mb-0.5", colorClass)} />
-                    <span className="text-xs font-black text-white">{Math.round(value)}%</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center transition-colors">
+                    <Icon size={16} className={classNames("mb-0.5 transition-colors", colorClass)} />
+                    <span className="text-xs font-black text-[var(--theme-text)] transition-colors">{Math.round(value)}%</span>
                 </div>
             </div>
-            <div>
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
-                {subValue && <p className="text-[8px] font-bold text-slate-600 mt-0.5">{subValue}</p>}
+            <div className="transition-colors">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest transition-colors">{label}</p>
+                {subValue && <p className="text-[8px] font-bold text-slate-500 mt-0.5 transition-colors">{subValue}</p>}
             </div>
         </div>
     );
@@ -190,24 +190,24 @@ const AdminFailureManagement = () => {
             <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10">
                     <div>
-                        <h1 className="text-xl lg:text-2xl font-black text-white tracking-tight uppercase italic flex items-center gap-3">
+                        <h1 className="text-xl lg:text-2xl font-black text-[var(--theme-text)] tracking-tight uppercase italic flex items-center gap-3 transition-colors">
                             <ShieldAlert className="text-rose-500" size={28} /> AI 장애 지능 관제
                         </h1>
-                        <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mt-1 lg:ml-10 hidden lg:block">NOC ACTIVE | {lastUpdated.toLocaleTimeString()}</p>
+                        <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mt-1 lg:ml-10 hidden lg:block transition-colors">NOC ACTIVE | {lastUpdated.toLocaleTimeString()}</p>
                     </div>
 
-                    <div className="hidden lg:flex bg-[var(--theme-header)] transition-colors duration-500 p-1 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 mr-4 shadow-inner">
+                    <div className="hidden lg:flex bg-[var(--theme-header)] transition-colors duration-500 p-1 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 mr-4 shadow-inner transition-colors">
                         <button 
                             onClick={() => setActiveTab('metrics')}
-                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", 
-                                activeTab !== 'aidev' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}
+                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all transition-colors", 
+                                activeTab !== 'aidev' ? "bg-[var(--theme-point)] text-white shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:text-[var(--theme-text)]")}
                         >
                             지능 관제
                         </button>
                         <button 
                             onClick={() => setActiveTab('aidev')}
-                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", 
-                                activeTab === 'aidev' ? "bg-indigo-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300")}
+                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all transition-colors", 
+                                activeTab === 'aidev' ? "bg-[var(--theme-point)] text-white shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:text-[var(--theme-text)]")}
                         >
                             AI 개발 센터
                         </button>
@@ -240,7 +240,7 @@ const AdminFailureManagement = () => {
                                     <h3 className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">장애 위험도 지수</h3>
                                     <div className={classNames("text-5xl font-black tracking-tighter", statusColor)}>{prob}%</div>
                                 </div>
-                                <div className={classNames("px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border", prob > 70 ? "bg-rose-500 text-white border-rose-400" : "bg-slate-800 text-slate-400 border-[var(--theme-border)] transition-colors duration-500")}>
+                                <div className={classNames("px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all transition-colors", prob > 70 ? "bg-rose-500 text-white border-rose-400" : "bg-[var(--theme-bg)] text-slate-500 border-[var(--theme-border)]")}>
                                     {metrics?.status} PHASE
                                 </div>
                             </div>
@@ -253,9 +253,9 @@ const AdminFailureManagement = () => {
                                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">KIS ONLINE</p>
                                 </div>
                             </div>
-                            <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-5 space-y-3 shadow-lg">
-                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><Brain size={12} className="text-indigo-400" /> AI System Verdict</h4>
-                                <p className="text-[11px] text-slate-300 font-bold leading-relaxed bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 shadow-inner">
+                            <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-5 space-y-3 shadow-lg transition-colors">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2 transition-colors"><Brain size={12} className="text-indigo-600" /> AI System Verdict</h4>
+                                <p className="text-[11px] text-[var(--theme-text)] font-black leading-relaxed bg-[var(--theme-bg)] transition-colors duration-500/50 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 shadow-inner transition-colors">
                                      {prob > 70 ? "치명적 부하 감지. 즉시 긴급 재시작을 수행하십시오." : 
                                       (prob > 45 ? "주의 단계. 로그 에러 빈도가 증가하고 있습니다." : 
                                       "모든 지표가 청정 구역입니다. 엔진이 정상 가동 중입니다.")}
@@ -267,12 +267,12 @@ const AdminFailureManagement = () => {
                             "lg:col-span-8 flex flex-col bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300",
                             activeTab === 'metrics' && 'hidden lg:flex'
                         )}>
-                            <div className="px-6 py-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500/50 flex justify-between items-center shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <Terminal size={18} className="text-indigo-400" />
-                                    <h3 className="text-sm font-black text-white uppercase italic tracking-tight">System Blackbox Feed</h3>
+                            <div className="px-6 py-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)]/50 transition-colors duration-500 flex justify-between items-center shrink-0">
+                                <div className="flex items-center gap-3 transition-colors">
+                                    <Terminal size={18} className="text-indigo-600" />
+                                    <h3 className="text-sm font-black text-[var(--theme-text)] uppercase italic tracking-tight transition-colors">System Blackbox Feed</h3>
                                 </div>
-                                <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2">
+                                <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2 transition-colors">
                                      <AlertCircle size={12} /> {window.innerWidth < 1024 ? "Log Feed" : "Click Log to Debug"}
                                 </span>
                             </div>
@@ -280,41 +280,41 @@ const AdminFailureManagement = () => {
                                 {metrics?.recentErrors?.map((log, idx) => {
                                     const isCritical = log.includes('Critical') || log.includes('ERROR');
                                     return (
-                                        <div key={idx} className={classNames("p-3 rounded-xl border transition-all group relative", isCritical ? "bg-rose-500/5 border-rose-500/20 text-rose-200" : "bg-slate-800/30 border-[var(--theme-border)] transition-colors duration-500 text-slate-400")}>
-                                            <div className="flex items-start gap-3 select-text">
-                                                <span className={classNames("mt-0.5 shrink-0", isCritical ? "text-rose-500" : "text-amber-500")}><Zap size={14} /></span>
-                                                <span className="break-all cursor-text">{log}</span>
+                                        <div key={idx} className={classNames("p-3 rounded-xl border transition-all group relative transition-colors", isCritical ? "bg-rose-500/10 border-rose-500/30 text-rose-600" : "bg-[var(--theme-bg)]/50 border-[var(--theme-border)] transition-colors duration-500 text-slate-500")}>
+                                            <div className="flex items-start gap-3 select-text transition-colors">
+                                                <span className={classNames("mt-0.5 shrink-0 transition-colors", isCritical ? "text-rose-600" : "text-amber-600")}><Zap size={14} /></span>
+                                                <span className="break-all cursor-text font-bold transition-colors">{log}</span>
                                             </div>
-                                            <button onClick={() => handleAnalyzeLog(log)} className="absolute right-3 bottom-2 opacity-0 lg:group-hover:opacity-100 transition-all flex items-center gap-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white px-2 py-1 rounded-md font-black text-[9px] uppercase shadow-lg active:scale-90 z-10"><Brain size={12} /> AI Debug</button>
+                                            <button onClick={() => handleAnalyzeLog(log)} className="absolute right-3 bottom-2 opacity-0 lg:group-hover:opacity-100 transition-all flex items-center gap-1.5 bg-indigo-600 text-white px-2 py-1 rounded-md font-black text-[9px] uppercase shadow-lg active:scale-90 z-10"><Brain size={12} /> AI Debug</button>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            <div className={classNames("absolute inset-y-0 right-0 w-full lg:w-[450px] bg-[var(--theme-header)] transition-colors duration-500 border-l border-[var(--theme-border)] transition-colors duration-500 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-30 transition-transform duration-500 ease-in-out transform flex flex-col", isSidebarOpen ? "translate-x-0" : "translate-x-full")}>
-                                <div className="p-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500 flex justify-between items-center shrink-0">
-                                     <div className="flex items-center gap-3"><Brain className="text-indigo-400" size={20} /><h3 className="text-sm font-black text-white uppercase tracking-tighter italic">AI Debugging Report</h3></div>
-                                     <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-slate-500 hover:text-white"><X size={20} /></button>
+                            <div className={classNames("absolute inset-y-0 right-0 w-full lg:w-[450px] bg-[var(--theme-header)] transition-colors duration-500 border-l border-[var(--theme-border)] transition-colors duration-500 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-30 transition-transform duration-500 ease-in-out transform flex flex-col transition-colors", isSidebarOpen ? "translate-x-0" : "translate-x-full")}>
+                                <div className="p-5 border-b border-[var(--theme-border)] transition-colors duration-500 bg-[var(--theme-bg)] transition-colors duration-500 flex justify-between items-center shrink-0 transition-colors">
+                                     <div className="flex items-center gap-3 transition-colors"><Brain className="text-indigo-600" size={20} /><h3 className="text-sm font-black text-[var(--theme-text)] uppercase tracking-tighter italic transition-colors">AI Debugging Report</h3></div>
+                                     <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-slate-500 hover:text-[var(--theme-text)] transition-colors"><X size={20} /></button>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[var(--theme-header)] transition-colors duration-500">
+                                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[var(--theme-header)] transition-colors duration-500 transition-colors">
                                      {selectedLog && (
-                                         <div className="mb-6">
-                                             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Target Incident Log</h4>
-                                             <div className="bg-black/40 p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 font-mono text-[10px] text-rose-300 break-all">{selectedLog}</div>
+                                         <div className="mb-6 transition-colors">
+                                             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 transition-colors">Target Incident Log</h4>
+                                             <div className="bg-[var(--theme-bg)] transition-colors p-3 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 font-mono text-[10px] text-rose-600 break-all font-black transition-colors shadow-inner">{selectedLog}</div>
                                          </div>
                                      )}
-                                     <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Activity size={12} /> Analysis & Resolution</h4>
+                                     <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 flex items-center gap-2 transition-colors"><Activity size={12} /> Analysis & Resolution</h4>
                                      {isAnalyzing ? (
                                          <div className="py-20 flex flex-col items-center justify-center gap-4 text-center">
                                              <RefreshCw size={32} className="animate-spin text-indigo-500 mb-2" />
                                              <p className="text-[10px] font-black text-slate-500 uppercase animate-pulse tracking-widest">Scanning Log...</p>
                                          </div>
                                      ) : (
-                                         <div className="text-[12px] text-slate-200 leading-relaxed whitespace-pre-wrap font-medium">{aiAnalysis || "로그를 클릭하여 AI 분석을 시작하세요."}</div>
+                                         <div className="text-[12px] text-[var(--theme-text)] leading-relaxed whitespace-pre-wrap font-black transition-colors">{aiAnalysis || "로그를 클릭하여 AI 분석을 시작하세요."}</div>
                                      )}
                                 </div>
-                                <div className="p-4 bg-[var(--theme-bg)] transition-colors duration-500 border-t border-[var(--theme-border)] transition-colors duration-500 shrink-0">
-                                     <button onClick={() => setIsSidebarOpen(false)} className="w-full py-3 bg-slate-800 text-white font-black rounded-xl text-xs uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg">Close Report</button>
+                                <div className="p-4 bg-[var(--theme-bg)] transition-colors duration-500 border-t border-[var(--theme-border)] transition-colors duration-500 shrink-0 transition-colors">
+                                     <button onClick={() => setIsSidebarOpen(false)} className="w-full py-3 bg-[var(--theme-header)] text-[var(--theme-text)] font-black rounded-xl border border-[var(--theme-border)] text-xs uppercase tracking-widest hover:bg-[var(--theme-bg)] transition-all shadow-lg transition-colors">Close Report</button>
                                 </div>
                             </div>
                         </div>
@@ -323,15 +323,15 @@ const AdminFailureManagement = () => {
 
                 {/* 3. AI Dev Center Panel (v36.114 마스터 키 가드 적용) */}
                 {activeTab === 'aidev' && (
-                    <div className="flex-1 flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-indigo-500/30 rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full">
-                        <div className="px-6 py-5 border-b border-indigo-500/20 bg-indigo-500/5 flex justify-between items-center shrink-0">
-                            <div className="flex items-center gap-3">
-                                <Brain size={20} className="text-indigo-400 animate-pulse" />
-                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">Gemini AI Developer Station</h3>
+                    <div className="flex-1 flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full transition-colors">
+                        <div className="px-6 py-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors">
+                            <div className="flex items-center gap-3 transition-colors">
+                                <Brain size={20} className="text-indigo-600 animate-pulse" />
+                                <h3 className="text-sm font-black text-[var(--theme-text)] uppercase italic tracking-tight transition-colors">Gemini AI Developer Station</h3>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className={classNames("w-2 h-2 rounded-full", isTerminalUnlocked ? "bg-emerald-500 animate-ping" : "bg-rose-500")}></span>
-                                <span className={classNames("text-[10px] font-black uppercase tracking-widest", isTerminalUnlocked ? "text-emerald-500" : "text-rose-500")}>
+                            <div className="flex items-center gap-2 transition-colors">
+                                <span className={classNames("w-2 h-2 rounded-full transition-colors", isTerminalUnlocked ? "bg-emerald-500 animate-ping" : "bg-rose-500")}></span>
+                                <span className={classNames("text-[10px] font-black uppercase tracking-widest transition-colors", isTerminalUnlocked ? "text-emerald-600" : "text-rose-600")}>
                                     {isTerminalUnlocked ? "Secure Session" : "Locked Station"}
                                 </span>
                             </div>
@@ -340,15 +340,15 @@ const AdminFailureManagement = () => {
                         <div className="flex-1 flex flex-col min-h-0 bg-black/40 p-4 overflow-hidden relative h-full">
                             {!isTerminalUnlocked ? (
                                 // [v36.114] 마스터 키 입력 화면
-                                <div className="flex-1 flex flex-col items-center justify-center gap-6">
-                                    <div className="p-6 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-full shadow-2xl">
-                                        <ShieldAlert size={48} className="text-indigo-500 animate-bounce" />
+                                <div className="flex-1 flex flex-col items-center justify-center gap-6 transition-colors">
+                                    <div className="p-6 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-full shadow-2xl transition-colors">
+                                        <ShieldAlert size={48} className="text-rose-600 animate-bounce" />
                                     </div>
-                                    <div className="text-center">
-                                        <h4 className="text-white font-black text-lg uppercase tracking-tighter">Station Restricted</h4>
-                                        <p className="text-slate-500 text-xs font-bold mt-1">Please enter the Terminal Master Key to proceed.</p>
+                                    <div className="text-center transition-colors">
+                                        <h4 className="text-[var(--theme-text)] font-black text-xl lg:text-2xl uppercase tracking-tighter transition-colors">Station Restricted</h4>
+                                        <p className="text-slate-500 text-[11px] lg:text-sm font-black mt-2 transition-colors uppercase tracking-widest">Master Key Authentication Required</p>
                                     </div>
-                                    <div className="w-full max-w-xs space-y-3">
+                                    <div className="w-full max-w-xs space-y-3 transition-colors">
                                         <input 
                                             type="password"
                                             value={terminalPasskey}
@@ -356,11 +356,11 @@ const AdminFailureManagement = () => {
                                             onKeyDown={(e) => e.key === 'Enter' && setIsTerminalUnlocked(true)}
                                             placeholder="••••••••"
                                             autoFocus
-                                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl px-6 py-4 text-center text-white font-mono tracking-widest focus:border-indigo-500 outline-none transition-all shadow-inner"
+                                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl px-6 py-4 text-center text-[var(--theme-text)] font-mono font-black tracking-widest focus:border-[var(--theme-point)] outline-none transition-all shadow-inner"
                                         />
                                         <button 
                                             onClick={() => setIsTerminalUnlocked(true)}
-                                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95"
+                                            className="w-full py-4 bg-[var(--theme-point)] hover:bg-[var(--theme-point)]/80 text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 transition-colors"
                                         >
                                             Unlock Station
                                         </button>
