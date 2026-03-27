@@ -53,24 +53,24 @@ const SmartMoneyDashboard = () => {
                         <Sparkles className="text-amber-400" size={28} />
                     </div>
                     <div>
-                        <h1 className="text-xl lg:text-3xl font-black text-white tracking-tight uppercase italic flex items-center gap-2">
-                            Smart Money <span className="text-amber-500 not-italic font-sans">90%+</span>
+                        <h1 className="text-xl lg:text-3xl font-black text-[var(--theme-text)] tracking-tight uppercase italic flex items-center gap-2 transition-colors">
+                            Smart Money <span className="text-amber-600 not-italic font-sans transition-colors">90%+</span>
                         </h1>
-                        <p className="text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5">
+                        <p className="text-slate-500 text-[10px] lg:text-xs font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5 transition-colors">
                             <Clock size={12} className="text-slate-600" /> Recent 30 Days Hall of Fame
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto">
-                    <div className="relative flex-1 lg:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                <div className="flex items-center gap-3 w-full lg:w-auto transition-colors">
+                    <div className="relative flex-1 lg:w-64 transition-colors">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors" size={16} />
                         <input 
                             type="text" 
                             placeholder="종목명 또는 코드 검색..." 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 text-white text-xs lg:text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-amber-500/50 transition-all font-bold"
+                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] text-[var(--theme-text)] text-xs lg:text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-amber-500/50 transition-all font-black placeholder:text-slate-600 shadow-sm"
                         />
                     </div>
                     <button 
@@ -85,10 +85,10 @@ const SmartMoneyDashboard = () => {
             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl lg:rounded-3xl p-5 flex items-start gap-4 shadow-inner relative overflow-hidden shrink-0">
                 <div className="absolute top-[-20px] right-[-20px] opacity-10 rotate-12"><BarChart3 size={120} className="text-indigo-400" /></div>
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30"><Info className="text-indigo-400" size={22} /></div>
-                <div className="relative z-10">
-                    <h4 className="text-indigo-400 font-black text-[11px] lg:text-xs uppercase tracking-widest mb-1">스마트머니 박제 시스템 (30일 추적)</h4>
-                    <p className="text-slate-300 text-xs lg:text-sm leading-relaxed font-medium">
-                        최근 30일 이내에 **스마트머니 유입 점수(S-Score) 90점**을 돌파했던 특급 수급주들을 자동으로 모아둡니다. <br className="hidden lg:block" /> 
+                <div className="relative z-10 transition-colors">
+                    <h4 className="text-indigo-600 font-black text-[11px] lg:text-xs uppercase tracking-widest mb-1 transition-colors">스마트머니 박제 시스템 (30일 추적)</h4>
+                    <p className="text-[var(--theme-text)] opacity-80 text-xs lg:text-sm leading-relaxed font-black transition-colors">
+                        최근 30일 이내에 **스마트머니 유입 점수(S-Score) 90점**을 돌파했던 특급 수급주들을 자동으로 모아둡니다. <br className="hidden lg:block transition-colors" /> 
                         이 종목들은 거대 자금의 매집이 확인된 종목들로, 단기 눌림목 발생 시 강력한 반등 타점이 될 가능성이 매우 높습니다.
                     </p>
                 </div>
@@ -113,40 +113,40 @@ const SmartMoneyDashboard = () => {
                                     onClick={() => navigate(`/stock/${stock.stock_code}`)}
                                     className="group relative bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl p-5 hover:border-amber-500/40 transition-all cursor-pointer shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                                 >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-white font-black text-lg group-hover:text-amber-400 transition-colors">{stock.stock_name}</span>
-                                            <span className="text-slate-500 font-mono text-[11px] tracking-widest">{stock.stock_code}</span>
+                                    <div className="flex justify-between items-start mb-4 transition-colors">
+                                        <div className="flex flex-col transition-colors">
+                                            <span className="text-[var(--theme-text)] font-black text-lg group-hover:text-amber-600 transition-colors">{stock.stock_name}</span>
+                                            <span className="text-slate-500 font-mono text-[11px] font-black tracking-widest transition-colors">{stock.stock_code}</span>
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter mb-1">Max S-Score</div>
-                                            <div className="px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/20">
-                                                <span className="text-amber-400 font-black text-base">{parseFloat(stock.max_score).toFixed(1)}%</span>
+                                        <div className="flex flex-col items-end transition-colors">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter mb-1 transition-colors">Max S-Score</div>
+                                            <div className="px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/20 transition-colors">
+                                                <span className="text-amber-600 font-black text-base transition-colors">{parseFloat(stock.max_score).toFixed(1)}%</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <div className="flex flex-wrap gap-1.5">
+                                    <div className="space-y-3 transition-colors">
+                                        <div className="flex flex-wrap gap-1.5 transition-colors">
                                             {stock.reason && stock.reason.split(',').slice(0, 3).map((r, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] font-black rounded border border-slate-700/50 uppercase truncate max-w-[100px]">
+                                                <span key={i} className="px-2 py-0.5 bg-[var(--theme-bg)] text-slate-500 text-[9px] font-black rounded border border-[var(--theme-border)] uppercase truncate max-w-[100px] transition-colors shadow-sm">
                                                     {r.trim()}
                                                 </span>
                                             ))}
                                         </div>
 
-                                        <div className="pt-3 border-t border-[var(--theme-border)] transition-colors duration-500/50 flex items-center justify-between relative">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={12} className="text-slate-600" />
-                                                <span className="text-[10px] font-bold text-slate-500">포착일: {dateStr}</span>
+                                        <div className="pt-3 border-t border-[var(--theme-border)] transition-colors duration-500/50 flex items-center justify-between relative transition-colors">
+                                            <div className="flex items-center gap-2 transition-colors">
+                                                <Calendar size={12} className="text-slate-500 transition-colors" />
+                                                <span className="text-[10px] font-black text-slate-500 transition-colors">포착일: {dateStr}</span>
                                                 {isNew && (
-                                                    <span className="bg-rose-600 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-sm border border-rose-500/50 leading-none">
+                                                    <span className="bg-rose-600 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-sm border border-rose-500/50 leading-none animate-pulse">
                                                         NEW
                                                     </span>
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center gap-1 text-amber-500 font-black text-[10px] opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                                            <div className="flex items-center gap-1 text-amber-600 font-black text-[10px] opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0 transition-colors">
                                                 DETAILS <ArrowUpRight size={12} />
                                             </div>
                                         </div>
@@ -159,10 +159,10 @@ const SmartMoneyDashboard = () => {
                     </div>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center gap-6 py-32 bg-[var(--theme-header)] transition-colors duration-500/20 rounded-3xl border border-dashed border-[var(--theme-border)] transition-colors duration-500">
-                        <AlertCircle size={64} className="text-slate-800" />
-                        <div className="text-center">
-                            <p className="text-slate-500 text-sm font-black uppercase tracking-widest mb-2">No Smart Money Stocks Found</p>
-                            <p className="text-slate-600 text-xs font-bold italic">최근 30일 이내에 90점을 돌파한 종목이 아직 없습니다.</p>
+                        <AlertCircle size={64} className="text-slate-500 opacity-20" />
+                        <div className="text-center transition-colors">
+                            <p className="text-[var(--theme-text)] opacity-60 text-sm font-black uppercase tracking-widest mb-2 transition-colors">No Smart Money Stocks Found</p>
+                            <p className="text-slate-500 text-xs font-bold italic transition-colors">최근 30일 이내에 90점을 돌파한 종목이 아직 없습니다.</p>
                         </div>
                     </div>
                 )}

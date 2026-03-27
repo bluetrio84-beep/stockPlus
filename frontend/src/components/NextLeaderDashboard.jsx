@@ -182,12 +182,12 @@ const NextLeaderDashboard = () => {
                                                 
                                                 return (
                                                     <span key={i} className={classNames(
-                                                        "px-2 py-0.5 text-[10px] lg:text-[11px] font-black rounded border transition-all uppercase tracking-tighter",
-                                                        isHot ? "bg-rose-500/10 text-rose-600 border-rose-500/20" :
-                                                        isGood ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
-                                                        isSupply ? "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" :
-                                                        isNoise ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
-                                                        "bg-[var(--theme-bg)] text-slate-500 border-[var(--theme-border)]"
+                                                        "px-2 py-1 text-[9px] lg:text-[10px] font-black rounded-md border transition-all uppercase tracking-wider shadow-sm transition-colors",
+                                                        isHot ? "bg-rose-500/20 text-rose-500 border-rose-500/40 shadow-rose-900/20" :
+                                                        isGood ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/40 shadow-emerald-900/20" :
+                                                        isSupply ? "bg-violet-600/20 text-violet-400 border-violet-500/40 shadow-violet-900/20" :
+                                                        isNoise ? "bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-blue-900/20" :
+                                                        "bg-slate-500/10 text-slate-400 border-slate-500/20"
                                                     )}>
                                                         {txt}
                                                     </span>
@@ -203,7 +203,7 @@ const NextLeaderDashboard = () => {
                                                 const c = colors[tag];
                                                 const active = item.feedback_tag === tag;
                                                 return (
-                                                    <button key={tag} onClick={() => handleFeedback(item.stock_code, tag)} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border", active ? `bg-${c}-600 text-white border-${c}-500 shadow-lg` : `bg-[var(--theme-bg)] text-slate-500 border-[var(--theme-border)] hover:text-${c}-600`)}>{icons[tag]} {tag}</button>
+                                                    <button key={tag} onClick={() => handleFeedback(item.stock_code, tag)} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border transition-colors", active ? `bg-${c}-600 text-white border-${c}-500 shadow-lg` : `bg-[var(--theme-header)] text-slate-500 border-[var(--theme-border)] hover:text-${c}-600 shadow-sm`)}>{icons[tag]} {tag}</button>
                                                 );
                                             })}
                                         </div>

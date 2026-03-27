@@ -1,3 +1,27 @@
+# StockPlus Project Development Task - v13.6 (Phase 3) 🔥
+
+## 🚀 최신 업데이트 현황 (v13.6) - UI Premium Polishing & Visibility Completion 💎
+
+### 1. NEXT LEADERS 섹션 프리미엄 리뉴얼 (Badge & Interactive UI)
+- **뱃지 디자인 리팩토링**: REASON 컬럼의 뱃지를 기존 캡슐형에서 `My-Dashboard` 스타일의 정교한 **둥근 사각형(rounded-md)**으로 전격 교체.
+- **색상 시스템 재정의**: `Midnight` 테마의 인디고 리스트와 차별화되도록 **보라색(Violet/Fuchsia)** 계열의 색상 톤을 도입하여 입체감 확보.
+- **실적 신호 무결성 복구**: '고수익', '고성장' 등 실적 관련 긍정 신호는 원래의 **초록색(Emerald)**으로 정밀 복구하여 직관적 정보 전달력 유지.
+- **가독성 디테일 상향**: 텍스트 자간(`tracking-wider`) 및 상하 여백(`py-1`)을 미세 조정하여 전문가용 데이터 시각화 수준 달성.
+
+### 2. 관리자 모듈 가독성 박멸 완결 (Admin & Market Charts)
+- **Admin Intelligence Dashboard**: 도움말 모달, 히트맵 요약 수치, 순환매 순위 등 잔여 하드코딩 스타일을 100% 테마 변수(`var(--theme-text)`)로 교체 완료.
+- **Market Bubble Chart**: 차트 축(XAxis, YAxis)의 Tick 색상 및 툴팁 내부 그리드 시스템을 테마 가변형으로 리뉴얼하여 화이트 테마 완벽 지원.
+- **Smart Money Dashboard**: 검색창 가독성, 안내 박스 본문, 종목 카드 내부 텍스트를 모두 테마 시스템과 동기화.
+
+### 3. 소스 코드 무결성 유지 (Logic-Preserved Styling)
+- **정밀 타격 원칙 고수**: 전체 파일 덮어쓰기(`write_file`) 대신 부분 교체(`replace`) 방식을 엄격히 적용하여 기존 비즈니스 로직 유실 제로 달성.
+- **전역 테마 일관성**: 모든 서브 페이지와 관리자 전용 영역까지 **Midnight, Pure White, Pitch Black** 3대 테마가 완벽하게 일관된 품질로 적용됨.
+
+### 4. 시스템 최종 배포 및 검증
+- **Docker 프론트엔드 최종 빌드**: 모든 UI 프리미엄 리뉴얼 사항이 반영된 컨테이너 최종 배포 및 실환경 검증 완료.
+
+---
+
 # StockPlus Project Development Task - v13.5 (Phase 3) 🔥
 
 ## 🚀 최신 업데이트 현황 (v13.5) - Admin & AI Intelligence Total Polishing 💎
