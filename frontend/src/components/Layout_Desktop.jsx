@@ -40,7 +40,7 @@ const LayoutDesktop = ({ logic }) => {
                         <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-600/30">
                             <BarChart2 size={20} className="text-white" />
                         </div>
-                        <span className="text-xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">StockPlus</span>
+                        <span className="text-xl font-black bg-gradient-to-r from-[var(--theme-point)] to-[var(--theme-sub-point)] bg-clip-text text-transparent tracking-tight transition-colors">StockPlus</span>
                     </div>
                 </div>
 
@@ -66,12 +66,12 @@ const LayoutDesktop = ({ logic }) => {
                     {logic.isNotificationOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => logic.setIsNotificationOpen(false)}></div>
-                            <div className="absolute top-12 right-4 z-50 w-80 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/50">
-                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">최신 알림</h3>
-                                    <button onClick={() => logic.setIsNotificationOpen(false)}><X size={18} className="text-slate-500 hover:text-white transition-colors" /></button>
+                            <div className="absolute top-12 right-4 z-50 w-80 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/50 transition-colors">
+                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 flex justify-between items-center transition-colors">
+                                    <h3 className="text-sm font-black text-[var(--theme-text)] flex items-center gap-2 transition-colors">최신 알림</h3>
+                                    <button onClick={() => logic.setIsNotificationOpen(false)}><X size={18} className="text-slate-500 hover:text-[var(--theme-text)] transition-colors" /></button>
                                 </div>
-                                <div className="max-h-[500px] overflow-y-auto custom-scrollbar bg-[var(--theme-header)]">
+                                <div className="max-h-[500px] overflow-y-auto custom-scrollbar bg-[var(--theme-header)] transition-colors">
                                     {logic.notifications.length > 0 ? (
                                         logic.notifications.map((notif, idx) => {
                                             const date = notif.createdAt ? new Date(notif.createdAt) : (notif.timestamp ? new Date(notif.timestamp) : null);
@@ -79,19 +79,19 @@ const LayoutDesktop = ({ logic }) => {
                                                 ? `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
                                                 : '';
                                             return (
-                                                <div key={idx} className="py-3 px-4 border-b border-[var(--theme-border)]/50 hover:bg-[var(--theme-bg)]/50 transition-colors cursor-pointer group">
-                                                    <div className="flex gap-3 items-start text-white">
-                                                        <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 transition-colors", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-600")}></div>
-                                                        <div className="flex-1">
-                                                            <p className={classNames("text-[13px] leading-relaxed mb-1", (notif.is_read === 0 || !notif.isRead) ? "font-bold" : "font-medium opacity-90")}>{notif.message}</p>
-                                                            <span className="text-[11px] text-white/60 font-mono block">{timeStr}</span>
+                                                <div key={idx} className="py-3 px-4 border-b border-[var(--theme-border)]/50 hover:bg-[var(--theme-bg)]/50 transition-colors cursor-pointer group transition-colors">
+                                                    <div className="flex gap-3 items-start text-[var(--theme-text)] transition-colors">
+                                                        <div className={classNames("w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 transition-colors", (notif.is_read === 0 || !notif.isRead) ? "bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" : "bg-slate-500/30")}></div>
+                                                        <div className="flex-1 transition-colors">
+                                                            <p className={classNames("text-[13px] leading-relaxed mb-1 transition-colors", (notif.is_read === 0 || !notif.isRead) ? "font-black" : "font-bold opacity-80")}>{notif.message}</p>
+                                                            <span className="text-[11px] text-slate-500 font-mono font-black block transition-colors">{timeStr}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <div className="py-16 text-center text-white text-sm font-bold flex flex-col items-center gap-3">
+                                        <div className="py-16 text-center text-slate-500 text-sm font-black flex flex-col items-center gap-3 transition-colors">
                                             <Bell size={32} className="opacity-20 mb-1" />
                                             새로운 알림이 없습니다.
                                         </div>
@@ -104,13 +104,13 @@ const LayoutDesktop = ({ logic }) => {
                     {isUserMenuOpen && (
                         <>
                             <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)}></div>
-                            <div className="absolute top-12 right-0 z-50 w-56 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="p-5 flex flex-col items-center border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95">
-                                    <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-black text-white mb-2 shadow-lg">{usrName.charAt(0).toUpperCase()}</div>
-                                    <p className="text-sm font-bold text-white">안녕하세요, <span className="text-indigo-400">{usrName}</span>님</p>
+                            <div className="absolute top-12 right-0 z-50 w-56 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 transition-colors">
+                                <div className="p-5 flex flex-col items-center border-b border-[var(--theme-border)] bg-[var(--theme-header)] opacity-95 transition-colors">
+                                    <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-black text-white mb-2 shadow-lg transition-colors">{usrName.charAt(0).toUpperCase()}</div>
+                                    <p className="text-sm font-black text-[var(--theme-text)] transition-colors">안녕하세요, <span className="text-[var(--theme-point)]">{usrName}</span>님</p>
                                 </div>
-                                <div className="p-2 bg-[var(--theme-header)]">
-                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"><LogOut size={16} />로그아웃</button>
+                                <div className="p-2 bg-[var(--theme-header)] transition-colors">
+                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 py-3 px-4 text-sm font-black text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-95 transition-colors"><LogOut size={16} />로그아웃</button>
                                 </div>
                             </div>
                         </>
@@ -126,7 +126,7 @@ const LayoutDesktop = ({ logic }) => {
                             {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
-                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-400 hover:bg-[var(--theme-bg)] hover:text-slate-200")}>
+                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-black rounded-xl transition-all duration-200", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
                                         <item.icon size={18} className={classNames(isActive ? "text-white" : "text-slate-500")} />{item.name}
                                     </button>
                                 );
@@ -134,13 +134,13 @@ const LayoutDesktop = ({ logic }) => {
                         </div>
 
                         {isAdmin() && (
-                            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/60 space-y-1.5">
-                                <div className="px-2 pb-2"><span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">Management</span></div>
+                            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/60 space-y-1.5 transition-colors">
+                                <div className="px-2 pb-2 transition-colors"><span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] transition-colors">Management</span></div>
                                 {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
-                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-bold rounded-xl transition-all duration-200", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-slate-300")}>
-                                            <item.icon size={16} className={classNames(isActive ? "text-[var(--theme-point)]" : "text-slate-600")} />{item.name}
+                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-black rounded-xl transition-all duration-200", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
+                                            <item.icon size={16} className={classNames(isActive ? "text-[var(--theme-point)]" : "text-slate-500")} />{item.name}
                                         </button>
                                     );
                                 })}
