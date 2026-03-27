@@ -27,7 +27,7 @@ const ChartWidgetDesktop = (props) => {
     if (activeTab !== 'chart' || !chartContainerRef.current) return;
     const container = chartContainerRef.current;
     const tooltip = document.createElement('div');
-    tooltip.className = 'absolute z-50 pointer-events-none bg-[var(--theme-bg)]/90 backdrop-blur-md border border-slate-700 p-2.5 rounded-lg text-[11px] text-slate-200 shadow-2xl hidden';
+    tooltip.className = 'absolute z-50 pointer-events-none bg-[var(--theme-header)] opacity-95 backdrop-blur-md border border-[var(--theme-border)] p-2.5 rounded-lg text-[11px] text-[var(--theme-text)] shadow-2xl hidden transition-colors duration-300';
     tooltip.style.width = '140px';
     container.appendChild(tooltip);
 
@@ -166,18 +166,18 @@ const ChartWidgetDesktop = (props) => {
       <div className="flex-1 min-h-0 relative bg-[var(--theme-header)]">
         {activeTab === 'chart' && (
           <div className="flex flex-col h-full">
-            <div className="px-3 py-2 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-2 shrink-0">
-              <button onClick={() => handleAiAnalysis && handleAiAnalysis()} className="flex items-center gap-1.5 text-xs font-bold text-yellow-400 bg-yellow-400/10 px-3 py-1.5 rounded-lg hover:bg-yellow-400/20 transition-colors shrink-0"><Sparkles size={14} /> AI 분석</button>
-              <div className="h-4 w-px bg-slate-700 mx-1"></div>
-              <button onClick={() => onExchangeChange && onExchangeChange()} className={classNames("flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all shrink-0 shadow-sm", marketInfo.colorClass)}><Repeat size={10} /> {marketInfo.name}</button>
-              <div className="flex items-center gap-2.5 px-2.5 border-l border-[var(--theme-border)] shrink-0 ml-1">
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-green-500 rounded-sm"></div>5</div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-fuchsia-500 rounded-sm"></div>10</div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-amber-500 rounded-sm"></div>20</div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold"><div className="w-2 lg:h-2 bg-sky-500 rounded-sm"></div>60</div>
+            <div className="px-3 py-2 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-2 shrink-0 transition-colors duration-500">
+              <button onClick={() => handleAiAnalysis && handleAiAnalysis()} className="flex items-center gap-1.5 text-xs font-black text-yellow-600 bg-yellow-500/10 px-3 py-1.5 rounded-xl hover:bg-yellow-500/20 transition-all shadow-sm shrink-0"><Sparkles size={14} /> AI 분석</button>
+              <div className="h-4 w-px bg-[var(--theme-border)] mx-1"></div>
+              <button onClick={() => onExchangeChange && onExchangeChange()} className={classNames("flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl border transition-all shrink-0 shadow-sm transition-colors", marketInfo.colorClass.replace('600/10', '600/20'))}><Repeat size={10} /> {marketInfo.name}</button>
+              <div className="flex items-center gap-3 px-3 border-l border-[var(--theme-border)] shrink-0 ml-1 transition-colors">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-black transition-colors"><div className="w-2 h-2 bg-green-500 rounded-sm"></div>5</div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-black transition-colors"><div className="w-2 h-2 bg-fuchsia-500 rounded-sm"></div>10</div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-black transition-colors"><div className="w-2 h-2 bg-amber-500 rounded-sm"></div>20</div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-black transition-colors"><div className="w-2 h-2 bg-sky-500 rounded-sm"></div>60</div>
               </div>
-              <div className="flex gap-1.5 ml-1 border-l border-[var(--theme-border)] pl-2.5">
-                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-3 py-1.5 text-xs font-bold rounded-lg transition-all", currentPeriod === p ? "bg-indigo-600 text-white shadow-lg" : "bg-[var(--theme-bg)] text-slate-500 hover:text-slate-300")}>{p}</button> ))}
+              <div className="flex gap-1.5 ml-auto border-l border-[var(--theme-border)] pl-4 transition-colors">
+                  {['5m', '1D', '1W', '1M'].map(p => ( <button key={p} onClick={() => onPeriodChange && onPeriodChange(p)} className={classNames("px-3 py-1.5 text-[10px] font-black rounded-xl transition-all", currentPeriod === p ? "bg-[var(--theme-point)] text-white shadow-lg shadow-[var(--theme-point)]/20" : "bg-[var(--theme-bg)] text-slate-500 hover:text-[var(--theme-text)] border border-[var(--theme-border)]")}>{p}</button> ))}
               </div>
             </div>
             <div className="flex-1 w-full relative">

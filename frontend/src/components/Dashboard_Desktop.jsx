@@ -32,7 +32,7 @@ const Dashboard_Desktop = ({
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                        <input type="text" placeholder="종목 검색..." className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg py-1.5 pl-9 pr-3 text-xs text-[var(--theme-text)] focus:outline-none transition-colors" value={searchKeyword} onChange={(e) => handleSearch(e.target.value)} />
+                        <input type="text" placeholder="종목 검색..." className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg py-1.5 pl-9 pr-3 text-xs text-[var(--theme-text)] font-black placeholder:text-slate-600 focus:outline-none transition-colors" value={searchKeyword} onChange={(e) => handleSearch(e.target.value)} />
                         {searchResults.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-lg shadow-2xl max-h-64 overflow-y-auto">
                                 {searchResults.map(s => <div key={s.code} onClick={() => handleSearchResultClick(s)} className="p-2.5 hover:bg-[var(--theme-bg)] cursor-pointer border-b border-[var(--theme-border)] flex justify-between items-center group"><div><div className="font-bold text-[var(--theme-text)] text-xs group-hover:text-indigo-400 transition-colors">{s.name}</div><div className="text-[10px] text-slate-500">{s.code}</div></div><Plus size={14} className="text-slate-500" /></div>)}
