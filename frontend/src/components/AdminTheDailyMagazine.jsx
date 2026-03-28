@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Newspaper, Download, Calendar, TrendingUp, ChevronRight, Brain, Image as ImageIcon, Map, Activity, Clock, FileText, CheckCircle2, Lock, AlertTriangle, Loader2, ListOrdered, Award, X, Maximize2 } from 'lucide-react';
+import { Newspaper, Download, Calendar, TrendingUp, ChevronRight, Brain, Image as ImageIcon, Map, Activity, Clock, FileText, CheckCircle2, Lock, AlertTriangle, Loader2, ListOrdered, Award, X, Maximize2, Sparkles } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas-pro'; 
@@ -31,6 +31,8 @@ const AdminTheDailyMagazine = () => {
         indices: { kospi: '-', kospiRate: '-', kosdaq: '-', kosdaqRate: '-' }
     });
     
+    const [smartMoneyStocks, setSmartMoneyStocks] = useState([]); // [v14.9] 스마트머니 데이터 상태 추가
+    
     const [zoomImage, setZoomImage] = useState(null);
     const magazineRef = useRef();
 
@@ -54,9 +56,13 @@ const AdminTheDailyMagazine = () => {
     const fetchMagazineData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch('/api/admin/magazine/data', { headers: getAuthHeader() });
-            if (res.ok) {
-                const data = await res.json();
+            const [magRes, smartRes] = await Promise.all([
+                fetch('/api/admin/magazine/data', { headers: getAuthHeader() }),
+                fetch('/api/admin/intelligence/smart-money', { headers: getAuthHeader() })
+            ]);
+
+            if (magRes.ok) {
+                const data = await magRes.json();
                 const parsed = parseBriefing(data.briefing);
                 const kospi = data.indices?.find(idx => idx.index_name === 'KOSPI') || {};
                 const kosdaq = data.indices?.find(idx => idx.index_name === 'KOSDAQ') || {};
@@ -75,6 +81,11 @@ const AdminTheDailyMagazine = () => {
                     }
                 });
             }
+
+            if (smartRes.ok) {
+                const smartData = await smartRes.json();
+                setSmartMoneyStocks(smartData.sort((a, b) => b.max_score - a.max_score).slice(0, 4));
+            }
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
     };
@@ -91,26 +102,29 @@ const AdminTheDailyMagazine = () => {
             setIsLoading(true);
             const element = magazineRef.current;
             
+            // [v14.9] 이미지 로딩 대기 로직 대폭 강화 (Heatmap 등 대용량 이미지 대응)
             const images = element.querySelectorAll('img');
             await Promise.all(Array.from(images).map(img => {
-                if (img.complete) return img.decode().catch(() => {});
+                if (img.complete) return Promise.resolve();
                 return new Promise(resolve => {
-                    img.onload = () => img.decode().then(resolve).catch(resolve);
+                    img.onload = resolve;
                     img.onerror = resolve;
-                    setTimeout(resolve, 3000);
+                    setTimeout(resolve, 5000); // 최대 5초 대기
                 });
             }));
 
+            // 렌더링 품질 극대화를 위한 옵션 설정
             const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: 3, // 해상도 3배 상향 (글자 깨짐 방지)
                 useCORS: true,
-                allowTaint: true,
+                allowTaint: false,
                 backgroundColor: "#f8f5f0",
-                windowWidth: 1200,
+                logging: false,
+                windowWidth: 1400, // 캡처 폭 고정으로 레이아웃 안정화
                 onclone: (clonedDoc) => {
                     const style = clonedDoc.createElement('style');
                     style.innerHTML = `
-                        h1, h2, h3, h4, p, span, td, th { line-height: 1.6 !important; }
+                        h1, h2, h3, h4, p, span, td, th { line-height: 1.6 !important; -webkit-font-smoothing: antialiased; }
                         .rank-title-row { pt-3 !important; }
                         .analysis-tag { font-family: sans-serif !important; font-weight: 900 !important; color: #3730a3 !important; }
                     `;
@@ -118,30 +132,34 @@ const AdminTheDailyMagazine = () => {
                 }
             });
 
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL('image/jpeg', 0.95); // PNG보다 가벼운 고품질 JPEG 사용
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
+            
             const imgWidth = pageWidth;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             
             let heightLeft = imgHeight;
             let position = 0;
 
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            // 첫 페이지 추가
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
             heightLeft -= pageHeight;
 
-            while (heightLeft >= 0) {
+            // 페이지 분할 추가 (절단면 보정 로직)
+            while (heightLeft > 0) {
                 position = heightLeft - imgHeight;
                 pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
                 heightLeft -= pageHeight;
             }
 
-            pdf.save(`StockPlus_Daily_${new Date().toISOString().split('T')[0]}.pdf`);
+            const fileName = `StockPlus_Premium_Daily_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(fileName);
         } catch (e) {
-            console.error("PDF ERROR:", e);
-            alert("PDF 발행 중 기술적 오류가 발생했습니다.");
+            console.error("PDF GENERATION ERROR:", e);
+            alert("PDF 발행 중 기술적 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
         } finally {
             setIsLoading(false);
         }
@@ -281,7 +299,7 @@ const AdminTheDailyMagazine = () => {
                     <section className="mb-24 pt-12 border-t-2 border-[#cbd5e1]">
                         <div className="flex items-center gap-4 mb-10">
                             <Map style={{color: '#4f46e5'}} size={32} />
-                            <h3 className="text-xl lg:text-3xl font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Industry Mapping</h3>
+                            <h3 className="text-xl lg:text-[32px] font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Industry Mapping</h3>
                         </div>
                         <div className="bg-white border border-[#e2e8f0] p-1.5 shadow-sm mb-10 cursor-pointer group relative" onClick={() => setZoomImage('/api/snapshots/heatmap_latest.png')}>
                             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-all flex items-center justify-center z-10">
@@ -301,6 +319,55 @@ const AdminTheDailyMagazine = () => {
                             <p className="text-base lg:text-lg leading-relaxed font-sans text-[#475569]">
                                 전일 시장의 자금 흐름 분석 결과입니다. 붉은색 섹터의 주도권 유지 여부를 장 초반 수급 강도를 통해 반드시 확인하시기 바랍니다.
                             </p>
+                        </div>
+                    </section>
+
+                    {/* [v14.9] NEW SECTION: SMART MONEY CAPTURED LIST (GOLD THEME) */}
+                    <section className="mb-24 pt-12 border-t-2 border-[#cbd5e1]">
+                        <div className="flex items-center gap-4 mb-10">
+                            <Sparkles style={{color: '#d97706'}} size={32} />
+                            <h3 className="text-xl lg:text-[32px] font-black uppercase tracking-tight italic" style={{color: '#0f172a'}}>Smart Money Captured</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 font-sans">
+                            {smartMoneyStocks.map((stock, i) => (
+                                <div key={i} className="bg-white border border-amber-200 rounded-2xl p-6 shadow-lg relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-700"></div>
+                                    <div className="flex justify-between items-start relative z-10 mb-4">
+                                        <div>
+                                            <h4 className="text-lg lg:text-xl font-black text-[#0f172a] mb-1">{stock.stock_name}</h4>
+                                            <span className="text-[10px] font-black font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">{stock.stock_code}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Max S-Score</div>
+                                            <div className="text-2xl font-black text-amber-600 tracking-tighter">{parseFloat(stock.max_score).toFixed(1)}%</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 relative z-10">
+                                        {stock.reason?.split(',').slice(0, 2).map((r, idx) => (
+                                            <span key={idx} className="text-[9px] font-black px-2 py-1 bg-slate-50 text-slate-500 rounded border border-slate-100 uppercase truncate max-w-[120px]">
+                                                {r.trim()}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-amber-100 flex justify-between items-center relative z-10">
+                                        <span className="text-[9px] font-bold text-amber-700/60 italic">Captured on {new Date(stock.last_detected).toLocaleDateString()}</span>
+                                        <div className="flex items-center gap-1 text-[9px] font-black text-amber-600 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">PREMIUM INSIGHT <ChevronRight size={10} /></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="p-8 rounded-3xl border border-amber-200 flex flex-col lg:flex-row items-center gap-6 shadow-xl shadow-amber-500/5" style={{backgroundColor: '#fffbeb'}}>
+                            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/30">
+                                <TrendingUp className="text-amber-600" size={28} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-amber-800 uppercase tracking-widest mb-1">Institutional Conviction</h4>
+                                <p className="text-sm lg:text-base leading-relaxed font-medium text-amber-900/70">
+                                    스마트 머니 포착 리스트는 거대 자본의 집중 매집이 확인된 종목군입니다. 해당 종목들은 시장의 변동성에도 불구하고 강력한 하방 경직성을 확보한 것으로 분석됩니다.
+                                </p>
+                            </div>
                         </div>
                     </section>
 
