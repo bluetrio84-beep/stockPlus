@@ -482,8 +482,8 @@ const AdminTheDailyMagazine = () => {
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 relative z-10">
-                                        {stock.reason?.split(',').slice(0, 2).map((r, idx) => (
-                                            <span key={idx} className="text-[9px] font-black px-2 py-1 bg-slate-50 text-slate-500 rounded border border-slate-100 uppercase truncate max-w-[120px]">
+                                        {stock.reason?.split(',').map((r, idx) => (
+                                            <span key={idx} className="text-[9px] font-black px-2 py-1 bg-slate-50 text-slate-500 border border-slate-100 rounded uppercase truncate max-w-[150px] transition-all shadow-sm">
                                                 {r.trim()}
                                             </span>
                                         ))}

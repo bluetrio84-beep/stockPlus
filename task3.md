@@ -1,3 +1,22 @@
+# StockPlus Project Development Task - v16.1 (Phase 3) 🔥 🚀 💎 🏆 ✨ 🌡️ 🎡
+
+## 🚀 최신 업데이트 현황 (v16.1) - Intelligence Transparency & UX Strategic Shift ✨
+
+### 1. 스마트머니 데이터 투명성 확보 (Data Integrity)
+- **뱃지 노출 제한 전면 제거**: `AdminTheDailyMagazine.jsx`의 Smart Money Captured 섹션에서 기존 2~3개로 제한되어 있던 뱃지 노출 로직(`slice`)을 완전히 제거.
+- **데이터 무결성 실현**: 백엔드에서 전달되는 모든 포착 사유(OBV 매집, 메가스마트머니 등)를 임의의 가공 없이 화면에 있는 그대로 100% 투명하게 노출.
+- **시각적 완성도 상향**: 뱃지 너비를 유연하게 조정하여 다양한 텍스트 길이에 대응하고, 프리미엄 뱃지 디자인을 전수 적용하여 정보 식별력 강화.
+
+### 2. PDF 발행 시스템 전략적 고도화 안내 (UX Management)
+- **프리미엄 안내 모달 도입**: 브라우저 자원에 의존하는 클라이언트 사이드 방식의 한계를 인정하고, 사용자에게 **"서버사이드 엔진 고도화"** 예정 사항을 정중히 안내하는 커스텀 모달 시스템 구축.
+- **기술적 자산 보존**: 가장 안정적이었던 v16.0 기반의 캡처 로직을 주석으로 완벽 백업하여 향후 Puppeteer 등 서버사이드 엔진 전환 시의 핵심 레퍼런스로 확보.
+
+### 3. 지능형 리포트 데이터 엔진 완성
+- **100% 리얼타임 자동화**: 시장 심리 게이지, 테마 모멘텀 바 차트, AI 핵심 키워드 클라우드 등 매거진의 4대 섹션을 시스템 실시간 데이터와 완벽하게 동기화.
+- **하이브리드 동기화 시스템**: Yahoo Finance와 네이버 금융을 결합한 지수 수집 스크립트(`fetch_indices_once.py`)를 통해 주말에도 살아있는 글로벌 매크로 지표 제공.
+
+---
+
 # StockPlus Project Development Task - v16.0 (Phase 3) 🔥 🚀 💎 🏆 ✨ 🌡️ 🎡
 
 ## 🚀 최신 업데이트 현황 (v16.0) - Magazine Intelligence Mastery & System Optimization ✨
