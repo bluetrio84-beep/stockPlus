@@ -77,15 +77,22 @@ const Dashboard_Mobile = ({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col h-full bg-[var(--theme-header)] transition-colors duration-500">
-                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 transition-colors duration-500"><div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={20} /></div><div><h3 className="font-black text-[var(--theme-text)] text-base transition-colors">전담 AI 분석가 리포트</h3><p className="text-[10px] text-[var(--theme-point)] font-black uppercase tracking-wider">Strategic Analysis</p></div></div>
-                                <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar bg-[var(--theme-bg)] transition-colors duration-500/50 break-words font-sans text-[13px] leading-relaxed">
+                            <div className="flex flex-col h-full bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl overflow-hidden shadow-2xl relative transition-colors duration-500">
+                                <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-point)]/5 to-purple-500/5 pointer-events-none"></div>
+                                <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 relative z-10 shrink-0 transition-colors duration-500 shadow-sm">
+                                    <div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={20} /></div>
+                                    <div>
+                                        <h3 className="font-black text-[var(--theme-text)] text-base transition-colors">전담 AI 분석가 리포트</h3>
+                                        <p className="text-[10px] text-[var(--theme-point)] font-black uppercase tracking-wider">Strategic Analysis</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar relative z-10 break-words font-sans text-[13px] leading-relaxed transition-colors">
                                     {specialReport ? (
                                         <div className="transition-colors">
                                             {renderFormattedText(specialReport)}
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-slate-600 transition-colors">
+                                        <div className="flex flex-col items-center justify-center h-full text-slate-600">
                                             <Sparkles size={40} className="mb-4 opacity-10 animate-pulse" />
                                             <p className="text-[13px] font-black uppercase tracking-widest transition-colors">Analyzing Market Data...</p>
                                         </div>
