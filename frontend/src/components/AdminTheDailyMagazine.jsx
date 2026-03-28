@@ -33,9 +33,9 @@ const AdminTheDailyMagazine = () => {
         sentiment: { score: 50, label: 'Neutral' },
         keywords: ["#주도주순환", "#수급집중", "#저점통과", "#세력매집", "#외인귀환"],
         macro: [
-            { name: 'S&P 500', val: '5,241.53', change: '+0.86%' },
-            { name: 'Nasdaq', val: '16,384.47', change: '+1.12%' },
-            { name: 'USD/KRW', val: '1,342.50', change: '+0.15%' }
+            { name: 'S&P 500', val: '-', change: '-' },
+            { name: 'Nasdaq', val: '-', change: '-' },
+            { name: 'USD/KRW', val: '-', change: '-' }
         ]
     });
     
@@ -64,6 +64,12 @@ const AdminTheDailyMagazine = () => {
     const fetchMagazineData = async () => {
         try {
             setIsLoading(true);
+            
+            // [v15.1] 데이터 패칭 전 해외 지수 강제 동기화 트리거 호출
+            try {
+                await fetch('/api/admin/magazine/trigger-index-sync', { method: 'POST', headers: getAuthHeader() });
+            } catch (e) { console.error("Trigger Error:", e); }
+
             const [magRes, smartRes, intelRes] = await Promise.all([
                 fetch('/api/admin/magazine/data', { headers: getAuthHeader() }),
                 fetch('/api/admin/intelligence/smart-money', { headers: getAuthHeader() }),
@@ -114,6 +120,7 @@ const AdminTheDailyMagazine = () => {
             if (intelRes.ok) {
                 const intel = await intelRes.json();
                 const heatmap = intel.heatmap || [];
+                const indices = intel.indices || []; // [v15.1] 실시간 지수 데이터
                 
                 // [v15.0] 진짜 데이터 기반 심리 점수 산출 (업종 AI 점수 평균)
                 if (heatmap.length > 0) {
@@ -135,7 +142,27 @@ const AdminTheDailyMagazine = () => {
                             score: Math.round(item.ai_score || 50),
                             color: parseFloat(item.change_rate) > 0 ? 'bg-rose-500' : 'bg-indigo-600'
                         }));
-                    newMagData.topThemes = topThemes; // 새로운 필드 저장
+                    newMagData.topThemes = topThemes;
+                }
+
+                // [v15.1] 진짜 데이터 기반 글로벌 매크로 스냅샷 매핑 (타겟 고정)
+                if (indices.length > 0) {
+                    const macroTargets = ['S&P 500', 'Nasdaq', 'USD/KRW'];
+                    const mappedMacro = macroTargets.map(name => {
+                        const found = indices.find(idx => idx.index_name === name);
+                        if (found) {
+                            return {
+                                name: found.index_name,
+                                val: parseFloat(found.index_value).toLocaleString(),
+                                change: (parseFloat(found.change_rate) >= 0 ? '+' : '') + found.change_rate + '%'
+                            };
+                        }
+                        return null;
+                    }).filter(m => m !== null);
+                    
+                    if (mappedMacro.length > 0) {
+                        newMagData.macro = mappedMacro;
+                    }
                 }
             }
 

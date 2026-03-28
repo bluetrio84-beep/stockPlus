@@ -162,8 +162,28 @@ public class AdminController {
         response.put("leaders", adminMapper.getMarketLeaders());
         response.put("breadth", adminMapper.getMarketBreadth());
         response.put("aiSignals", adminMapper.getLatestAiSignals());
+        response.put("indices", adminMapper.getLatestIndices()); // [v15.1] 최신 지수 및 환율 데이터 추가
         Double hitRate = adminMapper.getAiHitRate();
         response.put("hitRate", hitRate != null ? hitRate : 0.0);
+        return response;
+    }
+
+    // [v15.1] 매거진 전용 지수 동기화 트리거 (실시간 웹 수집 실행)
+    @PostMapping("/magazine/trigger-index-sync")
+    public Map<String, String> triggerIndexSync(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        Map<String, String> response = new HashMap<>();
+        try {
+            // Docker 컨테이너(collector) 내부의 스크립트 실행 명령
+            String[] cmd = { "docker", "exec", "projects-collector-1", "python3", "/app/fetch_indices_once.py" };
+            Process process = Runtime.getRuntime().exec(cmd);
+            process.waitFor(); // 실행 완료 대기 (약 3-5초 소요)
+            response.put("status", "SUCCESS");
+            response.put("message", "Global indices synchronized successfully.");
+        } catch (Exception e) {
+            response.put("status", "ERROR");
+            response.put("message", e.getMessage());
+        }
         return response;
     }
 

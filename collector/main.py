@@ -93,15 +93,49 @@ class MegaCollector:
             self.log_to_db("INFO", f"[마스터갱신] {total}개 종목 시가총액 업데이트 완료")
         finally: conn.close()
 
-    def fetch_market_indices(self):
+    def fetch_market_indices(self, page=None):
         indices = []
         try:
+            # 1. 국내 지수 (백엔드 연동)
             res_k = requests.get(f"{BACKEND_API_URL}/stocks/0001/price?exchangeCode=IDX", timeout=3).json()
             if res_k and res_k.get('currentPrice'):
                 indices.append({'name': 'KOSPI', 'val': float(res_k['currentPrice']), 'change': float(res_k['change']), 'rate': float(res_k['changeRate'])})
             res_q = requests.get(f"{BACKEND_API_URL}/stocks/1001/price?exchangeCode=IDX", timeout=3).json()
             if res_q and res_q.get('currentPrice'):
                 indices.append({'name': 'KOSDAQ', 'val': float(res_q['currentPrice']), 'change': float(res_q['change']), 'rate': float(res_q['changeRate'])})
+            
+            # [v15.1] 해외 지수 및 환율 수집 (Playwright 활용)
+            if page:
+                try:
+                    # 네이버 금융 시장지표 페이지 활용 (환율 및 주요 해외지수 통합)
+                    page.goto("https://finance.naver.com/marketindex/", timeout=15000)
+                    soup = BeautifulSoup(page.content(), 'html.parser')
+                    
+                    # 환율 (USD/KRW)
+                    usd_val = soup.select_one("span.value").get_text(strip=True).replace(',', '')
+                    usd_change = soup.select_one("span.change").get_text(strip=True)
+                    usd_rate = soup.select_one("div.head_info span.blind").get_text(strip=True).replace('상승', '').replace('하락', '').strip()
+                    indices.append({'name': 'USD/KRW', 'val': float(usd_val), 'change': float(usd_change), 'rate': 0.0}) # 환율은 rate 별도 계산 필요시 추가
+
+                    # S&P 500 & Nasdaq (네이버 글로벌 페이지 전환)
+                    page.goto("https://finance.naver.com/world/", timeout=15000)
+                    soup = BeautifulSoup(page.content(), 'html.parser')
+                    
+                    # S&P 500
+                    snp = soup.select_one("a:-soup-contains('S&P 500')").parent.parent
+                    snp_val = snp.select_one("td.point").get_text(strip=True).replace(',', '')
+                    snp_change = snp.select_one("td.variation").get_text(strip=True).replace('상승', '').replace('하락', '').strip()
+                    snp_rate = snp.select_one("td.rate").get_text(strip=True).replace('%', '')
+                    indices.append({'name': 'S&P 500', 'val': float(snp_val), 'change': float(snp_change), 'rate': float(snp_rate)})
+
+                    # Nasdaq
+                    nas = soup.select_one("a:-soup-contains('나스닥')").parent.parent
+                    nas_val = nas.select_one("td.point").get_text(strip=True).replace(',', '')
+                    nas_change = nas.select_one("td.variation").get_text(strip=True).replace('상승', '').replace('하락', '').strip()
+                    nas_rate = nas.select_one("td.rate").get_text(strip=True).replace('%', '')
+                    indices.append({'name': 'Nasdaq', 'val': float(nas_val), 'change': float(nas_change), 'rate': float(nas_rate)})
+                except Exception as e:
+                    print(f">>> [Global Index Scrape Error] {e}")
         except: pass
         return indices
 
@@ -158,7 +192,7 @@ class MegaCollector:
                 try:
                     page = context.new_page()
                     sects, themes = self.scrape_lists(page)
-                    indices = self.fetch_market_indices()
+                    indices = self.fetch_market_indices(page) # [v15.1] page 전달
                     sc_cnt = len(sects) + len(themes) + len(indices)
                     conn = self.get_db_connection()
                     try:

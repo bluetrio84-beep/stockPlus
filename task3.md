@@ -1,3 +1,23 @@
+# StockPlus Project Development Task - v15.1 (Phase 3) 🔥 🚀 💎 🏆 ✨ 🌏
+
+## 🚀 최신 업데이트 현황 (v15.1) - Real-Time Intelligence & Global Macro Sync ✨
+
+### 1. 지능형 실시간 지수 동기화 시스템 구축 (Macro Sync Trigger)
+- **실시간 트리거 API**: 매거진 화면 진입 시 `/api/admin/magazine/trigger-index-sync`를 즉시 호출하여 최신 해외 지표를 강제 갱신하는 지능형 로직 구현.
+- **하이브리드 수집 엔진**: 안정적인 **Yahoo Finance API**(S&P 500, Nasdaq)와 정밀한 **네이버 금융 스크래핑**(USD/KRW 1,509원대)을 결합하여 데이터의 신뢰도와 실시간성 동시 확보.
+- **단독 수집 스크립트**: 수집기 전체 사이클과 별개로 작동하는 `fetch_indices_once.py`를 구축하여 자원 소모 최소화 및 주말 가동성 확보.
+
+### 2. 매거진 인텔리전스 완전 자동화 (Hardcoding Zero)
+- **데이터 바인딩 완결**: 초기 상태값의 하드코딩된 수치들을 전격 제거하고, DB에서 갓 수집된 실시간 데이터(`topThemes`, `sentiment`, `macro`)로 100% 동적 매핑.
+- **지능형 분석 문구(Verdict)**: 현재 시장 테마의 AI 점수와 심리 상태를 조합하여 사람이 쓴 것 같은 고퀄리티 분석 리포트를 매번 새롭게 자동 생성.
+- **동적 키워드 클라우드**: 마켓 브리핑 텍스트와 주도주 포착 사유를 분석하여 오늘 시장의 핵심 키워드 5개를 자동으로 추출하여 해시태그화.
+
+### 3. 백엔드 & 프론트엔드 통합 강화
+- **API 응답 확장**: `AdminController`를 수정하여 인텔리전스 대시보드 API에 최신 지수 및 환율 정보를 포함시켜 데이터 정합성 강화.
+- **품질 최적화**: 고해상도 PDF 엔진(Scale 3)과 실시간 동기화 로직을 연동하여 발행 시점의 가장 정확한 수치를 보고서에 박제.
+
+---
+
 # StockPlus Project Development Task - v15.0 (Phase 3) 🔥 🚀 💎 🏆 ✨ 🌡️
 
 ## 🚀 최신 업데이트 현황 (v15.0) - Daily Magazine Intelligence Revolution ✨
