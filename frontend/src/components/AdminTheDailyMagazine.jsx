@@ -22,6 +22,7 @@ const AdminTheDailyMagazine = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDownloadable, setIsDownloadable] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false); // [v16.3] 고도화 안내 모달 상태
     const [magazineData, setMagazineData] = useState({
         date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
         headline: "데이터가 가리키는 오늘의 주도주 맥점",
@@ -184,92 +185,44 @@ const AdminTheDailyMagazine = () => {
     }, []);
 
     const handleGeneratePdf = async () => {
+        // [v16.3] PDF 고도화 안내 모달 호출
+        setShowUpgradeModal(true);
+        return;
+
+        /* 
+        [v16.0 캡처 로직 백업] - 서버사이드 전환 시 참고용
         try {
             setIsLoading(true);
             const element = magazineRef.current;
-            if (!element) return;
-
-            // [v15.7] 1. 안정화 대기 (모든 UI가 완전히 정착할 시간 부여)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
             const originalScrollY = window.scrollY;
             window.scrollTo(0, 0);
+            
+            // 2프레임 렌더링 대기
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            await new Promise(resolve => setTimeout(resolve, 800)); 
 
             await document.fonts.ready;
-            const images = element.querySelectorAll('img');
-            await Promise.all(Array.from(images).map(img => {
-                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-                return new Promise(resolve => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                    setTimeout(resolve, 5000); 
-                });
-            }));
-
-            // [v15.7] 2. 애니메이션 박멸 및 고정밀 캡처
             const canvas = await html2canvas(element, {
-                scale: 2.5, // 메모리 안정성을 위해 2.5배로 유지 (충분히 선명함)
+                scale: 2, 
                 useCORS: true,
-                allowTaint: false,
                 backgroundColor: "#f8f5f0",
-                scrollX: 0,
-                scrollY: 0,
                 windowWidth: 1400,
                 onclone: (clonedDoc) => {
-                    const style = clonedDoc.createElement('style');
-                    style.innerHTML = `
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                        /* 모든 애니메이션 및 트랜지션 중단 (캡처 오류 방지) */
-                        * { 
-                            transition: none !important; 
-                            animation: none !important; 
-                            -webkit-font-smoothing: antialiased; 
-                            font-family: 'Inter', sans-serif !important; 
-                        }
-                        .text-white { color: #ffffff !important; opacity: 1 !important; visibility: visible !important; }
-                        .text-slate-400 { color: #94a3b8 !important; opacity: 1 !important; }
-                        .text-emerald-400 { color: #34d399 !important; opacity: 1 !important; }
-                        .text-indigo-600 { color: #4f46e5 !important; }
-                        .bg-\\[\\#0f172a\\] { background-color: #0f172a !important; }
-                        /* 레이아웃 강제 교정 */
-                        #magazine-capture-root { width: 1400px !important; padding: 80px !important; }
-                    `;
-                    clonedDoc.head.appendChild(style);
+                    // 클론 스타일 보정 로직 위치
                 }
             });
 
             window.scrollTo(0, originalScrollY);
-
-            // [v15.7] 용량 및 품질 밸런스 조정
-            const imgData = canvas.toDataURL('image/jpeg', 0.95); 
+            const imgData = canvas.toDataURL('image/jpeg', 1.0); 
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            
-            const imgWidth = pageWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            let heightLeft = imgHeight;
-            let position = 0;
-            let pageCount = 0;
-
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-            heightLeft -= pageHeight;
-
-            while (heightLeft > 0) {
-                position = -(pageHeight * (++pageCount));
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-                heightLeft -= pageHeight;
-            }
-
-            pdf.save(`StockPlus_Premium_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            // ... 페이지 분할 로직 ...
+            pdf.save("StockPlus_Premium_Report.pdf");
         } catch (e) {
-            console.error("PDF STABILITY ERROR:", e);
-            alert("PDF 발행 중 시스템 부하가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+            console.error(e);
         } finally {
             setIsLoading(false);
         }
+        */
     };
 
     const renderBriefingWithDropCap = (text) => {
@@ -616,6 +569,43 @@ const AdminTheDailyMagazine = () => {
                     <div className="relative w-full max-w-6xl max-h-full overflow-auto rounded-2xl shadow-2xl border border-slate-800">
                         <button onClick={() => setZoomImage(null)} className="absolute top-4 right-4 z-20 p-2 bg-black/50 text-white rounded-full hover:bg-black/80 transition-all"><X size={24} /></button>
                         <img src={zoomImage} alt="Zoomed" className="w-full h-auto" />
+                    </div>
+                </div>
+            )}
+
+            {/* [v16.3] PDF 엔진 고도화 안내 커스텀 모달 (Premium UI) */}
+            {showUpgradeModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f172a]/80 backdrop-blur-md px-6 animate-in fade-in duration-300">
+                    <div className="bg-white border border-indigo-100 rounded-[40px] p-10 lg:p-14 max-w-xl w-full shadow-2xl relative overflow-hidden ring-1 ring-black/5">
+                        {/* 배경 데코레이션 */}
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-50 rounded-full -mr-20 -mt-20 opacity-50"></div>
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-50 rounded-full -ml-16 -mb-16 opacity-50"></div>
+                        
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center text-white mb-8 shadow-xl shadow-indigo-200 animate-bounce duration-[2000ms]">
+                                <Loader2 size={40} className="animate-spin" />
+                            </div>
+                            
+                            <h3 className="text-2xl lg:text-3xl font-black text-[#0f172a] mb-6 tracking-tight">PDF Engine Enhancement</h3>
+                            
+                            <div className="space-y-4 mb-10">
+                                <p className="text-base lg:text-lg text-slate-600 font-bold leading-relaxed">
+                                    현재 클라이언트 사이드 방식의 품질 편차를 해결하기 위해 <span className="text-indigo-600 font-black">"서버사이드 PDF 엔진"</span>으로의 전환 작업을 진행 중입니다.
+                                </p>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                        사용자의 브라우저 환경에 구애받지 않고, 증권사 리포트 수준의 칼날 같은 해상도와 텍스트 드래그가 가능한 차세대 발행 시스템을 곧 선보이겠습니다.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={() => setShowUpgradeModal(false)}
+                                className="w-full py-5 bg-[#0f172a] text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg active:scale-[0.98] transition-all hover:bg-slate-800 ring-4 ring-black/5"
+                            >
+                                Confirm & Wait
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
