@@ -187,38 +187,61 @@ const AdminTheDailyMagazine = () => {
         try {
             setIsLoading(true);
             const element = magazineRef.current;
+            if (!element) return;
+
+            // [v15.7] 1. 안정화 대기 (모든 UI가 완전히 정착할 시간 부여)
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // [v14.9] 이미지 로딩 대기 로직 대폭 강화 (Heatmap 등 대용량 이미지 대응)
+            const originalScrollY = window.scrollY;
+            window.scrollTo(0, 0);
+
+            await document.fonts.ready;
             const images = element.querySelectorAll('img');
             await Promise.all(Array.from(images).map(img => {
-                if (img.complete) return Promise.resolve();
+                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
                 return new Promise(resolve => {
                     img.onload = resolve;
                     img.onerror = resolve;
-                    setTimeout(resolve, 5000); // 최대 5초 대기
+                    setTimeout(resolve, 5000); 
                 });
             }));
 
-            // 렌더링 품질 극대화를 위한 옵션 설정
+            // [v15.7] 2. 애니메이션 박멸 및 고정밀 캡처
             const canvas = await html2canvas(element, {
-                scale: 3, // 해상도 3배 상향 (글자 깨짐 방지)
+                scale: 2.5, // 메모리 안정성을 위해 2.5배로 유지 (충분히 선명함)
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: "#f8f5f0",
-                logging: false,
-                windowWidth: 1400, // 캡처 폭 고정으로 레이아웃 안정화
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 1400,
                 onclone: (clonedDoc) => {
                     const style = clonedDoc.createElement('style');
                     style.innerHTML = `
-                        h1, h2, h3, h4, p, span, td, th { line-height: 1.6 !important; -webkit-font-smoothing: antialiased; }
-                        .rank-title-row { pt-3 !important; }
-                        .analysis-tag { font-family: sans-serif !important; font-weight: 900 !important; color: #3730a3 !important; }
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                        /* 모든 애니메이션 및 트랜지션 중단 (캡처 오류 방지) */
+                        * { 
+                            transition: none !important; 
+                            animation: none !important; 
+                            -webkit-font-smoothing: antialiased; 
+                            font-family: 'Inter', sans-serif !important; 
+                        }
+                        .text-white { color: #ffffff !important; opacity: 1 !important; visibility: visible !important; }
+                        .text-slate-400 { color: #94a3b8 !important; opacity: 1 !important; }
+                        .text-emerald-400 { color: #34d399 !important; opacity: 1 !important; }
+                        .text-indigo-600 { color: #4f46e5 !important; }
+                        .bg-\\[\\#0f172a\\] { background-color: #0f172a !important; }
+                        /* 레이아웃 강제 교정 */
+                        #magazine-capture-root { width: 1400px !important; padding: 80px !important; }
                     `;
                     clonedDoc.head.appendChild(style);
                 }
             });
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.95); // PNG보다 가벼운 고품질 JPEG 사용
+            window.scrollTo(0, originalScrollY);
+
+            // [v15.7] 용량 및 품질 밸런스 조정
+            const imgData = canvas.toDataURL('image/jpeg', 0.95); 
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
@@ -228,24 +251,22 @@ const AdminTheDailyMagazine = () => {
             
             let heightLeft = imgHeight;
             let position = 0;
+            let pageCount = 0;
 
-            // 첫 페이지 추가
             pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
             heightLeft -= pageHeight;
 
-            // 페이지 분할 추가 (절단면 보정 로직)
             while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
+                position = -(pageHeight * (++pageCount));
                 pdf.addPage();
                 pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
                 heightLeft -= pageHeight;
             }
 
-            const fileName = `StockPlus_Premium_Daily_${new Date().toISOString().split('T')[0]}.pdf`;
-            pdf.save(fileName);
+            pdf.save(`StockPlus_Premium_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         } catch (e) {
-            console.error("PDF GENERATION ERROR:", e);
-            alert("PDF 발행 중 기술적 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+            console.error("PDF STABILITY ERROR:", e);
+            alert("PDF 발행 중 시스템 부하가 발생했습니다. 잠시 후 다시 시도해 주세요.");
         } finally {
             setIsLoading(false);
         }
@@ -313,7 +334,7 @@ const AdminTheDailyMagazine = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8f5f0]">
-                <div ref={magazineRef} style={{backgroundColor: '#f8f5f0'}} className="max-w-4xl mx-auto p-10 lg:p-20 text-[#1e293b] overflow-hidden">
+                <div ref={magazineRef} id="magazine-capture-root" style={{backgroundColor: '#f8f5f0'}} className="max-w-4xl mx-auto p-10 lg:p-20 text-[#1e293b] overflow-hidden">
                     <header className="border-b-4 border-[#0f172a] pb-6 mb-10 flex flex-col items-center text-center gap-3">
                         <div className="flex items-center gap-3 font-sans font-black tracking-[0.3em] uppercase text-[9px] lg:text-xs" style={{color: '#4338ca'}}>
                             <Activity size={14} /> StockPlus AI Intelligence

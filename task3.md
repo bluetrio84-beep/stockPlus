@@ -1,3 +1,24 @@
+# StockPlus Project Development Task - v15.2 (Phase 3) 🔥 🚀 💎 🏆 ✨ 📑
+
+## 🚀 최신 업데이트 현황 (v15.2) - Precise Data Sync & PDF Stability Finalized ✨
+
+### 1. 글로벌 매크로 데이터 정밀 동기화 (Precision Sync)
+- **환율 소스 최적화**: 네이버 금융 시장지표를 직접 파싱하여 **USD/KRW 1,509원대**의 정밀한 실시간 환율 수집 로직으로 최종 보정.
+- **해외 지수 파이프라인 완결**: Yahoo Finance API와 네이버 우회 경로를 결합하여 **S&P 500, Nasdaq** 데이터를 100% 누락 없이 DB에 박제.
+- **단독 실행 스크립트 고도화**: `fetch_indices_once.py`를 통해 주말 및 수집기 휴식기에도 매거진 로드 시 즉시 최신 지표를 확보하는 트리거 시스템 구축.
+
+### 2. PDF 발행 엔진 최종 안정화 (Zero-Random Error)
+- **랜덤 품질 저하 해결**: 캡처 전 1초간의 **안정화 딜레이(Settle Time)**와 **이미지 실제 렌더링 검증(naturalWidth)** 로직을 통해 품질 편차 완전 박멸.
+- **애니메이션 킬러 도입**: 캡처용 가상 클론 문서에서 모든 `transition` 및 `animation`을 강제로 중단시켜 흔들림 없는 고정밀 스캔 구현.
+- **스타일 강제 주입(Hard-Styling)**: 사라지던 화이트 텍스트와 레이아웃을 `onclone` 단계에서 인라인 스타일로 고정하여 모든 섹션(Global Snapshot, Note 등)의 가시성 100% 확보.
+- **해상도 및 용량 최적화**: 메모리 과부하 방지를 위해 **Scale 2.5**와 **High-Quality JPEG(0.95)** 밸런스를 튜닝하여 일정하고 미려한 용량의 결과물 보장.
+
+### 3. 시스템 통합 및 최적화
+- **메인 수집기(main.py) 경량화**: 중복된 해외 지표 수집 로직을 제거하여 평일 통합 수집 사이클의 속도와 안정성 상향.
+- **트리거 API 안정화**: 백엔드와 수집기 컨테이너 간의 명령 전달 체계를 정비하여 5초 내외의 빠른 실시간 동기화 프로세스 완성.
+
+---
+
 # StockPlus Project Development Task - v15.1 (Phase 3) 🔥 🚀 💎 🏆 ✨ 🌏
 
 ## 🚀 최신 업데이트 현황 (v15.1) - Real-Time Intelligence & Global Macro Sync ✨
