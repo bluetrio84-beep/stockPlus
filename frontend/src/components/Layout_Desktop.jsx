@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart, Award, Activity, Newspaper, Book, ShieldAlert, Palette } from 'lucide-react';
+import { Bell, BarChart2, Home, Sparkles, Tag, LogOut, Menu, X, Settings, LayoutDashboard, Brain, PieChart, Award, Activity, Newspaper, Book, ShieldAlert, Palette, ChevronRight, ChevronDown } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -36,7 +36,7 @@ const LayoutDesktop = ({ logic }) => {
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 -ml-2 text-slate-500 hover:text-[var(--theme-text)] hover:bg-[var(--theme-bg)]/80 rounded-full transition-all">
                         {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
-                    <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => navigate('/')}>
+                    <div className="flex items-center gap-2.5 cursor-pointer group transition-colors" onClick={() => navigate('/')}>
                         <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-600/30">
                             <BarChart2 size={20} className="text-white" />
                         </div>
@@ -44,23 +44,23 @@ const LayoutDesktop = ({ logic }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 relative">
+                <div className="flex items-center gap-4 relative transition-colors">
                     {isAdmin() && (
                         <button 
                             onClick={() => navigate('/admin/my-dashboard')} 
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 transition-all shadow-lg active:scale-95 group"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--theme-point)]/10 hover:bg-[var(--theme-point)]/20 border border-[var(--theme-point)]/30 text-[var(--theme-point)] transition-all shadow-lg active:scale-95 group transition-colors"
                         >
                             <PieChart size={16} className="group-hover:rotate-12 transition-transform" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">My-Dashboard</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest transition-colors">My-Dashboard</span>
                         </button>
                     )}
-                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--theme-bg)] hover:bg-slate-700 border border-[var(--theme-border)] transition-all shadow-sm">
+                    <button onClick={handleUserMenuToggle} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--theme-bg)] hover:bg-slate-700/20 border border-[var(--theme-border)] transition-all shadow-sm transition-colors">
                         <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-xs font-black text-white">{usrName.charAt(0).toUpperCase()}</div>
-                        <span className="text-xs font-bold text-[var(--theme-text)] opacity-90 transition-colors">{usrName}님</span>
+                        <span className="text-xs font-black text-[var(--theme-text)] opacity-90 transition-colors">{usrName}님</span>
                     </button>
-                    <button onClick={handleNotificationToggle} className="p-2 text-slate-400 hover:text-[var(--theme-text)] relative group transition-colors">
+                    <button onClick={handleNotificationToggle} className="p-2 text-slate-500 hover:text-[var(--theme-text)] relative group transition-colors">
                         <Bell size={22} />
-                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse"></span>}
+                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[var(--theme-header)] animate-pulse"></span>}
                     </button>
 
                     {logic.isNotificationOpen && (
@@ -119,14 +119,14 @@ const LayoutDesktop = ({ logic }) => {
             </header>
 
             <div className="flex flex-1 overflow-hidden relative transition-colors duration-500">
-                <aside className={classNames("bg-[var(--theme-header)] border-r border-[var(--theme-border)] flex flex-col shrink-0 transition-all duration-300 ease-in-out overflow-hidden z-30 shadow-xl", isMenuOpen ? "w-64 opacity-100 p-4" : "w-0 opacity-0 p-0 border-none")}>
-                    <div className="px-2 py-3 mb-4 whitespace-nowrap"><span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Navigation</span></div>
-                    <nav className="flex-1 flex flex-col min-w-[224px]">
-                        <div className="space-y-1.5 flex-1">
+                <aside className={classNames("bg-[var(--theme-header)] border-r border-[var(--theme-border)] flex flex-col shrink-0 transition-all duration-300 ease-in-out z-30 shadow-xl transition-colors", isMenuOpen ? "w-64 opacity-100 p-4 overflow-visible" : "w-0 opacity-0 p-0 border-none overflow-hidden")}>
+                    <div className="px-2 py-3 mb-4 whitespace-nowrap transition-colors"><span className="text-[10px] font-black text-[var(--theme-text)] opacity-60 uppercase tracking-[0.2em] transition-colors">Navigation</span></div>
+                    <nav className="flex-1 flex flex-col min-w-[224px] transition-colors">
+                        <div className="space-y-1.5 flex-1 transition-colors">
                             {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
-                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-black rounded-xl transition-all duration-200", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
+                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
                                         <item.icon size={18} className={classNames(isActive ? "text-white" : "text-slate-500")} />{item.name}
                                     </button>
                                 );
@@ -135,11 +135,11 @@ const LayoutDesktop = ({ logic }) => {
 
                         {isAdmin() && (
                             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/60 space-y-1.5 transition-colors">
-                                <div className="px-2 pb-2 transition-colors"><span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] transition-colors">Management</span></div>
+                                <div className="px-2 pb-2 transition-colors"><span className="text-[9px] font-black text-[var(--theme-text)] opacity-60 uppercase tracking-[0.2em] transition-colors">Management</span></div>
                                 {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
-                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-black rounded-xl transition-all duration-200", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
+                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
                                             <item.icon size={16} className={classNames(isActive ? "text-[var(--theme-point)]" : "text-slate-500")} />{item.name}
                                         </button>
                                     );
@@ -147,87 +147,65 @@ const LayoutDesktop = ({ logic }) => {
                             </div>
                         )}
                     </nav>
+
+                    {/* [v14.5] 테마 스위처: 우측 플라이아웃 탭 스타일 (UI 프리미엄 최적화) */}
+                    <div className="mt-auto pt-2 border-t border-[var(--theme-border)]/60 relative transition-colors duration-500">
+                        <button 
+                            onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)}
+                            className={classNames("w-full text-left px-4 py-2 text-xs flex items-center justify-between font-black rounded-xl transition-all duration-200", logic.isThemeOpen ? "text-[var(--theme-point)] bg-[var(--theme-point)]/5" : "text-slate-500 hover:text-[var(--theme-text)]")}
+                        >
+                            <div className="flex items-center gap-4">
+                                <Palette size={16} className={classNames(logic.isThemeOpen ? "text-[var(--theme-point)]" : "text-slate-500")} />
+                                <span className="uppercase tracking-widest">Style Theme</span>
+                            </div>
+                            <ChevronRight size={14} className={classNames("transition-transform duration-300", logic.isThemeOpen ? "rotate-180" : "")} />
+                        </button>
+
+                        {/* 우측으로 튀어나오는 미니 탭 */}
+                        {logic.isThemeOpen && (
+                            <div className="absolute left-[calc(100%+10px)] bottom-0 w-12 p-1 bg-[var(--theme-header)]/95 backdrop-blur-md border border-[var(--theme-border)] rounded-xl shadow-2xl animate-in slide-in-from-left-2 duration-200 z-[60] flex flex-col gap-2 items-center transition-colors">
+                                {[
+                                    { id: 'midnight', color: 'bg-[#020617]', name: 'Mid' },
+                                    { id: 'pure-white', color: 'bg-[#ffffff]', name: 'Wht' },
+                                    { id: 'pitch-black', color: 'bg-[#000000]', name: 'Blk' }
+                                ].map(t => (
+                                    <button 
+                                        key={t.id} 
+                                        onClick={() => logic.setTheme(t.id)}
+                                        className={classNames(
+                                            "group flex flex-col items-center gap-0.5 p-1 rounded-lg transition-all active:scale-90",
+                                            logic.theme === t.id ? "opacity-100" : "opacity-40 hover:opacity-100"
+                                        )}
+                                    >
+                                        <div className={classNames(
+                                            "w-6 h-6 rounded-full border border-[var(--theme-border)] shadow-sm",
+                                            t.color,
+                                            logic.theme === t.id ? "border-indigo-400 scale-110 ring-2 ring-indigo-400/20" : ""
+                                        )}></div>
+                                        <span className="text-[6px] font-black text-slate-500 uppercase">{t.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </aside>
 
                 <div className="flex-1 flex flex-col min-0 bg-[var(--theme-bg)] relative transition-colors duration-500">
                     <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-6 py-2 flex items-center gap-8 overflow-hidden shrink-0 transition-colors duration-500">
-                        <div className="flex gap-8 shrink-0">
+                        <div className="flex gap-8 shrink-0 transition-colors">
                             {marketIndices.map(index => (
-                                <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit">
-                                    <span className="text-xs font-black text-slate-500">{index.name}</span>
-                                    <span className="text-sm font-bold font-mono text-[var(--theme-text)]">{parseFloat(index.price || 0).toLocaleString()}</span>
-                                    <span className={classNames("text-[10px] font-bold font-mono", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
+                                <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit transition-colors">
+                                    <span className="text-xs font-black text-slate-500 transition-colors">{index.name}</span>
+                                    <span className="text-sm font-bold font-mono text-[var(--theme-text)] transition-colors">{parseFloat(index.price || 0).toLocaleString()}</span>
+                                    <span className={classNames("text-[10px] font-bold font-mono transition-colors", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                         {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                                     </span>
                                 </div>
                             ))}
                         </div>
-
-                        {/* [v13.5] Live Ranking 섹션 제거 (주석 처리)
-                        {rankings && rankings.length > 0 && (
-                            <div className="flex items-center gap-6 overflow-hidden border-l border-[var(--theme-border)] pl-8 ml-2">
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter shrink-0 animate-pulse">Live Ranking</span>
-                                <div className="flex gap-6 overflow-x-auto no-scrollbar py-1">
-                                    {rankings.map((r, i) => (
-                                        <button 
-                                            key={i} 
-                                            onClick={() => navigate(`/stock/${r.stock_code}`)} 
-                                            className="flex items-center gap-1.5 whitespace-nowrap group hover:bg-[var(--theme-bg)]/50 px-2 py-0.5 rounded-md transition-all"
-                                        >
-                                            <span className={classNames("text-[10px] font-black", r.type === 'AMOUNT' ? "text-amber-500" : "text-rose-500")}>
-                                                {r.type === 'AMOUNT' ? '●' : '▲'}
-                                            </span>
-                                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{r.stock_name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        */}
                     </div>
-                    <main className="flex-1 overflow-hidden relative"><Outlet /></main>
 
-                    {/* [v52.5] 네이버 스타일 테마 스위처 (Floating) */}
-                    <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-3">
-                        {logic.isThemeOpen && (
-                            <div className="bg-[var(--theme-header)]/95 backdrop-blur-md border border-[var(--theme-border)]/50 p-4 rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 flex flex-col gap-4">
-                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Style Theme</div>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[
-                                        { id: 'midnight', color: 'bg-[#020617]', name: 'Midnight' },
-                                        { id: 'pure-white', color: 'bg-[#ffffff]', name: 'White' },
-                                        { id: 'pitch-black', color: 'bg-[#000000]', name: 'Black' }
-                                    ].map(t => (
-                                        <button 
-                                            key={t.id} 
-                                            onClick={() => logic.setTheme(t.id)}
-                                            className={classNames(
-                                                "group flex flex-col items-center gap-1.5 transition-all hover:scale-110",
-                                                logic.theme === t.id ? "opacity-100" : "opacity-60 hover:opacity-100"
-                                            )}
-                                        >
-                                            <div className={classNames(
-                                                "w-10 h-10 rounded-full border-2 transition-all shadow-lg",
-                                                t.color,
-                                                logic.theme === t.id ? "border-indigo-400 scale-110 ring-4 ring-indigo-400/20" : "border-[var(--theme-border)] hover:border-slate-500"
-                                            )}></div>
-                                            <span className="text-[8px] font-black text-slate-400 uppercase">{t.name}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        <button 
-                            onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)}
-                            className={classNames(
-                                "w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 group relative overflow-hidden border border-white/10",
-                                logic.isThemeOpen ? "bg-indigo-600 rotate-90" : "bg-[var(--theme-bg)] hover:bg-slate-700"
-                            )}
-                        >
-                            <Palette size={20} className={classNames("transition-colors", logic.isThemeOpen ? "text-white" : "text-indigo-400 group-hover:text-white")} />
-                            {!logic.isThemeOpen && <span className="absolute top-2.5 right-2.5 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-slate-900 text-[7px] font-black flex items-center justify-center text-white animate-bounce">3</span>}
-                        </button>
-                    </div>
+                    <main className="flex-1 overflow-hidden relative transition-colors"><Outlet /></main>
                 </div>
             </div>
         </div>

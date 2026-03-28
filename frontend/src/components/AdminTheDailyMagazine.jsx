@@ -184,12 +184,12 @@ const AdminTheDailyMagazine = () => {
     );
 
     return (
-        <div className="flex-1 bg-[#0f172a] h-full overflow-hidden flex flex-col relative font-sans">
-            <div className="h-14 bg-[#1e293b] border-b border-[#334155] flex items-center justify-between px-4 lg:px-6 shrink-0 z-10">
+        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 h-full overflow-hidden flex flex-col relative font-sans text-[var(--theme-text)]">
+            <div className="h-14 bg-[var(--theme-header)] border-b border-[var(--theme-border)] flex items-center justify-between px-4 lg:px-6 shrink-0 z-10 transition-colors duration-500">
                 <div className="flex items-center gap-2">
                     <div className={classNames(
                         "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                        isDownloadable ? "bg-[#10b98120] text-[#10b981] border-[#10b98130]" : "bg-[#f43f5e20] text-[#f43f5e] border-[#f43f5e30]"
+                        isDownloadable ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20"
                     )}>
                         {isDownloadable ? <Activity size={12} className="animate-pulse" /> : <Lock size={12} />}
                         {isDownloadable ? "PREMIUM READY" : "REPORT WAITING"}
@@ -198,10 +198,9 @@ const AdminTheDailyMagazine = () => {
                 <button 
                     onClick={handleGeneratePdf} 
                     disabled={!isDownloadable || isLoading} 
-                    style={{ backgroundColor: isDownloadable ? '#4f46e5' : '#334155' }} 
                     className={classNames(
                         "px-6 py-2 rounded-xl font-black text-xs text-white flex items-center gap-2 transition-all shadow-lg",
-                        !isDownloadable ? "cursor-not-allowed opacity-50" : "active:scale-95 hover:bg-[#4338ca]"
+                        !isDownloadable ? "bg-slate-700 cursor-not-allowed opacity-50" : "bg-[var(--theme-point)] active:scale-95 hover:opacity-90"
                     )}
                 >
                     {isLoading ? <Loader2 className="animate-spin" size={14} /> : (isDownloadable ? <Download size={14} /> : <Lock size={14} />)} 

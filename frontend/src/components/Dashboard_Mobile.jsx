@@ -24,8 +24,24 @@ const Dashboard_Mobile = ({
                  {activeTab === 'home' && <div className="h-full p-1.5 pb-15 flex flex-col relative">
                      <div className="flex-1 flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl overflow-hidden shadow-xl mb-0 transition-colors duration-500">
                         <div className="flex border-b border-[var(--theme-border)] bg-[var(--theme-header)] transition-colors duration-500">
-                            <button onClick={() => setWatchlistSubTab('list')} className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'list', "border-transparent text-slate-500": watchlistSubTab !== 'list' })}>관심종목시세</button>
-                            <button onClick={() => setWatchlistSubTab('ai')} className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'ai', "border-transparent text-slate-500": watchlistSubTab !== 'ai' })}>AI 분석</button>
+                            <button 
+                                onClick={() => setWatchlistSubTab('list')} 
+                                className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { 
+                                    "border-[var(--theme-point)] text-[var(--theme-point)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'list', 
+                                    "border-transparent text-slate-500 hover:text-[var(--theme-text)]": watchlistSubTab !== 'list' 
+                                })}
+                            >
+                                관심종목시세
+                            </button>
+                            <button 
+                                onClick={() => setWatchlistSubTab('ai')} 
+                                className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { 
+                                    "border-[var(--theme-point)] text-[var(--theme-point)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'ai', 
+                                    "border-transparent text-slate-500 hover:text-[var(--theme-text)]": watchlistSubTab !== 'ai' 
+                                })}
+                            >
+                                AI 분석
+                            </button>
                         </div>
                         {watchlistSubTab === 'list' ? (
                             <div className="h-full p-4 overflow-y-auto custom-scrollbar transition-colors duration-500">
@@ -63,7 +79,18 @@ const Dashboard_Mobile = ({
                         ) : (
                             <div className="flex flex-col h-full bg-[var(--theme-header)] transition-colors duration-500">
                                 <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 transition-colors duration-500"><div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={20} /></div><div><h3 className="font-black text-[var(--theme-text)] text-base transition-colors">전담 AI 분석가 리포트</h3><p className="text-[10px] text-[var(--theme-point)] font-black uppercase tracking-wider">Strategic Analysis</p></div></div>
-                                <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar bg-[var(--theme-bg)] transition-colors duration-500/50 break-words">{renderFormattedText(specialReport) || <div className="flex flex-col items-center justify-center h-full text-slate-600"><Sparkles size={40} className="mb-4 opacity-10 animate-pulse" /><p className="text-sm font-medium">분석 리포트를 생성하고 있습니다...</p></div>}</div>
+                                <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar bg-[var(--theme-bg)] transition-colors duration-500/50 break-words font-sans text-[13px] leading-relaxed">
+                                    {specialReport ? (
+                                        <div className="text-[var(--theme-text)] transition-colors">
+                                            {renderFormattedText(specialReport)}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-slate-600 transition-colors">
+                                            <Sparkles size={40} className="mb-4 opacity-10 animate-pulse" />
+                                            <p className="text-[13px] font-black uppercase tracking-widest transition-colors">Analyzing Market Data...</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                      </div>
@@ -86,7 +113,18 @@ const Dashboard_Mobile = ({
                             </div>
                         </div>
                         <div className="flex border-b border-[var(--theme-border)] bg-[var(--theme-header)] transition-colors duration-500">
-                            {[1, 2, 3, 4].map(id => <button key={id} onClick={() => setActiveWatchlistTab(id)} className={classNames("flex-1 py-2 text-xs font-black transition-all", { "text-[var(--theme-text)] border-b-2 border-[var(--theme-point)] bg-[var(--theme-bg)]/50": activeWatchlistTab === id, "text-slate-500": activeWatchlistTab !== id })}>관심 {id}</button>)}
+                            {[1, 2, 3, 4].map(id => (
+                                <button 
+                                    key={id} 
+                                    onClick={() => setActiveWatchlistTab(id)} 
+                                    className={classNames("flex-1 py-2 text-xs font-black transition-all", { 
+                                        "text-[var(--theme-point)] border-b-2 border-[var(--theme-point)] bg-[var(--theme-bg)]/50": activeWatchlistTab === id, 
+                                        "text-slate-500 hover:text-[var(--theme-text)]": activeWatchlistTab !== id 
+                                    })}
+                                >
+                                    관심 {id}
+                                </button>
+                            ))}
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             {displayStocks.map(s => (
