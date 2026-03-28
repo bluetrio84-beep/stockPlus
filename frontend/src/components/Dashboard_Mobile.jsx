@@ -27,8 +27,8 @@ const Dashboard_Mobile = ({
                             <button 
                                 onClick={() => setWatchlistSubTab('list')} 
                                 className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { 
-                                    "border-[var(--theme-point)] text-[var(--theme-point)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'list', 
-                                    "border-transparent text-slate-500 hover:text-[var(--theme-text)]": watchlistSubTab !== 'list' 
+                                    "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'list', 
+                                    "border-transparent text-slate-500": watchlistSubTab !== 'list' 
                                 })}
                             >
                                 관심종목시세
@@ -36,8 +36,8 @@ const Dashboard_Mobile = ({
                             <button 
                                 onClick={() => setWatchlistSubTab('ai')} 
                                 className={classNames("flex-1 py-3 text-sm font-black transition-all border-b-2", { 
-                                    "border-[var(--theme-point)] text-[var(--theme-point)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'ai', 
-                                    "border-transparent text-slate-500 hover:text-[var(--theme-text)]": watchlistSubTab !== 'ai' 
+                                    "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": watchlistSubTab === 'ai', 
+                                    "border-transparent text-slate-500": watchlistSubTab !== 'ai' 
                                 })}
                             >
                                 AI 분석
@@ -81,7 +81,7 @@ const Dashboard_Mobile = ({
                                 <div className="p-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 transition-colors duration-500"><div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={20} /></div><div><h3 className="font-black text-[var(--theme-text)] text-base transition-colors">전담 AI 분석가 리포트</h3><p className="text-[10px] text-[var(--theme-point)] font-black uppercase tracking-wider">Strategic Analysis</p></div></div>
                                 <div className="flex-1 overflow-y-auto p-5 pb-12 custom-scrollbar bg-[var(--theme-bg)] transition-colors duration-500/50 break-words font-sans text-[13px] leading-relaxed">
                                     {specialReport ? (
-                                        <div className="text-[var(--theme-text)] transition-colors">
+                                        <div className="transition-colors">
                                             {renderFormattedText(specialReport)}
                                         </div>
                                     ) : (
@@ -118,8 +118,8 @@ const Dashboard_Mobile = ({
                                     key={id} 
                                     onClick={() => setActiveWatchlistTab(id)} 
                                     className={classNames("flex-1 py-2 text-xs font-black transition-all", { 
-                                        "text-[var(--theme-point)] border-b-2 border-[var(--theme-point)] bg-[var(--theme-bg)]/50": activeWatchlistTab === id, 
-                                        "text-slate-500 hover:text-[var(--theme-text)]": activeWatchlistTab !== id 
+                                        "text-[var(--theme-text)] border-b-2 border-[var(--theme-point)] bg-[var(--theme-bg)]/50": activeWatchlistTab === id, 
+                                        "text-slate-500": activeWatchlistTab !== id 
                                     })}
                                 >
                                     관심 {id}

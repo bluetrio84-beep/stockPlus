@@ -58,10 +58,10 @@ function Dashboard() {
           {isNumbered ? (
             <div className="flex gap-2">
               <span className="text-[var(--theme-point)] font-black shrink-0 text-[13px]">{line.match(/^\d+\./)[0]}</span>
-              <span className="text-[var(--theme-text)] font-semibold text-[13px] transition-colors">{line.replace(/^\d+\./, '').trim()}</span>
+              <span className="text-[var(--theme-text)] font-black text-[13px] transition-colors">{line.replace(/^\d+\./, '').trim()}</span>
             </div>
           ) : (
-            <span className="text-[var(--theme-text)] opacity-90 text-[13px] transition-colors">{line}</span>
+            <span className="text-[var(--theme-text)] font-black text-[13px] transition-colors">{line}</span>
           )}
         </div>
       );
