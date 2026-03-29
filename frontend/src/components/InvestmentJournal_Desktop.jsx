@@ -181,10 +181,10 @@ const InvestmentJournalDesktop = ({
                                                         className="bg-[var(--theme-bg)] text-[10px] text-[var(--theme-text)] font-black outline-none px-2 h-8 border border-[var(--theme-border)] rounded-lg hover:border-[var(--theme-point)] transition-colors cursor-pointer" 
                                                         title="글자 크기"
                                                     >
-                                                        <option value="1" className="bg-[var(--theme-header)]">Small</option>
-                                                        <option value="3" selected className="bg-[var(--theme-header)]">Normal</option>
-                                                        <option value="5" className="bg-[var(--theme-header)]">Large</option>
-                                                        <option value="7" className="bg-[var(--theme-header)]">Huge</option>
+                                                        <option value="1" className="bg-[var(--theme-header)] text-[var(--theme-text)]">Small</option>
+                                                        <option value="3" selected className="bg-[var(--theme-header)] text-[var(--theme-text)]">Normal</option>
+                                                        <option value="5" className="bg-[var(--theme-header)] text-[var(--theme-text)]">Large</option>
+                                                        <option value="7" className="bg-[var(--theme-header)] text-[var(--theme-text)]">Huge</option>
                                                     </select>
                                                     <div className="w-px h-4 bg-[var(--theme-border)] mx-1" />
                                                     <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 hover:bg-white/10 rounded-lg text-amber-500 transition-colors" title="노란색 강조"><Palette size={16} /></button>

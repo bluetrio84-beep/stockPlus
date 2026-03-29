@@ -1,6 +1,26 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.15) - Ultimate Journal Editor & Mobile UX Mastery ✨
+## 🚀 최신 업데이트 현황 (v16.16) - Editor Theme Mastery & Infrastructure Finalized ✨
+
+### 1. 에디터 테마 시인성 최종 완결 (Theme Perfection)
+- **전 테마 콤보박스 가독성 확보**: PC/모바일 에디터의 글자 크기 선택 옵션에 `var(--theme-text)`를 적용하여 Midnight, Pitch Black 등 어두운 테마에서도 메뉴가 선명하게 보이도록 최종 수정.
+- **배경색 동기화**: 드롭다운 옵션 배경을 테마 헤더 색상과 일치시켜 시각적 이질감 제거.
+
+### 2. 고성능 이미지 업로드 인프라 구축 (Infra Scaling)
+- **Nginx 게이트웨이 확장**: 프록시 서버(Nginx) 설정을 보강하여 `client_max_body_size 10M` 적용. 이제 1MB 이상의 고해상도 이미지도 끊김 없이 업로드 가능.
+- **백엔드 멀티파트 최적화**: Spring Boot 설정에 멀티파트 용량 제한(10MB)을 명시적으로 주입하여 업로드 프로세스 전 구간의 병목 현상 제거.
+
+### 3. 모바일 편집 데이터 무결성 강화 (Data Integrity)
+- **찰나의 백업 시스템**: 모바일에서 이미지 업로드 버튼 클릭 시, 0.01초 내에 현재 에디터 HTML을 상태값에 선제 고정하여 리렌더링으로 인한 데이터 유실(증발) 현상 원천 봉쇄.
+- **이중 동기화**: 업로드 완료 후 리액트 상태와 에디터 DOM을 동시에 업데이트하여 실제 저장 시의 데이터 정합성 100% 달성.
+
+### 4. 사용자 경험(UX) 마감
+- **명칭 직관화**: 모바일 글자 크기 옵션을 S/M/L/XL에서 Small/Normal/Large/Huge로 원복하여 기능 인지성 상향.
+- **즉각적 피드백**: 용량 초과 시 브라우저 `alert`를 통해 서버 에러 전 단계에서 즉시 차단함으로써 사용자 혼선 방지.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.15) - Ultimate Journal Editor & Mobile UX Mastery ✨
 
 ### 1. 투자일지 에디터 무결성 시스템 구축 (Editor Stability)
 - **포커스 유실 완전 차단**: 툴바 버튼 클릭 시 에디터가 포커스를 잃어 기능이 멈추던 고질적 버그를 `onMouseDown` 이벤트 리액션 제어로 완벽 해결.

@@ -242,10 +242,10 @@ const InvestmentJournalMobile = ({
                                     onChange={(e) => execCommand('fontSize', e.target.value)} 
                                     className="bg-[var(--theme-bg)] text-[10px] text-[var(--theme-text)] font-black outline-none px-2 h-8 border border-[var(--theme-border)] rounded-lg transition-colors cursor-pointer"
                                 >
-                                    <option value="1" className="text-black">Small</option>
-                                    <option value="3" selected className="text-black">Normal</option>
-                                    <option value="5" className="text-black">Large</option>
-                                    <option value="7" className="text-black">Huge</option>
+                                    <option value="1">Small</option>
+                                    <option value="3" selected>Normal</option>
+                                    <option value="5">Large</option>
+                                    <option value="7">Huge</option>
                                 </select>
                             </div>
 
