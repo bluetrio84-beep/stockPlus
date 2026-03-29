@@ -160,21 +160,40 @@ const InvestmentJournalDesktop = ({
                                                     </div>
                                                 </div>
                                             </div>
-                                            <input type="text" placeholder="오늘의 투자 인사이트 제목..." value={selectedNote.title} onChange={(e) => setSelectedNote({...selectedNote, title: e.target.value})} className="w-full bg-transparent border-b border-[var(--theme-border)] text-3xl font-black text-[var(--theme-text)] placeholder:text-slate-400 outline-none py-4 transition-all focus:border-[var(--theme-point)]/50 tracking-tighter transition-colors" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="오늘의 투자 인사이트 제목..." 
+                                                value={selectedNote.title} 
+                                                onChange={(e) => {
+                                                    const html = editorRef.current ? editorRef.current.innerHTML : selectedNote.content;
+                                                    setSelectedNote({...selectedNote, title: e.target.value, content: html});
+                                                }} 
+                                                className="w-full bg-transparent border-b border-[var(--theme-border)] text-3xl font-black text-[var(--theme-text)] placeholder:text-slate-400 outline-none py-4 transition-all focus:border-[var(--theme-point)]/50 tracking-tighter transition-colors" 
+                                            />
                                             <div className="space-y-2">
                                                 <div className="flex flex-wrap items-center gap-1 p-2 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-t-2xl sticky top-0 z-30 transition-colors duration-500">
-                                                    <button onClick={() => execCommand('bold')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="굵게 (Bold)"><Bold size={16} /></button>
-                                                    <button onClick={() => execCommand('italic')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="기울임 (Italic)"><Italic size={16} /></button>
-                                                    <button onClick={() => execCommand('underline')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="밑줄 (Underline)"><Underline size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('bold')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="굵게 (Bold)"><Bold size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('italic')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="기울임 (Italic)"><Italic size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('underline')} className="p-2 hover:bg-[var(--theme-point)]/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="밑줄 (Underline)"><Underline size={16} /></button>
                                                     <div className="w-px h-4 bg-[var(--theme-border)] mx-1" />
-                                                    <select onChange={(e) => execCommand('fontSize', e.target.value)} className="bg-transparent text-[10px] text-slate-500 font-bold outline-none px-2 hover:text-[var(--theme-text)] transition-colors cursor-pointer" title="글자 크기"><option value="1">Small</option><option value="3" selected>Normal</option><option value="5">Large</option><option value="7">Huge</option></select>
+                                                    <select 
+                                                        onChange={(e) => execCommand('fontSize', e.target.value)} 
+                                                        className="bg-[var(--theme-bg)] text-[10px] text-[var(--theme-text)] font-black outline-none px-2 h-8 border border-[var(--theme-border)] rounded-lg hover:border-[var(--theme-point)] transition-colors cursor-pointer" 
+                                                        title="글자 크기"
+                                                    >
+                                                        <option value="1" className="bg-[var(--theme-header)]">Small</option>
+                                                        <option value="3" selected className="bg-[var(--theme-header)]">Normal</option>
+                                                        <option value="5" className="bg-[var(--theme-header)]">Large</option>
+                                                        <option value="7" className="bg-[var(--theme-header)]">Huge</option>
+                                                    </select>
                                                     <div className="w-px h-4 bg-[var(--theme-border)] mx-1" />
-                                                    <button onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 hover:bg-white/10 rounded-lg text-amber-500 transition-colors" title="노란색 강조"><Palette size={16} /></button>
-                                                    <button onClick={() => execCommand('foreColor', '#f87171')} className="p-2 hover:bg-white/10 rounded-lg text-rose-500 transition-colors" title="빨간색 강조"><Palette size={16} /></button>
-                                                    <button onClick={() => execCommand('foreColor', 'var(--theme-text)')} className="p-2 hover:bg-white/10 rounded-lg text-[var(--theme-text)] transition-colors" title="글자색 초기화"><Palette size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 hover:bg-white/10 rounded-lg text-amber-500 transition-colors" title="노란색 강조"><Palette size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', '#f87171')} className="p-2 hover:bg-white/10 rounded-lg text-rose-500 transition-colors" title="빨간색 강조"><Palette size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', 'var(--theme-text)')} className="p-2 hover:bg-white/10 rounded-lg text-[var(--theme-text)] transition-colors" title="글자색 초기화"><Palette size={16} /></button>
                                                     <div className="w-px h-4 bg-[var(--theme-border)] mx-1" />
-                                                    <button onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="글머리 기호"><List size={16} /></button>
-                                                    <button onClick={() => execCommand('insertHorizontalRule')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="구분선"><Minus size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertUnorderedList')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="글머리 기호"><List size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertOrderedList')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="번호 매기기"><ListOrdered size={16} /></button>
+                                                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertHorizontalRule')} className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-[var(--theme-text)] transition-colors" title="구분선"><Minus size={16} /></button>
                                                     <div className="w-px h-4 bg-[var(--theme-border)] mx-1" />
                                                     <button onClick={() => fileInputRef.current.click()} className="p-2 hover:bg-[var(--theme-point)]/20 rounded-lg text-[var(--theme-point)] hover:text-[var(--theme-point)]/80 transition-all flex items-center gap-1 font-black text-[10px]" title="이미지 업로드"><ImageIcon size={16} /> IMG</button>
                                                 </div>
@@ -222,8 +241,18 @@ const InvestmentJournalDesktop = ({
 
             <style>{`
                 [contenteditable]:empty:before { content: attr(placeholder); color: #64748b; cursor: text; }
+                #note-editor ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
+                #note-editor ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin-bottom: 1rem !important; }
+                #note-editor li { display: list-item !important; margin-bottom: 0.5rem !important; color: inherit !important; }
+                #note-editor font[size="1"] { font-size: 0.75rem !important; }
+                #note-editor font[size="3"] { font-size: 1.125rem !important; }
+                #note-editor font[size="5"] { font-size: 1.5rem !important; font-weight: 800 !important; }
+                #note-editor font[size="7"] { font-size: 2.5rem !important; font-weight: 900 !important; line-height: 1.2 !important; }
                 .prose h2 { color: var(--theme-text) !important; font-weight: 900; font-size: 2rem; margin-top: 3rem; margin-bottom: 1.5rem; border-left: 6px solid var(--theme-point); padding-left: 1.5rem; background: linear-gradient(to right, var(--theme-point-alpha, rgba(99, 102, 241, 0.1)), transparent); padding-top: 8px; padding-bottom: 8px; }
                 .prose p { margin-bottom: 1.8rem; line-height: 1.9; color: var(--theme-text) !important; }
+                .prose ul { list-style-type: disc !important; padding-left: 1.5rem !important; margin-bottom: 1.5rem !important; }
+                .prose ol { list-style-type: decimal !important; padding-left: 1.5rem !important; margin-bottom: 1.5rem !important; }
+                .prose li { display: list-item !important; margin-bottom: 0.8rem !important; color: var(--theme-text) !important; }
                 .prose font[size="1"] { font-size: 0.75rem; }
                 .prose font[size="3"] { font-size: 1.125rem; }
                 .prose font[size="5"] { font-size: 1.5rem; color: var(--theme-text) !important; font-weight: 800; }

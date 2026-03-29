@@ -124,19 +124,29 @@ const InvestmentJournal = () => {
     useEffect(() => { fetchNotes(); }, []);
 
     // [v35.90] 타이핑 방해 금지 (Uncontrolled Mode)
-    // 데이터는 handleSaveNote 실행 시 editorRef.current.innerHTML에서 직접 추출함
     const execCommand = (command, value = null) => {
-        document.execCommand(command, false, value);
+        if (command === 'foreColor' && value === 'var(--theme-text)') {
+            // [v16.11] 엉뚱한 자주색 방지: 색상 초기화 시에는 서식 제거 활용
+            document.execCommand('removeFormat', false, null);
+        } else {
+            document.execCommand(command, false, value);
+        }
         if (editorRef.current) editorRef.current.focus();
     };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            // [v16.14] 5MB 제한 엄격 체크
             if (file.size > 5 * 1024 * 1024) {
-                showNotification('이미지는 5MB 이하만 가능합니다.', 'WARNING');
+                alert('이미지 용량이 너무 큽니다. (최대 5MB 이하만 업로드 가능)');
+                if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
+            
+            // [v16.14] 데이터 유실 방지 극대화: 업로드 프로세스 진입 전 현재 에디터 내용을 상태에 '선제 고정'
+            const currentHTML = editorRef.current ? editorRef.current.innerHTML : (selectedNote.content || '');
+            setSelectedNote(prev => ({ ...prev, content: currentHTML }));
             
             setIsLoading(true);
             try {
@@ -155,15 +165,18 @@ const InvestmentJournal = () => {
                     const imgUrl = data.url;
                     const imgTag = `<img src="${imgUrl}" style="max-width: 100%; border-radius: 12px; margin: 10px 0; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />`;
                     
-                    // [v36.71] React 상태 기반의 정석적인 삽입 방식
-                    // 기존 에디터의 최신 내용을 먼저 가져온 후 이미지 태그를 합침
-                    const currentContent = editorRef.current ? editorRef.current.innerHTML : (selectedNote.content || '');
-                    const newContent = currentContent + imgTag;
+                    // [v16.14] 상태에 선제 고정된 내용 뒤에 이미지를 결합 (이미 currentHTML에는 최신 데이터가 있음)
+                    const newContent = currentHTML + imgTag;
 
                     setSelectedNote(prev => ({
                         ...prev,
                         content: newContent
                     }));
+
+                    // 화면에도 즉시 반영
+                    if (editorRef.current) {
+                        editorRef.current.innerHTML = newContent;
+                    }
 
                     showNotification('이미지가 삽입되었습니다.');
                 } else {

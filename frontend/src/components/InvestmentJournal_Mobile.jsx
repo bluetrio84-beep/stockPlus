@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
-    Book, Search, Plus, Save, Trash2, Star, ChevronLeft, 
+    Book, Search, Plus, Save, Trash2, Star, ChevronLeft, ChevronRight,
     Calendar, Tag, Eye, Edit3, Clock, FileText, X,
-    Bold, Italic, Underline, Image as ImageIcon, AlertTriangle, CheckCircle2, AlertCircle, Palette, Minus
+    Bold, Italic, Underline, List, ListOrdered, Image as ImageIcon, AlertTriangle, CheckCircle2, AlertCircle, Palette, Minus
 } from 'lucide-react';
 import classNames from 'classnames';
 
@@ -10,6 +10,7 @@ const InvestmentJournalMobile = ({
     notes, categories, selectedNote, setSelectedNote, onFetchDetail,
     isEditing, setIsEditing, handleSaveNote, confirmDelete, 
     searchTerm, setSearchTerm, filterCategory, setCategory,
+    currentPage, setCurrentPage, totalPages, paginatedNotes,
     createNewNote, handleEditStart, editorRef, fileInputRef, quillRef, execCommand, 
     notification, notifType, isLoading,
     searchStocks, stockSearchResults, showStockSearch, selectStock,
@@ -101,7 +102,7 @@ const InvestmentJournalMobile = ({
                             ))}
                         </div>
                         <div className="grid grid-cols-1 gap-3">
-                            {filteredNotes.map(note => (
+                            {paginatedNotes.map(note => (
                                 <div key={note.id} onClick={() => onNoteClick(note)} className="bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl p-4 active:bg-white/5 transition-all relative overflow-hidden transition-colors shadow-sm">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className={classNames("px-2 py-0.5 rounded-[4px] text-[8px] font-black text-white", categories.find(c => c.id === note.category)?.color || 'bg-slate-500')}>{categories.find(c => c.id === note.category)?.label}</span>
@@ -115,6 +116,33 @@ const InvestmentJournalMobile = ({
                                 </div>
                             ))}
                         </div>
+
+                        {/* [v16.13] 모바일 페이지네이션 컨트롤 바 */}
+                        {totalPages > 1 && (
+                            <div className="mt-8 mb-4 flex items-center justify-center gap-4 transition-colors">
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                                    disabled={currentPage === 1}
+                                    className="p-3 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl text-slate-400 disabled:opacity-20 active:scale-90 transition-all"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                
+                                <div className="px-5 py-2 bg-[var(--theme-point)]/10 rounded-full border border-[var(--theme-point)]/20">
+                                    <span className="text-xs font-black text-[var(--theme-point)] uppercase tracking-widest">
+                                        {currentPage} <span className="text-slate-400 mx-1">/</span> {totalPages}
+                                    </span>
+                                </div>
+
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                                    disabled={currentPage === totalPages}
+                                    className="p-3 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl text-slate-400 disabled:opacity-20 active:scale-90 transition-all"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -153,9 +181,30 @@ const InvestmentJournalMobile = ({
                     </header>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-10 transition-colors">
                         <div className="grid grid-cols-2 gap-3 transition-colors">
-                            <select value={selectedNote.category} onChange={(e) => setSelectedNote({...selectedNote, category: e.target.value})} className="bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-[var(--theme-text)] font-bold outline-none transition-colors">{categories.filter(c => c.id !== 'ALL').map(c => <option key={c.id} value={c.id} className="text-black">{c.label}</option>)}</select>
+                            <select 
+                                value={selectedNote.category} 
+                                onChange={(e) => {
+                                    const html = editorRef.current ? editorRef.current.innerHTML : selectedNote.content;
+                                    setSelectedNote({...selectedNote, category: e.target.value, content: html});
+                                }} 
+                                className="bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-[var(--theme-text)] font-bold outline-none transition-colors"
+                            >
+                                {categories.filter(c => c.id !== 'ALL').map(c => <option key={c.id} value={c.id} className="text-black">{c.label}</option>)}
+                            </select>
                             <div className="relative transition-colors">
-                                <input type="text" placeholder="종목명/코드" value={selectedNote.stockName ? `${selectedNote.stockName} (${selectedNote.refCode})` : selectedNote.refCode} onChange={(e) => { const v = e.target.value; setSelectedNote({...selectedNote, refCode: v, stockName: ''}); searchStocks(v); }} onFocus={() => setShowStockSearch(true)} className="w-full bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-[var(--theme-text)] font-mono font-black outline-none transition-colors" />
+                                <input 
+                                    type="text" 
+                                    placeholder="종목명/코드" 
+                                    value={selectedNote.stockName ? `${selectedNote.stockName} (${selectedNote.refCode})` : selectedNote.refCode} 
+                                    onChange={(e) => { 
+                                        const v = e.target.value; 
+                                        const html = editorRef.current ? editorRef.current.innerHTML : selectedNote.content;
+                                        setSelectedNote({...selectedNote, refCode: v, stockName: '', content: html}); 
+                                        searchStocks(v); 
+                                    }} 
+                                    onFocus={() => setShowStockSearch(true)} 
+                                    className="w-full bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-xl px-3 py-2 text-[11px] text-[var(--theme-text)] font-mono font-black outline-none transition-colors" 
+                                />
                                 {showStockSearch && stockSearchResults.length > 0 && (
                                     <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl shadow-2xl z-[50] overflow-hidden max-h-40 overflow-y-auto transition-colors">
                                         {stockSearchResults.slice(0, 5).map(s => (
@@ -168,13 +217,57 @@ const InvestmentJournalMobile = ({
                                 )}
                             </div>
                         </div>
-                        <input type="text" placeholder="제목..." value={selectedNote.title} onChange={(e) => setSelectedNote({...selectedNote, title: e.target.value})} className="w-full bg-transparent border-b border-[var(--theme-border)] transition-colors duration-500 text-xl font-black text-[var(--theme-text)] outline-none py-2 placeholder:text-slate-700 transition-colors" />
+                        <input 
+                            type="text" 
+                            placeholder="제목..." 
+                            value={selectedNote.title} 
+                            onChange={(e) => {
+                                const html = editorRef.current ? editorRef.current.innerHTML : selectedNote.content;
+                                setSelectedNote({...selectedNote, title: e.target.value, content: html});
+                            }} 
+                            className="w-full bg-transparent border-b border-[var(--theme-border)] transition-colors duration-500 text-xl font-black text-[var(--theme-text)] outline-none py-2 placeholder:text-slate-700 transition-colors" 
+                        />
                         
-                        <div className="flex flex-wrap items-center gap-1 p-1 bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-t-xl sticky top-0 z-20 overflow-x-auto no-scrollbar transition-colors">
-                            <button onClick={() => execCommand('bold')} className="p-2 text-slate-400 hover:text-[var(--theme-text)]" title="Bold"><Bold size={16} /></button>
-                            <button onClick={() => execCommand('italic')} className="p-2 text-slate-400 hover:text-[var(--theme-text)]" title="Italic"><Italic size={16} /></button>
-                            <button onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 text-amber-500" title="Highlight"><Palette size={16} /></button>
-                            <button onClick={() => fileInputRef.current.click()} className="p-2 text-indigo-600 hover:text-indigo-500" title="Image"><ImageIcon size={16} /></button>
+                        <div className="flex flex-wrap items-center gap-1 p-2 bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-t-xl sticky top-0 z-20 shadow-sm transition-colors duration-500">
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('bold')} className="p-2 text-slate-400 active:text-[var(--theme-point)] active:bg-[var(--theme-point)]/10 rounded-lg transition-all" title="Bold"><Bold size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('italic')} className="p-2 text-slate-400 active:text-[var(--theme-point)] active:bg-[var(--theme-point)]/10 rounded-lg transition-all" title="Italic"><Italic size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('underline')} className="p-2 text-slate-400 active:text-[var(--theme-point)] active:bg-[var(--theme-point)]/10 rounded-lg transition-all" title="Underline"><Underline size={16} /></button>
+                            </div>
+                            
+                            <div className="w-px h-4 bg-[var(--theme-border)] mx-1 shrink-0" />
+                            
+                            <div className="flex items-center gap-1 shrink-0">
+                                <select 
+                                    onChange={(e) => execCommand('fontSize', e.target.value)} 
+                                    className="bg-[var(--theme-bg)] text-[10px] text-[var(--theme-text)] font-black outline-none px-2 h-8 border border-[var(--theme-border)] rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <option value="1" className="text-black">Small</option>
+                                    <option value="3" selected className="text-black">Normal</option>
+                                    <option value="5" className="text-black">Large</option>
+                                    <option value="7" className="text-black">Huge</option>
+                                </select>
+                            </div>
+
+                            <div className="w-px h-4 bg-[var(--theme-border)] mx-1 shrink-0" />
+
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', '#fbbf24')} className="p-2 text-amber-500 active:bg-amber-500/10 rounded-lg transition-all"><Palette size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', '#f87171')} className="p-2 text-rose-500 active:bg-rose-500/10 rounded-lg transition-all"><Palette size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('foreColor', 'var(--theme-text)')} className="p-2 text-[var(--theme-text)] active:bg-slate-500/10 rounded-lg transition-all"><Palette size={16} /></button>
+                            </div>
+
+                            <div className="w-px h-4 bg-[var(--theme-border)] mx-1 shrink-0" />
+
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertUnorderedList')} className="p-2 text-slate-400 active:text-[var(--theme-text)] rounded-lg" title="List"><List size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertOrderedList')} className="p-2 text-slate-400 active:text-[var(--theme-text)] rounded-lg" title="Ordered List"><ListOrdered size={16} /></button>
+                                <button onMouseDown={(e) => e.preventDefault()} onClick={() => execCommand('insertHorizontalRule')} className="p-2 text-slate-400 active:text-[var(--theme-text)] rounded-lg" title="Divider"><Minus size={16} /></button>
+                            </div>
+
+                            <div className="w-px h-4 bg-[var(--theme-border)] mx-1 shrink-0" />
+
+                            <button onClick={() => fileInputRef.current.click()} className="p-2 text-indigo-600 font-black text-[10px] flex items-center gap-1 shrink-0 active:scale-90 transition-all" title="Image"><ImageIcon size={16} /> IMG</button>
                         </div>
                         <div 
                             ref={editorRef} 
@@ -189,6 +282,13 @@ const InvestmentJournalMobile = ({
             )}
             <style>{`
                 [contenteditable]:empty:before { content: attr(placeholder); color: #64748b; cursor: text; }
+                .ql-editor ul { list-style-type: disc !important; padding-left: 1.2rem !important; margin-bottom: 1rem !important; }
+                .ql-editor ol { list-style-type: decimal !important; padding-left: 1.2rem !important; margin-bottom: 1rem !important; }
+                .ql-editor li { display: list-item !important; margin-bottom: 0.4rem !important; color: inherit !important; }
+                .ql-editor font[size="1"] { font-size: 0.75rem !important; }
+                .ql-editor font[size="3"] { font-size: 1rem !important; }
+                .ql-editor font[size="5"] { font-size: 1.25rem !important; font-weight: 800 !important; }
+                .ql-editor font[size="7"] { font-size: 1.75rem !important; font-weight: 900 !important; }
                 .ql-editor img { max-width: 100%; border-radius: 8px; margin: 10px 0; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
                 .ql-editor p { margin-bottom: 1rem; color: inherit !important; }
             `}</style>
