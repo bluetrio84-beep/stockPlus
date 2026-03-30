@@ -267,3 +267,9 @@ export async function addTrade(tradeData) {
         body: JSON.stringify(tradeData),
     });
 }
+
+// --- YouTube Intelligence Gallery (v16.1) ---
+export async function fetchYoutubeGallery() {
+    const data = await safeFetch('api/dashboard/youtube/gallery');
+    return Array.isArray(data) ? data : [];
+}

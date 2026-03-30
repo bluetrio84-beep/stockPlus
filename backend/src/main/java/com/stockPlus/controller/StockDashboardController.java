@@ -266,6 +266,18 @@ public class StockDashboardController {
         dashboardService.markNotificationsAsRead();
     }
 
+    // --- YouTube Intelligence Gallery (v16.1) ---
+
+    /**
+     * 관심종목 통합 유튜브 갤러리 피드를 조회합니다.
+     * 계정 구분 없이 3개월 이내의 모든 수집된 영상을 반환합니다.
+     */
+    @GetMapping("/youtube/gallery")
+    public List<com.stockPlus.domain.YoutubeFeedDto> getYoutubeGallery() {
+        log.info(">>> [Youtube Gallery Request]");
+        return dashboardService.getYoutubeGallery();
+    }
+
     // --- Debug/Admin (관리자용) ---
 
     /**

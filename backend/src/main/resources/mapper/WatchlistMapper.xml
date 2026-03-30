@@ -101,4 +101,12 @@
         WHERE USRID = #{usrId} AND stock_code = #{stockCode} AND group_id = #{groupId}
     </update>
 
+    <!-- 유튜브 갤러리 조회 (전체 사용자 공용, 최근 3개월) -->
+    <select id="findYoutubeGallery" resultType="com.stockPlus.domain.YoutubeFeedDto">
+        SELECT video_id, stock_code, stock_name, title, thumbnail_url, channel_name, view_count_str, published_at
+        FROM youtube_feeds
+        WHERE published_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+        ORDER BY published_at DESC
+    </select>
+
 </mapper>

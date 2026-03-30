@@ -336,4 +336,12 @@ public class StockDashboardService {
     public void markNotificationsAsRead() {
         notificationMapper.markAsRead(getCurrentUsrId());
     }
+
+    // --- YouTube Intelligence Gallery (v16.1) ---
+    /**
+     * 계정 구분 없이 전체 사용자가 공유하는 유튜브 갤러리 피드를 조회합니다.
+     */
+    public List<com.stockPlus.domain.YoutubeFeedDto> getYoutubeGallery() {
+        return watchlistMapper.findYoutubeGallery();
+    }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom'; // [v13.9] URL 파라미터 확인용 추가
-import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory } from '../api/stockApi';
-import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory, fetchYoutubeGallery } from '../api/stockApi';
+import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown, Youtube, Play, X } from 'lucide-react';
 import classNames from 'classnames';
 import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
@@ -13,14 +13,32 @@ const WatchlistSummary = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [globalMarketMode, setGlobalMarketMode] = useState('UN'); 
     const [activeSubTab, setActiveSubTab] = useState('list'); 
-    
+    const [activeTab, setActiveTab] = useState('analysis'); // [v16.1] 상위 탭: analysis | youtube
+    const [youtubeFeeds, setYoutubeFeeds] = useState([]); // [v16.1] 유튜브 피드
+    const [selectedVideo, setSelectedVideo] = useState(null); // [v16.1] 재생용 영상
+    const [selectedStockFilter, setSelectedStockFilter] = useState('all'); // [v16.1] 종목별 필터
+
+    // [v16.1] 유튜브 피드 로드
+    const loadYoutubeFeeds = useCallback(async () => {
+        try {
+            const data = await fetchYoutubeGallery();
+            setYoutubeFeeds(data);
+        } catch (e) {
+            console.error("Failed to load youtube feeds", e);
+        }
+    }, []);
+
     // [v13.9] URL 파라미터 기반 탭 설정 로직 추가
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         if (queryParams.get('tab') === 'ai') {
+            setActiveTab('analysis');
             setActiveSubTab('ai');
+        } else if (queryParams.get('tab') === 'youtube') {
+            setActiveTab('youtube');
         }
-    }, [location]);
+        loadYoutubeFeeds(); 
+    }, [location, loadYoutubeFeeds]);
 
     const [selectedStock, setSelectedStock] = useState(null); 
     const [tradeHistory, setTradeHistory] = useState([]); 
@@ -323,14 +341,42 @@ const WatchlistSummary = () => {
     return (
         <div className="h-full bg-[var(--theme-bg)] flex flex-col items-center overflow-hidden transition-colors duration-500">
             <div className="w-full flex lg:hidden bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0 transition-colors duration-500">
-                <button onClick={() => setActiveSubTab('list')} className={classNames("flex-1 py-4 text-sm font-black border-b-2 transition-all", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": activeSubTab === 'list', "border-transparent text-slate-500": activeSubTab !== 'list' })}>관심종목</button>
-                <button onClick={() => setActiveSubTab('ai')} className={classNames("flex-1 py-4 text-sm font-black border-b-2 transition-all", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": activeSubTab === 'ai', "border-transparent text-slate-500": activeSubTab !== 'ai' })}>AI 분석</button>
+                <button onClick={() => setActiveTab('analysis')} className={classNames("flex-1 py-4 text-sm font-black border-b-2 transition-all", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": activeTab === 'analysis', "border-transparent text-slate-500": activeTab !== 'analysis' })}>종목분석</button>
+                <button onClick={() => { setActiveTab('youtube'); loadYoutubeFeeds(); }} className={classNames("flex-1 py-4 text-sm font-black border-b-2 transition-all", { "border-[var(--theme-point)] text-[var(--theme-text)] bg-[var(--theme-bg)]/50": activeTab === 'youtube', "border-transparent text-slate-500": activeTab !== 'youtube' })}>YouTube</button>
             </div>
 
-            <div className="w-full max-w-7xl flex-1 overflow-hidden p-4 lg:grid lg:grid-cols-2 lg:gap-6">
-                <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden h-full relative transition-colors duration-500", {
-                    "flex": activeSubTab === 'list' || window.innerWidth >= 1024, "hidden lg:flex": activeSubTab !== 'list'
-                })}>
+            {/* 모바일 종목분석 내부 서브 탭 (activeTab === 'analysis' 일 때만 표시) */}
+            {activeTab === 'analysis' && (
+                <div className="w-full flex lg:hidden bg-[var(--theme-bg)]/80 border-b border-[var(--theme-border)]/50 shrink-0">
+                    <button onClick={() => setActiveSubTab('list')} className={classNames("flex-1 py-2 text-[11px] font-bold transition-all", activeSubTab === 'list' ? "text-[var(--theme-point)]" : "text-slate-500")}>관심종목</button>
+                    <button onClick={() => setActiveSubTab('ai')} className={classNames("flex-1 py-2 text-[11px] font-bold transition-all", activeSubTab === 'ai' ? "text-[var(--theme-point)]" : "text-slate-500")}>AI 분석</button>
+                </div>
+            )}
+
+            {/* [v16.1] 데스크탑 전용 상단 탭 바 */}
+            <div className="hidden lg:flex w-full max-w-7xl px-4 mt-2 mb-1">
+                <div className="flex bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl overflow-hidden p-1 shadow-lg">
+                    <button 
+                        onClick={() => setActiveTab('analysis')}
+                        className={classNames("px-8 py-2.5 text-sm font-black transition-all rounded-lg", activeTab === 'analysis' ? 'bg-[var(--theme-point)] text-white shadow-md' : 'text-slate-500 hover:text-[var(--theme-text)]')}
+                    >
+                        종목분석 (Price & AI)
+                    </button>
+                    <button 
+                        onClick={() => { setActiveTab('youtube'); loadYoutubeFeeds(); }}
+                        className={classNames("px-8 py-2.5 text-sm font-black transition-all rounded-lg", activeTab === 'youtube' ? 'bg-red-600 text-white shadow-md' : 'text-slate-500 hover:text-[var(--theme-text)]')}
+                    >
+                        YouTube Intelligence
+                    </button>
+                </div>
+            </div>
+
+            <div className="w-full max-w-7xl flex-1 overflow-hidden p-4">
+                {activeTab === 'analysis' ? (
+                    <div className="h-full lg:grid lg:grid-cols-2 lg:gap-6">
+                        <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden h-full relative transition-colors duration-500", {
+                            "flex": activeSubTab === 'list' || window.innerWidth >= 1024, "hidden lg:flex": activeSubTab !== 'list'
+                        })}>
                     {selectedStock ? renderDetailView() : (
                         <>
                             <div className="p-5 border-b border-[var(--theme-border)] flex justify-between items-center bg-[var(--theme-header)] opacity-95 shrink-0 transition-colors duration-500">
@@ -424,9 +470,105 @@ const WatchlistSummary = () => {
                         )) || <div className="flex flex-col items-center justify-center h-64 text-slate-600"><Sparkles size={40} className="mb-4 opacity-10 animate-pulse" /><p className="text-sm">분석 중...</p></div>}
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+                </div>
+                ) : (
+                /* [v16.1] 광활한 유튜브 갤러리 레이아웃 (activeTab === 'youtube') */
+                <div className="flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden relative h-full transition-colors duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-purple-500/5 pointer-events-none"></div>
+                <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors duration-500 relative z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-500/10 rounded-lg"><Youtube className="text-red-500" size={24} /></div>
+                        <div><h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">Premium Stock Academy</h2><p className="text-xs text-red-500 font-bold transition-colors">주식 공부 · 종목 추천 · 시장 전략 (최신 3개월)</p></div>
+                    </div>
+                    <button onClick={loadYoutubeFeeds} className="p-2 hover:bg-[var(--theme-border)]/30 rounded-full transition-colors"><Repeat size={16} className="text-slate-500" /></button>
+                </div>
 
-export default WatchlistSummary;
+                {/* 카테고리 필터 칩 */}
+                <div className="px-6 py-4 flex gap-2 overflow-x-auto no-scrollbar border-b border-[var(--theme-border)]/30 bg-[var(--theme-bg)]/30 shrink-0 relative z-10">
+                    <button 
+                        onClick={() => setSelectedStockFilter('all')}
+                        className={classNames("px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all border", selectedStockFilter === 'all' ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-[var(--theme-header)] border-[var(--theme-border)] text-slate-500')}
+                    >
+                        전체 보기
+                    </button>
+                    {Array.from(new Set(youtubeFeeds.map(f => f.stockName))).map(name => (
+                        <button 
+                            key={name}
+                            onClick={() => setSelectedStockFilter(name)}
+                            className={classNames("px-4 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all border", selectedStockFilter === name ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-[var(--theme-header)] border-[var(--theme-border)] text-slate-500')}
+                        >
+                            {name}
+                        </button>
+                    ))}
+                </div>
+                {/* 광활한 그리드 피드 */}
+                <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar bg-[var(--theme-bg)]/20 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {youtubeFeeds.filter(f => selectedStockFilter === 'all' || f.stockName === selectedStockFilter).map((feed) => (
+                            <div 
+                                key={feed.videoId} 
+                                onClick={() => setSelectedVideo(feed)}
+                                className="group bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl overflow-hidden cursor-pointer hover:border-red-500/50 transition-all shadow-xl active:scale-[0.98]"
+                            >
+                                <div className="relative aspect-video overflow-hidden">
+                                    <img src={feed.thumbnailUrl} alt={feed.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/0 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <div className="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl translate-y-4 group-hover:translate-y-0 transition-all duration-300"><Play size={24} fill="white" /></div>
+                                    </div>
+                                    <div className="absolute bottom-3 right-3 bg-black/80 px-2 py-0.5 rounded text-[10px] font-black text-white backdrop-blur-md border border-white/10">PREMIUM</div>
+                                </div>
+                                <div className="p-4">
+                                    <h3 className="text-sm font-black text-[var(--theme-text)] transition-colors line-clamp-2 mb-3 leading-snug group-hover:text-red-500 h-10">{feed.title}</h3>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-[var(--theme-bg)] rounded-full flex items-center justify-center text-xs font-black text-red-500 border border-[var(--theme-border)] shadow-inner">{feed.channelName[0]}</div>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-bold text-slate-500 truncate">{feed.channelName}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">조회수 {feed.viewCountStr || '평가 중'} · {feed.publishedAt.split('T')[0]}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-[var(--theme-border)]/50 flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-red-500 opacity-80 uppercase tracking-tighter bg-red-500/5 px-2 py-0.5 rounded">{feed.stockName} Intelligence</span>
+                                        <span className="text-[9px] font-bold text-slate-500 italic">PREMIUM ANALYSIS</span>
+                                    </div>                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {youtubeFeeds.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-96 text-slate-600">
+                            <div className="p-6 bg-red-500/5 rounded-full mb-6 animate-pulse"><Youtube size={64} className="opacity-20 text-red-500" /></div>
+                            <p className="text-lg font-black text-slate-500">수집된 영상 인텔리전스가 없습니다.</p>
+                            <p className="text-sm text-slate-600 mt-2">API 키 설정 및 수집기 가동 상태를 확인하세요.</p>
+                        </div>
+                    )}
+                </div>
+                </div>
+                )}
+                </div>
+
+                {/* [v16.1] 광고 없는 플레이어 모달 */}
+                {selectedVideo && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-20 bg-black/95 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="absolute top-6 right-6 flex items-center gap-4 z-50">
+                <div className="hidden lg:block text-right">
+                    <h2 className="text-white font-black text-lg">{selectedVideo.title}</h2>
+                    <p className="text-red-500 font-bold text-sm">Ad-Free Intelligent Player Mode</p>
+                </div>
+                <button onClick={() => setSelectedVideo(null)} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"><X size={24} /></button>
+                </div>
+                <div className="w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative">
+                <iframe 
+                    className="w-full h-full"
+                    src={`https://www.youtube-nocookie.com/embed/${selectedVideo.videoId}?autoplay=1&rel=0&modestbranding=1`}
+                    title={selectedVideo.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                                                ></iframe>
+                                            </div>
+                                        </div>
+                                    )}
+                            </div>
+                        );
+                    };
+
+                    export default WatchlistSummary;

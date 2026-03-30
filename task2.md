@@ -1,6 +1,27 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.16) - Editor Theme Mastery & Infrastructure Finalized ✨
+## 🚀 최신 업데이트 현황 (v16.17) - Premium Stock Academy & Intelligence Tab Expansion ✨
+
+### 1. 프리미엄 유튜브 아카데미 시스템 구축 (Intelligence Curation)
+- **고퀄리티 주식 지식 수집**: 특정 종목명 기반 수집에서 벗어나 `주식공부`, `종목추천`, `시장분석`, `수급분석`의 4대 핵심 카테고리 중심 수집 엔진으로 전면 개편.
+- **지능형 키워드 튜닝**: 차트 강의, 매매 기법, 급등주 전망 등 실질적인 투자에 도움이 되는 전문가 수준의 영상들을 큐레이션하여 갤러리에 자동 배치.
+
+### 2. '종목분석' 및 'YouTube' 탭 완전 분리 (UX Strategic Shift)
+- **Top-level Tab 시스템**: 최상단에 `종목분석 (Price & AI)`과 `YouTube Intelligence` 커다란 버튼을 신설하여 화면 전체를 활용하는 광활한 전용 뷰 구현.
+- **종목분석 통합 뷰 (Desktop)**: 좌측 실시간 시세와 우측 AI 전략 보고서를 하나의 2단 그리드 화면에 통합하여 분석 효율 극대화.
+- **모바일 서브 탭 시스템**: 좁은 화면에서도 `관심종목 | AI 분석`을 직관적으로 전환할 수 있는 내부 탭 레이아웃 적용.
+
+### 3. 광고 없는 시네마틱 플레이어 이식 (Ad-Free Experience)
+- **추적 및 광고 차단**: `youtube-nocookie.com` 프록시를 활용하여 광고 대기 시간 없이 즉시 영상을 시청할 수 있는 전용 모달 플레이어 탑재.
+- **상호작용 필터링**: 유튜브 갤러리 상단에 종목별/카테고리별 필터 칩을 배치하여 원하는 정보만 빠르게 쏙쏙 골라볼 수 있는 인터페이스 제공.
+
+### 4. 무인 자동 수집 파이프라인 구축 (Automation)
+- **장 시작 전 브리핑 (08:30)**: 매일 아침 장 개시 전, 밤사이 올라온 최신 추천 및 전략 영상을 자동으로 수집하여 갤러리 갱신.
+- **주말 결산 브리핑 (일요일 21:10)**: 한 주를 마무리하고 다음 주를 대비하는 특급 분석 영상들을 일요일 밤마다 선제적 확보.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.16) - Editor Theme Mastery & Infrastructure Finalized ✨
 
 ### 1. 에디터 테마 시인성 최종 완결 (Theme Perfection)
 - **전 테마 콤보박스 가독성 확보**: PC/모바일 에디터의 글자 크기 선택 옵션에 `var(--theme-text)`를 적용하여 Midnight, Pitch Black 등 어두운 테마에서도 메뉴가 선명하게 보이도록 최종 수정.

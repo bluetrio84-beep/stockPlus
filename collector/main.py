@@ -368,6 +368,12 @@ def main():
                     mega.log_to_db("INFO", "[지능완료] 주말 AI 가중치 자동 최적화 반영 성공")
                     time.sleep(360) # 중복 실행 방지 (6분 휴식)
 
+                # [v16.1] 일요일 21:10 유튜브 프리미엄 수집 (월요일 장 대비)
+                if now_weekday == 6 and now_hour == 21 and 10 <= now_min <= 15:
+                    mega.log_to_db("INFO", "[유튜브] 월요일 장 개시 전 주말 분석 영상 수집 시작")
+                    subprocess.run(["python3", "youtube_engine.py"])
+                    time.sleep(360)
+
                 if now_min == 0: print(f">>> [Weekend] 주말 휴식 중... (Policy: {policy['weekend']})")
                 time.sleep(60); continue
 
@@ -410,12 +416,17 @@ def main():
                     mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (07시 20분)")
                     subprocess.run(["python3", "snapshot_engine.py", "--mode", "ranking"])
 
-            # 6. [07:30] 데일리 매거진 선제 생성 (v19.4 08:15에서 이동)
-            # 8시 데이터 초기화 전, 어제의 종가 데이터를 Gemini가 분석하도록 시간을 앞당김.
+            # 6. [07:30] 데일리 매거진 선제 생성
             if now_hour == 7 and 30 <= now_min <= 35:
                 if last_next_leader_date == now_str:
                     mega.log_to_db("INFO", "[리포트] 데일리 매거진 선제적 생성 트리거 (07시 30분)")
                     subprocess.run(["python3", "snapshot_engine.py", "--mode", "trigger_report"])
+
+            # [v16.1] 08:30 유튜브 프리미엄 인텔리전스 수집 (평일/공휴일 공통)
+            if now_hour == 8 and 30 <= now_min <= 35:
+                mega.log_to_db("INFO", "[유튜브] 개장 전 프리미엄 주식 교육/추천 영상 수집 시작")
+                subprocess.run(["python3", "youtube_engine.py"])
+                time.sleep(360) # 중복 실행 방지
 
             # 7. [20:30] 시총 갱신
             if now_hour == 20 and now_min == 30 and last_sync_date != now_str:
