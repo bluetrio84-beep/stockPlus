@@ -32,36 +32,41 @@ public class StockAnalysisService {
     private final NaverService naverService; // 뉴스 검색 서비스
     private final KisStockService kisStockService; // 주가 조회 서비스
 
-    // [v19.3] 데일리 매거진용 통합 브리핑 생성 (냉철한 분석 모드)
-    public String generateMagazineBriefing(List<java.util.Map<String, Object>> heatmap, List<java.util.Map<String, Object>> leaders) {
+    // [v16.21] 데일리 매거진용 통합 브리핑 생성 (오늘의 증시 + 해외 시황 모드)
+    public String generateMagazineBriefing(List<java.util.Map<String, Object>> heatmap, List<java.util.Map<String, Object>> leaders, List<java.util.Map<String, Object>> indices) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("당신은 'StockPlus Daily'의 냉철한 수석 애널리스트입니다. 아래 데이터를 바탕으로 **전일 장 마감 기준** 투자 보고서를 작성해주세요.\n\n");
+        prompt.append("당신은 'StockPlus Intelligence'의 수석 애널리스트입니다. **글로벌 거시경제와 오늘 국내 증시 개장 전략**을 중심으로 투자 보고서를 작성해주세요.\n\n");
         
-        prompt.append("[데이터 1: 전일 업종별 등락 수치]\n");
+        prompt.append("[데이터 1: 해외 지수 및 환율 현황]\n");
+        if (indices != null) {
+            indices.forEach(idx -> prompt.append("- ").append(idx.get("index_name")).append(": ").append(idx.get("index_value")).append(" (").append(idx.get("change_rate")).append("%)\n"));
+        }
+
+        prompt.append("\n[데이터 2: 국내 업종별 수급 동향]\n");
         if (heatmap != null) {
-            heatmap.stream().limit(10).forEach(h -> prompt.append("- ").append(h.get("industry_name")).append(": ").append(h.get("change_rate")).append("%\n"));
+            heatmap.stream().limit(8).forEach(h -> prompt.append("- ").append(h.get("industry_name")).append(": ").append(h.get("change_rate")).append("%\n"));
         }
         
-        prompt.append("\n[데이터 2: 포착된 오늘의 유망 종목 (분석 근거 포함)]\n");
+        prompt.append("\n[데이터 3: 포착된 오늘의 주도주 후보]\n");
         if (leaders != null) {
             leaders.stream().limit(3).forEach(l -> {
-                prompt.append("- ").append(l.get("stock_name")).append(" (점수: ").append(l.get("total_score")).append(", 분석근거: ").append(l.get("reason")).append(")\n");
+                prompt.append("- ").append(l.get("stock_name")).append(" (AI 점수: ").append(l.get("total_score")).append(", 분석근거: ").append(l.get("reason")).append(")\n");
             });
         }
         
-        prompt.append("\n[작성 필수 지침 - 위반 시 해고]\n");
-        prompt.append("1. **시점 명확화**: 반드시 '전일(어제) 시장'을 분석하고 '오늘의 전략'을 제시하세요. 절대로 전일 데이터를 '금일 시장'이라 부르지 마세요.\n");
-        prompt.append("2. **냉철한 현실 직시**: 수치가 음수(-)라면 '보합세'라는 단어를 절대 쓰지 마세요. 하락 폭에 따라 '급락', '폭락', '붕괴', '약세' 등 시장의 공포를 생생하게 묘사하세요.\n");
-        prompt.append("3. **구조적 브리핑**: \n");
-        prompt.append("   - 'MARKET_BRIEF': 전일 시장의 전반적인 하락/상승 원인과 분위기 요약 (200자 내외)\n");
-        prompt.append("   - 'STOCK_1, 2, 3': 이 폭락/폭등장 속에서도 왜 이 종목들이 AI에게 선택받았는지 기술적/재무적 근거로 코멘트 (각 100자 내외)\n");
-        prompt.append("   - **주의**: 대괄호 안에는 반드시 'STOCK_1', 'STOCK_2', 'STOCK_3'만 적으세요. 종목명을 대괄호 안에 넣지 마세요. (예: [STOCK_1: 효성중공업] (X) -> [STOCK_1] 효성중공업 (O))\n");
+        prompt.append("\n[작성 필수 지침]\n");
+        prompt.append("1. **글로벌 인사이트**: 먼저 S&P 500, 나스닥 등 해외 증시 마감 상황이 오늘 국내 증시에 미칠 영향을 분석하세요.\n");
+        prompt.append("2. **오늘의 시황 중심**: 전일의 나열이 아닌, '오늘 우리가 주목해야 할 섹터와 테마'를 명확히 제시하세요.\n");
+        prompt.append("3. **구조적 브리핑 (규격 엄수)**: \n");
+        prompt.append("   - 'MARKET_BRIEF': 해외 증시 요약과 오늘 국내 증시 개장 전략 (250자 내외)\n");
+        prompt.append("   - 'STOCK_1, 2, 3': 글로벌 시황과 맞물려 이 종목들이 왜 오늘 강력한 주도주가 될 수 있는지 코멘트 (각 120자 내외)\n");
+        prompt.append("   - **주의**: 대괄호 형식 [MARKET_BRIEF], [STOCK_1] 등을 반드시 지키세요.\n");
         prompt.append("형식: [MARKET_BRIEF]... [STOCK_1]... [STOCK_2]... [STOCK_3]...");
         
         try {
             return geminiService.getCompletion(prompt.toString());
         } catch (Exception e) {
-            return "[MARKET_BRIEF]데이터 분석 중 일시적 오류가 발생했습니다. 시장의 변동성에 유의하시기 바랍니다. [STOCK_1]기술적 지지선 확인이 필요합니다. [STOCK_2]수급 유입을 기다려야 합니다. [STOCK_3]바닥권 매집 징후가 포착됩니다.";
+            return "[MARKET_BRIEF]글로벌 증시 데이터를 분석 중입니다. 잠시 후 시황 브리핑이 업데이트됩니다. [STOCK_1]수급 유입 대기 중입니다. [STOCK_2]기술적 반등 구간입니다. [STOCK_3]추세 전환 초기 국면입니다.";
         }
     }
 

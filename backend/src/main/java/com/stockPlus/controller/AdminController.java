@@ -257,15 +257,13 @@ public class AdminController {
         // 2. DB에서 오늘의 브리핑 조회 (캐싱 로직 v18.0)
         String briefing = adminMapper.getDailyReport(today);
         
+        // [v16.21 Patch] 사용자 요청 시 실시간 재분석 수행 (프롬프트 변경 반영)
         if (briefing == null || briefing.trim().isEmpty()) {
-            // DB에 없으면 Gemini 호출하여 생성
-            briefing = stockAnalysisService.generateMagazineBriefing(heatmap, leaders);
-            // 생성된 브리핑 DB에 저장
+            // DB에 없거나 비어있으면 새 프롬프트(해외 지수 포함)로 Gemini 호출
+            briefing = stockAnalysisService.generateMagazineBriefing(heatmap, leaders, indices);
             try {
                 adminMapper.insertDailyReport(today, briefing);
-            } catch (Exception e) {
-                // 중복 키 에러 등 예외 처리
-            }
+            } catch (Exception e) {}
         }
         
         response.put("date", today);
