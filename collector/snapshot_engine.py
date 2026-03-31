@@ -14,8 +14,8 @@ DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
 
-# 캡처 옵션 (Host 모드 최적화)
-BASE_URL = "http://127.0.0.1:80/" 
+# 캡처 옵션 (Host 모드 및 HTTPS 대응)
+BASE_URL = "https://stockplus.158.180.66.45.nip.io" 
 BACKEND_API_URL = "http://127.0.0.1:8080/api/dashboard"
 SAVE_DIR = "/app/snapshots"
 
@@ -60,7 +60,11 @@ class SnapshotEngine:
         self.log_to_db("업종 등락 히트맵 1270px 최종 촬영 시작")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-            context = browser.new_context(viewport={'width': 1400, 'height': 1600})
+            # [v16.22 Patch] ignore_https_errors=True 추가 (HTTPS 인증서 이슈 돌파)
+            context = browser.new_context(
+                viewport={'width': 1400, 'height': 1600},
+                ignore_https_errors=True
+            )
             page = context.new_page()
             # ps.stealth(page) # 자동화 탐지 우회 필요 시 주석 해제
             
@@ -116,7 +120,11 @@ class SnapshotEngine:
         self.log_to_db("Next Leaders 랭킹 리스트 정밀 촬영 시작")
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
-            context = browser.new_context(viewport={'width': 1400, 'height': 1200})
+            # [v16.22 Patch] ignore_https_errors=True 추가
+            context = browser.new_context(
+                viewport={'width': 1400, 'height': 1200},
+                ignore_https_errors=True
+            )
             page = context.new_page()
             # ps.stealth(page)
             

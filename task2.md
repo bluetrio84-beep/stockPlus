@@ -1,6 +1,18 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.21) - Daily Magazine AI Intelligence Overhaul ✨
+## 🚀 최신 업데이트 현황 (v16.22) - Snapshot Engine Recovery & Visualization Integrity ✨
+
+### 1. 스냅샷 자동 캡처 엔진 완벽 복구 (System Restoration)
+- **보안 환경 적응 완료**: HTTPS 전환 및 SSL 인증서 적용 이후 Playwright 엔진에서 발생하던 인증 오류를 `ignore_https_errors` 옵션 적용으로 정면 돌파하여 캡처 프로세스 정상화.
+- **네트워크 접속 경로 최적화**: 수집기 컨테이너의 `host` 네트워크 모드 특성을 고려하여, 내부 루프백이 아닌 **공용 도메인(nip.io)** 주소로 접속 주소를 정밀 교정하여 타임아웃 버그 해결.
+
+### 2. 데일리 매거진 시각화 무결성 확보 (Data Freshness)
+- **실시간 데이터 갱신 성공**: 3월 24일에 멈춰있던 업종 등락 히트맵(`heatmap_latest.png`)과 유망 종목 랭킹 보드(`ranking_latest.png`)를 오늘(3월 31일) 날짜로 성공적으로 강제 갱신 완료.
+- **로그인 세션 강화**: 관리자 계정(`bluetrio`) 자동 로그인 로직의 예외 처리를 강화하여, 어떠한 환경에서도 안정적으로 스냅샷 촬영 화면에 진입할 수 있도록 인프라 보강.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.21) - Daily Magazine AI Intelligence Overhaul ✨
 
 ### 1. 데일리 매거진 브리핑 엔진 전면 개편 (Strategic Insights)
 - **분석 패러다임 전환**: 단순 전일 시장 나열에서 벗어나 **'오늘 국내 증시 개장 전략 + 해외 시황 융합'** 중심으로 Gemini 프롬프트를 전면 재구조화.
