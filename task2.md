@@ -1,6 +1,26 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.17) - Premium Stock Academy & Intelligence Tab Expansion ✨
+## 🚀 최신 업데이트 현황 (v16.18) - Personalized YouTube Intelligence & Ultra-Wide UI Mastery ✨
+
+### 1. 사용자별(ID별) 맞춤형 인텔리전스 시스템 구축 (Personalization)
+- **즐겨찾기 종목 연동**: 사용자 ID별로 서로 다른 즐겨찾기(별표) 종목을 실시간 감지하여 '나만의 맞춤형 유튜브 갤러리' 수집 및 노출 구현.
+- **활성 유저 정밀 타겟팅**: 정상 활동 중인 사용자(`useyn='Y'`)들만 선별하여 수집함으로써 시스템 리소스 및 API 효율성 극대화.
+
+### 2. 콘텐츠 정예화 및 슬림화 (Elite Curation)
+- **수량 최적화 (Total 50개)**: 즐겨찾기 종목 영상 20개와 프리미엄 공통 지식(무극선생, 프리티 등) 30개로 제한하여 정보 밀도와 로딩 속도 상향.
+- **주제별 정밀 큐레이션**: `주식공부`, `종목추천`, `시장전략` 키워드를 수집 엔진에 주입하여 투자 실전에 즉시 활용 가능한 고퀄리티 영상 확보.
+
+### 3. Ultra-Wide 광폭 UI 및 5열 그리드 레이아웃 (Visual Expansion)
+- **화면 한계 확장**: 유튜브 탭 활성화 시 기존 `max-w-7xl` 제한을 풀고 `max-w-none`을 적용하여 화면 양옆을 시원하게 채우는 풀와이드 뷰 구현.
+- **지능형 그리드 최적화**: 큰 화면(2xl+)에서 한 줄에 영상 5개(5-column grid)를 배치하여 방대한 정보를 한눈에 쾌적하게 소비할 수 있는 인터페이스 제공.
+
+### 4. 브라우저 뒤로가기 방어 및 UX 튜닝 (Smart Navigation)
+- **모달 클로즈 연동**: 영상 재생 중 브라우저 뒤로가기 클릭 시 페이지 이동 대신 '모달만 닫히도록' History API를 연동하여 모바일/웹 사용자 경험 획기적 개선.
+- **수집 쿼터 보호 시스템**: 동일 검색어에 대한 중복 호출을 막는 **검색 캐시(Search Cache)** 로직을 수집기에 탑재하여 YouTube API 쿼터 절약 달성.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.17) - Premium Stock Academy & Intelligence Tab Expansion ✨
 
 ### 1. 프리미엄 유튜브 아카데미 시스템 구축 (Intelligence Curation)
 - **고퀄리티 주식 지식 수집**: 특정 종목명 기반 수집에서 벗어나 `주식공부`, `종목추천`, `시장분석`, `수급분석`의 4대 핵심 카테고리 중심 수집 엔진으로 전면 개편.

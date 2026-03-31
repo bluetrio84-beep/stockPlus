@@ -18,5 +18,5 @@ public interface WatchlistMapper {
     List<Watchlist> findFavorites(@Param("usrId") String usrId);
     
     // [v16.1] 유튜브 갤러리 조회
-    List<com.stockPlus.domain.YoutubeFeedDto> findYoutubeGallery();
+    List<com.stockPlus.domain.YoutubeFeedDto> findYoutubeGallery(@Param("usrId") String usrId);
 }

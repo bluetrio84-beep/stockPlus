@@ -28,6 +28,16 @@ const WatchlistSummary = () => {
         }
     }, []);
 
+    // [v16.1] 영상 모달 뒤로가기 대응
+    useEffect(() => {
+        if (selectedVideo) {
+            window.history.pushState({ modal: 'youtube' }, '');
+            const handlePopState = () => setSelectedVideo(null);
+            window.addEventListener('popstate', handlePopState);
+            return () => window.removeEventListener('popstate', handlePopState);
+        }
+    }, [selectedVideo]);
+
     // [v13.9] URL 파라미터 기반 탭 설정 로직 추가
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -371,7 +381,7 @@ const WatchlistSummary = () => {
                 </div>
             </div>
 
-            <div className="w-full max-w-7xl flex-1 overflow-hidden p-4">
+            <div className={classNames("w-full flex-1 overflow-hidden p-4 transition-all duration-500", activeTab === 'youtube' ? "max-w-none px-2 lg:px-4" : "max-w-7xl")}>
                 {activeTab === 'analysis' ? (
                     <div className="h-full lg:grid lg:grid-cols-2 lg:gap-6">
                         <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden h-full relative transition-colors duration-500", {
@@ -478,7 +488,7 @@ const WatchlistSummary = () => {
                 <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors duration-500 relative z-10">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-500/10 rounded-lg"><Youtube className="text-red-500" size={24} /></div>
-                        <div><h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">Premium Stock Academy</h2><p className="text-xs text-red-500 font-bold transition-colors">주식 공부 · 종목 추천 · 시장 전략 (최신 3개월)</p></div>
+                        <div><h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">Premium Stock Academy</h2><p className="text-xs text-red-500 font-bold transition-colors">주식 공부 · 종목 추천 · 시장 전략 (최근 1개월)</p></div>
                     </div>
                     <button onClick={loadYoutubeFeeds} className="p-2 hover:bg-[var(--theme-border)]/30 rounded-full transition-colors"><Repeat size={16} className="text-slate-500" /></button>
                 </div>
@@ -502,9 +512,8 @@ const WatchlistSummary = () => {
                     ))}
                 </div>
                 {/* 광활한 그리드 피드 */}
-                <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar bg-[var(--theme-bg)]/20 relative z-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {youtubeFeeds.filter(f => selectedStockFilter === 'all' || f.stockName === selectedStockFilter).map((feed) => (
+                <div className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar bg-[var(--theme-bg)]/20 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">                        {youtubeFeeds.filter(f => selectedStockFilter === 'all' || f.stockName === selectedStockFilter).map((feed) => (
                             <div 
                                 key={feed.videoId} 
                                 onClick={() => setSelectedVideo(feed)}
