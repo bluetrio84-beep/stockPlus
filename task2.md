@@ -1,6 +1,29 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.22) - Snapshot Engine Recovery & Visualization Integrity ✨
+## 🚀 최신 업데이트 현황 (v16.25) - AI Usage Management & Token Tracking Intelligence ✨
+
+### 1. AI 사용량 관리(AI Usage Management) 시스템 구축 (NOC Intelligence)
+- **실시간 토큰 관제**: Gemini 2.0 Flash 모델의 토큰 사용량(Prompt, Completion)을 실시간 추적하고 시각화하는 관리자 전용 독립 대시보드 신설.
+- **서비스별 비중 분석**: 매거진 분석, 종목 심층 분석, 뉴스 요약 등 각 기능별 AI 호출 빈도와 토큰 소비 비중을 Pie 차트로 구현하여 자원 배분 최적화 지원.
+- **사용량 추이 시각화**: 최근 7일간의 토큰 소비 흐름을 Area 차트로 제공하여 시스템 부하 및 사용 패턴을 정밀 분석.
+
+### 2. 지능형 AI 데이터 파이프라인 고도화 (Infrastructure)
+- **Usage 가로채기 엔진**: `GeminiService`를 개편하여 API 응답 시 발생하는 `usageMetadata`를 가로채 `ai_usage_log` 테이블에 자동 기록하는 로직 탑재.
+- **통계 API 인프라**: 시간별/일별/타입별 AI 사용 통계를 반환하는 전용 백엔드 엔드포인트 구축 및 MyBatis XML 기반 고성능 쿼리 최적화.
+- **무결성 복구**: 기능 추가 중 발생한 `GeminiService` 및 `StockAnalysisService` 소스 유실을 완벽 복구하고 신규 로직과 성공적으로 통합.
+
+### 3. 초고밀도(Ultra-Compact) 관리자 UI 설계 (UX Mastery)
+- **정보 밀도 극대화**: 차트 높이 최적화(`250px~300px`) 및 여백 최소화(`mb-2`)를 통해 스크롤 없이도 핵심 관제 지표가 한눈에 들어오는 고밀도 레이아웃 완성.
+- **무료 쿼터 현황판**: Gemini 무료 티어 제한(1,500 RPD, 4M TPM 등)을 대시보드에 명문화하고 실시간 요청 횟수 카운팅을 통해 안정적 가동 지원.
+- **사이드바 사용성 개선**: 메뉴 증가에 따른 레이아웃 깨짐을 방지하기 위해 초슬림 메뉴 디자인 및 밸런스 조정(Navigation 3, Management 2) 적용.
+
+### 4. 플랫폼 교차 환경 최적화 (Cross-Platform Polish)
+- **모바일 스크롤 강화**: 모바일에서 대시보드 하단이 잘리는 현상을 해결하기 위해 `min-h-0` 및 하단 여백(`mb-20`) 보정 로직 적용.
+- **네비게이션 동기화**: 데스크탑과 모바일 사이드바 메뉴에 'AI 사용량 관리' 탭을 동시 이식하여 일관된 관리 환경 제공.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.22) - Snapshot Engine Recovery & Visualization Integrity ✨
 
 ### 1. 스냅샷 자동 캡처 엔진 완벽 복구 (System Restoration)
 - **보안 환경 적응 완료**: HTTPS 전환 및 SSL 인증서 적용 이후 Playwright 엔진에서 발생하던 인증 오류를 `ignore_https_errors` 옵션 적용으로 정면 돌파하여 캡처 프로세스 정상화.

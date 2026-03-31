@@ -64,7 +64,8 @@ public class StockAnalysisService {
         prompt.append("형식: [MARKET_BRIEF]... [STOCK_1]... [STOCK_2]... [STOCK_3]...");
         
         try {
-            return geminiService.getCompletion(prompt.toString());
+            // [v16.25] 매거진 분석 사용량 추적 포함 호출
+            return geminiService.getCompletion(prompt.toString(), "MAGAZINE_ANALYSIS", "ADMIN");
         } catch (Exception e) {
             return "[MARKET_BRIEF]글로벌 증시 데이터를 분석 중입니다. 잠시 후 시황 브리핑이 업데이트됩니다. [STOCK_1]수급 유입 대기 중입니다. [STOCK_2]기술적 반등 구간입니다. [STOCK_3]추세 전환 초기 국면입니다.";
         }
@@ -147,8 +148,8 @@ public class StockAnalysisService {
                 log.info("[Analysis] Data ready. Calling Gemini Pro for {}", finalStockName);
                 StringBuilder fullContentBuilder = new StringBuilder();
                 
-                // 3. Gemini AI 스트리밍 호출
-                return geminiService.streamStockAnalysis(finalStockName, stockCode, stockData, newsHeadlines)
+                // [v16.25] 종목 분석 사용량 추적 포함 호출
+                return geminiService.streamStockAnalysis(finalStockName, stockCode, stockData, newsHeadlines, "STOCK_ANALYSIS", usrId)
                     .doOnNext(fullContentBuilder::append) // 청크 수집
                     .doOnComplete(() -> {
                         // 4. 분석 완료 후 DB에 결과 저장 (비동기)

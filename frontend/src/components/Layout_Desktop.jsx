@@ -26,6 +26,7 @@ const LayoutDesktop = ({ logic }) => {
         navItems.push({ name: 'SMART MONEY', path: '/admin/smart-money', icon: Sparkles });
         navItems.push({ name: '데이터 수집 관리', path: '/admin', icon: Activity });
         navItems.push({ name: '장애 관리', path: '/admin/failure', icon: ShieldAlert });
+        navItems.push({ name: 'AI 사용량 관리', path: '/admin/ai-usage', icon: PieChart });
         navItems.push({ name: '시스템 관리', path: '/admin/system', icon: Settings });
     }
 
@@ -122,11 +123,11 @@ const LayoutDesktop = ({ logic }) => {
                 <aside className={classNames("bg-[var(--theme-header)] border-r border-[var(--theme-border)] flex flex-col shrink-0 transition-all duration-300 ease-in-out z-30 shadow-xl transition-colors", isMenuOpen ? "w-64 opacity-100 p-4 overflow-visible" : "w-0 opacity-0 p-0 border-none overflow-hidden")}>
                     <div className="px-2 py-3 mb-4 whitespace-nowrap transition-colors"><span className="text-[10px] font-black text-[var(--theme-text)] opacity-60 uppercase tracking-[0.2em] transition-colors">Navigation</span></div>
                     <nav className="flex-1 flex flex-col min-w-[224px] transition-colors">
-                        <div className="space-y-1.5 flex-1 transition-colors">
-                            {navItems.filter(item => !['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                        <div className="space-y-1 flex-1 transition-colors">
+                            {navItems.filter(item => !['데이터 수집 관리', '장애 관리', 'AI 사용량 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
-                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3.5 text-sm flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
+                                    <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-sm flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-white bg-[var(--theme-point)] shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
                                         <item.icon size={18} className={classNames(isActive ? "text-white" : "text-slate-500")} />{item.name}
                                     </button>
                                 );
@@ -134,12 +135,12 @@ const LayoutDesktop = ({ logic }) => {
                         </div>
 
                         {isAdmin() && (
-                            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/60 space-y-1.5 transition-colors">
-                                <div className="px-2 pb-2 transition-colors"><span className="text-[9px] font-black text-[var(--theme-text)] opacity-60 uppercase tracking-[0.2em] transition-colors">Management</span></div>
-                                {navItems.filter(item => ['데이터 수집 관리', '장애 관리', '시스템 관리'].includes(item.name)).map((item) => {
+                            <div className="mt-1 pt-1 border-t border-[var(--theme-border)]/60 space-y-0.5 transition-colors">
+                                <div className="px-2 pb-1 transition-colors"><span className="text-[9px] font-black text-[var(--theme-text)] opacity-60 uppercase tracking-[0.2em] transition-colors">Management</span></div>
+                                {navItems.filter(item => ['데이터 수집 관리', '장애 관리', 'AI 사용량 관리', '시스템 관리'].includes(item.name)).map((item) => {
                                     const isActive = location.pathname === item.path;
                                     return (
-                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-3 text-xs flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
+                                        <button key={item.path} onClick={() => navigate(item.path)} className={classNames("w-full text-left px-4 py-2 text-xs flex items-center gap-4 font-black rounded-xl transition-all duration-200 transition-colors", isActive ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10 border border-[var(--theme-point)]/20" : "text-slate-500 hover:bg-[var(--theme-bg)] hover:text-[var(--theme-text)]")}>
                                             <item.icon size={16} className={classNames(isActive ? "text-[var(--theme-point)]" : "text-slate-500")} />{item.name}
                                         </button>
                                     );

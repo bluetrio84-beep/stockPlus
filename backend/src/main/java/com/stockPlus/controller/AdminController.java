@@ -363,6 +363,21 @@ public class AdminController {
         return Map.of("message", "System restart triggered. Please wait a few moments.");
     }
 
+    private final com.stockPlus.mapper.AiUsageMapper aiUsageMapper; // [v16.25] AI 사용량 매퍼 추가
+
+    // --- 4. AI 사용량 관리 (v16.25) ---
+    @GetMapping("/system/ai-stats/daily")
+    public List<Map<String, Object>> getAiDailyStats(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        return aiUsageMapper.getDailyUsageStats();
+    }
+
+    @GetMapping("/system/ai-stats/type")
+    public List<Map<String, Object>> getAiTypeStats(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        return aiUsageMapper.getUsageByType();
+    }
+
     /**
      * [v36.102] AI 개발 센터: 지능형 SSE 스트리밍 터미널 (v36.105 노이즈 제거 및 실시간성 강화)
      */

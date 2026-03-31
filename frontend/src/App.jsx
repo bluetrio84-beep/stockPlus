@@ -11,6 +11,7 @@ import AdminChartDashboard from "./components/AdminChartDashboard";
 import SmartMoneyDashboard from "./components/SmartMoneyDashboard";
 import AdminTheDailyMagazine from "./components/AdminTheDailyMagazine";
 import AdminFailureManagement from "./components/AdminFailureManagement";
+import AdminAiUsageManagement from "./components/AdminAiUsageManagement";
 import MyPortfolioDashboard from "./components/MyPortfolioDashboard";
 import InvestmentJournal from "./components/InvestmentJournal";
 import Layout from './components/Layout';
@@ -56,6 +57,7 @@ function App() {
         <Route path="/admin/smart-money" element={<AdminRoute><SmartMoneyDashboard /></AdminRoute>} />
         <Route path="/admin/system" element={<AdminRoute><AdminSystemManagement /></AdminRoute>} />
         <Route path="/admin/failure" element={<AdminRoute><AdminFailureManagement /></AdminRoute>} />
+        <Route path="/admin/ai-usage" element={<AdminRoute><AdminAiUsageManagement /></AdminRoute>} />
         <Route path="/admin/magazine" element={<AdminRoute><AdminTheDailyMagazine /></AdminRoute>} />
         <Route path="/admin/my-dashboard" element={<AdminRoute><MyPortfolioDashboard /></AdminRoute>} />
       </Route>

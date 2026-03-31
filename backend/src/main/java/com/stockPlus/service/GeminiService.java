@@ -31,6 +31,7 @@ public class GeminiService {
     private String apiUrl; // Gemini REST API 엔드포인트
 
     private final WebClient.Builder webClientBuilder;
+    private final com.stockPlus.mapper.AiUsageMapper aiUsageMapper; // [v16.25] 사용량 기록 매퍼
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 현재 날짜를 포맷팅하여 반환 (프롬프트 컨텍스트용)
@@ -52,7 +53,7 @@ public class GeminiService {
                 "다음 뉴스를 반드시 한국어로 1줄 핵심 요약해줘. (형식: '- [요약내용]')\n\n제목: %s\n내용: %s",
                 title, shortContent
             );
-            return getCompletion(prompt);
+            return getCompletion(prompt, "NEWS_SUMMARY", "SYSTEM");
         } catch (Exception e) {
             log.error("Gemini API Error: {}", e.getMessage());
         }
@@ -79,7 +80,7 @@ public class GeminiService {
             "3. 2차전지 관련주 수급 쏠림 현상 심화.",
             getCurrentDateString(), newsText
         );
-        return getCompletion(prompt);
+        return getCompletion(prompt, "MARKET_INSIGHT", "SYSTEM");
     }
 
     /**
@@ -106,17 +107,22 @@ public class GeminiService {
             "뉴스 데이터:\n%s",
             getCurrentDateString(), stockListStr, newsText
         );
-        return getCompletion(prompt);
+        return getCompletion(prompt, "SPECIAL_ANALYSIS", "SYSTEM");
     }
 
     // Gemini API 호출 (일반 응답 - Blocking)
     public String getCompletion(String prompt) {
+        return getCompletion(prompt, "GENERAL_TASK", "SYSTEM");
+    }
+
+    /**
+     * [v16.25] 사용량 추적이 포함된 통합 완성 메서드
+     */
+    public String getCompletion(String prompt, String requestType, String usrId) {
         try {
-            // [v17.9] API 할당량(Rate Limit) 방지를 위한 강제 딜레이 추가
             Thread.sleep(1200); 
 
             WebClient webClient = webClientBuilder.build();
-            // Gemini API 요청 포맷에 맞게 Body 구성
             Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
             );
@@ -125,14 +131,30 @@ public class GeminiService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .block(); // 동기식 처리
+                .block();
 
-            // 응답 파싱
             if (response != null && response.containsKey("candidates")) {
+                // 1. 텍스트 추출
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
                 Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, Object>> parts = (List<Map<String, Object>>) contentMap.get("parts");
-                return (String) parts.get(0).get("text");
+                String text = (String) parts.get(0).get("text");
+
+                // 2. [v16.25] 토큰 사용량 추출 및 저장
+                if (response.containsKey("usageMetadata")) {
+                    Map<String, Object> usage = (Map<String, Object>) response.get("usageMetadata");
+                    int promptTokens = (int) usage.getOrDefault("promptTokenCount", 0);
+                    int completionTokens = (int) usage.getOrDefault("candidatesTokenCount", 0);
+                    int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
+                    
+                    try {
+                        aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-1.5-flash", promptTokens, completionTokens, totalTokens);
+                    } catch (Exception e) {
+                        log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
+                    }
+                }
+                
+                return text;
             }
         } catch (Exception e) {
             log.error("Gemini API Error: {}", e.getMessage());
@@ -142,14 +164,8 @@ public class GeminiService {
 
     /**
      * 특정 종목에 대한 심층 분석을 SSE 스트리밍 방식으로 반환합니다.
-     * WebClient를 사용하여 Gemini의 스트리밍 엔드포인트를 호출하고, 청크 단위로 데이터를 처리합니다.
-     * @param stockName 종목명
-     * @param stockCode 종목코드
-     * @param stockData 주가 데이터 등 참고 자료
-     * @param newsContext 관련 뉴스
-     * @return 분석 텍스트 스트림 (Flux<String>)
      */
-    public Flux<String> streamStockAnalysis(String stockName, String stockCode, String stockData, List<String> newsContext) {
+    public Flux<String> streamStockAnalysis(String stockName, String stockCode, String stockData, List<String> newsContext, String requestType, String usrId) {
         String prompt = String.format(
             "오늘은 %s이다. 너는 퀀트 투자 전문가야. '%s(%s)' 심층 분석 보고서를 **매우 간결하게** 작성해.\n" +
             "불필요한 미사여구는 생략하고 핵심 수치와 뉴스 인사이트 위주로 300자 이내로 요약해줘.\n\n" +
@@ -158,7 +174,6 @@ public class GeminiService {
         );
         log.info("[Gemini] Sending Stream Request for: {}", stockName);
         
-        // 스트리밍 전용 엔드포인트 URL
         String streamUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey;
         Map<String, Object> body = Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
@@ -166,10 +181,26 @@ public class GeminiService {
                 .uri(streamUrl)
                 .bodyValue(body)
                 .retrieve()
-                .bodyToFlux(String.class) // SSE 스트림을 Flux로 받음
-                .doOnNext(raw -> log.debug("[Gemini] Raw Chunk: {}", raw.length() > 50 ? raw.substring(0, 50) + "..." : raw))
-                .map(this::extractTextFromChunk) // 원본 JSON 청크에서 텍스트만 추출
-                .filter(t -> !t.isEmpty()) // 빈 문자열 필터링
+                .bodyToFlux(String.class)
+                .doOnNext(raw -> {
+                    // [v16.25] 스트리밍 마지막 청크에서 사용량 추출 및 기록
+                    if (raw.contains("usageMetadata")) {
+                        try {
+                            String jsonStr = raw.trim();
+                            if (jsonStr.startsWith("data:")) jsonStr = jsonStr.substring(5).trim();
+                            JsonNode root = objectMapper.readTree(jsonStr);
+                            JsonNode usage = root.path("usageMetadata");
+                            if (!usage.isMissingNode()) {
+                                int pt = usage.path("promptTokenCount").asInt(0);
+                                int ct = usage.path("candidatesTokenCount").asInt(0);
+                                int tt = usage.path("totalTokenCount").asInt(0);
+                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-2.0-flash", pt, ct, tt);
+                            }
+                        } catch (Exception e) { log.warn(">>> [Stream Usage Log Error] {}", e.getMessage()); }
+                    }
+                })
+                .map(this::extractTextFromChunk)
+                .filter(t -> !t.isEmpty())
                 .onErrorResume(e -> {
                     log.error("[Gemini Stream Error] {}", e.getMessage());
                     return Flux.just("\n[에러] AI 분석 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.\n(" + e.getMessage() + ")");
