@@ -1,6 +1,18 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.18) - Personalized YouTube Intelligence & Ultra-Wide UI Mastery ✨
+## 🚀 최신 업데이트 현황 (v16.20) - Real-time Macro Intelligence & Google Finance Integration ✨
+
+### 1. 글로벌 지표 수집 소스 전격 교체 (Source Optimization)
+- **Google Finance 전면 도입**: 데이터 지연이 빈번한 야후 파이낸스 의존도를 낮추고, 갱신 속도가 탁월한 구글 파이낸스를 통해 S&P 500, Nasdaq, USD/KRW 데이터를 실시간 수집.
+- **매크로 데이터 정밀도 상향**: 기존 1508원에 머물러 있던 환율을 실시간 수치인 **1535.22원**으로 즉시 교정하여 데일리 매거진의 인텔리전스 품질을 증권사 리포트 수준으로 확보.
+
+### 2. 수집기 인프라 접속 유연성 강화 (Infrastructure Robustness)
+- **지능형 DB 커넥터 탑재**: 수집기 엔진(`fetch_indices_once.py`)에 도커 네트워크(`mysql`)와 로컬 루프백(`127.0.0.1`)을 순차적으로 탐색하는 접속 로직을 추가하여 실행 환경에 관계없는 무결성 가동 보장.
+- **데이터 파싱 엔진 고도화**: 구글의 `data-last-price` 속성을 정밀 추적하여 소수점 단위의 등락 폭과 등락률을 오차 없이 계산하도록 튜닝.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.18) - Personalized YouTube Intelligence & Ultra-Wide UI Mastery ✨
 
 ### 1. 사용자별(ID별) 맞춤형 인텔리전스 시스템 구축 (Personalization)
 - **즐겨찾기 종목 연동**: 사용자 ID별로 서로 다른 즐겨찾기(별표) 종목을 실시간 감지하여 '나만의 맞춤형 유튜브 갤러리' 수집 및 노출 구현.

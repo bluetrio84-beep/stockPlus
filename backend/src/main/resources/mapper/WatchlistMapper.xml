@@ -103,7 +103,7 @@
 
     <!-- 유튜브 갤러리 조회 (사용자별 맞춤형, 최근 1개월) -->
     <select id="findYoutubeGallery" resultType="com.stockPlus.domain.YoutubeFeedDto">
-        SELECT video_id, stock_code, stock_name, title, thumbnail_url, channel_name, view_count_str, published_at
+        SELECT DISTINCT video_id, stock_code, stock_name, title, thumbnail_url, channel_name, view_count_str, published_at
         FROM youtube_feeds
         WHERE usr_id = #{usrId}
           AND published_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)

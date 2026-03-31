@@ -59,20 +59,38 @@ class YoutubeIntelligenceEngine:
         if not self.api_key: return
         users = self.get_active_users()
         for usr_id in users:
-            # 1. 즐겨찾기 (20개)
+            print(f">>> [User: {usr_id}] Refreshing Elite 60 Intelligence...")
+            
+            # [v16.19] 수집 시작 전 기존 데이터 삭제 (Fresh Start)
+            self.connect()
+            with self.conn.cursor() as cursor:
+                cursor.execute("DELETE FROM youtube_feeds WHERE usr_id = %s", (usr_id,))
+            self.conn.commit()
+            
+            # 1. 최우선 수집 (프리티, 무극선생) - 각 15개, 총 30개 목표
+            priority = [
+                {'cat': '프리티', 'q': '주식 프리티 분석 추천'},
+                {'cat': '무극선생', 'q': '무극선생 주식 분석'}
+            ]
+            for topic in priority:
+                videos = self.fetch_with_cache(topic['q'], max_res=15)
+                self.save_to_db(usr_id, topic['cat'], videos)
+
+            # 2. 즐겨찾기 종목 - 각 3개씩, 상위 5종목 총 15개 목표
             favorites = self.get_user_favorites(usr_id)
-            for stock_name in favorites[:10]:
-                videos = self.fetch_with_cache(f"{stock_name} 주식 분석 전망", max_res=2)
+            for stock_name in favorites[:5]:
+                videos = self.fetch_with_cache(f"{stock_name} 주식 분석 전망", max_res=3)
                 self.save_to_db(usr_id, stock_name, videos)
             
-            # 2. 공통 (30개)
-            common = [
-                {'cat': '무극선생', 'q': '무극선생 주식 분석'}, {'cat': '프리티', 'q': '주식 프리티 분석 추천'},
-                {'cat': '수급브리핑', 'q': '전종목 통합 수급 브리핑'}, {'cat': '주식공부', 'q': '주식 차트 강의 매매기법'},
-                {'cat': '종목추천', 'q': '내일 급등주 추천 주도주'}, {'cat': '시장전략', 'q': '주식 시황 전망 투자 전략'}
+            # 3. 나머지 공통 지능 - 각 4개씩, 4개 주제 총 15개 목표
+            others = [
+                {'cat': '수급브리핑', 'q': '전종목 통합 수급 브리핑'},
+                {'cat': '주식공부', 'q': '주식 차트 강의 매매기법'},
+                {'cat': '종목추천', 'q': '내일 급등주 추천 주도주'},
+                {'cat': '시장전략', 'q': '주식 시황 전망 투자 전략'}
             ]
-            for topic in common:
-                videos = self.fetch_with_cache(topic['q'], max_res=5)
+            for topic in others:
+                videos = self.fetch_with_cache(topic['q'], max_res=4)
                 self.save_to_db(usr_id, topic['cat'], videos)
 
     def save_to_db(self, usr_id, cat_name, items):
