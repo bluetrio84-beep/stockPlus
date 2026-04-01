@@ -148,7 +148,7 @@ public class GeminiService {
                     int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
                     
                     try {
-                        aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-1.5-flash", promptTokens, completionTokens, totalTokens);
+                        aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3-flash-preview", promptTokens, completionTokens, totalTokens);
                     } catch (Exception e) {
                         log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
                     }
@@ -174,7 +174,7 @@ public class GeminiService {
         );
         log.info("[Gemini] Sending Stream Request for: {}", stockName);
         
-        String streamUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + apiKey;
+        String streamUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:streamGenerateContent?alt=sse&key=" + apiKey;
         Map<String, Object> body = Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
         return webClientBuilder.build().post()
@@ -194,7 +194,7 @@ public class GeminiService {
                                 int pt = usage.path("promptTokenCount").asInt(0);
                                 int ct = usage.path("candidatesTokenCount").asInt(0);
                                 int tt = usage.path("totalTokenCount").asInt(0);
-                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-2.0-flash", pt, ct, tt);
+                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3-flash-preview", pt, ct, tt);
                             }
                         } catch (Exception e) { log.warn(">>> [Stream Usage Log Error] {}", e.getMessage()); }
                     }

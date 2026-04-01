@@ -1,6 +1,23 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.34) - Device-Specific UI Optimization & Responsive Mastery ✨
+## 🚀 최신 업데이트 현황 (v16.35) - Gemini 3.0 Flash Mastery & Next-Gen Engine Deployment ✨
+
+### 1. 차세대 AI 엔진 'Gemini 3.0 Flash (Preview)' 전면 도입 (Engine Upgrade)
+- **전 시스템 엔진 교체**: 기존 2.0 엔진에서 최신 **`gemini-3-flash-preview`** 모델로 StockPlus의 모든 AI 분석(종목 분석, 뉴스 요약, 시황 브리핑 등) 기능을 전격 업그레이드.
+- **분석 지능 및 유연성 상향**: 3.0 엔진 특유의 정교한 문장력과 다각도 시장 분석 능력을 시스템 전반에 이식하여 인텔리전스 품질 고도화.
+- **백엔드 무결성 수술**: `application.yml` 호출 주소 및 `GeminiService.java`의 스트리밍/로그 기록 로직 내 하드코딩된 모델 식별자를 최신 사양으로 전수 교체 완료.
+
+### 2. 관리자 관제 시스템 정밀 교정 (NOC Intelligence)
+- **할당량 수치 팩트 체크**: 대시보드 내 **Tokens Per Min (TPM)** 수치를 최신 3.0 무료 티어 공식 기준인 **1,000,000(1M)**으로 정밀하게 정정하여 운영 안정성 확보.
+- **모델 브랜드 동기화**: 대시보드 하단 거버넌스 섹션 및 안내 문구에 'Gemini 3.0 Flash' 모델명을 명시하여 시스템의 최신 사양 대외적 신뢰성 제고.
+
+### 3. 시스템 배포 무결성 확보 (Infrastructure Mastery)
+- **이미지 강제 갱신 및 클린 빌드**: `--no-cache` 옵션 및 기존 이미지 삭제(`rmi`)를 통해 구형 빌드 찌꺼기를 완전히 제거하고, 3.0 엔진이 적용된 신규 바이너리가 실제 서버에 100% 안착되도록 조치.
+- **404 에러 원천 해결**: 구형 모델명 호출로 인해 발생하던 API 경로 오류를 원천 차단하고, 실시간 스트리밍(SSE) 분석 기능의 정상 가동 확인 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.34) - Device-Specific UI Optimization & Responsive Mastery ✨
 
 ### 1. AI 거버넌스 섹션 기기별 높이 최적화 (Responsive Alignment)
 - **모바일 시인성 극대화**: 모바일의 좁은 화면 폭으로 인해 텍스트가 길어지는 특성을 반영하여 최소 높이를 **`480px`**로 대폭 상향. 이제 하단 네비게이션 바 간섭 없이 모든 정보가 웅장하게 노출.

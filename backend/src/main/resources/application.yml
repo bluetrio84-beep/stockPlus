@@ -57,7 +57,7 @@ kis:
 gemini:
   api:
     key: ${GEMINI_API_KEY}
-    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
 
 naver:
   api:
