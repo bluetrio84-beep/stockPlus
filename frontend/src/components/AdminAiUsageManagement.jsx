@@ -47,18 +47,18 @@ const AdminAiUsageManagement = () => {
     }, []);
 
     const renderCard = (title, value, unit, IconComponent, color) => (
-        <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl p-3 shadow-md relative overflow-hidden group">
-            <div className={classNames("absolute top-0 right-0 w-12 h-12 rounded-full -mr-6 -mt-6 transition-transform group-hover:scale-150 duration-700 opacity-10", color)}></div>
+        <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl relative overflow-hidden group transition-all">
+            <div className={classNames("absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 opacity-10", color)}></div>
             <div className="flex justify-between items-start relative z-10">
                 <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">{title}</p>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.1em] mb-1">{title}</p>
                     <div className="flex items-baseline gap-1">
-                        <h3 className="text-xl font-black text-[var(--theme-text)]">{value.toLocaleString()}</h3>
-                        <span className="text-[10px] font-bold text-slate-500">{unit}</span>
+                        <h3 className="text-2xl lg:text-3xl font-black text-[var(--theme-text)] tracking-tighter transition-colors">{value.toLocaleString()}</h3>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">{unit}</span>
                     </div>
                 </div>
-                <div className={classNames("p-1.5 rounded-lg bg-opacity-10", color)}>
-                    <IconComponent size={16} className={color.replace('bg-', 'text-')} />
+                <div className={classNames("p-2.5 rounded-xl bg-opacity-10 shadow-inner transition-colors", color)}>
+                    <IconComponent size={20} className={color.replace('bg-', 'text-')} />
                 </div>
             </div>
         </div>
@@ -67,47 +67,50 @@ const AdminAiUsageManagement = () => {
     if (isLoading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center bg-[var(--theme-bg)]">
-                <Loader2 className="w-12 h-12 text-[var(--theme-point)] animate-spin mb-4" />
-                <p className="text-sm font-black text-slate-500 animate-pulse uppercase tracking-[0.2em]">AI Usage Intelligence Loading...</p>
+                <Loader2 className="w-16 h-16 text-[var(--theme-point)] animate-spin mb-6" />
+                <p className="text-base font-black text-slate-500 animate-pulse uppercase tracking-[0.3em]">AI Usage Intelligence Loading...</p>
             </div>
         );
     }
 
     return (
-        <div className="w-full h-full flex-1 flex flex-col bg-[var(--theme-bg)] p-4 lg:pt-6 lg:px-8 lg:pb-4 overflow-y-auto custom-scrollbar transition-colors duration-500 min-h-0">
+        <div className="w-full h-full flex-1 flex flex-col bg-[var(--theme-bg)] p-4 lg:pt-8 lg:px-6 lg:pb-10 overflow-y-auto custom-scrollbar transition-colors duration-500 min-h-0">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 px-2">
                 <div>
-                    <h1 className="text-2xl font-black text-[var(--theme-text)] tracking-tight flex items-center gap-3">
-                        <Brain className="text-[var(--theme-point)]" size={28} />
-                        AI USAGE MANAGEMENT
+                    <h1 className="text-2xl lg:text-3xl font-black text-[var(--theme-text)] tracking-tighter flex items-center gap-4 transition-colors">
+                        <Brain className="text-[var(--theme-point)]" size={32} />
+                        AI USAGE INTELLIGENCE
                     </h1>
+                    <p className="text-xs text-slate-500 font-bold mt-1 lg:ml-12 uppercase tracking-[0.2em] opacity-80 transition-colors">Gemini API Consumption Control</p>
                 </div>
                 <button 
                     onClick={fetchData}
-                    className="px-4 py-2 bg-[var(--theme-point)] text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg active:scale-95 transition-all"
+                    className="px-6 py-2 bg-[var(--theme-point)] text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-xl active:scale-95 transition-all"
                 >
-                    <RefreshCw size={14} /> REFRESH METRICS
+                    <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> REFRESH
                 </button>
             </div>
 
             {/* Summary Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 px-2">
                 {renderCard("Today Requests", dailyStats.length > 0 ? dailyStats[dailyStats.length-1].request_count || 0 : 0, " / 1,500", Zap, "bg-amber-500")}
-                {renderCard("Today Total Tokens", summary.total, "tokens", Brain, "bg-indigo-500")}
-                {renderCard("Prompt Tokens", summary.prompt, "tokens", Activity, "bg-cyan-500")}
-                {renderCard("Completion Tokens", summary.completion, "tokens", TrendingUp, "bg-emerald-500")}
-                {renderCard("Estimated Cost", (summary.total * 0.000001).toFixed(4), "USD", Wallet, "bg-rose-500")}
+                {renderCard("Total Tokens", summary.total, "tokens", Brain, "bg-indigo-500")}
+                {renderCard("Prompt", summary.prompt, "tokens", Activity, "bg-cyan-500")}
+                {renderCard("Completion", summary.completion, "tokens", TrendingUp, "bg-emerald-500")}
+                {renderCard("Est. Cost", (summary.total * 0.000001).toFixed(4), "USD", Wallet, "bg-rose-500")}
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 px-2">
                 {/* Usage Trend Line Chart */}
-                <div className="lg:col-span-2 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[25px] p-6 shadow-xl">
-                    <h3 className="text-xs font-black text-[var(--theme-text)] uppercase tracking-[0.2em] flex items-center gap-2 mb-6">
-                        <TrendingUp size={16} className="text-[var(--theme-point)]" /> Token Usage Trend (Last 7 Days)
-                    </h3>
-                    <div className="h-[300px] w-full">
+                <div className="lg:col-span-8 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl transition-colors">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xs font-black text-[var(--theme-text)] uppercase tracking-[0.3em] flex items-center gap-3 transition-colors">
+                            <TrendingUp size={18} className="text-[var(--theme-point)]" /> Token Usage Trend (Last 7 Days)
+                        </h3>
+                    </div>
+                    <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={dailyStats}>
                                 <defs>
@@ -116,41 +119,43 @@ const AdminAiUsageManagement = () => {
                                         <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border)" opacity={0.5} />
-                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 'bold', fill: '#64748b'}} />
-                                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 9, fontWeight: 'bold', fill: '#64748b'}} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--theme-border)" opacity={0.3} />
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} />
+                                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} />
                                 <Tooltip 
-                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold'}}
+                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold'}}
+                                    itemStyle={{color: 'var(--theme-point)'}}
                                 />
-                                <Area type="monotone" dataKey="total_tokens" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                                <Area type="monotone" dataKey="total_tokens" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorTotal)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* Type Distribution Pie Chart */}
-                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[25px] p-6 shadow-xl">
-                    <h3 className="text-xs font-black text-[var(--theme-text)] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                        <PieChart size={16} className="text-rose-500" /> By Request Type
+                <div className="lg:col-span-4 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl transition-colors flex flex-col">
+                    <h3 className="text-xs font-black text-[var(--theme-text)] uppercase tracking-[0.3em] mb-6 flex items-center gap-3 transition-colors">
+                        <PieChart size={18} className="text-rose-500" /> By Request Type
                     </h3>
-                    <div className="h-[300px] w-full flex flex-col items-center">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="flex-1 w-full flex flex-col items-center justify-center">
+                        <ResponsiveContainer width="100%" height={350}>
                             <RePieChart>
                                 <Pie
                                     data={typeStats}
-                                    innerRadius={70}
-                                    outerRadius={100}
-                                    paddingAngle={5}
+                                    innerRadius={80}
+                                    outerRadius={120}
+                                    paddingAngle={8}
                                     dataKey="value"
+                                    stroke="none"
                                 >
                                     {typeStats.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip 
-                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold'}}
+                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold'}}
                                 />
-                                <Legend verticalAlign="bottom" align="center" wrapperStyle={{paddingTop: '10px', fontSize: '10px', fontWeight: 'bold'}} />
+                                <Legend verticalAlign="bottom" align="center" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: 'bold'}} />
                             </RePieChart>
                         </ResponsiveContainer>
                     </div>
@@ -158,27 +163,27 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* Intelligence Notice */}
-            <div className="p-6 bg-indigo-600 rounded-[30px] text-white shadow-xl relative overflow-hidden mb-20">
-                <Brain className="absolute bottom-[-10px] right-[-10px] opacity-10" size={120} />
-                <h4 className="text-xs font-black uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
-                    <ShieldAlert size={16} className="text-amber-400" /> AI GOVERNANCE & POLICY
+            <div className="p-6 lg:p-8 bg-indigo-600 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-20 mx-2 min-h-[300px]">
+                <Brain className="absolute bottom-[-30px] right-[-30px] opacity-10" size={200} />
+                <h4 className="text-sm lg:text-lg font-black uppercase tracking-[0.3em] mb-4 opacity-90 flex items-center gap-4">
+                    <ShieldAlert size={24} className="text-amber-400" /> AI GOVERNANCE VERDICT & POLICY
                 </h4>
-                <div className="space-y-4 relative z-10">
-                    <p className="text-sm lg:text-base leading-relaxed font-black italic border-l-4 border-amber-400/50 pl-4 py-1">
-                        "현재 시스템은 <span className="text-amber-300">Gemini 2.0 Flash</span> 모델을 주력으로 사용 중입니다. 효율적인 자원 관리를 위해 컨텍스트 최적화가 상시 가동되고 있습니다."
+                <div className="space-y-6 relative z-10">
+                    <p className="text-sm lg:text-lg leading-relaxed font-black italic border-l-[6px] border-amber-400/50 pl-6 py-1">
+                        "현재 시스템은 <span className="text-amber-300 underline decoration-amber-400/50 underline-offset-4">Gemini 2.0 Flash</span> 모델을 주력으로 사용 중입니다. 유료 결제 시점의 비용 효율성을 극대화하기 위해 컨텍스트 최적화가 상시 가동되고 있습니다."
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/5">
-                            <p className="text-[9px] font-black uppercase opacity-60 mb-1">Daily Requests (RPD)</p>
-                            <p className="text-sm font-black text-amber-300">1,500 / Day</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                        <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-xl border border-white/10 shadow-xl group hover:bg-white/20 transition-all">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em]">Daily Requests (RPD)</p>
+                            <p className="text-xl font-black text-amber-300">1,500 <span className="text-xs opacity-60 text-white font-bold ml-1">Requests / Day</span></p>
                         </div>
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/5">
-                            <p className="text-[9px] font-black uppercase opacity-60 mb-1">Tokens Per Min (TPM)</p>
-                            <p className="text-sm font-black text-amber-300">4,000,000 / Min</p>
+                        <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-xl border border-white/10 shadow-xl group hover:bg-white/20 transition-all">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em]">Tokens Per Min (TPM)</p>
+                            <p className="text-xl font-black text-amber-300">4,000,000 <span className="text-xs opacity-60 text-white font-bold ml-1">Tokens / Min</span></p>
                         </div>
-                        <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/5">
-                            <p className="text-[9px] font-black uppercase opacity-60 mb-1">Requests Per Min (RPM)</p>
-                            <p className="text-sm font-black text-amber-300">10 / Min</p>
+                        <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-xl border border-white/10 shadow-xl group hover:bg-white/20 transition-all">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em]">Requests Per Min (RPM)</p>
+                            <p className="text-xl font-black text-amber-300">10 <span className="text-xs opacity-60 text-white font-bold ml-1">Requests / Min</span></p>
                         </div>
                     </div>
                 </div>
