@@ -138,8 +138,9 @@ const AdminAiUsageManagement = () => {
                                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} />
                                 <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#64748b'}} />
                                 <Tooltip 
-                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold'}}
+                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', color: 'var(--theme-text)'}}
                                     itemStyle={{color: 'var(--theme-point)'}}
+                                    labelStyle={{color: 'var(--theme-text)', opacity: 0.7}}
                                 />
                                 <Area type="monotone" dataKey="total_tokens" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorTotal)" />
                             </AreaChart>
@@ -168,7 +169,8 @@ const AdminAiUsageManagement = () => {
                                     ))}
                                 </Pie>
                                 <Tooltip 
-                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold'}}
+                                    contentStyle={{backgroundColor: 'var(--theme-header)', border: '1px solid var(--theme-border)', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', color: 'var(--theme-text)'}}
+                                    itemStyle={{color: 'var(--theme-text)'}}
                                 />
                                 <Legend verticalAlign="bottom" align="center" wrapperStyle={{paddingTop: '20px', fontSize: '10px', fontWeight: 'bold'}} />
                             </RePieChart>
