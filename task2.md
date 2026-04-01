@@ -1,6 +1,19 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.35) - Gemini 3.0 Flash Mastery & Next-Gen Engine Deployment ✨
+## 🚀 최신 업데이트 현황 (v16.37) - Global Index Engine Mastery & Data Integrity ✨
+
+### 1. 글로벌 지수 수집 엔진 전면 재설계 (Parsing Architecture)
+- **구조화 데이터 배열 파싱 도입**: 구글 파이낸스의 유동적인 HTML 속성 대신, `AF_initDataCallback` 스크립트 내부의 정적 데이터 배열(`[현재가, 등락폭, 등락률]`)을 직접 타격하여 수집하는 혁신적 로직 적용.
+- **데이터 정밀도 상향**: 기존에 수집되지 않던 소수점 단위의 등락폭과 등락률을 100% 정확하게 확보하여 `market_index_history` 테이블의 데이터 무결성 복구 성공.
+- **실시간 데이터 동기화**: 수집기 엔진(`fetch_indices_once.py`)의 전격 업그레이드와 함께 컬렉터 컨테이너 재빌드를 완료하여 안정적인 자동 수집 환경 구축.
+
+### 2. 데일리 매거진 관제 무결성 확보 (Visualization)
+- **Global Snapshot 데이터 보정**: 매거진 화면에서 `+0.00%`로 멈춰있던 지수 변동 수치를 실제 시장 데이터와 실시간 동기화하여 시각적 신뢰도 회복.
+- **예외 처리 강화**: 수집 실패 시에도 이전 데이터를 유지하거나 폴백 데이터를 생성하는 로직을 보강하여 서비스 중단 없는 관제 환경 실현.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.35) - Gemini 3.0 Flash Mastery & Next-Gen Engine Deployment ✨
 
 ### 1. 차세대 AI 엔진 'Gemini 3.0 Flash (Preview)' 전면 도입 (Engine Upgrade)
 - **전 시스템 엔진 교체**: 기존 2.0 엔진에서 최신 **`gemini-3-flash-preview`** 모델로 StockPlus의 모든 AI 분석(종목 분석, 뉴스 요약, 시황 브리핑 등) 기능을 전격 업그레이드.

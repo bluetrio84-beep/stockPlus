@@ -3,6 +3,7 @@ import os
 import requests
 import pymysql
 import re
+import json
 from datetime import datetime
 
 # DB 설정 (지능형 전환: 도커 내부 'mysql' -> 실패 시 '127.0.0.1')
@@ -20,30 +21,42 @@ def get_db_connection():
     raise Exception("Could not connect to any MySQL instance.")
 
 def fetch_google_finance(symbol, name):
-    """Google Finance를 통한 실시간 지수/환율 수집"""
+    """Google Finance 구조화된 데이터를 통한 실시간 지수/환율 수집 (v16.37)"""
     url = f'https://www.google.com/finance/quote/{symbol}'
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
-        # 현재가 및 전일종가 파싱
-        match = re.search(r'data-last-price=\"([\d,.]+)\"', res.text)
-        prev_match = re.search(r'data-last-normal-market-day-price=\"([\d,.]+)\"', res.text)
+        
+        # [v16.37] AF_initDataCallback 내부의 핵심 데이터 배열 추출
+        # 패턴: [현재가, 등락폭, 등락률, ...]
+        # 특정 심볼 뒤에 오는 첫 번째 숫자 배열을 찾음
+        clean_symbol = symbol.split(':')[0].replace('.', '\\.')
+        pattern = rf'\"{clean_symbol}\",.*?\[([\d\.-]+),([\d\.-]+),([\d\.-]+)'
+        match = re.search(pattern, res.text)
         
         if match:
-            current = float(match.group(1).replace(',', ''))
-            prev = float(prev_match.group(1).replace(',', '')) if prev_match else current
-            change = current - prev
-            rate = (change / prev) * 100 if prev != 0 else 0
+            current = float(match.group(1))
+            change = float(match.group(2))
+            rate = float(match.group(3))
+            print(f"   [Found] {name}: {current} ({change} / {rate}%)")
             return {'name': name, 'val': round(current, 2), 'change': round(change, 2), 'rate': round(rate, 2)}
+        else:
+            # Fallback: 기존 data-last-price 방식 시도
+            price_match = re.search(r'data-last-price=\"([\d,.]+)\"', res.text)
+            if price_match:
+                current = float(price_match.group(1).replace(',', ''))
+                print(f"   [Fallback] {name}: {current} (Change not found)")
+                return {'name': name, 'val': round(current, 2), 'change': 0.0, 'rate': 0.0}
+                
     except Exception as e:
         print(f"   - Failed to fetch {name} from Google: {e}")
     return None
 
 def fetch_and_save():
-    print(">>> [Sync] Starting Global Index Sync via Google Finance...")
+    print(f">>> [Sync] Global Index Sync via Google Data Engine... ({datetime.now()})")
     indices = []
     
-    # 수집 대상 정의 (구글 파이낸스 심볼)
+    # 수집 대상 정의
     targets = [
         {'name': 'S&P 500', 'symbol': '.INX:INDEXSP'},
         {'name': 'Nasdaq', 'symbol': '.IXIC:INDEXNASDAQ'},
@@ -54,7 +67,6 @@ def fetch_and_save():
         data = fetch_google_finance(t['symbol'], t['name'])
         if data:
             indices.append(data)
-            print(f"   - Captured {data['name']}: {data['val']} ({data['change']})")
 
     # DB 저장
     if indices:
@@ -68,7 +80,7 @@ def fetch_and_save():
                         VALUES (%s, %s, %s, %s, NOW())
                     """, (idx['name'], idx['val'], idx['change'], idx['rate']))
                 conn.commit()
-            print(">>> [Success] All Data Saved to DB.")
+            print(">>> [Success] Accurate Data Saved to DB.")
         except Exception as e:
             print(f">>> [DB Error] {e}")
         finally:

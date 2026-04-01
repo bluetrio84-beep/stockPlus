@@ -152,18 +152,17 @@ const AdminTheDailyMagazine = () => {
                     const mappedMacro = macroTargets.map(name => {
                         const found = indices.find(idx => idx.index_name === name);
                         if (found) {
+                            const rate = parseFloat(found.change_rate || 0);
                             return {
                                 name: found.index_name,
-                                val: parseFloat(found.index_value).toLocaleString(),
-                                change: (parseFloat(found.change_rate) >= 0 ? '+' : '') + found.change_rate + '%'
+                                val: parseFloat(found.index_value || 0).toLocaleString(),
+                                change: (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%'
                             };
                         }
-                        return null;
-                    }).filter(m => m !== null);
+                        return { name, val: '-', change: '0.00%' };
+                    });
                     
-                    if (mappedMacro.length > 0) {
-                        newMagData.macro = mappedMacro;
-                    }
+                    newMagData.macro = mappedMacro;
                 }
             }
 
