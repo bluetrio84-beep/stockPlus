@@ -180,7 +180,7 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* Intelligence Notice */}
-            <div className="p-5 lg:p-6 bg-indigo-600 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-20 mx-2 min-h-[220px]">
+            <div className="p-5 lg:p-6 bg-indigo-600 rounded-[3rem] text-white shadow-2xl relative overflow-hidden mb-20 mx-2 min-h-[480px] lg:min-h-[220px]">
                 <Brain className="absolute bottom-[-30px] right-[-30px] opacity-10" size={200} />
                 <h4 className="text-sm lg:text-lg font-black uppercase tracking-[0.3em] mb-3 opacity-90 flex items-center gap-4">
                     <ShieldAlert size={24} className="text-amber-400" /> AI GOVERNANCE VERDICT & POLICY
