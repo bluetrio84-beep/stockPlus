@@ -1,6 +1,15 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.37) - Global Index Engine Mastery & Data Integrity ✨
+## 🚀 최신 업데이트 현황 (v16.38) - YouTube Intelligence Data Refinement ✨
+
+### 1. 유튜브 수집 데이터 특수문자 완벽 복원 (Encoding Mastery)
+- **HTML 엔티티 디코딩 도입**: 유튜브 API에서 반환하는 `&quot;`, `&#39;`, `&amp;` 등 인코딩된 특수문자를 실제 문자로 변환하여 저장하도록 `html.unescape()` 로직을 수집 엔진에 적용.
+- **데이터 가독성 혁신**: DB에 저장되는 영상 제목과 채널명에서 지저분한 엔티티 코드를 제거함으로써, 사용자 화면에 노출되는 텍스트의 가시성과 전문성 대폭 상향.
+- **수집 파이프라인 안정화**: 수집기(`youtube_engine.py`) 소스 수정과 함께 컬렉터 전용 컨테이너 재빌드를 완료하여 안정적인 데이터 정제 환경 구축.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.37) - Global Index Engine Mastery & Data Integrity ✨
 
 ### 1. 글로벌 지수 수집 엔진 전면 재설계 (Parsing Architecture)
 - **구조화 데이터 배열 파싱 도입**: 구글 파이낸스의 유동적인 HTML 속성 대신, `AF_initDataCallback` 스크립트 내부의 정적 데이터 배열(`[현재가, 등락폭, 등락률]`)을 직접 타격하여 수집하는 혁신적 로직 적용.

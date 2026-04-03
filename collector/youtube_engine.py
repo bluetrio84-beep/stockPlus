@@ -1,6 +1,7 @@
 import os
 import pymysql
 import requests
+import html
 from datetime import datetime, timedelta
 try:
     from dotenv import load_dotenv
@@ -99,8 +100,12 @@ class YoutubeIntelligenceEngine:
             for item in items:
                 v_id = item['id']['videoId']
                 snippet = item['snippet']
+                # [v16.38] HTML 엔티티 디코딩 (&quot; &#39; 등 복원)
+                title = html.unescape(snippet['title'])
+                channel_name = html.unescape(snippet['channelTitle'])
+                
                 sql = "INSERT INTO youtube_feeds (video_id, usr_id, stock_code, stock_name, title, thumbnail_url, channel_name, published_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE title=VALUES(title), stock_name=VALUES(stock_name)"
-                cursor.execute(sql, (v_id, usr_id, 'SYSTEM', cat_name, snippet['title'], snippet['thumbnails']['high']['url'], snippet['channelTitle'], snippet['publishedAt'].replace('T',' ').replace('Z','')))
+                cursor.execute(sql, (v_id, usr_id, 'SYSTEM', cat_name, title, snippet['thumbnails']['high']['url'], channel_name, snippet['publishedAt'].replace('T',' ').replace('Z','')))
         self.conn.commit()
 
 if __name__ == "__main__":
