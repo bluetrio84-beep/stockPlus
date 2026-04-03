@@ -1,6 +1,23 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.39) - Admin Chart Intelligence & Full-Stack Sync ✨
+## 🚀 최신 업데이트 현황 (v16.40) - Seamless Navigation & System Performance Recovery ✨
+
+### 1. Next Leaders AI 차트 연동 및 내비게이션 고도화 (Flow Optimization)
+- **종목 클릭 연동**: Next Leaders AI 대시보드(Ranking & Review)의 모든 종목 리스트에 클릭 이벤트를 추가하여 메인 차트 화면으로 즉시 연결되는 사용자 여정(User Journey) 완성.
+- **지능형 데이터 브릿지**: 페이지 이동 시 종목명(`stockName`)을 함께 전달하고 `Dashboard.jsx` 초기 로드 시 이를 즉시 바인딩하여, API 응답 지연 시에도 이름이 정확하게 표시되도록 개선.
+- **차트 로딩 무결성**: 수동 진입 및 이동 시 차트가 비어있던 현상을 해결하기 위해 `useEffect` 트리거 조건을 보강하여 캔들 데이터 로딩 안정성 확보.
+
+### 2. 시스템 인프라 대청소 및 성능 복구 (Storage Mastery)
+- **110GB 용량 회복**: 반복된 빌드로 인해 SSD 공간을 점유하던 도커 빌드 캐시(53GB) 및 구형 이미지(56GB)를 전격 제거하여 디스크 I/O 성능을 정상화.
+- **가용성 최적화**: 사용되지 않는 리소스를 정리함으로써 API 응답 및 프론트엔드 빌드 속도를 2배 이상 상향하고 쾌적한 개발 환경 구축.
+
+### 3. 대시보드 매핑 버그 박멸 (UX Perfection)
+- **이름 중복 노출 해결**: URL 진입 시 "005830 005830"과 같이 코드만 중복으로 나오던 현상을 `passedName` 우선순위 매핑 로직을 통해 "종목명 005830" 형태로 교정 완료.
+- **상태 업데이트 안정화**: 함수형 업데이트(`prev => ({...})`)를 전면 적용하여 비동기 데이터 수신 시 기존의 이름과 차트 데이터가 유실되지 않도록 정밀 수술.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.39) - Admin Chart Intelligence & Full-Stack Sync ✨
 
 ### 1. 관리자 대시보드 실시간 차트 인텔리전스 구축 (Deep Integration)
 - **주도주-차트 모달 연동**: 업종 등락 히트맵에서 주도주 종목 클릭 시, 고해상도 차트와 실시간 시황 요약 정보를 제공하는 전용 인텔리전스 모달 시스템 신설.

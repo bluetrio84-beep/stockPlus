@@ -9,7 +9,8 @@ import Dashboard_Mobile from './Dashboard_Mobile';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const location = useLocation(); // [v13.9] URL 파라미터 확인용 추가
+  const location = useLocation();
+  const { stockName: passedName } = location.state || {}; // [v16.40.2] 전달받은 이름 확보
   const { stockCode: stockCodeFromUrl } = useParams();
 
   const [displayStocks, setDisplayStocks] = useState([]);
@@ -20,6 +21,19 @@ function Dashboard() {
   const [selectedStock, setSelectedStock] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); 
   
+  // [v16.40.2] 내비게이션 시 이름과 코드를 즉시 차트에 박아넣는 초기화 로직
+  useEffect(() => {
+    if (stockCodeFromUrl && passedName) {
+      setSelectedStock({
+        id: stockCodeFromUrl,
+        code: stockCodeFromUrl,
+        name: passedName,
+        exchangeCode: globalMarketMode,
+        chartData: []
+      });
+    }
+  }, [stockCodeFromUrl, passedName]);
+
   // [v13.9] URL 파라미터 기반 탭 설정 로직
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -127,30 +141,58 @@ function Dashboard() {
               if (target) {
                   setSelectedStock(prev => (prev && prev.code === target.code) ? { ...target, chartData: prev.chartData || target.chartData } : target);
               } else {
-                  // [v18.0] 관심종목에 없는 종목도 URL이 있으면 직접 로드
+                  // [v18.0] 관심종목에 없는 종목도 URL이 있으면 직접 로드 (v16.40.2 이름 보호)
                   fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
                       if (priceData) {
-                          const tempStock = {
-                              id: stockCodeFromUrl, code: stockCodeFromUrl, name: priceData.stockName || stockCodeFromUrl,
-                              price: parseFloat(priceData.currentPrice) || 0, change: parseFloat(priceData.change) || 0,
-                              changeRate: parseFloat(priceData.changeRate) || 0, volume: priceData.volume || '-',
-                              exchangeCode: market, chartData: [], lastLoadedPeriod: null
-                          };
-                          setSelectedStock(tempStock);
+                          setSelectedStock(prev => ({
+                              ...prev,
+                              id: stockCodeFromUrl, 
+                              code: stockCodeFromUrl, 
+                              name: passedName || priceData.stockName || priceData.name || prev?.name || stockCodeFromUrl,
+                              price: parseFloat(priceData.currentPrice) || 0, 
+                              change: parseFloat(priceData.change) || 0,
+                              changeRate: parseFloat(priceData.changeRate) || 0, 
+                              priceSign: priceData.priceSign || '3',
+                              volume: priceData.volume || '-',
+                              marketName: priceData.marketName,
+                              exchangeCode: market,
+                              open: parseFloat(priceData.open) || 0,
+                              high: parseFloat(priceData.high) || 0,
+                              low: parseFloat(priceData.low) || 0,
+                              prevClose: parseFloat(priceData.prevClose) || 0,
+                              marketCap: parseFloat(priceData.marketCap) || 0,
+                              listedShares: parseFloat(priceData.listedShares) || 0,
+                              high52w: parseFloat(priceData.high52w) || 0,
+                              low52w: parseFloat(priceData.low52w) || 0,
+                              chartData: prev?.chartData || []
+                          }));
                       }
                   });
               }
           }
         } else {
             setDisplayStocks([]);
-            // [v18.0] 관심종목이 아예 비어있어도 URL 파라미터가 있으면 로드 시도
+            // [v18.0] 관심종목이 아예 비어있어도 URL 파라미터가 있으면 로드 시도 (v16.40.2 이름 보호)
             if (stockCodeFromUrl) {
                 fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
                     if (priceData) {
-                        setSelectedStock({
-                            id: stockCodeFromUrl, code: stockCodeFromUrl, name: priceData.stockName || stockCodeFromUrl,
-                            price: parseFloat(priceData.currentPrice) || 0, exchangeCode: market, chartData: []
-                        });
+                        setSelectedStock(prev => ({
+                            ...prev,
+                            id: stockCodeFromUrl, 
+                            code: stockCodeFromUrl, 
+                            name: passedName || priceData.stockName || priceData.name || prev?.name || stockCodeFromUrl,
+                            price: parseFloat(priceData.currentPrice) || 0, 
+                            exchangeCode: market, 
+                            chartData: prev?.chartData || [],
+                            open: parseFloat(priceData.open) || 0,
+                            high: parseFloat(priceData.high) || 0,
+                            low: parseFloat(priceData.low) || 0,
+                            prevClose: parseFloat(priceData.prevClose) || 0,
+                            marketCap: parseFloat(priceData.marketCap) || 0,
+                            listedShares: parseFloat(priceData.listedShares) || 0,
+                            high52w: parseFloat(priceData.high52w) || 0,
+                            low52w: parseFloat(priceData.low52w) || 0
+                        }));
                     }
                 });
             }
@@ -178,10 +220,11 @@ function Dashboard() {
     if (selectedStock?.code) {
         const needsLoad = !selectedStock.lastLoadedPeriod || 
                           selectedStock.lastLoadedPeriod !== currentPeriod || 
-                          selectedStock.exchangeCode !== globalMarketMode;
+                          selectedStock.exchangeCode !== globalMarketMode ||
+                          !selectedStock.chartData || selectedStock.chartData.length === 0;
         if (needsLoad) loadChartForPeriod(selectedStock.code, globalMarketMode, currentPeriod);
     }
-  }, [selectedStock?.code, currentPeriod, globalMarketMode, loadChartForPeriod]);
+  }, [selectedStock?.code, selectedStock?.chartData?.length, currentPeriod, globalMarketMode, loadChartForPeriod]);
 
   useEffect(() => {
     const loadData = () => {

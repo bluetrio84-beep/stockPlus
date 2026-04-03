@@ -153,7 +153,18 @@ const NextLeaderDashboard = () => {
                             nextLeaders.map((item, idx) => (
                                 <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>{idx + 1}</div></td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40"><div className="flex flex-col transition-colors"><span className="text-[var(--theme-text)] font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate">{item.stock_name}</span><span className="text-slate-500 font-mono text-[10px] font-black">{item.stock_code}</span></div></td>
+                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40">
+                                        <div 
+                                            className="flex flex-col transition-colors cursor-pointer group/stock"
+                                            onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}
+                                        >
+                                            <span className="text-[var(--theme-text)] font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate flex items-center gap-1.5">
+                                                {item.stock_name}
+                                                <ArrowUpRight size={12} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400" />
+                                            </span>
+                                            <span className="text-slate-500 font-mono text-[10px] font-black">{item.stock_code}</span>
+                                        </div>
+                                    </td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center"><div className="inline-block px-3 py-1 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors"><span className="text-indigo-600 font-black text-sm lg:text-base transition-colors">{item.total_score.toFixed(1)}</span></div></td>
                                     <td className="px-4 lg:px-6 py-1.5 lg:py-2">
                                         <div className="flex items-center gap-3">
@@ -309,8 +320,11 @@ const NextLeaderDashboard = () => {
                         <div key={idx} className="flex items-center justify-between p-4 bg-[var(--theme-bg)] transition-colors duration-500/50 rounded-xl border border-[var(--theme-border)] transition-colors duration-500 hover:border-indigo-500/30 transition-all group shadow-inner">
                             <div className="flex items-center gap-4">
                                 <div className="text-[10px] font-black text-slate-500 bg-[var(--theme-header)] transition-colors duration-500 px-3 py-1.5 rounded-lg border border-[var(--theme-border)] transition-colors duration-500 shadow-sm group-hover:text-indigo-400 transition-colors">{item.date}</div>
-                                <div>
-                                    <div className="text-sm lg:text-base font-black text-[var(--theme-text)] mb-0.5 transition-colors">{item.stock_name}</div>
+                                <div className="cursor-pointer group/stockname" onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}>
+                                    <div className="text-sm lg:text-base font-black text-[var(--theme-text)] mb-0.5 group-hover/stockname:text-indigo-400 transition-colors flex items-center gap-1.5">
+                                        {item.stock_name}
+                                        <ArrowUpRight size={14} className="opacity-0 group-hover/stockname:opacity-100 transition-opacity" />
+                                    </div>
                                     <div className="flex items-center gap-2 transition-colors">
                                         <span className="text-[9px] text-[var(--theme-point)] font-black font-mono px-1.5 py-0.5 bg-[var(--theme-point)]/10 rounded border border-[var(--theme-point)]/20 uppercase transition-colors">Final Score: {item.total_score.toFixed(1)}</span>
                                     </div>
