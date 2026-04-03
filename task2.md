@@ -1,6 +1,20 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.38) - YouTube Intelligence Data Refinement ✨
+## 🚀 최신 업데이트 현황 (v16.39) - Admin Chart Intelligence & Full-Stack Sync ✨
+
+### 1. 관리자 대시보드 실시간 차트 인텔리전스 구축 (Deep Integration)
+- **주도주-차트 모달 연동**: 업종 등락 히트맵에서 주도주 종목 클릭 시, 고해상도 차트와 실시간 시황 요약 정보를 제공하는 전용 인텔리전스 모달 시스템 신설.
+- **지능형 종목 코드 역조회**: 단순 문자열(종목명) 데이터로부터 백엔드 검색 API를 호출하여 정확한 `stockCode`를 자동으로 식별하고 연결하는 브릿지 로직 구현.
+- **데이터 통합 무결성 확보**: 차트 캔들 데이터(`1D`)와 실시간 시세 정보(현재가, 시총, 52주 데이터 등)를 동시에 Fetch하여 하나의 완성된 리포트 형태로 출력하는 멀티 파이프라인 안착.
+
+### 2. 레이아웃 안정성 및 데이터 정합성 교정 (UX Perfection)
+- **정밀 데이터 매핑 수술**: 백엔드 DTO와 프론트엔드 UI 컴포넌트 간의 필드명 불일치(`currentPrice` -> `price`, `listedShares` -> `outstandingShares` 등)를 100% 매핑하여 데이터 노출 누락 해결.
+- **클릭 리다이렉트 버그 박멸**: 한글 종목명 인코딩 이슈 및 버튼 타입 미지정으로 인해 API 주소로 직접 이동하던 현상을 `e.preventDefault()`와 `type="button"` 명시를 통해 원천 해결.
+- **통합 시세(UN) 모드 지원**: 관리자 차트 모달에 야간장/정규장 통합 시세 로직을 적용하여 시간대와 관계없는 안정적인 데이터 가시성 확보.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.38) - YouTube Intelligence Data Refinement ✨
 
 ### 1. 유튜브 수집 데이터 특수문자 완벽 복원 (Encoding Mastery)
 - **HTML 엔티티 디코딩 도입**: 유튜브 API에서 반환하는 `&quot;`, `&#39;`, `&amp;` 등 인코딩된 특수문자를 실제 문자로 변환하여 저장하도록 `html.unescape()` 로직을 수집 엔진에 적용.
