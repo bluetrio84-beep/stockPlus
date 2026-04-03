@@ -20,15 +20,10 @@
                sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
-        LEFT JOIN (
-            SELECT target_name, prediction_score 
-            FROM ai_prediction 
-            WHERE id IN (
-                SELECT MAX(id) FROM ai_prediction 
-                WHERE target_name LIKE 'STOCK_%' 
-                GROUP BY target_name
-            )
-        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
+        LEFT JOIN ai_prediction ap ON ap.id = (
+            SELECT MAX(id) FROM ai_prediction 
+            WHERE target_name = CONCAT('STOCK_', w.stock_code)
+        )
         WHERE w.USRID = #{usrId}
         ORDER BY w.created_at DESC
     </select>
@@ -44,15 +39,10 @@
                sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
-        LEFT JOIN (
-            SELECT target_name, prediction_score 
-            FROM ai_prediction 
-            WHERE id IN (
-                SELECT MAX(id) FROM ai_prediction 
-                WHERE target_name LIKE 'STOCK_%' 
-                GROUP BY target_name
-            )
-        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
+        LEFT JOIN ai_prediction ap ON ap.id = (
+            SELECT MAX(id) FROM ai_prediction 
+            WHERE target_name = CONCAT('STOCK_', w.stock_code)
+        )
         WHERE w.USRID = #{usrId} AND w.group_id = #{groupId}
         ORDER BY w.created_at DESC
     </select>
@@ -63,15 +53,10 @@
                sm.market_type AS marketType, ap.prediction_score AS aiScore
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
-        LEFT JOIN (
-            SELECT target_name, prediction_score 
-            FROM ai_prediction 
-            WHERE id IN (
-                SELECT MAX(id) FROM ai_prediction 
-                WHERE target_name LIKE 'STOCK_%' 
-                GROUP BY target_name
-            )
-        ) ap ON ap.target_name = CONCAT('STOCK_', w.stock_code)
+        LEFT JOIN ai_prediction ap ON ap.id = (
+            SELECT MAX(id) FROM ai_prediction 
+            WHERE target_name = CONCAT('STOCK_', w.stock_code)
+        )
         WHERE w.USRID = #{usrId} AND w.is_favorite = true
         ORDER BY w.created_at DESC
     </select>

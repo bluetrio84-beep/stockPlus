@@ -105,10 +105,35 @@ public class KisStockService {
         }
 
         if ("UN".equals(exchangeCode)) {
+            // [v16.43.2] UN(통합) 모드 최우선 사용: NXT 지원 종목의 데이터를 최대한 확보
             return fetchHistoryChart(stockCode, "UN", period)
-                    .flatMap(list -> list.isEmpty() ? fetchHistoryChart(stockCode, "J", period) : Mono.just(list));
+                    .flatMap(list -> {
+                        // 데이터가 아예 없거나, 마지막 데이터가 7일 이상 과거인 경우 (NXT 미지원 종목 등)
+                        if (list.isEmpty() || isChartDataStale(list)) {
+                            log.info(">>> [UN Priority] Stock {} lacks valid UN data (Stale). Automatically switching to 'J' for continuity.", stockCode);
+                            return fetchHistoryChart(stockCode, "J", period);
+                        }
+                        return Mono.just(list);
+                    });
         }
+        
         return fetchHistoryChart(stockCode, "NX".equals(exchangeCode) ? "NX" : "J", period);
+    }
+
+    /**
+     * [v16.43.1] 차트 데이터의 신선도를 체크합니다. (7일 이상 경과 시 Stale로 판단)
+     */
+    private boolean isChartDataStale(List<StockChartDto> list) {
+        if (list == null || list.isEmpty()) return true;
+        try {
+            // list는 reverse된 상태이므로 마지막 요소가 가장 최신 데이터임
+            String lastDateStr = list.get(list.size() - 1).getDate(); // "yyyy-MM-dd"
+            java.time.LocalDate lastDate = java.time.LocalDate.parse(lastDateStr);
+            java.time.LocalDate threshold = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusDays(7);
+            return lastDate.isBefore(threshold);
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private Mono<List<StockChartDto>> fetchHistory5MinChart(String stockCode, String marketDiv) {
