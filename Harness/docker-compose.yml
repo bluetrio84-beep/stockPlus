@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  h-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: harness-backend-1
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_HOST=projects-mysql-1
+      - DB_USER=root
+      - DB_PASSWORD=cnbas.2015
+      - DB_NAME=harness_db
+    networks:
+      - projects_stock-network
+  h-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: harness-frontend-1
+    ports:
+      - "3001:80"
+    networks:
+      - projects_stock-network
+networks:
+  projects_stock-network:
+    external: true
