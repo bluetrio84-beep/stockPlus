@@ -1,5 +1,12 @@
 # ⚠️ [절대 금지: 덮어쓰기 금지 !! 정밀타격 !!]
 
+## ✅ [2026-04-10] Dashboard 리팩토링 및 시스템 복구 완료
+- **502 Bad Gateway 정밀 타격 복구:** stockPlus 공용 Nginx에서 Harness 컨테이너로의 프록시 포트 교정 (3001 -> 80).
+- **Dashboard.jsx 비대화 해결:** `DeploymentView`, `ConsoleView`, `SettingsView`, `YouTubeView`로 기능별 컴포넌트 완벽 분리.
+- **다크모드 블랙(#000000) 강제 적용:** 시스템 전반의 배경색을 순수 블랙으로 통일 및 셀렉트박스/입력창 스타일 최적화.
+- **Harness 오리지널 테마 복구:** 요청에 따라 하네스 전용 테마를 오리지널 딥 네이비(#020617)로 원복.
+- **시스템 안정화:** 빌드 캐시 없이 전체 재빌드 및 재배포를 통한 런타임 안정성 확보.
+
 # 🦾 Harness Engineering (HE) Platform Project
 
 ## 🎯 Project Vision
