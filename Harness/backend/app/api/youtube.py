@@ -55,25 +55,45 @@ async def plan_video(request: PlanRequest, db: Session = Depends(deps.get_db)):
         "status": "PLANNING_COMPLETED"
     }
 
+class RenderRequest(BaseModel):
+    topic: str
+    script: str
+
+from app.services.harness_manager import harness_manager
+
+@router.get("/status")
+async def get_harness_status():
+    """모든 하네스의 실시간 상태 조회"""
+    return harness_manager.get_all_statuses()
+
+@router.post("/stop")
+async def stop_harness(name: str = "YouTube-Publisher"):
+    """특정 하네스 긴급 정지"""
+    success = await harness_manager.stop_harness(name)
+    if success:
+        return {"message": f"Harness [{name}] stopped successfully."}
+    raise HTTPException(status_code=404, detail=f"Harness [{name}] not found or not running.")
+
 @router.post("/render")
-async def render_video(request: PlanRequest, db: Session = Depends(deps.get_db)):
+async def render_video(request: RenderRequest, db: Session = Depends(deps.get_db)):
     """
-    영상 렌더링 파이프라인 가동
+    영상 렌더링 파이프라인 가동 (매니저 등록 포함)
     """
     from app.harness_modules.youtube_harness import YouTubeHarness
     
-    # 500 에러 방지를 위해 클래스 인스턴스 생성 전 로직 체크
-    try:
+    # 싱글톤 매니저에서 기존 인스턴스가 있으면 재사용, 없으면 생성
+    agent = harness_manager.get_harness("YouTube-Publisher")
+    if not agent:
         agent = YouTubeHarness()
-    except TypeError as te:
-        await log_broadcaster.broadcast("SYSTEM", f"Harness Blueprint Error: {str(te)}", "ERROR")
-        raise HTTPException(status_code=500, detail="Agent blueprint mismatch. Check abstract methods.")
+        harness_manager.register(agent)
     
     async def run_render():
         await log_broadcaster.broadcast("SYSTEM", "Video Production Pipeline Engaged.", "PROCESS")
         try:
             await agent.initialize()
-            await agent.execute({"topic": request.topic})
+            await agent.execute({"topic": request.topic, "script": request.script})
+        except asyncio.CancelledError:
+            await log_broadcaster.broadcast("SYSTEM", "Pipeline task cancelled by user.", "WARNING")
         except Exception as e:
             await log_broadcaster.broadcast("SYSTEM", f"Critical Pipeline Failure: {str(e)}", "ERROR")
         

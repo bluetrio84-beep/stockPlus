@@ -43,12 +43,35 @@ const Dashboard = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [toast, setToast] = useState({ message: '', visible: false });
   const [scriptResult, setScriptResult] = useState(null);
+  const [harnessStatus, setHarnessStatus] = useState({});
   const theme = themes[currentTheme];
+
+  // 하네스 상태 주기적 폴링
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await axios.get('/api/youtube/status');
+        setHarnessStatus(res.data);
+      } catch (err) { console.error("Harness status fetch failed."); }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => { const savedTheme = localStorage.getItem('harness-theme'); if (savedTheme) setCurrentTheme(savedTheme); }, []);
   const changeTheme = (newTheme) => { setCurrentTheme(newTheme); localStorage.setItem('harness-theme', newTheme); };
   const showToast = (message) => { setToast({ message, visible: true }); setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000); };
   const handleLogout = () => { localStorage.removeItem('token'); window.location.href = '/login'; };
+
+  const handleStopHarness = async (name) => {
+    if (window.confirm(`${name} 에이전트를 즉시 중단하시겠습니까?`)) {
+      try {
+        await axios.post(`/api/youtube/stop?name=${name}`);
+        showToast(`${name} 중지 명령이 하달되었습니다.`);
+      } catch (err) { alert('중지 실패'); }
+    }
+  };
 
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.title} flex overflow-hidden font-sans transition-colors duration-300`}>
@@ -72,7 +95,7 @@ const Dashboard = () => {
             </div>
             <div className={`p-8 bg-black/20 border-t ${theme.border} flex gap-4`}>
               <button onClick={() => setScriptResult(null)} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all">닫기</button>
-              <button onClick={async()=>{showToast('영상 렌더링 시작...'); try{await axios.post('/api/youtube/render',{topic:scriptResult.topic}); setScriptResult(null); setActiveTab('console');}catch{alert('오류');}}} className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"><Zap className="w-4 h-4 fill-current" /> 영상 렌더링 시작</button>
+              <button onClick={async()=>{showToast('영상 렌더링 시작...'); try{await axios.post('/api/youtube/render',{topic:scriptResult.topic, script:scriptResult.script}); setScriptResult(null); setActiveTab('console');}catch{alert('오류');}}} className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"><Zap className="w-4 h-4 fill-current" /> 영상 렌더링 시작</button>
             </div>
           </div>
         </div>
@@ -115,9 +138,27 @@ const Dashboard = () => {
                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                  <h2 className={`text-3xl font-bold mb-8 ${theme.title}`}>전체 하네스 상태</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    <div className={`${theme.card} p-6 rounded-3xl border ${theme.border} hover:border-blue-500/50 transition-all cursor-pointer group shadow-sm`}>
-                      <div className="flex justify-between mb-6"><div className="p-4 bg-red-500 rounded-2xl shadow-lg"><Video className="w-6 h-6 text-white" /></div><span className={`flex items-center gap-1.5 text-xs font-bold ${theme.desc}`}><span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>ACTIVE</span></div>
-                      <h3 className={`text-xl font-bold mb-2 ${theme.title}`}>YouTube Creator</h3><p className={`text-sm leading-relaxed ${theme.desc}`}>영상 트렌드 분석 및 AI 자동 편집 에이전트가 가동 중입니다.</p>
+                    {/* YouTube Creator Card */}
+                    <div className={`${theme.card} p-8 rounded-3xl border ${theme.border} hover:border-blue-500/50 transition-all group shadow-lg relative overflow-hidden`}>
+                      <div className="flex justify-between mb-8">
+                        <div className="p-4 bg-red-500 rounded-2xl shadow-xl shadow-red-500/20"><Video className="w-6 h-6 text-white" /></div>
+                        <div className="text-right">
+                          <span className={`flex items-center justify-end gap-1.5 text-[10px] font-black tracking-widest ${theme.title} mb-1`}>
+                            <span className={`w-2 h-2 rounded-full ${harnessStatus['YouTube-Publisher']?.status === 'WORKING' ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`}></span>
+                            {harnessStatus['YouTube-Publisher']?.status || 'IDLE'}
+                          </span>
+                          <p className={`text-[10px] font-bold ${theme.muted}`}>SANDBOX: {harnessStatus['YouTube-Publisher']?.sandbox || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <h3 className={`text-xl font-black mb-2 ${theme.title}`}>YouTube Creator</h3>
+                      <p className={`text-xs leading-relaxed ${theme.desc} mb-8`}>영상 트렌드 분석 및 AI 자동 편집 에이전트가 가동 중입니다.</p>
+                      
+                      <div className="flex gap-3">
+                        <button onClick={() => setActiveTab('youtube')} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">Studio 이동</button>
+                        {(harnessStatus['YouTube-Publisher']?.status === 'WORKING' || harnessStatus['YouTube-Publisher']?.status === 'READY') && (
+                          <button onClick={() => handleStopHarness('YouTube-Publisher')} className="flex-1 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold rounded-xl transition-all border border-red-500/20">긴급 중지</button>
+                        )}
+                      </div>
                     </div>
                  </div>
                </div>
