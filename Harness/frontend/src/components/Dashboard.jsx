@@ -68,9 +68,9 @@ const Dashboard = () => {
                 <div className="bg-black/20 p-6 rounded-2xl border border-white/5"><p className={`text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2`}>Target Topic</p><p className={`font-bold ${theme.title}`}>{scriptResult.topic}</p></div>
                 <div className="bg-black/20 p-6 rounded-2xl border border-white/5"><p className={`text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2`}>Agent Persona</p><p className={`font-bold text-blue-400`}>{scriptResult.persona}</p></div>
               </div>
-              <div><h4 className={`text-lg font-bold mb-4 flex items-center gap-2 ${theme.title}`}>생성된 대본</h4><div className="bg-[#050505] p-8 rounded-3xl border border-white/5 font-mono text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">{scriptResult.script}</div></div>
+              <div><h4 className={`text-lg font-bold mb-4 flex items-center gap-2 ${theme.title}`}>생성된 대본</h4><div className={`bg-black/20 p-8 rounded-3xl border ${theme.border} font-mono text-sm leading-relaxed ${theme.desc} whitespace-pre-wrap`}>{scriptResult.script}</div></div>
             </div>
-            <div className="p-8 bg-white/5 border-t border-white/5 flex gap-4">
+            <div className={`p-8 bg-black/20 border-t ${theme.border} flex gap-4`}>
               <button onClick={() => setScriptResult(null)} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all">닫기</button>
               <button onClick={async()=>{showToast('영상 렌더링 시작...'); try{await axios.post('/api/youtube/render',{topic:scriptResult.topic}); setScriptResult(null); setActiveTab('console');}catch{alert('오류');}}} className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"><Zap className="w-4 h-4 fill-current" /> 영상 렌더링 시작</button>
             </div>

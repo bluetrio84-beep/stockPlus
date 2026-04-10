@@ -33,13 +33,18 @@ const SettingsView = ({ theme, currentTheme, changeTheme, onShowToast }) => {
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
 
-  const isDark = currentTheme === 'dark' || currentTheme === 'harness';
-  const selectStyle = { 
-    backgroundColor: isDark ? '#000000' : '#ffffff', 
-    color: isDark ? '#ffffff' : '#000000', 
-    borderColor: isDark ? '#333333' : '#cccccc' 
+  // 테마별 입력창 스타일링 정밀 제어
+  const getInputStyle = () => {
+    if (currentTheme === 'dark') {
+      return { backgroundColor: '#000000', color: '#ffffff', borderColor: '#333333' };
+    } else if (currentTheme === 'harness') {
+      return { backgroundColor: '#1e293b', color: '#ffffff', borderColor: '#334155' }; // 하네스 오리지널 네이비 톤
+    }
+    return { backgroundColor: '#ffffff', color: '#000000', borderColor: '#cccccc' };
   };
-  const optionStyle = { backgroundColor: isDark ? '#111111' : '#ffffff', color: isDark ? '#ffffff' : '#000000' };
+
+  const inputStyle = getInputStyle();
+  const optionStyle = { backgroundColor: currentTheme === 'light' ? '#ffffff' : '#0f172a', color: currentTheme === 'light' ? '#000000' : '#ffffff' };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
@@ -53,7 +58,7 @@ const SettingsView = ({ theme, currentTheme, changeTheme, onShowToast }) => {
           <div className="space-y-6">
             <div>
               <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${theme.muted}`}>말투</label>
-              <select value={persona} onChange={(e) => setPersona(e.target.value)} style={selectStyle} className="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-bold cursor-pointer appearance-none">
+              <select value={persona} onChange={(e) => setPersona(e.target.value)} style={inputStyle} className="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-bold cursor-pointer appearance-none">
                 <option value="Professional" style={optionStyle}>💼 전문적인 분석가</option>
                 <option value="Friendly" style={optionStyle}>😊 친절한 AI</option>
                 <option value="Humorous" style={optionStyle}>🤣 유머러스</option>
@@ -62,11 +67,17 @@ const SettingsView = ({ theme, currentTheme, changeTheme, onShowToast }) => {
             </div>
             <div>
               <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${theme.muted}`}>지침</label>
-              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} style={selectStyle} className="w-full p-4 rounded-xl border h-32 focus:outline-none focus:ring-2 focus:ring-blue-500/40" placeholder="규칙 입력..." />
+              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} style={inputStyle} className="w-full p-4 rounded-xl border h-32 focus:outline-none focus:ring-2 focus:ring-blue-500/40" placeholder="규칙 입력..." />
             </div>
           </div>
         </section>
-        <section className={`${theme.card} border ${theme.border} rounded-3xl p-8 shadow-xl`}><div className="flex items-center gap-3 mb-6"><Clock className="text-orange-500" /><h3 className={`text-xl font-bold ${theme.title}`}>스케줄러</h3></div><div className="space-y-6"><input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} style={selectStyle} className="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-bold" /></div></section>
+        <section className={`${theme.card} border ${theme.border} rounded-3xl p-8 shadow-xl`}>
+          <div className="flex items-center gap-3 mb-6"><Clock className="text-orange-500" /><h3 className={`text-xl font-bold ${theme.title}`}>스케줄러</h3></div>
+          <div className="space-y-6">
+            <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${theme.muted}`}>자동 가동 시간</label>
+            <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} style={inputStyle} className="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/40 font-bold" />
+          </div>
+        </section>
         <section className={`${theme.card} border ${theme.border} rounded-3xl p-8 shadow-xl`}><div className="flex items-center gap-3 mb-6"><Palette className="text-purple-500" /><h3 className={`text-xl font-bold ${theme.title}`}>테마</h3></div><div className="grid grid-cols-3 gap-4"><button onClick={() => changeTheme('light')} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${currentTheme === 'light' ? 'border-blue-500 bg-blue-500/5' : `border-slate-700/20 ${theme.desc}`}`}><Sun className="w-6 h-6 text-yellow-500" /><span className="text-xs font-bold">Light</span></button><button onClick={() => changeTheme('dark')} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${currentTheme === 'dark' ? 'border-blue-500 bg-blue-500/5' : `border-slate-700/20 ${theme.desc}`}`}><Moon className="w-6 h-6 text-blue-400" /><span className="text-xs font-bold">Dark</span></button><button onClick={() => changeTheme('harness')} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${currentTheme === 'harness' ? 'border-blue-500 bg-blue-500/5' : `border-slate-700/20 ${theme.desc}`}`}><Palette className="w-6 h-6 text-cyan-400" /><span className="text-xs font-bold">Harness</span></button></div></section>
       </div>
     </div>

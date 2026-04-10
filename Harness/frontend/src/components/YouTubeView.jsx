@@ -13,7 +13,7 @@ const YouTubeView = ({ theme, onShowToast, setScriptResult }) => {
         <div className="lg:col-span-2 space-y-8">
           <div className={`${theme.card} border ${theme.border} rounded-3xl p-8 shadow-2xl`}>
             <h3 className={`text-xl font-bold mb-6 flex items-center gap-2 ${theme.title}`}><FileText className="text-blue-500" /> 생성된 대본 (Preview)</h3>
-            <div className="bg-black/40 rounded-2xl p-8 min-h-[400px] border border-slate-800/50"><p className={`whitespace-pre-wrap leading-relaxed ${theme.desc} italic`}>[기획 시작] 버튼을 누르면 에이전트가 작동합니다.</p></div>
+            <div className={`bg-black/20 rounded-2xl p-8 min-h-[400px] border ${theme.border}`}><p className={`whitespace-pre-wrap leading-relaxed ${theme.desc} italic`}>[기획 시작] 버튼을 누르면 에이전트가 작동합니다.</p></div>
           </div>
         </div>
         <div className="space-y-8">

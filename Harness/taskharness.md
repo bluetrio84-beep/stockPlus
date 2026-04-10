@@ -1,5 +1,10 @@
 # ⚠️ [절대 금지: 덮어쓰기 금지 !! 정밀타격 !!]
 
+## ✅ [2026-04-10] UI 디테일 최적화 및 테마 완벽 동기화 완료
+- **AI Deployment 카드 크기 축소:** 카드 패딩(p-10 -> p-5) 및 폰트 크기 대폭 축소하여 정보 밀도 극대화 (3열 그리드 적용).
+- **SettingsView 테마 정밀 제어:** 하네스 테마(#1e293b)와 다크 테마(#000000) 각각의 입력창 배경색 분리 적용.
+- **전역 테마 동기화 강화:** Console, YouTube Studio 등 모든 하위 컴포넌트의 하드코딩 색상을 전역 테마 객체 변수로 완전 교체.
+
 ## ✅ [2026-04-10] Dashboard 리팩토링 및 시스템 복구 완료
 - **502 Bad Gateway 정밀 타격 복구:** stockPlus 공용 Nginx에서 Harness 컨테이너로의 프록시 포트 교정 (3001 -> 80).
 - **Dashboard.jsx 비대화 해결:** `DeploymentView`, `ConsoleView`, `SettingsView`, `YouTubeView`로 기능별 컴포넌트 완벽 분리.
