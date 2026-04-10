@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, settings as api_settings
+from app.api import auth, settings as api_settings, agents as api_agents, youtube as api_youtube, stream as api_stream
 from app.core.config import settings
+from app.core.broadcaster import log_broadcaster
+import asyncio
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -9,10 +11,10 @@ app = FastAPI(
     docs_url="/api/docs"
 )
 
-# CORS 설정 (프론트엔드 연동용)
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 실운영 환경에서는 프론트엔드 도메인으로 제한 권장
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,6 +23,35 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(api_settings.router, prefix="/api/settings", tags=["settings"])
+app.include_router(api_agents.router, prefix="/api/agents", tags=["agents"])
+app.include_router(api_youtube.router, prefix="/api/youtube", tags=["youtube"])
+app.include_router(api_stream.router, prefix="/api/stream", tags=["stream"])
+
+# --- 시스템 하트비트 및 AutoDream 백그라운드 태스크 ---
+@app.on_event("startup")
+async def start_background_tasks():
+    from app.services.memory_service import memory_service
+    from app.api.deps import SessionLocal
+    
+    async def heartbeat():
+        while True:
+            await asyncio.sleep(15)
+            try: await log_broadcaster.broadcast("SYSTEM", "Pulse Check: All AI harnesses nominal.", "INFO")
+            except: pass
+
+    async def auto_dream_loop():
+        while True:
+            await asyncio.sleep(120) # 2분마다 꿈을 꾸며 기억 정리
+            db = SessionLocal()
+            try:
+                await memory_service.auto_dream(db)
+            except Exception as e:
+                print(f"Dreaming error: {e}")
+            finally:
+                db.close()
+
+    asyncio.create_task(heartbeat())
+    asyncio.create_task(auto_dream_loop())
 
 @app.get("/")
 def root():

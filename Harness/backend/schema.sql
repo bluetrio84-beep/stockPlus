@@ -1,0 +1,92 @@
+-- --------------------------------------------------------
+-- Harness Platform Core Tables
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `h_users` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(50) NOT NULL UNIQUE,
+    `password` VARCHAR(255) NOT NULL,
+    `role` ENUM('ADMIN', 'USER') DEFAULT 'USER',
+    `is_active` BOOLEAN DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `h_modules` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL UNIQUE, -- 'YOUTUBE', 'BLOG', 'STOCK'
+    `description` TEXT,
+    `is_active` BOOLEAN DEFAULT TRUE,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `h_tasks` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `module_id` INT,
+    `user_id` INT,
+    `status` ENUM('IDLE', 'WORKING', 'COMPLETED', 'FAILED') DEFAULT 'IDLE',
+    `progress` INT DEFAULT 0,
+    `started_at` TIMESTAMP NULL,
+    `ended_at` TIMESTAMP NULL,
+    `error_msg` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`module_id`) REFERENCES `h_modules`(`id`),
+    FOREIGN KEY (`user_id`) REFERENCES `h_users`(`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `h_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `task_id` INT,
+    `level` ENUM('INFO', 'WARNING', 'ERROR', 'DEBUG') DEFAULT 'INFO',
+    `message` TEXT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`task_id`) REFERENCES `h_tasks`(`id`) ON DELETE CASCADE
+);
+
+-- --------------------------------------------------------
+-- YouTube Harness Module Tables
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `yt_harness_projects` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` INT,
+    `topic` VARCHAR(255) NOT NULL,
+    `niche` VARCHAR(100),
+    `status` ENUM('PLANNING', 'SCRIPTING', 'EDITING', 'COMPLETED', 'FAILED') DEFAULT 'PLANNING',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`user_id`) REFERENCES `h_users`(`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `yt_harness_contents` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `project_id` INT,
+    `ai_script` LONGTEXT,
+    `final_script` LONGTEXT,
+    `voice_path` VARCHAR(512),
+    `video_path` VARCHAR(512),
+    `thumbnail_path` VARCHAR(512),
+    `youtube_url` VARCHAR(255),
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`project_id`) REFERENCES `yt_harness_projects`(`id`) ON DELETE CASCADE
+);
+
+-- --------------------------------------------------------
+-- AI Agent Memory & Identity
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `ai_harness_agents` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(50) NOT NULL,
+    `type` VARCHAR(50), -- 'RESEARCH', 'CREATIVE', 'EXECUTOR'
+    `llm_model` VARCHAR(100) DEFAULT 'gemini-1.5-pro',
+    `system_prompt` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `ai_harness_memories` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `agent_id` INT,
+    `key` VARCHAR(100),
+    `value` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`agent_id`) REFERENCES `ai_harness_agents`(`id`) ON DELETE CASCADE
+);

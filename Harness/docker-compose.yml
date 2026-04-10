@@ -14,6 +14,8 @@ services:
       - DB_USER=root
       - DB_PASSWORD=cnbas.2015
       - DB_NAME=harness_db
+      - GEMINI_API_KEY=AIzaSyAJQ8_erpVNkU0U4LY3xsKqyBhcpIvLdZE
+      - YOUTUBE_API_KEY=AIzaSyAFAtkO7GUvK5wDSs4GNgSvQ3rz6yBiVZ8
     networks:
       - projects_stock-network
   h-frontend:
