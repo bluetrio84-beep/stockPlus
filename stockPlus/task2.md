@@ -1,12 +1,3 @@
-# 🛠️ [2026-04-09] stockPlus 소스 정밀 타격 복구 내역
-
-- **백엔드(Java):** DB 호스트를 `projects-mysql-1`로 변경하여 도커 내부망 연동 성공.
-- **커넥션 풀:** HikariCP 설정을 보강하여 DB 지연 연결 시에도 서버가 죽지 않도록 조치.
-- **수집기(Python):** 도커 네트워크에 다시 합류시켜 DB 연동 복구.
-- **Nginx:** 메인 문지기로 승격하여 Harness 도메인 분기 처리 완료.
-
----
-
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
 ## 🚀 최신 업데이트 현황 (v16.43) - Intelligent Chart Sync & Intelligence Expansion ✨

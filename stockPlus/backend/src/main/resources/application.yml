@@ -9,7 +9,7 @@ spring:
   application:
     name: myStockPlusBackend
   datasource:
-    url: jdbc:mysql://projects-mysql-1:3306/stockplus?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true&connectionCollation=utf8mb4_unicode_ci&sessionVariables=collation_connection=utf8mb4_unicode_ci
+    url: jdbc:mysql://mysql:3306/stockplus?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useUnicode=true&connectionCollation=utf8mb4_unicode_ci&sessionVariables=collation_connection=utf8mb4_unicode_ci
     username: lms
     password: cnbas.2015
     driver-class-name: com.mysql.cj.jdbc.Driver
