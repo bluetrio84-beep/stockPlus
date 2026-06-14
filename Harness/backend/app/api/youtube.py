@@ -12,52 +12,40 @@ router = APIRouter()
 
 class PlanRequest(BaseModel):
     topic: str = None
+    job_name: str = None
 
 @router.post("/plan")
 async def plan_video(request: PlanRequest, db: Session = Depends(deps.get_db)):
-    await log_broadcaster.broadcast("PLANNER", "Initializing autonomous video strategy...", "PROCESS")
-    
-    # 1. 시나리오 선정 (DB 데이터 vs AI 자율 리서치)
+    """
+    유튜브 자율 기획의 첫 단추 (PLANNING)를 태스크 큐에 삽입합니다.
+    """
+    job_name = request.job_name if request.job_name else f"YouTube Production: {request.topic or 'Trend Discovery'}"
+    step_name = "PLANNING"
+    payload = {"topic": request.topic}
+
     try:
-        await log_broadcaster.broadcast("PLANNER", "Accessing StockPlus DB for market insights...", "PROCESS")
-        query = text("SELECT stock_name, change_rate FROM stockplus.stocks ORDER BY change_rate DESC LIMIT 3")
-        result = db.execute(query).fetchall()
+        query = text("""
+            INSERT INTO task_queue (job_name, step_name, payload, status) 
+            VALUES (:job_name, :step_name, :payload, 'PENDING')
+        """)
+        db.execute(query, {
+            "job_name": job_name,
+            "step_name": step_name,
+            "payload": json.dumps(payload),
+        })
+        db.commit()
         
-        if result:
-            stocks_info = "오늘의 급등주 분석: " + ", ".join([f"{r[0]}({r[1]}%)" for r in result])
-            await log_broadcaster.broadcast("SYSTEM", f"Market data fetched: {stocks_info[:50]}...", "SUCCESS")
-            topic = stocks_info
-        else:
-            # [자율 브레인스토밍] 데이터가 없으면 AI가 스스로 주제를 생성
-            await log_broadcaster.broadcast("PLANNER", "No local data. Engaging Autonomous Research Engine...", "WARNING")
-            brainstorm_prompt = "현재 전 세계적인 금융/테크 트렌드 중 유튜브 쇼츠로 제작했을 때 가장 화제가 될만한 자극적인 주제 3가지를 키워드 형태로 알려줘."
-            topic = await ai_service.generate_script(topic="Trend Discovery", custom_prompt=brainstorm_prompt)
-            await log_broadcaster.broadcast("PLANNER", f"Agent discovered new viral scenario: {topic[:50]}...", "SUCCESS")
-            
+        await log_broadcaster.broadcast("PLANNER", f"Autonomous Strategy queued: {job_name}", "PROCESS")
+        return {"message": "Planning task queued.", "job_name": job_name, "status": "QUEUED"}
     except Exception as e:
-        topic = "미래 테크놀로지와 AI 산업의 향방" # 최후의 수단
-        await log_broadcaster.broadcast("SYSTEM", f"Research Error: {str(e)}. Using static backup.", "ERROR")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # 2. 페르소나 설정
-    query_cfg = text("SELECT cfg_key, cfg_value FROM h_configs")
-    configs = {row[0]: row[1] for row in db.execute(query_cfg).fetchall()}
-    persona = configs.get("agent_persona", "Professional")
-    
-    await log_broadcaster.broadcast("NARRATIVE", f"Agent persona set to '{persona}'. Crafting script...", "PROCESS")
-
-    # 3. 최종 대본 생성
-    script = await ai_service.generate_script(topic=topic, persona=persona)
-
-    return {
-        "topic": topic,
-        "persona": persona,
-        "script": script,
-        "status": "PLANNING_COMPLETED"
-    }
+import json
 
 class RenderRequest(BaseModel):
-    topic: str
-    script: str
+    topic: str = "Unknown Topic"
+    script: str = "No script provided"
 
 from app.services.harness_manager import harness_manager
 
@@ -77,25 +65,30 @@ async def stop_harness(name: str = "YouTube-Publisher"):
 @router.post("/render")
 async def render_video(request: RenderRequest, db: Session = Depends(deps.get_db)):
     """
-    영상 렌더링 파이프라인 가동 (매니저 등록 포함)
+    영상 제작의 다음 단계(VIDEO)를 태스크 큐에 직접 삽입합니다.
     """
-    from app.harness_modules.youtube_harness import YouTubeHarness
-    
-    # 싱글톤 매니저에서 기존 인스턴스가 있으면 재사용, 없으면 생성
-    agent = harness_manager.get_harness("YouTube-Publisher")
-    if not agent:
-        agent = YouTubeHarness()
-        harness_manager.register(agent)
-    
-    async def run_render():
-        await log_broadcaster.broadcast("SYSTEM", "Video Production Pipeline Engaged.", "PROCESS")
-        try:
-            await agent.initialize()
-            await agent.execute({"topic": request.topic, "script": request.script})
-        except asyncio.CancelledError:
-            await log_broadcaster.broadcast("SYSTEM", "Pipeline task cancelled by user.", "WARNING")
-        except Exception as e:
-            await log_broadcaster.broadcast("SYSTEM", f"Critical Pipeline Failure: {str(e)}", "ERROR")
+    job_name = f"YouTube Production: {request.topic}"
+    step_name = "VIDEO"
+    payload = {
+        "topic": request.topic,
+        "script": request.script
+    }
+
+    try:
+        # 기존 대본 생성 작업(SCRIPTING)을 찾아서 연결하거나, 새로 시작함
+        query = text("""
+            INSERT INTO task_queue (job_name, step_name, payload, status) 
+            VALUES (:job_name, :step_name, :payload, 'PENDING')
+        """)
+        db.execute(query, {
+            "job_name": job_name,
+            "step_name": step_name,
+            "payload": json.dumps(payload),
+        })
+        db.commit()
         
-    asyncio.create_task(run_render())
-    return {"message": "Rendering initiated.", "status": "PROCESSING"}
+        await log_broadcaster.broadcast("SYSTEM", f"Manual Render Triggered: {job_name}", "PROCESS")
+        return {"message": "Rendering task queued.", "status": "QUEUED"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

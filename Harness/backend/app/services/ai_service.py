@@ -46,4 +46,45 @@ class AiService:
             await log_broadcaster.broadcast("NARRATIVE", f"Critical Error: {str(e)}", "ERROR")
             return f"Error generating script: {str(e)}"
 
+    async def analyze_error(self, job_name: str, step_name: str, error_log: str, payload: dict):
+        """
+        에러 로그를 분석하여 복구 전략을 제안합니다. (Self-Correction)
+        """
+        if not self.model:
+            return {"action": "FAIL", "explanation": "Gemini API Key not configured."}
+
+        prompt = f"""
+        당신은 하네스 자율 주행 에이전트의 '복구 오케스트레이터'입니다.
+        현재 작업이 실패했습니다. 에러 로그를 분석하여 해결책을 JSON으로 응답하세요.
+
+        [작업 정보]
+        - Job Name: {job_name}
+        - Step Name: {step_name}
+        - Original Payload: {payload}
+
+        [에러 로그]
+        {error_log}
+
+        [응답 형식 (반드시 이 JSON만 출력)]
+        {{
+            "action": "RETRY" 또는 "FAIL",
+            "new_payload": {{ ... 수정된 페이로드 ... }},
+            "explanation": "에러 원인 및 수정 사항 요약"
+        }}
+        """
+
+        try:
+            response = self.model.generate_content(prompt)
+            # JSON 응답만 추출 (마크다운 코드 블록 제거 등)
+            content = response.text.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            import json
+            return json.loads(content)
+        except Exception as e:
+            return {"action": "FAIL", "explanation": f"Recovery AI failed: {str(e)}"}
+
 ai_service = AiService()

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, settings as api_settings, agents as api_agents, youtube as api_youtube, stream as api_stream
+from app.api import auth, settings as api_settings, agents as api_agents, youtube as api_youtube, stream as api_stream, tasks as api_tasks
 from app.core.config import settings
 from app.core.broadcaster import log_broadcaster
 import asyncio
@@ -26,11 +26,13 @@ app.include_router(api_settings.router, prefix="/api/settings", tags=["settings"
 app.include_router(api_agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(api_youtube.router, prefix="/api/youtube", tags=["youtube"])
 app.include_router(api_stream.router, prefix="/api/stream", tags=["stream"])
+app.include_router(api_tasks.router, prefix="/api/tasks", tags=["tasks"])
 
 # --- 시스템 하트비트 및 AutoDream 백그라운드 태스크 ---
 @app.on_event("startup")
 async def start_background_tasks():
     from app.services.memory_service import memory_service
+    from app.services.harness_manager import harness_manager
     from app.api.deps import SessionLocal
     
     async def heartbeat():
@@ -52,6 +54,7 @@ async def start_background_tasks():
 
     asyncio.create_task(heartbeat())
     asyncio.create_task(auto_dream_loop())
+    asyncio.create_task(harness_manager.start_worker())
 
 @app.get("/")
 def root():

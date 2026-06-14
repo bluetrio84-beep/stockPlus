@@ -90,3 +90,29 @@ CREATE TABLE IF NOT EXISTS `ai_harness_memories` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`agent_id`) REFERENCES `ai_harness_agents`(`id`) ON DELETE CASCADE
 );
+
+-- --------------------------------------------------------
+-- Autonomous Harness Agent Runtime
+-- --------------------------------------------------------
+
+-- 1. 작업 관리 테이블 (task_queue)
+CREATE TABLE IF NOT EXISTS `task_queue` (
+    `task_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `job_name` VARCHAR(255) NOT NULL,
+    `step_name` VARCHAR(100),
+    `status` ENUM('PENDING', 'RUNNING', 'SUCCESS', 'FAILED', 'RETRY') DEFAULT 'PENDING',
+    `payload` JSON,
+    `result_path` TEXT,
+    `error_log` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 2. 에이전트 기억 테이블 (agent_memory)
+CREATE TABLE IF NOT EXISTS `agent_memory` (
+    `mem_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `category` VARCHAR(50),
+    `content` TEXT NOT NULL,
+    `relevance_score` FLOAT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

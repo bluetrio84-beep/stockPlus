@@ -95,7 +95,16 @@ const Dashboard = () => {
             </div>
             <div className={`p-8 bg-black/20 border-t ${theme.border} flex gap-4`}>
               <button onClick={() => setScriptResult(null)} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all">닫기</button>
-              <button onClick={async()=>{showToast('영상 렌더링 시작...'); try{await axios.post('/api/youtube/render',{topic:scriptResult.topic, script:scriptResult.script}); setScriptResult(null); setActiveTab('console');}catch{alert('오류');}}} className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"><Zap className="w-4 h-4 fill-current" /> 영상 렌더링 시작</button>
+              <button 
+                onClick={() => {
+                  showToast('자율 주행 파이프라인이 계속 가동됩니다...'); 
+                  setScriptResult(null); 
+                  setActiveTab('console');
+                }} 
+                className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"
+              >
+                <Zap className="w-4 h-4 fill-current" /> 콘솔에서 진행 상황 보기
+              </button>
             </div>
           </div>
         </div>

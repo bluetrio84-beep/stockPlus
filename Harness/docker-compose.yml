@@ -9,13 +9,13 @@ services:
       - "8001:8001"
     volumes:
       - ./backend:/app
+    env_file:
+      - ./backend/.env
     environment:
       - DB_HOST=projects-mysql-1
       - DB_USER=root
       - DB_PASSWORD=cnbas.2015
       - DB_NAME=harness_db
-      - GEMINI_API_KEY=AIzaSyBE2QMhvoZ2wE_x2IJyhHVGBE0q8k1Lgy4
-      - YOUTUBE_API_KEY=AIzaSyBE2QMhvoZ2wE_x2IJyhHVGBE0q8k1Lgy4
     networks:
       - projects_stock-network
   h-frontend:
@@ -25,6 +25,8 @@ services:
     container_name: harness-frontend-1
     ports:
       - "3001:80"
+    volumes:
+      - ./backend/exports/videos:/usr/share/nginx/html/exports
     networks:
       - projects_stock-network
 networks:
