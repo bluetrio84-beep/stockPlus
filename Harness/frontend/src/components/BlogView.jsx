@@ -341,6 +341,53 @@ const BlogView = ({ theme, onShowToast }) => {
     if (onShowToast) onShowToast('❌ Harness AI Self-Correction 최종 실패. 로그를 확인하세요.');
   };
 
+  const openNaverSmartCopyWindow = (post) => {
+    if (!post) return;
+    const win = window.open('', '_blank', 'width=850,height=800,scrollbars=yes,resizable=yes');
+    if (!win) {
+      alert('팝업 차단을 해제해 주세요!');
+      return;
+    }
+    const combinedHtml = `<h1 style="font-weight:bold; font-size:22px; color:#0f172a; margin-bottom:16px;">${post.title}</h1>` + post.html_content;
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${post.title}</title>
+        <style>
+          body { margin: 0; padding: 24px; font-family: 'Apple SD Gothic Neo', '맑은 고딕', sans-serif; background: #ffffff; color: #1e293b; }
+          .banner-tip { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="banner-tip">
+          ✨ <strong>네이버 블로그 100% 동일 복사 뷰어:</strong><br/>
+          아래 리포트 본문이 클립보드에 100% 복사되었습니다! 네이버 글쓰기 화면에서 바로 <strong>Ctrl + V (붙여넣기)</strong> 하세요!
+        </div>
+        <div id="copy-area">
+          ${combinedHtml}
+        </div>
+        <script>
+          setTimeout(() => {
+            try {
+              const el = document.getElementById('copy-area');
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
+              document.execCommand('copy');
+            } catch(e) {}
+          }, 300);
+        </script>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    if (onShowToast) onShowToast('🌟 [네이버 100% 동일 뷰어 창 개설!] 자동 복사 완료 ➔ 네이버 글쓰기에 Ctrl+V 하세요!');
+  };
+
   const handleCopyRichHtml = async (contentHtml) => {
     try {
       const blobHtml = new Blob([contentHtml], { type: 'text/html' });
@@ -531,6 +578,14 @@ const BlogView = ({ theme, onShowToast }) => {
                   >
                     <HelpCircle className="w-3.5 h-3.5" />
                     <span>게시 가이드</span>
+                  </button>
+
+                  <button
+                    onClick={() => openNaverSmartCopyWindow(selectedPost)}
+                    className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-orange-500/20"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>🌟 네이버 100% 원본 뷰어 팝업</span>
                   </button>
 
                   <button
