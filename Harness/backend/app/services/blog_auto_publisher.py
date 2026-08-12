@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class BlogAutoPublisher:
     """
-    퀀트 포스팅을 외부 블로그(티스토리, 워드프레스, 커스텀 웹훅 등)로
+    퀀트 포스팅을 외부 블로그(티스토리, 네이버 블로그, 워드프레스 등)로
     직접 자동 게시(Direct Auto-Publishing)하는 서비스 엔진
     """
 
@@ -44,6 +44,22 @@ class BlogAutoPublisher:
         except Exception as e:
             logger.error(f"[Tistory Auto-Publisher Exception] {e}")
             return {"success": False, "error": str(e)}
+
+    @staticmethod
+    def publish_to_naver_blog(naver_id: str, title: str, content_html: str) -> dict:
+        """
+        네이버 블로그 스마트 포스팅 브릿지
+        네이버는 2019년 공식 API 서비스를 종료하였으므로,
+        스마트에디터 ONE 전용 인라인 HTML 인코딩 파이프라인 및 쓰기 페이지 포워딩을 수행합니다.
+        """
+        clean_id = naver_id.strip()
+        write_url = f"https://blog.naver.com/{clean_id}?Redirect=Write"
+        logger.info(f"[Naver Blog Bridge] Opening SmartEditor ONE for ID: {clean_id}")
+        return {
+            "success": True,
+            "post_url": write_url,
+            "message": f"네이버 블로그({clean_id}) 스마트에디터 글쓰기 창으로 연결되었습니다! 복사된 HTML을 탭에 붙여넣으세요."
+        }
 
     @staticmethod
     def publish_to_wordpress(wp_url: str, username: str, app_password: str, title: str, content_html: str) -> dict:

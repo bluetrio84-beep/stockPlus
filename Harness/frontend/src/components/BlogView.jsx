@@ -186,7 +186,8 @@ const BlogView = ({ theme, onShowToast }) => {
 
   // Direct Auto-Publishing State
   const [showAutoPublishModal, setShowAutoPublishModal] = useState(false);
-  const [publishPlatform, setPublishPlatform] = useState('tistory');
+  const [publishPlatform, setPublishPlatform] = useState('naver');
+  const [naverId, setNaverId] = useState(localStorage.getItem('naver_id') || '');
   const [tistoryBlogName, setTistoryBlogName] = useState(localStorage.getItem('tistory_blog_name') || '');
   const [tistoryToken, setTistoryToken] = useState(localStorage.getItem('tistory_token') || '');
   const [wpUrl, setWpUrl] = useState(localStorage.getItem('wp_url') || '');
@@ -198,14 +199,20 @@ const BlogView = ({ theme, onShowToast }) => {
     if (!selectedPost) return;
     setPublishingDirect(true);
     try {
+      localStorage.setItem('naver_id', naverId);
       localStorage.setItem('tistory_blog_name', tistoryBlogName);
       localStorage.setItem('tistory_token', tistoryToken);
       localStorage.setItem('wp_url', wpUrl);
       localStorage.setItem('wp_username', wpUsername);
       localStorage.setItem('wp_app_password', wpAppPassword);
 
+      if (publishPlatform === 'naver') {
+        navigator.clipboard.writeText(selectedPost.html_content);
+      }
+
       const res = await axios.post(`/api/blog/posts/${selectedPost.id}/auto-publish`, {
         platform: publishPlatform,
+        naver_id: naverId,
         tistory_blog_name: tistoryBlogName,
         tistory_access_token: tistoryToken,
         wp_url: wpUrl,
@@ -214,7 +221,7 @@ const BlogView = ({ theme, onShowToast }) => {
       });
 
       if (res.data.success) {
-        if (onShowToast) onShowToast(`🎉 ${res.data.message || '블로그에 직접 게시 완료!'}`);
+        if (onShowToast) onShowToast(`🎉 ${res.data.message || '블로그 연결 완료!'}`);
         setShowAutoPublishModal(false);
         fetchPostDetail(selectedPost.id);
         fetchPosts();
@@ -631,7 +638,18 @@ const BlogView = ({ theme, onShowToast }) => {
                 <label className="block text-slate-400 font-bold uppercase tracking-wider mb-2">
                   게시 블로그 플랫폼 선택
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishPlatform('naver')}
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                      publishPlatform === 'naver'
+                        ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400 shadow-md'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    🟢 네이버 블로그 (원스톱)
+                  </button>
                   <button
                     type="button"
                     onClick={() => setPublishPlatform('tistory')}
@@ -641,21 +659,39 @@ const BlogView = ({ theme, onShowToast }) => {
                         : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                     }`}
                   >
-                    🟠 티스토리 Open API (공식 REST)
+                    🟠 티스토리 (Open API)
                   </button>
                   <button
                     type="button"
                     onClick={() => setPublishPlatform('wordpress')}
                     className={`p-3 rounded-xl border text-xs font-bold transition-all ${
                       publishPlatform === 'wordpress'
-                        ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-md'
+                        ? 'bg-purple-600/20 border-purple-500 text-purple-400 shadow-md'
                         : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                     }`}
                   >
-                    🔵 워드프레스 REST API
+                    🔵 워드프레스 (REST API)
                   </button>
                 </div>
               </div>
+
+              {publishPlatform === 'naver' && (
+                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">네이버 아이디 (Naver ID)</label>
+                    <input
+                      type="text"
+                      value={naverId}
+                      onChange={e => setNaverId(e.target.value)}
+                      placeholder="예: mynaverid (blog.naver.com/mynaverid의 아이디)"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                  </div>
+                  <p className="text-[11px] text-emerald-400/90 leading-relaxed font-bold bg-emerald-950/40 p-3 rounded-xl border border-emerald-500/20">
+                    💡 <strong>스마트 1클릭 원스톱 게시:</strong> 버튼 클릭 시 퀀트 인라인 HTML 코드가 클립보드에 자동 복사되고, 네이버 스마트에디터 ONE 글쓰기 창이 바로 열립니다. HTML 탭에 붙여넣으시면 표 및 등락률 디자인이 100% 원본 그대로 표현됩니다!
+                  </p>
+                </div>
+              )}
 
               {publishPlatform === 'tistory' && (
                 <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">

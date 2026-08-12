@@ -222,7 +222,8 @@ def delete_blog_post(post_id: int, db: Session = Depends(get_db)):
 #  외부 블로그(티스토리, 워드프레스 등)로 1클릭 직접 자동 포스팅 게시
 # ─────────────────────────────────────────────────────────
 class AutoPublishRequest(BaseModel):
-    platform: str  # 'tistory' | 'wordpress' | 'webhook'
+    platform: str  # 'naver' | 'tistory' | 'wordpress' | 'webhook'
+    naver_id: Optional[str] = None
     tistory_access_token: Optional[str] = None
     tistory_blog_name: Optional[str] = None
     wp_url: Optional[str] = None
@@ -236,7 +237,15 @@ def auto_publish_post(post_id: int, req: AutoPublishRequest, db: Session = Depen
     if not post:
         raise HTTPException(status_code=404, detail="포스팅을 찾을 수 없습니다.")
 
-    if req.platform == "tistory":
+    if req.platform == "naver":
+        if not req.naver_id:
+            raise HTTPException(status_code=400, detail="네이버 아이디(naver_id)가 필요합니다.")
+        res = BlogAutoPublisher.publish_to_naver_blog(
+            naver_id=req.naver_id,
+            title=post.title,
+            content_html=post.html_content
+        )
+    elif req.platform == "tistory":
         if not req.tistory_access_token or not req.tistory_blog_name:
             raise HTTPException(status_code=400, detail="티스토리 Access Token과 Blog Name이 필요합니다.")
         res = BlogAutoPublisher.publish_to_tistory(
