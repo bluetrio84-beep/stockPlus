@@ -100,8 +100,21 @@ class HarnessManager:
             db.close()
 
     async def execute_tool(self, step_name: str, payload: dict):
-        """실제 도구 및 AI 서비스를 활용한 영상 제작 엔진"""
-        
+        """실제 도구 및 AI 서비스를 활용한 제작 엔진 (YouTube + Blog 통합)"""
+
+        # ── BLOG 전용 스텝 → BlogHarness.execute() (BaseHarness 샌드박스 + KAIROS 완전 적용) ──
+        if step_name in ('BLOG_GENERATE', 'BLOG_SEO_ENHANCE', 'BLOG_PUBLISH'):
+            from app.harness_modules.blog_harness import blog_harness
+            await log_broadcaster.broadcast(
+                "SYSTEM",
+                f"[Harness Router] Delegating {step_name} → BlogHarness (Sandbox: {blog_harness.sandbox_id})",
+                "INFO"
+            )
+            # BaseHarness.execute() 호출 → KAIROS 재시도 루프 + 샌드박스 격리 + Context Compaction
+            result = await blog_harness.execute({"step_name": step_name, "payload": payload})
+            return result
+
+        # ── YouTube 전용 스텝 ──────────────────────────────────────────
         # 1. 유튜브 기획 (PLANNING) - 주제 확정 (AI 자율 리서치 강화)
         if step_name == 'PLANNING':
             topic = payload.get("topic")
@@ -189,24 +202,37 @@ class HarnessManager:
 
     async def queue_next_step(self, db, task_id: int, job_name: str, step_name: str, result_data: any, payload: dict):
         """작업 성공 후 다음 단계를 자율적으로 큐에 삽입"""
+        # ── Blog 파이프라인 체이닝: GENERATE → SEO_ENHANCE → PUBLISH ───────
+        # ── YouTube 파이프라인 체이닝: PLANNING → SCRIPTING → VOICE → VIDEO → RENDER
         next_step_map = {
-            "PLANNING": "SCRIPTING",
+            # Blog 3-step pipeline
+            "BLOG_GENERATE":    "BLOG_SEO_ENHANCE",
+            "BLOG_SEO_ENHANCE": "BLOG_PUBLISH",
+            # BLOG_PUBLISH 이후는 없음 (터미널 스텝)
+            # YouTube pipeline
+            "PLANNING":  "SCRIPTING",
             "SCRIPTING": "VOICE",
-            "VOICE": "VIDEO",
-            "VIDEO": "RENDER"
+            "VOICE":     "VIDEO",
+            "VIDEO":     "RENDER"
         }
 
         next_step = next_step_map.get(step_name)
         if not next_step:
-            return 
+            return
 
         new_payload = payload.copy()
-        if step_name == "PLANNING":
+        # Blog 체이닝: 이전 스텝 결과(post_id)를 다음 스텝 payload에 주입
+        if step_name == "BLOG_GENERATE" and isinstance(result_data, dict):
+            new_payload["post_id"] = result_data.get("post_id")
+        elif step_name == "BLOG_SEO_ENHANCE" and isinstance(result_data, dict):
+            new_payload["post_id"] = result_data.get("post_id")
+        # YouTube 체이닝
+        elif step_name == "PLANNING":
             new_payload["topic"] = result_data
         elif step_name == "SCRIPTING":
             new_payload["script"] = result_data
         elif step_name == "VOICE":
-            new_payload["audio_path"] = result_data  # 이 필드가 VIDEO 단계에서 쓰임
+            new_payload["audio_path"] = result_data
         elif step_name == "VIDEO":
             new_payload["video_path"] = result_data
 
