@@ -212,9 +212,20 @@ const BlogView = ({ theme, onShowToast }) => {
           setPublishingDirect(false);
           return;
         }
-        await navigator.clipboard.writeText(selectedPost.html_content);
+        try {
+          const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
+          const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
+          const item = new ClipboardItem({
+            'text/html': blobHtml,
+            'text/plain': blobText
+          });
+          await navigator.clipboard.write([item]);
+        } catch (e) {
+          await navigator.clipboard.writeText(selectedPost.html_content);
+        }
+
         if (onShowToast) {
-          onShowToast('📋 [본문 HTML 클립보드 복사 완료!] 네이버 스마트에디터 우측 하단 [HTML] 탭에 Ctrl+V 하세요!');
+          onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 창에서 바로 Ctrl+V 누르시면 표와 서식이 짠! 하고 예쁘게 출력됩니다!');
         }
         setShowAutoPublishModal(false);
         window.open(`https://blog.naver.com/${naverId}?Redirect=Write`, '_blank');
@@ -320,10 +331,20 @@ const BlogView = ({ theme, onShowToast }) => {
     if (onShowToast) onShowToast('❌ Harness AI Self-Correction 최종 실패. 로그를 확인하세요.');
   };
 
-  const handleCopy = (content) => {
-    navigator.clipboard.writeText(content);
+  const handleCopy = async (content) => {
+    try {
+      const blobHtml = new Blob([content], { type: 'text/html' });
+      const blobText = new Blob([content], { type: 'text/plain' });
+      const item = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText
+      });
+      await navigator.clipboard.write([item]);
+    } catch (e) {
+      await navigator.clipboard.writeText(content);
+    }
     setCopied(true);
-    if (onShowToast) onShowToast('📋 클립보드에 복사 완료! (네이버/티스토리에 붙여넣으세요)');
+    if (onShowToast) onShowToast('📋 [서식 적용 복사 완료!] 네이버/티스토리 기본에디터에 바로 Ctrl+V 하세요!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -701,7 +722,7 @@ const BlogView = ({ theme, onShowToast }) => {
 
                   <div className="space-y-2 pt-2 border-t border-emerald-500/20">
                     <p className="text-[11px] font-bold text-emerald-300">
-                      ⚡ 네이버 스마트 3단계 원스톱 게시:
+                      ⚡ 1-Click 네이버 원스톱 렌더링 복사:
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -717,20 +738,27 @@ const BlogView = ({ theme, onShowToast }) => {
 
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedPost.html_content);
-                          if (onShowToast) onShowToast('📋 본문 HTML 코드가 복사되었습니다! 네이버 [HTML] 탭에 붙여넣으세요.');
+                        onClick={async () => {
+                          try {
+                            const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
+                            const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
+                            const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
+                            await navigator.clipboard.write([item]);
+                          } catch (e) {
+                            await navigator.clipboard.writeText(selectedPost.html_content);
+                          }
+                          if (onShowToast) onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 화면에서 바로 Ctrl+V 누르시면 끝!');
                         }}
                         className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
                       >
-                        <Copy className="w-3.5 h-3.5" /> 2. 본문 HTML 복사
+                        <Copy className="w-3.5 h-3.5" /> 2. 렌더링 서식 복사
                       </button>
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-emerald-200/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-emerald-500/20">
-                    💡 <strong>네이버 보안 방침 안내:</strong> 네이버는 2019년부터 외부 자동 글쓰기 API를 전면 차단하였습니다.<br/>
-                    위 <strong>[2. 본문 HTML 복사]</strong> 누른 후, 네이버 글쓰기 화면 우측 하단 <strong className="text-emerald-300">[HTML] 탭 ➔ Ctrl + V (붙여넣기)</strong> 하시면 퀀트 표 및 수급 디자인이 100% 원본 그대로 완벽 완성됩니다!
+                  <p className="text-[11px] text-emerald-200/90 leading-relaxed bg-black/40 p-3 rounded-xl border border-emerald-500/20">
+                    💡 <strong>네이버 블로그 렌더링 꿀팁:</strong><br/>
+                    위 <strong>[2. 렌더링 서식 복사]</strong>를 누르신 후, 네이버 스마트에디터 <strong>[기본 에디터] 모드에서 바로 Ctrl + V (붙여넣기)</strong> 하시면 태그 소스 대신 <strong>예쁜 퀀트 디자인 표와 컬러 박스가 완성본 형태로 즉시 출력</strong>됩니다!
                   </p>
                 </div>
               )}
