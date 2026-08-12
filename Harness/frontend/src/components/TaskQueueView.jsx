@@ -165,14 +165,14 @@ const TaskQueueView = ({ theme, onShowToast }) => {
                     <td className="p-4 text-right space-x-2">
                       <button
                         onClick={() => setSelectedTask(task)}
-                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold inline-flex items-center gap-1 border border-white/10"
+                        className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-all"
                       >
                         <Eye className="w-3.5 h-3.5" /> 상세
                       </button>
                       {(task.status === 'FAILED' || task.status === 'RETRY') && (
                         <button
                           onClick={() => handleRetryTask(task.task_id)}
-                          className="px-2.5 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                          className="px-2.5 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-all"
                         >
                           <RotateCcw className="w-3.5 h-3.5" /> KAIROS 재시도
                         </button>
@@ -188,8 +188,8 @@ const TaskQueueView = ({ theme, onShowToast }) => {
 
       {/* ── Task Detail Modal ── */}
       {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className={`${theme.card} border ${theme.border} rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto`}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0f172a] text-white border border-slate-700/60 rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="font-bold text-base text-white flex items-center gap-2">
                 <Code className="w-5 h-5 text-blue-400" />
@@ -197,34 +197,47 @@ const TaskQueueView = ({ theme, onShowToast }) => {
               </h3>
               <button
                 onClick={() => setSelectedTask(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
               >
                 ✕
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-slate-500 font-bold block mb-1">JOB NAME</span>
-                <span className="text-white font-mono">{selectedTask.job_name}</span>
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-slate-400 font-bold block mb-1">JOB NAME</span>
+                <span className="text-white font-mono font-bold">{selectedTask.job_name}</span>
               </div>
-              <div>
-                <span className="text-slate-500 font-bold block mb-1">STEP NAME</span>
-                <span className="text-cyan-300 font-mono">{selectedTask.step_name}</span>
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-slate-400 font-bold block mb-1">STEP NAME</span>
+                <span className="text-cyan-300 font-mono font-bold">{selectedTask.step_name}</span>
               </div>
             </div>
 
             <div>
-              <span className="text-slate-500 font-bold text-xs block mb-1">PAYLOAD</span>
-              <pre className="p-3 bg-black/60 rounded-xl font-mono text-[11px] text-slate-300 overflow-x-auto border border-white/10 max-h-40">
-                {selectedTask.payload}
+              <span className="text-slate-400 font-bold text-xs block mb-1">PAYLOAD</span>
+              <pre className="p-3 bg-black/80 rounded-xl font-mono text-[11px] text-cyan-300 overflow-x-auto border border-white/10 max-h-40 whitespace-pre-wrap">
+                {typeof selectedTask.payload === 'object'
+                  ? JSON.stringify(selectedTask.payload, null, 2)
+                  : String(selectedTask.payload || '{}')}
               </pre>
             </div>
+
+            {selectedTask.result_path && (
+              <div>
+                <span className="text-green-400 font-bold text-xs block mb-1">RESULT OUTPUT</span>
+                <pre className="p-3 bg-green-950/30 rounded-xl font-mono text-[11px] text-green-300 overflow-x-auto border border-green-500/20 max-h-40 whitespace-pre-wrap">
+                  {typeof selectedTask.result_path === 'object'
+                    ? JSON.stringify(selectedTask.result_path, null, 2)
+                    : String(selectedTask.result_path)}
+                </pre>
+              </div>
+            )}
 
             {selectedTask.error_log && (
               <div>
                 <span className="text-red-400 font-bold text-xs block mb-1">ERROR LOG / KAIROS TRACEBACK</span>
-                <pre className="p-3 bg-red-950/40 rounded-xl font-mono text-[11px] text-red-300 overflow-x-auto border border-red-500/20 max-h-48">
+                <pre className="p-3 bg-red-950/40 rounded-xl font-mono text-[11px] text-red-300 overflow-x-auto border border-red-500/20 max-h-48 whitespace-pre-wrap">
                   {selectedTask.error_log}
                 </pre>
               </div>
@@ -233,7 +246,7 @@ const TaskQueueView = ({ theme, onShowToast }) => {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setSelectedTask(null)}
-                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
               >
                 닫기
               </button>
