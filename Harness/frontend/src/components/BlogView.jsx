@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   FileText, Sparkles, Copy, Check, Calendar, RefreshCw, Trash2, Eye,
-  Cpu, AlertCircle, CheckCircle, Clock
+  Cpu, AlertCircle, CheckCircle, Clock, Download, HelpCircle, ExternalLink, Share2
 } from 'lucide-react';
 
 // ── Harness Task Status Badge ─────────────────────────────
@@ -182,6 +182,21 @@ const BlogView = ({ theme, onShowToast }) => {
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [viewTab, setViewTab] = useState('html');
   const [copied, setCopied] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
+  const handleDownload = (content, ext) => {
+    if (!selectedPost) return;
+    const filename = `quant_blog_${selectedPost.post_date || 'post'}.${ext}`;
+    const blob = new Blob([content], { type: ext === 'html' ? 'text/html;charset=utf-8;' : 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    if (onShowToast) onShowToast(`💾 파일 다운로드 완료: ${filename}`);
+  };
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -390,10 +405,26 @@ const BlogView = ({ theme, onShowToast }) => {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setShowGuideModal(true)}
+                    className="px-3.5 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>게시 가이드</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownload(viewTab === 'html' ? selectedPost.html_content : selectedPost.markdown_content, viewTab)}
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{viewTab === 'html' ? '.html 저장' : '.md 저장'}</span>
+                  </button>
+
                   <button
                     onClick={() => handleCopy(viewTab === 'html' ? selectedPost.html_content : selectedPost.markdown_content)}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{viewTab === 'html' ? 'HTML 복사' : '마크다운 복사'}</span>
@@ -450,6 +481,78 @@ const BlogView = ({ theme, onShowToast }) => {
           )}
         </div>
       </div>
+
+      {/* ── Naver & Tistory Publishing Helper Modal ── */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0f172a] text-white border border-slate-700/60 rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-purple-400" />
+                네이버 블로그 / 티스토리 게시 가이드
+              </h3>
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Naver Blog Guide */}
+              <div className="p-4 bg-emerald-950/30 rounded-2xl border border-emerald-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> 1. 네이버 블로그 (Naver Blog) 게시 방법
+                  </h4>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">추천</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 leading-relaxed pl-1">
+                  <li>상단 <strong className="text-white">HTML 복사</strong> 버튼을 눌러 인라인 스타일 코드를 복사합니다.</li>
+                  <li>네이버 블로그 글쓰기 에디터(스마트에디터 ONE) 우측 하단 <strong className="text-emerald-300">HTML</strong> 탭을 클릭합니다.</li>
+                  <li>복사한 HTML을 붙여넣은 뒤 다시 <strong className="text-white">기본 에디터</strong> 모드로 전환합니다.</li>
+                  <li>표, AI 퀀트 가이드 디자인, 주도주 등락률 스타일이 100% 깔끔하게 표현됩니다!</li>
+                </ol>
+              </div>
+
+              {/* Tistory Guide */}
+              <div className="p-4 bg-blue-950/30 rounded-2xl border border-blue-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-blue-400 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> 2. 티스토리 (Tistory) 게시 방법
+                  </h4>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300">HTML 지원</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 leading-relaxed pl-1">
+                  <li>티스토리 글쓰기 화면 우측 상단 <strong className="text-blue-300">기본모드 ➔ HTML 모드</strong>로 전환합니다.</li>
+                  <li><strong className="text-white">HTML 복사</strong> 버튼으로 복사한 내용을 붙여넣고 [발행]을 누릅니다.</li>
+                  <li>(또는 마크다운 모드 사용 시 <strong className="text-white">마크다운 복사</strong>를 사용하세요)</li>
+                </ol>
+              </div>
+
+              {/* Future Open API Publisher Note */}
+              <div className="p-4 bg-purple-950/30 rounded-2xl border border-purple-500/20 space-y-2">
+                <h4 className="font-bold text-sm text-purple-300 flex items-center gap-2">
+                  🚀 1클릭 자동 원스톱 게시 파이프라인 (Tistory Open API)
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  티스토리는 공식 Open API (OAuth Access Token)를 지원하므로, 설정 메뉴에서 토큰 등록 시 <strong>버튼 한 번 클릭으로 내 티스토리 블로그에 포스팅이 즉시 자동 발행</strong>되도록 연동이 가능합니다!
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+              >
+                확인 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
