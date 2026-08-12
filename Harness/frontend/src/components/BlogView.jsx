@@ -192,6 +192,12 @@ const BlogView = ({ theme, onShowToast }) => {
   const [naverPw, setNaverPw] = useState(localStorage.getItem('naver_pw') || '');
   const [nidAut, setNidAut] = useState(localStorage.getItem('nid_aut') || '');
   const [nidSes, setNidSes] = useState(localStorage.getItem('nid_ses') || '');
+  const [tistoryBlogName, setTistoryBlogName] = useState(localStorage.getItem('tistory_blog_name') || '');
+  const [tistoryToken, setTistoryToken] = useState(localStorage.getItem('tistory_token') || '');
+  const [wpUrl, setWpUrl] = useState(localStorage.getItem('wp_url') || '');
+  const [wpUsername, setWpUsername] = useState(localStorage.getItem('wp_username') || '');
+  const [wpAppPassword, setWpAppPassword] = useState(localStorage.getItem('wp_app_password') || '');
+  const [publishingDirect, setPublishingDirect] = useState(false);
 
   const handleDirectAutoPublish = async () => {
     if (!selectedPost) return;
