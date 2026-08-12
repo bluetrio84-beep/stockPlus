@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  LayoutDashboard, Video, TrendingUp, Settings, LogOut, Zap, ShieldCheck, Terminal, 
+  LayoutDashboard, FileText, TrendingUp, Settings, LogOut, Zap, ShieldCheck, Terminal, 
   ChevronRight, Menu, X, Layers
 } from 'lucide-react';
 
@@ -9,7 +9,6 @@ import {
 import DeploymentView from './DeploymentView';
 import ConsoleView from './ConsoleView';
 import SettingsView from './SettingsView';
-import YouTubeView from './YouTubeView';
 
 const themes = {
   dark: { bg: 'bg-[#000000]', sidebar: 'bg-[#000000]', card: 'bg-[#0a0a0a]', title: 'text-white', desc: 'text-slate-400', muted: 'text-slate-600', border: 'border-white/10', header: 'bg-black/80' },
@@ -42,73 +41,17 @@ const Dashboard = () => {
   const [currentTheme, setCurrentTheme] = useState('dark');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [toast, setToast] = useState({ message: '', visible: false });
-  const [scriptResult, setScriptResult] = useState(null);
-  const [harnessStatus, setHarnessStatus] = useState({});
+  const [harnessStatus, setHarnessStatus] = useState({ 'Blog-Publisher': { status: 'READY', sandbox: 'ONLINE' } });
   const theme = themes[currentTheme];
-
-  // 하네스 상태 주기적 폴링
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await axios.get('/api/youtube/status');
-        setHarnessStatus(res.data);
-      } catch (err) { console.error("Harness status fetch failed."); }
-    };
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => { const savedTheme = localStorage.getItem('harness-theme'); if (savedTheme) setCurrentTheme(savedTheme); }, []);
   const changeTheme = (newTheme) => { setCurrentTheme(newTheme); localStorage.setItem('harness-theme', newTheme); };
   const showToast = (message) => { setToast({ message, visible: true }); setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000); };
   const handleLogout = () => { localStorage.removeItem('token'); window.location.href = '/login'; };
 
-  const handleStopHarness = async (name) => {
-    if (window.confirm(`${name} 에이전트를 즉시 중단하시겠습니까?`)) {
-      try {
-        await axios.post(`/api/youtube/stop?name=${name}`);
-        showToast(`${name} 중지 명령이 하달되었습니다.`);
-      } catch (err) { alert('중지 실패'); }
-    }
-  };
-
   return (
     <div className={`min-h-screen ${theme.bg} ${theme.title} flex overflow-hidden font-sans transition-colors duration-300`}>
       <Toast message={toast.message} visible={toast.visible} onClose={() => setToast({ ...toast, visible: false })} />
-      
-      {/* AI Script Modal */}
-      {scriptResult && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 lg:p-12 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setScriptResult(null)}></div>
-          <div className={`${theme.card} relative w-full max-w-4xl max-h-[85vh] border ${theme.border} rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300`}>
-            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <div className="flex items-center gap-4"><div className="p-3 bg-red-600 rounded-xl shadow-lg shadow-red-600/20"><Video className="w-6 h-6 text-white" /></div><div><h3 className={`text-2xl font-black ${theme.title}`}>AI 기획 리포트</h3><p className="text-xs text-blue-400 font-bold uppercase tracking-widest mt-1">Harness Engine v2.1 Alpha</p></div></div>
-              <button onClick={() => setScriptResult(null)} className="p-3 hover:bg-white/10 rounded-full transition-all"><X className="w-6 h-6" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-black/20 p-6 rounded-2xl border border-white/5"><p className={`text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2`}>Target Topic</p><p className={`font-bold ${theme.title}`}>{scriptResult.topic}</p></div>
-                <div className="bg-black/20 p-6 rounded-2xl border border-white/5"><p className={`text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2`}>Agent Persona</p><p className={`font-bold text-blue-400`}>{scriptResult.persona}</p></div>
-              </div>
-              <div><h4 className={`text-lg font-bold mb-4 flex items-center gap-2 ${theme.title}`}>생성된 대본</h4><div className={`bg-black/20 p-8 rounded-3xl border ${theme.border} font-mono text-sm leading-relaxed ${theme.desc} whitespace-pre-wrap`}>{scriptResult.script}</div></div>
-            </div>
-            <div className={`p-8 bg-black/20 border-t ${theme.border} flex gap-4`}>
-              <button onClick={() => setScriptResult(null)} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all">닫기</button>
-              <button 
-                onClick={() => {
-                  showToast('자율 주행 파이프라인이 계속 가동됩니다...'); 
-                  setScriptResult(null); 
-                  setActiveTab('console');
-                }} 
-                className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2"
-              >
-                <Zap className="w-4 h-4 fill-current" /> 콘솔에서 진행 상황 보기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 ${theme.sidebar} border-r ${theme.border} transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
@@ -119,7 +62,7 @@ const Dashboard = () => {
             <SidebarItem icon={Layers} label="AI Deployment" active={activeTab === 'deployment'} onClick={() => setActiveTab('deployment')} badge="HOT" theme={theme} />
             <SidebarItem icon={Terminal} label="Agent Console" active={activeTab === 'console'} onClick={() => setActiveTab('console')} theme={theme} />
             <div className="pt-8 pb-4"><p className={`text-[10px] font-bold uppercase tracking-widest px-2 mb-4 ${theme.muted}`}>Active Harnesses</p></div>
-            <SidebarItem icon={Video} label="YouTube Studio" active={activeTab === 'youtube'} onClick={() => setActiveTab('youtube')} badge="ON" theme={theme} />
+            <SidebarItem icon={FileText} label="Quant Blog Engine" active={activeTab === 'blog'} onClick={() => setActiveTab('blog')} badge="NEW" theme={theme} />
             <SidebarItem icon={TrendingUp} label="Trading Hub" active={activeTab === 'trading'} onClick={() => setActiveTab('trading')} theme={theme} />
             <div className="pt-8 pb-4"><p className={`text-[10px] font-bold uppercase tracking-widest px-2 mb-4 ${theme.muted}`}>System</p></div>
             <SidebarItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} theme={theme} />
@@ -147,26 +90,23 @@ const Dashboard = () => {
                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                  <h2 className={`text-3xl font-bold mb-8 ${theme.title}`}>전체 하네스 상태</h2>
                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {/* YouTube Creator Card */}
+                    {/* Quant Stock Auto-Blogger Card */}
                     <div className={`${theme.card} p-8 rounded-3xl border ${theme.border} hover:border-blue-500/50 transition-all group shadow-lg relative overflow-hidden`}>
                       <div className="flex justify-between mb-8">
-                        <div className="p-4 bg-red-500 rounded-2xl shadow-xl shadow-red-500/20"><Video className="w-6 h-6 text-white" /></div>
+                        <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20"><FileText className="w-6 h-6 text-white" /></div>
                         <div className="text-right">
                           <span className={`flex items-center justify-end gap-1.5 text-[10px] font-black tracking-widest ${theme.title} mb-1`}>
-                            <span className={`w-2 h-2 rounded-full ${harnessStatus['YouTube-Publisher']?.status === 'WORKING' ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}`}></span>
-                            {harnessStatus['YouTube-Publisher']?.status || 'IDLE'}
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            {harnessStatus['Blog-Publisher']?.status || 'READY'}
                           </span>
-                          <p className={`text-[10px] font-bold ${theme.muted}`}>SANDBOX: {harnessStatus['YouTube-Publisher']?.sandbox || 'N/A'}</p>
+                          <p className={`text-[10px] font-bold ${theme.muted}`}>SANDBOX: ONLINE</p>
                         </div>
                       </div>
-                      <h3 className={`text-xl font-black mb-2 ${theme.title}`}>YouTube Creator</h3>
-                      <p className={`text-xs leading-relaxed ${theme.desc} mb-8`}>영상 트렌드 분석 및 AI 자동 편집 에이전트가 가동 중입니다.</p>
+                      <h3 className={`text-xl font-black mb-2 ${theme.title}`}>Quant Stock Auto-Blogger</h3>
+                      <p className={`text-xs leading-relaxed ${theme.desc} mb-8`}>StockPlus 수급/테마 데이터를 기반으로 쌈빡한 전문 주식 분석 포스팅을 자동 생성하는 에이전트입니다.</p>
                       
                       <div className="flex gap-3">
-                        <button onClick={() => setActiveTab('youtube')} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">Studio 이동</button>
-                        {(harnessStatus['YouTube-Publisher']?.status === 'WORKING' || harnessStatus['YouTube-Publisher']?.status === 'READY') && (
-                          <button onClick={() => handleStopHarness('YouTube-Publisher')} className="flex-1 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-xs font-bold rounded-xl transition-all border border-red-500/20">긴급 중지</button>
-                        )}
+                        <button onClick={() => setActiveTab('blog')} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all">Blog Engine 이동</button>
                       </div>
                     </div>
                  </div>
@@ -174,7 +114,15 @@ const Dashboard = () => {
             )}
             {activeTab === 'deployment' && <DeploymentView theme={theme} onShowToast={showToast} />}
             {activeTab === 'console' && <ConsoleView theme={theme} />}
-            {activeTab === 'youtube' && <YouTubeView theme={theme} onShowToast={showToast} setScriptResult={setScriptResult} />}
+            {activeTab === 'blog' && (
+              <div className="animate-in fade-in duration-300 p-8 bg-slate-900/50 border border-white/10 rounded-3xl text-center">
+                <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-2">Quant Stock Auto-Blogger Engine</h3>
+                <p className="text-slate-400 text-sm max-w-lg mx-auto mb-6">
+                  StockPlus 실시간 수급/WICS 업종/상한가 테마 데이터를 읽어와 네이버/티스토리 호환 고품질 정밀 포스팅을 생성하는 1단계 개편 작업 진행 중입니다.
+                </p>
+              </div>
+            )}
             {activeTab === 'settings' && <SettingsView theme={theme} currentTheme={currentTheme} changeTheme={changeTheme} onShowToast={showToast} />}
           </div>
         </div>

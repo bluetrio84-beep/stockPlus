@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, settings as api_settings, agents as api_agents, youtube as api_youtube, stream as api_stream, tasks as api_tasks
+from app.api import auth, settings as api_settings, agents as api_agents, stream as api_stream, tasks as api_tasks
 from app.core.config import settings
 from app.core.broadcaster import log_broadcaster
 import asyncio
@@ -24,7 +24,6 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(api_settings.router, prefix="/api/settings", tags=["settings"])
 app.include_router(api_agents.router, prefix="/api/agents", tags=["agents"])
-app.include_router(api_youtube.router, prefix="/api/youtube", tags=["youtube"])
 app.include_router(api_stream.router, prefix="/api/stream", tags=["stream"])
 app.include_router(api_tasks.router, prefix="/api/tasks", tags=["tasks"])
 
