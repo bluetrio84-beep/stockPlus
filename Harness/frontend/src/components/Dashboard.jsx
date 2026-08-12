@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  LayoutDashboard, FileText, TrendingUp, Settings, LogOut, Zap, ShieldCheck, Terminal, 
-  ChevronRight, Menu, X, Layers, List, Activity, BarChart3, HelpCircle
+  LayoutDashboard, FileText, Settings, LogOut, Zap, ShieldCheck, Terminal, 
+  ChevronRight, Menu, X, List, Activity, BarChart3, HelpCircle
 } from 'lucide-react';
 
 // Sub-components
-import DeploymentView from './DeploymentView';
 import ConsoleView from './ConsoleView';
 import SettingsView from './SettingsView';
 import BlogView from './BlogView';
@@ -85,7 +84,6 @@ const Dashboard = () => {
           <nav className="flex-1 space-y-1.5 pr-1">
             <SidebarItem icon={LayoutDashboard} label="Overview" active={activeTab === 'overview'} onClick={() => handleNavClick('overview')} theme={theme} />
             <SidebarItem icon={HelpCircle} label="HE Guide (1~100)" active={activeTab === 'guide'} onClick={() => handleNavClick('guide')} badge="NEW" theme={theme} />
-            <SidebarItem icon={Layers} label="AI Deployment" active={activeTab === 'deployment'} onClick={() => handleNavClick('deployment')} badge="HOT" theme={theme} />
             <SidebarItem icon={Terminal} label="Agent Console" active={activeTab === 'console'} onClick={() => handleNavClick('console')} theme={theme} />
             
             <div className="pt-6 pb-2"><p className={`text-[10px] font-bold uppercase tracking-widest px-2 mb-3 ${theme.muted}`}>Active Harnesses</p></div>
@@ -205,7 +203,6 @@ const Dashboard = () => {
                </div>
             )}
             {activeTab === 'guide' && <HarnessArchitectureGuide theme={theme} />}
-            {activeTab === 'deployment' && <DeploymentView theme={theme} onShowToast={showToast} />}
             {activeTab === 'console' && <ConsoleView theme={theme} />}
             {activeTab === 'blog' && <BlogView theme={theme} onShowToast={showToast} />}
             {activeTab === 'queue' && <TaskQueueView theme={theme} onShowToast={showToast} />}
