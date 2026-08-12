@@ -3,6 +3,7 @@ import urllib.parse
 import json
 import logging
 import base64
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
