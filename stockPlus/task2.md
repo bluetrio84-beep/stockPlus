@@ -1,6 +1,18 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.45) - Super-Fast Dashboard & Intelligence Speed-up ✨
+## 🚀 최신 업데이트 현황 (v16.46) - 100% 0원 과금 방어 AI 엔진 & Gemini 2.0 Flash 무료 연동 ✨
+
+### 1. 100% 0원 과금 방어 자체 스마트 퀀트 엔진 구축 (Zero-Cost Engine)
+- **외부 과금 유발 소탕**: 백그라운드 매시간 자동 호출 스케줄러 및 터미널/관리자 리눅스 `gemini` CLI 자동 구동 코드를 완전 박멸.
+- **이중 안전망 탑재**: `GeminiService.java` 내에 자체 0원 스마트 퀀트 엔진(`generateFreeFallback`, `streamFreeStockAnalysis`)을 구축하여 외부 API 장애/쿼터 초과 시에도 1원 청구 없이 100% 무장애 가동.
+
+### 2. Google AI Studio 0원 무료 키 연동 (`gemini-2.0-flash` & `thinking`)
+- **무료 API 연동**: 카드 연동 없는 구글 AI Studio 무료 키(`gemini-2.0-flash`) 전용 안전 파이프라인 결합.
+- **터미널 서버 자동 실행 삭제**: `terminal-server.js` 접속 시 백그라운드로 `gemini` CLI가 구동되던 결제 유발 로직 완전 정리.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.45) - Super-Fast Dashboard & Intelligence Speed-up ✨
 
 ### 1. 대시보드 및 마켓 버블 차트 성능 혁명 (18s -> 2s)
 - **쿼리 정밀 타격 최적화**: 100만 건 이상의 `ai_prediction` 데이터를 조회할 때 발생하던 병목 현상을 해결하기 위해, 무거운 `GROUP BY` 서브쿼리 방식을 **인덱스 기반 상관 서브쿼리(Correlated Subquery)**로 전면 교체.

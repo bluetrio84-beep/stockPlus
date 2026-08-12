@@ -48,11 +48,6 @@ wss.on('connection', (ws, req) => {
         ws.send(data);
     });
 
-    // [v36.111] 연결 즉시 gemini 명령어 자동 입력
-    setTimeout(() => {
-        ptyProcess.write('gemini\r');
-    }, 500);
-
     // ws -> pty
     ws.on('message', (message) => {
         const data = message.toString();
