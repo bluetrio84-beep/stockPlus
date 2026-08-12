@@ -5,9 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
+from pydantic import BaseModel
 
 from app.api.deps import get_db
 from app.models.blog import BlogPost
+from app.services.blog_auto_publisher import BlogAutoPublisher
 
 logger = logging.getLogger("blog_api")
 router = APIRouter(prefix="/blog", tags=["blog"])
@@ -76,7 +78,6 @@ def get_task_status(task_id: int, db: Session = Depends(get_db)):
     post_data = None
     if task_status == "SUCCESS" and result_path:
         try:
-            # result_path는 dict repr 또는 JSON 문자열
             import ast
             try:
                 result_json = json.loads(result_path)
@@ -100,40 +101,46 @@ def get_task_status(task_id: int, db: Session = Depends(get_db)):
             logger.error(f"Failed to parse task result: {e}")
 
     return {
-        "success": True,
         "task_id": task_id,
         "status": task_status,
-        "post": post_data,
-        "error_log": error_log if task_status == "FAILED" else None
+        "error_log": error_log,
+        "post": post_data
     }
 
 
 # ─────────────────────────────────────────────────────────
 #  GET /api/blog/pipeline-tasks
-#  BLOG_HARNESS job에서 체이닝된 task_id 목록 반환
-#  (Frontend가 SEO_ENHANCE / PUBLISH 단계 추적에 사용)
 # ─────────────────────────────────────────────────────────
-@router.get("/pipeline-tasks", summary="파이프라인 체이닝 task_id 목록 조회")
-def get_pipeline_tasks(root_task_id: int, db: Session = Depends(get_db)):
-    """root task와 동일 job_name(BLOG_HARNESS)의 체이닝 태스크 id 목록 반환"""
+@router.get("/pipeline-tasks", summary="3단계 파이프라인 전체 태스크 상태 조회")
+def get_pipeline_tasks(db: Session = Depends(get_db)):
     rows = db.execute(
         text("""
-            SELECT task_id FROM task_queue
+            SELECT task_id, job_name, step_name, status, created_at, updated_at
+            FROM task_queue
             WHERE job_name = 'BLOG_HARNESS'
-              AND task_id >= :root_id
-            ORDER BY task_id ASC
+            ORDER BY task_id DESC
             LIMIT 10
-        """),
-        {"root_id": root_task_id}
+        """)
     ).fetchall()
-    task_ids = [r[0] for r in rows]
-    return {"success": True, "task_ids": task_ids}
+
+    tasks = [
+        {
+            "task_id": r[0],
+            "job_name": r[1],
+            "step_name": r[2],
+            "status": r[3],
+            "created_at": str(r[4]),
+            "updated_at": str(r[5])
+        }
+        for r in rows
+    ]
+    return {"success": True, "tasks": tasks}
 
 
 # ─────────────────────────────────────────────────────────
 #  GET /api/blog/posts
 # ─────────────────────────────────────────────────────────
-@router.get("/posts", summary="생성된 블로그 포스팅 목록 조회")
+@router.get("/posts", summary="블로그 포스팅 목록 조회")
 def get_blog_posts(
     skip: int = 0,
     limit: int = 20,
@@ -160,11 +167,12 @@ def get_blog_posts(
 # ─────────────────────────────────────────────────────────
 #  GET /api/blog/posts/{post_id}
 # ─────────────────────────────────────────────────────────
-@router.get("/posts/{post_id}", summary="특정 포스팅 상세 조회")
+@router.get("/posts/{post_id}", summary="블로그 포스팅 상세 조회")
 def get_blog_post_detail(post_id: int, db: Session = Depends(get_db)):
     post = db.query(BlogPost).filter(BlogPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="포스팅을 찾을 수 없습니다.")
+
     return {
         "success": True,
         "data": {
@@ -207,3 +215,62 @@ def delete_blog_post(post_id: int, db: Session = Depends(get_db)):
     db.delete(post)
     db.commit()
     return {"success": True, "message": "포스팅이 삭제되었습니다."}
+
+
+# ─────────────────────────────────────────────────────────
+#  POST /api/blog/posts/{post_id}/auto-publish
+#  외부 블로그(티스토리, 워드프레스 등)로 1클릭 직접 자동 포스팅 게시
+# ─────────────────────────────────────────────────────────
+class AutoPublishRequest(BaseModel):
+    platform: str  # 'tistory' | 'wordpress' | 'webhook'
+    tistory_access_token: Optional[str] = None
+    tistory_blog_name: Optional[str] = None
+    wp_url: Optional[str] = None
+    wp_username: Optional[str] = None
+    wp_app_password: Optional[str] = None
+    webhook_url: Optional[str] = None
+
+@router.post("/posts/{post_id}/auto-publish", summary="외부 블로그로 1클릭 직접 자동 포스팅 게시")
+def auto_publish_post(post_id: int, req: AutoPublishRequest, db: Session = Depends(get_db)):
+    post = db.query(BlogPost).filter(BlogPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="포스팅을 찾을 수 없습니다.")
+
+    if req.platform == "tistory":
+        if not req.tistory_access_token or not req.tistory_blog_name:
+            raise HTTPException(status_code=400, detail="티스토리 Access Token과 Blog Name이 필요합니다.")
+        res = BlogAutoPublisher.publish_to_tistory(
+            access_token=req.tistory_access_token,
+            blog_name=req.tistory_blog_name,
+            title=post.title,
+            content_html=post.html_content,
+            tag=post.seo_keywords or "주식,퀀트"
+        )
+    elif req.platform == "wordpress":
+        if not req.wp_url or not req.wp_username or not req.wp_app_password:
+            raise HTTPException(status_code=400, detail="워드프레스 접속 정보(URL, Username, App Password)가 필요합니다.")
+        res = BlogAutoPublisher.publish_to_wordpress(
+            wp_url=req.wp_url,
+            username=req.wp_username,
+            app_password=req.wp_app_password,
+            title=post.title,
+            content_html=post.html_content
+        )
+    elif req.platform == "webhook":
+        if not req.webhook_url:
+            raise HTTPException(status_code=400, detail="웹훅 URL이 필요합니다.")
+        res = BlogAutoPublisher.publish_via_webhook(
+            webhook_url=req.webhook_url,
+            title=post.title,
+            content_html=post.html_content,
+            markdown=post.markdown_content
+        )
+    else:
+        raise HTTPException(status_code=400, detail="지원하지 않는 발행 플랫폼입니다.")
+
+    if res.get("success"):
+        post.status = "PUBLISHED"
+        post.published_at = datetime.now()
+        db.commit()
+    
+    return res

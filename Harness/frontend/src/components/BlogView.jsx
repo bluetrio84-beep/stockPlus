@@ -184,6 +184,53 @@ const BlogView = ({ theme, onShowToast }) => {
   const [copied, setCopied] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
 
+  // Direct Auto-Publishing State
+  const [showAutoPublishModal, setShowAutoPublishModal] = useState(false);
+  const [publishPlatform, setPublishPlatform] = useState('tistory');
+  const [tistoryBlogName, setTistoryBlogName] = useState(localStorage.getItem('tistory_blog_name') || '');
+  const [tistoryToken, setTistoryToken] = useState(localStorage.getItem('tistory_token') || '');
+  const [wpUrl, setWpUrl] = useState(localStorage.getItem('wp_url') || '');
+  const [wpUsername, setWpUsername] = useState(localStorage.getItem('wp_username') || '');
+  const [wpAppPassword, setWpAppPassword] = useState(localStorage.getItem('wp_app_password') || '');
+  const [publishingDirect, setPublishingDirect] = useState(false);
+
+  const handleDirectAutoPublish = async () => {
+    if (!selectedPost) return;
+    setPublishingDirect(true);
+    try {
+      localStorage.setItem('tistory_blog_name', tistoryBlogName);
+      localStorage.setItem('tistory_token', tistoryToken);
+      localStorage.setItem('wp_url', wpUrl);
+      localStorage.setItem('wp_username', wpUsername);
+      localStorage.setItem('wp_app_password', wpAppPassword);
+
+      const res = await axios.post(`/api/blog/posts/${selectedPost.id}/auto-publish`, {
+        platform: publishPlatform,
+        tistory_blog_name: tistoryBlogName,
+        tistory_access_token: tistoryToken,
+        wp_url: wpUrl,
+        wp_username: wpUsername,
+        wp_app_password: wpAppPassword
+      });
+
+      if (res.data.success) {
+        if (onShowToast) onShowToast(`🎉 ${res.data.message || '블로그에 직접 게시 완료!'}`);
+        setShowAutoPublishModal(false);
+        fetchPostDetail(selectedPost.id);
+        fetchPosts();
+        if (res.data.post_url) {
+          window.open(res.data.post_url, '_blank');
+        }
+      } else {
+        alert(`게시 실패: ${res.data.error}`);
+      }
+    } catch (err) {
+      alert(`자동 게시 에러: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setPublishingDirect(false);
+    }
+  };
+
   const handleDownload = (content, ext) => {
     if (!selectedPost) return;
     const filename = `quant_blog_${selectedPost.post_date || 'post'}.${ext}`;
@@ -407,6 +454,14 @@ const BlogView = ({ theme, onShowToast }) => {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
+                    onClick={() => setShowAutoPublishModal(true)}
+                    className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>내 블로그로 직접 자동 게시</span>
+                  </button>
+
+                  <button
                     onClick={() => setShowGuideModal(true)}
                     className="px-3.5 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
                   >
@@ -548,6 +603,137 @@ const BlogView = ({ theme, onShowToast }) => {
                 className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
               >
                 확인 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Direct Auto-Publishing Modal ── */}
+      {showAutoPublishModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0f172a] text-white border border-slate-700/60 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-400 fill-current" />
+                내 블로그로 1클릭 직접 자동 게시 (Direct Auto-Publish)
+              </h3>
+              <button
+                onClick={() => setShowAutoPublishModal(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-bold uppercase tracking-wider mb-2">
+                  게시 블로그 플랫폼 선택
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPublishPlatform('tistory')}
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                      publishPlatform === 'tistory'
+                        ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-md'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    🟠 티스토리 Open API (공식 REST)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPublishPlatform('wordpress')}
+                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                      publishPlatform === 'wordpress'
+                        ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-md'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    🔵 워드프레스 REST API
+                  </button>
+                </div>
+              </div>
+
+              {publishPlatform === 'tistory' && (
+                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">티스토리 블로그 이름 (blogName)</label>
+                    <input
+                      type="text"
+                      value={tistoryBlogName}
+                      onChange={e => setTistoryBlogName(e.target.value)}
+                      placeholder="예: myquantblog (주소 https://myquantblog.tistory.com의 앞부분)"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">Access Token (티스토리 Open API)</label>
+                    <input
+                      type="password"
+                      value={tistoryToken}
+                      onChange={e => setTistoryToken(e.target.value)}
+                      placeholder="티스토리 Open API 발급 토큰 입력..."
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {publishPlatform === 'wordpress' && (
+                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">워드프레스 사이트 주소 (WP URL)</label>
+                    <input
+                      type="text"
+                      value={wpUrl}
+                      onChange={e => setWpUrl(e.target.value)}
+                      placeholder="예: https://myquantblog.com"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">관리자 Username</label>
+                    <input
+                      type="text"
+                      value={wpUsername}
+                      onChange={e => setWpUsername(e.target.value)}
+                      placeholder="WP 계정 아이디..."
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1">Application Password</label>
+                    <input
+                      type="password"
+                      value={wpAppPassword}
+                      onChange={e => setWpAppPassword(e.target.value)}
+                      placeholder="WP 프로필에서 발급한 앱 비밀번호..."
+                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAutoPublishModal(false)}
+                className="px-4 py-2.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleDirectAutoPublish}
+                disabled={publishingDirect}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {publishingDirect ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                <span>{publishingDirect ? '자동 게시 전송 중...' : '내 블로그로 즉시 게시'}</span>
               </button>
             </div>
           </div>
