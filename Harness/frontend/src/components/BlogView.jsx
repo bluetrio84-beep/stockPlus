@@ -188,7 +188,7 @@ const BlogView = ({ theme, onShowToast }) => {
   const [showAutoPublishModal, setShowAutoPublishModal] = useState(false);
   const [publishPlatform, setPublishPlatform] = useState('naver');
   const [naverId, setNaverId] = useState(localStorage.getItem('naver_id') || '');
-  const [naverMode, setNaverMode] = useState('macro');
+  const [naverMode, setNaverMode] = useState('bridge');
   const [naverPw, setNaverPw] = useState(localStorage.getItem('naver_pw') || '');
   const [nidAut, setNidAut] = useState(localStorage.getItem('nid_aut') || '');
   const [nidSes, setNidSes] = useState(localStorage.getItem('nid_ses') || '');
