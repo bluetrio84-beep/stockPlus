@@ -187,26 +187,26 @@ const BlogView = ({ theme, onShowToast }) => {
   // Direct Auto-Publishing State
   const [showAutoPublishModal, setShowAutoPublishModal] = useState(false);
   const [publishPlatform, setPublishPlatform] = useState('naver');
-  const [naverId, setNaverId] = useState(localStorage.getItem('naver_id') || '');
-  const [tistoryBlogName, setTistoryBlogName] = useState(localStorage.getItem('tistory_blog_name') || '');
-  const [tistoryToken, setTistoryToken] = useState(localStorage.getItem('tistory_token') || '');
-  const [wpUrl, setWpUrl] = useState(localStorage.getItem('wp_url') || '');
-  const [wpUsername, setWpUsername] = useState(localStorage.getItem('wp_username') || '');
-  const [wpAppPassword, setWpAppPassword] = useState(localStorage.getItem('wp_app_password') || '');
-  const [publishingDirect, setPublishingDirect] = useState(false);
+  const [naverMode, setNaverMode] = useState('macro');
+  const [naverPw, setNaverPw] = useState(localStorage.getItem('naver_pw') || '');
+  const [nidAut, setNidAut] = useState(localStorage.getItem('nid_aut') || '');
+  const [nidSes, setNidSes] = useState(localStorage.getItem('nid_ses') || '');
 
   const handleDirectAutoPublish = async () => {
     if (!selectedPost) return;
     setPublishingDirect(true);
     try {
       localStorage.setItem('naver_id', naverId);
+      localStorage.setItem('naver_pw', naverPw);
+      localStorage.setItem('nid_aut', nidAut);
+      localStorage.setItem('nid_ses', nidSes);
       localStorage.setItem('tistory_blog_name', tistoryBlogName);
       localStorage.setItem('tistory_token', tistoryToken);
       localStorage.setItem('wp_url', wpUrl);
       localStorage.setItem('wp_username', wpUsername);
       localStorage.setItem('wp_app_password', wpAppPassword);
 
-      if (publishPlatform === 'naver') {
+      if (publishPlatform === 'naver' && naverMode === 'bridge') {
         if (!naverId) {
           alert('네이버 아이디를 입력해주세요.');
           setPublishingDirect(false);
@@ -215,26 +215,28 @@ const BlogView = ({ theme, onShowToast }) => {
         try {
           const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
           const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
-          const item = new ClipboardItem({
-            'text/html': blobHtml,
-            'text/plain': blobText
-          });
+          const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
           await navigator.clipboard.write([item]);
         } catch (e) {
           await navigator.clipboard.writeText(selectedPost.html_content);
         }
 
         if (onShowToast) {
-          onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 창에서 바로 Ctrl+V 누르시면 표와 서식이 짠! 하고 예쁘게 출력됩니다!');
+          onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 창에서 바로 Ctrl+V 누르시면 끝!');
         }
         setShowAutoPublishModal(false);
         window.open(`https://blog.naver.com/${naverId}?Redirect=Write`, '_blank');
         return;
       }
 
+      // Macro mode or Tistory / WordPress: Backend Playwright call!
       const res = await axios.post(`/api/blog/posts/${selectedPost.id}/auto-publish`, {
         platform: publishPlatform,
         naver_id: naverId,
+        naver_pw: naverPw,
+        naver_mode: naverMode,
+        nid_aut: nidAut,
+        nid_ses: nidSes,
         tistory_blog_name: tistoryBlogName,
         tistory_access_token: tistoryToken,
         wp_url: wpUrl,
@@ -243,7 +245,7 @@ const BlogView = ({ theme, onShowToast }) => {
       });
 
       if (res.data.success) {
-        if (onShowToast) onShowToast(`🎉 ${res.data.message || '블로그 연결 완료!'}`);
+        if (onShowToast) onShowToast(`🎉 ${res.data.message || '매크로 자동 게시 완료!'}`);
         setShowAutoPublishModal(false);
         fetchPostDetail(selectedPost.id);
         fetchPosts();
@@ -709,57 +711,94 @@ const BlogView = ({ theme, onShowToast }) => {
 
               {publishPlatform === 'naver' && (
                 <div className="space-y-4 bg-[#051c14] p-5 rounded-2xl border border-emerald-500/30">
+                  <div className="flex items-center justify-between pb-2 border-b border-emerald-500/20">
+                    <span className="text-xs font-bold text-emerald-300">발행 작동 모드 선택:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNaverMode('macro')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                          naverMode === 'macro' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'bg-black/40 text-emerald-400'
+                        }`}
+                      >
+                        🤖 100% 매크로 봇 발행
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNaverMode('bridge')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                          naverMode === 'bridge' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'bg-black/40 text-emerald-400'
+                        }`}
+                      >
+                        🟢 1-Click 스마트 복사
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-emerald-400 font-bold mb-1">네이버 아이디 (Naver ID)</label>
                     <input
                       type="text"
                       value={naverId}
                       onChange={e => setNaverId(e.target.value)}
-                      placeholder="예: bluetrio (blog.naver.com/bluetrio의 아이디)"
+                      placeholder="예: bluetrio"
                       className="w-full bg-black/60 border border-emerald-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
                     />
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t border-emerald-500/20">
-                    <p className="text-[11px] font-bold text-emerald-300">
-                      ⚡ 1-Click 네이버 원스톱 렌더링 복사:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedPost.title);
-                          if (onShowToast) onShowToast('📋 제목이 클립보드에 복사되었습니다!');
-                        }}
-                        className="py-2.5 px-3 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Copy className="w-3.5 h-3.5" /> 1. 포스팅 제목 복사
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
-                            const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
-                            const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
-                            await navigator.clipboard.write([item]);
-                          } catch (e) {
-                            await navigator.clipboard.writeText(selectedPost.html_content);
-                          }
-                          if (onShowToast) onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 화면에서 바로 Ctrl+V 누르시면 끝!');
-                        }}
-                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
-                      >
-                        <Copy className="w-3.5 h-3.5" /> 2. 렌더링 서식 복사
-                      </button>
+                  {naverMode === 'macro' ? (
+                    <div className="space-y-3 pt-1">
+                      <div>
+                        <label className="block text-emerald-300 font-bold mb-1">네이버 비밀번호 (매크로 전용)</label>
+                        <input
+                          type="password"
+                          value={naverPw}
+                          onChange={e => setNaverPw(e.target.value)}
+                          placeholder="Playwright 매크로 봇 자동 로그인 비밀번호..."
+                          className="w-full bg-black/60 border border-emerald-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                        />
+                      </div>
+                      <p className="text-[11px] text-emerald-300/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-emerald-500/20">
+                        🤖 <strong>Playwright 100% 자동 매크로:</strong> 하네스 백엔드 헤드리스 브라우저가 직접 네이버 글쓰기에 들어가 제목/내용 입력부터 [발행] 버튼 클릭까지 전부 자동으로 완주합니다!
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-2 pt-2 border-t border-emerald-500/20">
+                      <p className="text-[11px] font-bold text-emerald-300">
+                        ⚡ 1-Click 네이버 원스톱 렌더링 복사:
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedPost.title);
+                            if (onShowToast) onShowToast('📋 제목이 클립보드에 복사되었습니다!');
+                          }}
+                          className="py-2.5 px-3 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> 1. 포스팅 제목 복사
+                        </button>
 
-                  <p className="text-[11px] text-emerald-200/90 leading-relaxed bg-black/40 p-3 rounded-xl border border-emerald-500/20">
-                    💡 <strong>네이버 블로그 렌더링 꿀팁:</strong><br/>
-                    위 <strong>[2. 렌더링 서식 복사]</strong>를 누르신 후, 네이버 스마트에디터 <strong>[기본 에디터] 모드에서 바로 Ctrl + V (붙여넣기)</strong> 하시면 태그 소스 대신 <strong>예쁜 퀀트 디자인 표와 컬러 박스가 완성본 형태로 즉시 출력</strong>됩니다!
-                  </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
+                              const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
+                              const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
+                              await navigator.clipboard.write([item]);
+                            } catch (e) {
+                              await navigator.clipboard.writeText(selectedPost.html_content);
+                            }
+                            if (onShowToast) onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 화면에서 바로 Ctrl+V 누르시면 끝!');
+                          }}
+                          className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> 2. 렌더링 서식 복사
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

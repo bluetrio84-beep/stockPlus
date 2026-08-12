@@ -46,19 +46,37 @@ class BlogAutoPublisher:
             return {"success": False, "error": str(e)}
 
     @staticmethod
-    def publish_to_naver_blog(naver_id: str, title: str, content_html: str) -> dict:
+    def publish_to_naver_blog(
+        naver_id: str,
+        title: str,
+        content_html: str,
+        naver_pw: Optional[str] = None,
+        mode: str = "bridge",
+        nid_aut: Optional[str] = None,
+        nid_ses: Optional[str] = None
+    ) -> dict:
         """
-        네이버 블로그 스마트 포스팅 브릿지
-        네이버는 2019년 공식 API 서비스를 종료하였으므로,
-        스마트에디터 ONE 전용 인라인 HTML 인코딩 파이프라인 및 쓰기 페이지 포워딩을 수행합니다.
+        네이버 블로그 게시 처리 (Playwright 100% 매크로 봇 모드 또는 스마트 1클릭 브릿지 모드)
         """
         clean_id = naver_id.strip()
+        if mode == "macro" or naver_pw or (nid_aut and nid_ses):
+            from app.services.naver_macro_publisher import NaverMacroPublisher
+            logger.info(f"[Naver Macro Publisher] Executing 100% automated Playwright publishing for ID: {clean_id}")
+            return NaverMacroPublisher.publish(
+                naver_id=clean_id,
+                naver_pw=naver_pw,
+                nid_aut=nid_aut,
+                nid_ses=nid_ses,
+                title=title,
+                content_html=content_html
+            )
+
         write_url = f"https://blog.naver.com/{clean_id}?Redirect=Write"
         logger.info(f"[Naver Blog Bridge] Opening SmartEditor ONE for ID: {clean_id}")
         return {
             "success": True,
             "post_url": write_url,
-            "message": f"네이버 블로그({clean_id}) 스마트에디터 글쓰기 창으로 연결되었습니다! 복사된 HTML을 탭에 붙여넣으세요."
+            "message": f"네이버 블로그({clean_id}) 스마트에디터 글쓰기 창으로 연결되었습니다! 복사된 서식을 붙여넣으세요."
         }
 
     @staticmethod

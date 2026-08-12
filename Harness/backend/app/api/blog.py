@@ -224,6 +224,10 @@ def delete_blog_post(post_id: int, db: Session = Depends(get_db)):
 class AutoPublishRequest(BaseModel):
     platform: str  # 'naver' | 'tistory' | 'wordpress' | 'webhook'
     naver_id: Optional[str] = None
+    naver_pw: Optional[str] = None
+    naver_mode: Optional[str] = "bridge"  # 'bridge' | 'macro'
+    nid_aut: Optional[str] = None
+    nid_ses: Optional[str] = None
     tistory_access_token: Optional[str] = None
     tistory_blog_name: Optional[str] = None
     wp_url: Optional[str] = None
@@ -242,6 +246,10 @@ def auto_publish_post(post_id: int, req: AutoPublishRequest, db: Session = Depen
             raise HTTPException(status_code=400, detail="네이버 아이디(naver_id)가 필요합니다.")
         res = BlogAutoPublisher.publish_to_naver_blog(
             naver_id=req.naver_id,
+            naver_pw=req.naver_pw,
+            mode=req.naver_mode or "bridge",
+            nid_aut=req.nid_aut,
+            nid_ses=req.nid_ses,
             title=post.title,
             content_html=post.html_content
         )
