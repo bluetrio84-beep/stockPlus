@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   LayoutDashboard, FileText, Settings, LogOut, Zap, ShieldCheck, Terminal, 
-  ChevronRight, Menu, X, List, Activity, BarChart3, HelpCircle
+  ChevronRight, Menu, X, List, Activity, BarChart3, HelpCircle, Users
 } from 'lucide-react';
 
 // Sub-components
@@ -12,6 +12,7 @@ import BlogView from './BlogView';
 import TaskQueueView from './TaskQueueView';
 import AnalyticsView from './AnalyticsView';
 import HarnessArchitectureGuide from './HarnessArchitectureGuide';
+import DeploymentView from './DeploymentView';
 
 const themes = {
   dark: { bg: 'bg-[#000000]', sidebar: 'bg-[#000000]', card: 'bg-[#0a0a0a]', title: 'text-white', desc: 'text-slate-400', muted: 'text-slate-600', border: 'border-white/10', header: 'bg-black/80' },
@@ -88,6 +89,7 @@ const Dashboard = () => {
             
             <div className="pt-6 pb-2"><p className={`text-[10px] font-bold uppercase tracking-widest px-2 mb-3 ${theme.muted}`}>Active Harnesses</p></div>
             <SidebarItem icon={FileText} label="Quant Blog Engine" active={activeTab === 'blog'} onClick={() => handleNavClick('blog')} badge="v1.0" theme={theme} />
+            <SidebarItem icon={Users} label="Agent Fleet Manager" active={activeTab === 'fleet'} onClick={() => handleNavClick('fleet')} badge="FLEET" theme={theme} />
             <SidebarItem icon={List} label="Task Queue Manager" active={activeTab === 'queue'} onClick={() => handleNavClick('queue')} badge="KAIROS" theme={theme} />
             <SidebarItem icon={BarChart3} label="Quant Analytics" active={activeTab === 'analytics'} onClick={() => handleNavClick('analytics')} theme={theme} />
             
@@ -163,6 +165,23 @@ const Dashboard = () => {
                       </div>
                     </div>
 
+                    {/* Agent Fleet Manager Card */}
+                    <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border} hover:border-indigo-500/50 transition-all group shadow-lg relative overflow-hidden`}>
+                      <div className="flex justify-between mb-6">
+                        <div className="p-4 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-600/20"><Users className="w-6 h-6 text-white" /></div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-black tracking-widest text-indigo-400 mb-1 block">CONCURRENCY</span>
+                          <p className={`text-[10px] font-bold ${theme.muted}`}>FLEET CONTROL</p>
+                        </div>
+                      </div>
+                      <h3 className={`text-lg sm:text-xl font-black mb-2 ${theme.title}`}>Agent Fleet Manager</h3>
+                      <p className={`text-xs leading-relaxed ${theme.desc} mb-6`}>4대 전문 퀀트 에이전트 유닛의 동시성(Concurrency) 수량을 DB와 연동하여 실시간 조율합니다.</p>
+                      
+                      <div className="flex gap-3">
+                        <button onClick={() => setActiveTab('fleet')} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all">Fleet 관제 이동</button>
+                      </div>
+                    </div>
+
                     {/* Task Queue Manager Card */}
                     <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border} hover:border-purple-500/50 transition-all group shadow-lg relative overflow-hidden`}>
                       <div className="flex justify-between mb-6">
@@ -182,29 +201,13 @@ const Dashboard = () => {
                         <button onClick={() => setActiveTab('queue')} className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all">Task Queue 관제 이동</button>
                       </div>
                     </div>
-
-                    {/* Algorithm Guide Banner Card */}
-                    <div className={`${theme.card} p-6 sm:p-8 rounded-3xl border ${theme.border} hover:border-cyan-500/50 transition-all group shadow-lg relative overflow-hidden`}>
-                      <div className="flex justify-between mb-6">
-                        <div className="p-4 bg-cyan-600 rounded-2xl shadow-xl shadow-cyan-600/20"><HelpCircle className="w-6 h-6 text-white" /></div>
-                        <div className="text-right">
-                          <span className="text-[10px] font-black tracking-widest text-cyan-400 mb-1 block">TUTORIAL</span>
-                          <p className={`text-[10px] font-bold ${theme.muted}`}>1 TO 100 FLOW</p>
-                        </div>
-                      </div>
-                      <h3 className={`text-lg sm:text-xl font-black mb-2 ${theme.title}`}>HE 알고리즘 가이드</h3>
-                      <p className={`text-xs leading-relaxed ${theme.desc} mb-6`}>하네스 에이전트의 샌드박스 격리, KAIROS 자율 복구, 체이닝 5단계 동작 원리를 학습합니다.</p>
-                      
-                      <div className="flex gap-3">
-                        <button onClick={() => setActiveTab('guide')} className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition-all">알고리즘 가이드 열기</button>
-                      </div>
-                    </div>
                  </div>
                </div>
             )}
             {activeTab === 'guide' && <HarnessArchitectureGuide theme={theme} />}
             {activeTab === 'console' && <ConsoleView theme={theme} />}
             {activeTab === 'blog' && <BlogView theme={theme} onShowToast={showToast} />}
+            {activeTab === 'fleet' && <DeploymentView theme={theme} onShowToast={showToast} />}
             {activeTab === 'queue' && <TaskQueueView theme={theme} onShowToast={showToast} />}
             {activeTab === 'analytics' && <AnalyticsView theme={theme} />}
             {activeTab === 'settings' && <SettingsView theme={theme} currentTheme={currentTheme} changeTheme={changeTheme} onShowToast={showToast} />}
