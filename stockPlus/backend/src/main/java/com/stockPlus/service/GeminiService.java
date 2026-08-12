@@ -151,7 +151,7 @@ public class GeminiService {
                         int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
                         
                         try {
-                            aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-2.0-flash", promptTokens, completionTokens, totalTokens);
+                            aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3.5-flash", promptTokens, completionTokens, totalTokens);
                         } catch (Exception e) {
                             log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
                         }

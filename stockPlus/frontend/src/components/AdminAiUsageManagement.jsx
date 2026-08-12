@@ -187,7 +187,7 @@ const AdminAiUsageManagement = () => {
                 </h4>
                 <div className="space-y-3 relative z-10">
                     <p className="text-sm lg:text-lg leading-relaxed font-black italic border-l-[6px] border-amber-400/50 pl-6 py-1">
-                        "현재 시스템은 <span className="text-amber-300 underline decoration-amber-400/50 underline-offset-4">Gemini 3.0 Flash</span> 모델을 주력으로 사용 중입니다. 유료 결제 시점의 비용 효율성을 극대화 하기 위해 컨텍스트 최적화가 가동중입니다."
+                        "현재 시스템은 <span className="text-amber-300 underline decoration-amber-400/50 underline-offset-4">Gemini 3.5 Flash</span> 모델을 주력으로 사용 중입니다. 유료 결제 시점의 비용 효율성을 극대화 하기 위해 컨텍스트 최적화가 가동중입니다."
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-xl group hover:bg-white/20 transition-all">

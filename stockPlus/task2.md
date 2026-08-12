@@ -1,6 +1,19 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.46) - 100% 0원 과금 방어 AI 엔진 & Gemini 2.0 Flash 무료 연동 ✨
+## 🚀 최신 업데이트 현황 (v16.47) - Gemini 3.5 Flash 고성능 모델 도입 & UI 표기 동기화 ✨
+
+### 1. Google Gemini 3.5 Flash 고성능 추론 모델 채택
+- **Gemini 3.5 Flash 전환**: 구형 모델(`gemini-2.0-flash`) 퇴역 대응 및 복잡한 주식 수급/WICS 업종/퀀트 지표 간 연관성 추론 능력 극대화를 위해 `gemini-3.5-flash`로 전면 교체.
+- **0원 과금 방어 유지**: 결제 카드 미등록 무료 AI Studio API 키 전용 파이프라인으로 동작하여 100% 무료 유지 (일 1,500회 제한 내 처리).
+- **백엔드 리빌드**: `application.yml` 및 `GeminiService.java` 내 엔드포인트/사용량 로그 동기화 및 `stockplus-backend-1` 재가동 완료.
+
+### 2. 관리자 AI 사용량 관리 UI 표기 갱신
+- **UI 문구 동기화**: `AdminAiUsageManagement.jsx` 내 "Gemini 3.5 Flash 모델을 주력으로 사용 중입니다" 문구로 최신화.
+- **프론트엔드 리빌드**: `stockplus-frontend-1` 리빌드 및 정상 시작 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.46) - 100% 0원 과금 방어 AI 엔진 & Gemini 2.0 Flash 무료 연동 ✨
 
 ### 1. 100% 0원 과금 방어 자체 스마트 퀀트 엔진 구축 (Zero-Cost Engine)
 - **외부 과금 유발 소탕**: 백그라운드 매시간 자동 호출 스케줄러 및 터미널/관리자 리눅스 `gemini` CLI 자동 구동 코드를 완전 박멸.
