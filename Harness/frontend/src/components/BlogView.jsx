@@ -220,16 +220,17 @@ const BlogView = ({ theme, onShowToast }) => {
           return;
         }
         try {
-          const blobHtml = new Blob([selectedPost.html_content], { type: 'text/html' });
-          const blobText = new Blob([selectedPost.html_content], { type: 'text/plain' });
+          const combinedHtml = `<h1 style="font-weight:bold; font-size:1.6rem; color:#0f172a; margin-bottom:16px;">${selectedPost.title}</h1>` + selectedPost.html_content;
+          const blobHtml = new Blob([combinedHtml], { type: 'text/html' });
+          const blobText = new Blob([selectedPost.title + '\n\n' + (selectedPost.markdown_content || selectedPost.html_content)], { type: 'text/plain' });
           const item = new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText });
           await navigator.clipboard.write([item]);
         } catch (e) {
-          await navigator.clipboard.writeText(selectedPost.html_content);
+          await navigator.clipboard.writeText(selectedPost.title + '\n\n' + selectedPost.html_content);
         }
 
         if (onShowToast) {
-          onShowToast('📋 [서식 복사 완료!] 네이버 글쓰기 창에서 바로 Ctrl+V 누르시면 끝!');
+          onShowToast('🎉 [1-Click 원스톱 복사 완료!] 네이버 글쓰기 창에서 Ctrl+V 누르시면 제목+서식이 한 번에 붙습니다!');
         }
         setShowAutoPublishModal(false);
         window.open(`https://blog.naver.com/${naverId}?Redirect=Write`, '_blank');
@@ -341,6 +342,27 @@ const BlogView = ({ theme, onShowToast }) => {
   };
 
   const handleCopy = async (content) => {
+    const previewEl = document.getElementById('quant-blog-preview-container');
+    if (viewTab === 'html' && previewEl) {
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(previewEl);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        const success = document.execCommand('copy');
+        selection.removeAllRanges();
+        if (success) {
+          setCopied(true);
+          if (onShowToast) onShowToast('📋 [화면 렌더링 100% 동일 복사 완료!] 네이버/티스토리 글쓰기 창에서 Ctrl+V 하세요.');
+          setTimeout(() => setCopied(false), 2000);
+          return;
+        }
+      } catch (err) {
+        console.error('DOM selection copy error:', err);
+      }
+    }
+
     try {
       const blobHtml = new Blob([content], { type: 'text/html' });
       const blobText = new Blob([content], { type: 'text/plain' });
@@ -353,7 +375,7 @@ const BlogView = ({ theme, onShowToast }) => {
       await navigator.clipboard.writeText(content);
     }
     setCopied(true);
-    if (onShowToast) onShowToast('📋 [서식 적용 복사 완료!] 네이버/티스토리 기본에디터에 바로 Ctrl+V 하세요!');
+    if (onShowToast) onShowToast('📋 [서식 적용 복사 완료!] 네이버/티스토리에 바로 Ctrl+V 하세요!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -566,6 +588,7 @@ const BlogView = ({ theme, onShowToast }) => {
               <div className="flex-1 overflow-y-auto mt-3 p-4 rounded-2xl bg-white/5 border border-white/5">
                 {viewTab === 'html' ? (
                   <div
+                    id="quant-blog-preview-container"
                     className="prose max-w-none text-slate-200"
                     dangerouslySetInnerHTML={{ __html: selectedPost.html_content }}
                   />
