@@ -230,6 +230,15 @@ public class StockDashboardController {
     }
 
     /**
+     * AI 시장 분석 리포트를 즉시 수동 갱신합니다. (Gemini 3.5 Flash 호출)
+     */
+    @PostMapping("/market-insight/refresh")
+    public String refreshMarketInsight() {
+        dashboardService.updateGeneralInsightScheduled();
+        return dashboardService.getMarketInsight();
+    }
+
+    /**
      * 특정 주제에 대한 AI 특별 리포트를 조회합니다.
      * @return 특별 리포트 내용
      */

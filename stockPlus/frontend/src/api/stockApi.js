@@ -99,6 +99,19 @@ export async function fetchMarketInsight() {
     return data || "AI Market Insight를 가져오는데 실패했습니다.";
 }
 
+// 종합 시장 인사이트(AI 요약) 수동 갱신 (Gemini 3.5 Flash 호출)
+export async function refreshMarketInsight() {
+    try {
+        const response = await fetch('/api/dashboard/market-insight/refresh', { method: 'POST' });
+        if (response.ok) {
+            return await response.text();
+        }
+    } catch (e) {
+        console.error("Refresh error:", e);
+    }
+    return null;
+}
+
 // 전담 AI 리포트(맞춤형 분석) 조회
 export async function fetchSpecialReport() {
     const data = await safeFetch('api/dashboard/special-report');

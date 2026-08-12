@@ -4,44 +4,49 @@ import ChartWidget from './ChartWidget';
 import NewsFeed from './NewsFeed';
 import { getMarketDisplay } from '../utils/stockUtils';
 import classNames from 'classnames';
-import { Plus, Trash2, Repeat, Search, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Repeat, Search, Sparkles, RefreshCw } from 'lucide-react';
 
 const Dashboard_Desktop = ({
     displayStocks, selectedStock, marketInsight, news, rankings, // [추가] rankings 누락분 보충
     searchKeyword, searchResults, isEditMode, globalMarketMode, activeWatchlistTab, currentPeriod,
     handleSearch, handleSearchResultClick, confirmDelete, setGlobalMarketMode, setIsEditMode,
-    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText, onToggleFavorite 
+    setActiveWatchlistTab, setCurrentPeriod, navigate, renderFormattedText, onToggleFavorite,
+    onRefreshInsight, isRefreshingInsight
 }) => {
     const marketInfo = getMarketDisplay(globalMarketMode);
 
     return (
-        <div className="hidden lg:grid grid-cols-12 gap-4 p-4 flex-1 h-full overflow-hidden">
-            <div className="col-span-3 h-full flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl overflow-hidden transition-colors duration-500">
-                <div className="p-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] space-y-3">
-                    <div className="flex justify-between items-center">
-                        <span className="font-bold text-[var(--theme-text)] text-sm opacity-80 transition-colors">관심 종목</span>
-                        <div className="flex gap-1.5">
-                            <button onClick={() => setGlobalMarketMode(m => m === 'J' ? 'NX' : (m === 'NX' ? 'UN' : 'J'))} className={classNames("flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded border transition-all shadow-sm", marketInfo.colorClass)}>
-                                <Repeat size={10}/>{marketInfo.name}
-                            </button>
-                            <button onClick={() => setIsEditMode(!isEditMode)} className={classNames("text-xs font-bold px-2 py-1 rounded transition-colors", { "text-indigo-400 bg-indigo-400/10": isEditMode, "text-slate-500 hover:text-[var(--theme-text)]": !isEditMode })}>{isEditMode ? '완료' : '편집'}</button>
-                            {isEditMode && displayStocks.length > 0 && (
-                                <button onClick={(e) => confirmDelete(e, 'ALL')} className="text-xs font-bold px-2 py-1 rounded text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors">전체 삭제</button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                        <input type="text" placeholder="종목 검색..." className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg py-1.5 pl-9 pr-3 text-xs text-[var(--theme-text)] font-black placeholder:text-slate-600 focus:outline-none transition-colors" value={searchKeyword} onChange={(e) => handleSearch(e.target.value)} />
-                        {searchResults.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-lg shadow-2xl max-h-64 overflow-y-auto">
-                                {searchResults.map(s => <div key={s.code} onClick={() => handleSearchResultClick(s)} className="p-2.5 hover:bg-[var(--theme-bg)] cursor-pointer border-b border-[var(--theme-border)] flex justify-between items-center group"><div><div className="font-bold text-[var(--theme-text)] text-xs group-hover:text-indigo-400 transition-colors">{s.name}</div><div className="text-[10px] text-slate-500">{s.code}</div></div><Plus size={14} className="text-slate-500" /></div>)}
-                            </div>
-                        )}
+        <div className="hidden lg:grid grid-cols-12 gap-4 h-full p-4 overflow-hidden">
+            <div className="col-span-3 h-full flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl shadow-xl overflow-hidden">
+                <div className="p-3 border-b border-[var(--theme-border)] flex items-center justify-between">
+                    <h2 className="font-bold text-[var(--theme-text)] transition-colors">관심종목</h2>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsEditMode(!isEditMode)} className={classNames("p-1.5 rounded-lg text-xs font-bold transition-all", { "bg-red-500 text-white": isEditMode, "bg-slate-800 text-slate-400 hover:text-white": !isEditMode })}>
+                            {isEditMode ? '완료' : '편집'}
+                        </button>
+                        {isEditMode && <button onClick={(e) => confirmDelete(e, 'ALL')} className="p-1.5 bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-colors">전체삭제</button>}
                     </div>
                 </div>
-
-                <div className="flex border-b border-[var(--theme-border)] bg-[var(--theme-header)]">
+                <div className="p-2 border-b border-[var(--theme-border)] relative">
+                    <div className="relative">
+                        <input type="text" value={searchKeyword} onChange={(e) => handleSearch(e.target.value)} placeholder="종목명 또는 코드 검색..." className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-sm px-3 py-2 pr-8 rounded-lg border border-[var(--theme-border)] focus:outline-none focus:border-indigo-500 transition-colors" />
+                        <Search className="absolute right-2.5 top-2.5 text-slate-500" size={16} />
+                    </div>
+                    {searchResults.length > 0 && (
+                        <div className="absolute left-2 right-2 top-full mt-1 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-lg shadow-2xl z-50 max-h-60 overflow-y-auto">
+                            {searchResults.map(s => (
+                                <div key={s.code} onClick={() => handleSearchResultClick(s)} className="p-2.5 hover:bg-[var(--theme-bg)] cursor-pointer flex items-center justify-between border-b border-[var(--theme-border)]/50 last:border-0">
+                                    <div>
+                                        <div className="font-bold text-xs text-[var(--theme-text)]">{s.name}</div>
+                                        <div className="text-[10px] text-slate-500">{s.code}</div>
+                                    </div>
+                                    <Plus className="text-indigo-400" size={14} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex border-b border-[var(--theme-border)] bg-[var(--theme-header)]/30">
                     {[1, 2, 3, 4].map(id => <button key={id} onClick={() => setActiveWatchlistTab(id)} className={classNames("flex-1 py-2 text-xs font-bold transition-all", { "text-[var(--theme-text)] border-b-2 border-indigo-500 bg-[var(--theme-bg)]/50": activeWatchlistTab === id, "text-slate-500 hover:text-[var(--theme-text)]": activeWatchlistTab !== id })}>관심 {id}</button>)}
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -58,7 +63,22 @@ const Dashboard_Desktop = ({
             </div>
             <div className="col-span-3 h-full flex flex-col gap-4 overflow-hidden">
                 <div className="h-[35%] bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl shadow-xl overflow-hidden flex flex-col">
-                    <div className="p-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-2"><Sparkles className="text-yellow-400" size={18} /><h3 className="font-bold text-[var(--theme-text)] text-sm transition-colors">AI Market Insight</h3></div>
+                    <div className="p-3 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="text-yellow-400" size={18} />
+                            <h3 className="font-bold text-[var(--theme-text)] text-sm transition-colors">AI Market Insight</h3>
+                        </div>
+                        {onRefreshInsight && (
+                            <button
+                                onClick={onRefreshInsight}
+                                disabled={isRefreshingInsight}
+                                title="Gemini 3.5 Flash 즉시 새로고침"
+                                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 transition-all disabled:opacity-50"
+                            >
+                                <RefreshCw size={14} className={isRefreshingInsight ? 'animate-spin text-amber-400' : ''} />
+                            </button>
+                        )}
+                    </div>
                     <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-[var(--theme-header)]">
                         {renderFormattedText(marketInsight) || <div className="text-slate-500 text-sm italic">요약을 불러오는 중입니다...</div>}
                     </div>

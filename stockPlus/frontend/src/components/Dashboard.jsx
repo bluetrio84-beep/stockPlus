@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, fetchSpecialReport, toggleFavorite, fetchTopRankings } from '../api/stockApi';
+import { fetchWatchlist, addToWatchlist, deleteFromWatchlist, deleteAllFromWatchlist, searchStocks, fetchStockChart, fetchStockPrice, fetchRecentNews, fetchMarketInsight, refreshMarketInsight, fetchSpecialReport, toggleFavorite, fetchTopRankings } from '../api/stockApi';
 import classNames from 'classnames';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
@@ -16,7 +16,20 @@ function Dashboard() {
   const [displayStocks, setDisplayStocks] = useState([]);
   const [news, setNews] = useState([]);
   const [marketInsight, setMarketInsight] = useState('');
+  const [isRefreshingInsight, setIsRefreshingInsight] = useState(false);
   const [specialReport, setSpecialReport] = useState('');
+
+  const handleRefreshInsight = async () => {
+      setIsRefreshingInsight(true);
+      try {
+          const newInsight = await refreshMarketInsight();
+          if (newInsight) setMarketInsight(newInsight);
+      } catch (e) {
+          console.error("Failed to refresh insight", e);
+      } finally {
+          setIsRefreshingInsight(false);
+      }
+  };
   const [rankings, setRankings] = useState([]); // [v13.5] 랭킹 상태 추가
   const [selectedStock, setSelectedStock] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); 
@@ -335,6 +348,7 @@ function Dashboard() {
             handleSearchResultClick={handleSearchResultClick} confirmDelete={confirmDelete} setGlobalMarketMode={setGlobalMarketMode}
             setIsEditMode={setIsEditMode} setActiveWatchlistTab={setActiveWatchlistTab} setCurrentPeriod={setCurrentPeriod}
             renderFormattedText={renderFormattedText} navigate={navigate} onToggleFavorite={handleToggleFavorite}
+            onRefreshInsight={handleRefreshInsight} isRefreshingInsight={isRefreshingInsight}
         />
         <Dashboard_Mobile 
             activeTab={activeTab} setActiveTab={setActiveTab} watchlistSubTab={watchlistSubTab} setWatchlistSubTab={setWatchlistSubTab}
@@ -346,6 +360,7 @@ function Dashboard() {
             confirmDelete={confirmDelete} setGlobalMarketMode={setGlobalMarketMode} setIsEditMode={setIsEditMode}
             setActiveWatchlistTab={setActiveWatchlistTab} setCurrentPeriod={setCurrentPeriod} navigate={navigate}
             renderFormattedText={renderFormattedText} onToggleFavorite={handleToggleFavorite}
+            onRefreshInsight={handleRefreshInsight} isRefreshingInsight={isRefreshingInsight}
         />
         {showDeleteConfirm && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
