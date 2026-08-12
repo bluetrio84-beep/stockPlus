@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, settings as api_settings, agents as api_agents, stream as api_stream, tasks as api_tasks
+from app.api import auth, settings as api_settings, agents as api_agents, stream as api_stream, tasks as api_tasks, blog as api_blog
 from app.core.config import settings
 from app.core.broadcaster import log_broadcaster
 import asyncio
@@ -26,6 +26,7 @@ app.include_router(api_settings.router, prefix="/api/settings", tags=["settings"
 app.include_router(api_agents.router, prefix="/api/agents", tags=["agents"])
 app.include_router(api_stream.router, prefix="/api/stream", tags=["stream"])
 app.include_router(api_tasks.router, prefix="/api/tasks", tags=["tasks"])
+app.include_router(api_blog.router, prefix="/api", tags=["blog"])
 
 # --- 시스템 하트비트 및 AutoDream 백그라운드 태스크 ---
 @app.on_event("startup")

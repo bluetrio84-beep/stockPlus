@@ -9,6 +9,7 @@ import {
 import DeploymentView from './DeploymentView';
 import ConsoleView from './ConsoleView';
 import SettingsView from './SettingsView';
+import BlogView from './BlogView';
 
 const themes = {
   dark: { bg: 'bg-[#000000]', sidebar: 'bg-[#000000]', card: 'bg-[#0a0a0a]', title: 'text-white', desc: 'text-slate-400', muted: 'text-slate-600', border: 'border-white/10', header: 'bg-black/80' },
@@ -114,15 +115,7 @@ const Dashboard = () => {
             )}
             {activeTab === 'deployment' && <DeploymentView theme={theme} onShowToast={showToast} />}
             {activeTab === 'console' && <ConsoleView theme={theme} />}
-            {activeTab === 'blog' && (
-              <div className="animate-in fade-in duration-300 p-8 bg-slate-900/50 border border-white/10 rounded-3xl text-center">
-                <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Quant Stock Auto-Blogger Engine</h3>
-                <p className="text-slate-400 text-sm max-w-lg mx-auto mb-6">
-                  StockPlus 실시간 수급/WICS 업종/상한가 테마 데이터를 읽어와 네이버/티스토리 호환 고품질 정밀 포스팅을 생성하는 1단계 개편 작업 진행 중입니다.
-                </p>
-              </div>
-            )}
+            {activeTab === 'blog' && <BlogView theme={theme} onShowToast={showToast} />}
             {activeTab === 'settings' && <SettingsView theme={theme} currentTheme={currentTheme} changeTheme={changeTheme} onShowToast={showToast} />}
           </div>
         </div>

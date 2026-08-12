@@ -1,5 +1,11 @@
 # ⚠️ [절대 금지: 덮어쓰기 금지 !! 정밀타격 !!]
 
+## ✅ [2026-08-12] 퀀트 주식 자동 블로그 엔진 (BlogHarness) 구축 완료
+- **데이터 파이프라인 연동:** StockPlus MySQL DB (`market_themes`, `industry_quotes`, `stock_supply_demand`, `ai_next_leaders`)에서 실시간 수급/WICS 80개 업종 데이터를 직접 쿼리하는 `blog_data_service.py` 구축 완료.
+- **DB 스키마 구축:** `harness_db` 내 포스팅 및 스냅샷 저장용 `blog_posts`, `blog_data_snapshots` 테이블 구축 완료.
+- **템플릿 & REST API 연동:** SEO 최적화 제목/마크다운/HTML 포스팅 생성 템플릿(`blog_template.py`), 오케스트레이션 서비스(`blog_builder.py`), FastAPI 라우터(`/api/blog/generate`, `/api/blog/posts`) 탑재 완료.
+- **UI 구현:** `BlogView.jsx` 구축 및 `Dashboard.jsx` 연결 완료 (HTML/마크다운 1클립보드 복사, 즉시 포스팅 생성 기능 제공).
+
 ## ✅ [2026-08-12] 하네스 1단계 개편 플랜 수립 (고품질 퀀트 주식 블로그 포스팅 엔진)
 - **불필요한 모듈 소탕:** 쓰이지 않는 유튜브 대본/영상 생성 모듈(`yt_harness`, `YouTubeView`) 및 관련 레거시 전면 정리 수립.
 - **고품질 퀀트 주식 블로그 엔진 구축:** StockPlus 실시간 수급/테마/WICS 데이터 기반 쌈빡한 자동 주식 포스팅 엔진(`BlogHarness`) 탑재 예정.

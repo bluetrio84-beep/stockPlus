@@ -116,3 +116,29 @@ CREATE TABLE IF NOT EXISTS `agent_memory` (
     `relevance_score` FLOAT,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- --------------------------------------------------------
+-- Quant Blog Engine Tables
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `blog_posts` (
+    `id`               INT AUTO_INCREMENT PRIMARY KEY,
+    `post_date`        DATE NOT NULL,
+    `post_type`        ENUM('DAILY_MARKET','THEME_ANALYSIS','SECTOR_LEADER','SUPPLY_DEMAND') NOT NULL DEFAULT 'DAILY_MARKET',
+    `title`            VARCHAR(500) NOT NULL,
+    `html_content`     LONGTEXT,
+    `markdown_content` LONGTEXT,
+    `status`           ENUM('DRAFT','READY','PUBLISHED') DEFAULT 'DRAFT',
+    `seo_keywords`     VARCHAR(500),
+    `created_at`       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `published_at`     TIMESTAMP NULL
+);
+
+CREATE TABLE IF NOT EXISTS `blog_data_snapshots` (
+    `id`          INT AUTO_INCREMENT PRIMARY KEY,
+    `post_id`     INT,
+    `data_type`   VARCHAR(50),
+    `raw_json`    JSON,
+    `captured_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`post_id`) REFERENCES `blog_posts`(`id`) ON DELETE CASCADE
+);
