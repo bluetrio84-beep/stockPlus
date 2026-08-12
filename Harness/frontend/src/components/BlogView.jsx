@@ -187,6 +187,7 @@ const BlogView = ({ theme, onShowToast }) => {
   // Direct Auto-Publishing State
   const [showAutoPublishModal, setShowAutoPublishModal] = useState(false);
   const [publishPlatform, setPublishPlatform] = useState('naver');
+  const [naverId, setNaverId] = useState(localStorage.getItem('naver_id') || '');
   const [naverMode, setNaverMode] = useState('macro');
   const [naverPw, setNaverPw] = useState(localStorage.getItem('naver_pw') || '');
   const [nidAut, setNidAut] = useState(localStorage.getItem('nid_aut') || '');
