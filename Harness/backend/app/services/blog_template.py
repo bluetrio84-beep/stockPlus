@@ -48,38 +48,46 @@ class BlogTemplateEngine:
         # SEO Keywords
         seo_keywords = f"오늘주식, {top_theme_name}, {top_sector_name}, 수급분석, 외국인순매수, 주식시황, 퀀트분석"
 
-        # 2. Generate Naver-Compatible Pure Inline HTML
+        # 2. Naver SmartEditor ONE Certified 1x1 Table Container Architecture
         html_lines = []
         html_lines.append('<div style="font-family: \'Apple SD Gothic Neo\', \'맑은 고딕\', sans-serif; line-height: 1.8; color: #1e293b; max-width: 780px; margin: 0 auto; padding: 10px; background-color: #ffffff;">')
         
-        # Header Banner Block (Solid Navy Background for Naver SmartEditor compatibility)
+        # Header Banner Block (Using Naver-Certified 1x1 Table Cell Background)
         html_lines.append(f'''
-        <div style="background-color: #0f172a; color: #ffffff; padding: 22px 24px; border-radius: 10px; margin-bottom: 24px;">
-            <div style="display: inline-block; background-color: #0284c7; color: #ffffff; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">DAILY QUANT MARKET REPORT</div>
-            <h1 style="font-size: 20px; margin: 8px 0 10px 0; color: #ffffff; font-weight: bold; line-height: 1.4;">{title}</h1>
-            <div style="color: #94a3b8; font-size: 13px;">작성일자: {date_str} | StockPlus Quant Engine 분석</div>
-        </div>
+        <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px; border: none;">
+            <tr>
+                <td style="background-color: #0f172a; color: #ffffff; padding: 24px 28px; border-radius: 12px; border: none;">
+                    <span style="display: inline-block; background-color: #0284c7; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-size: 14px; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 12px;">DAILY QUANT MARKET REPORT</span>
+                    <h1 style="font-size: 22px; margin: 10px 0 10px 0; color: #ffffff; font-weight: bold; line-height: 1.5;">{title}</h1>
+                    <p style="margin: 0; color: #94a3b8; font-size: 14px; font-weight: 500;">작성일자: {date_str} | StockPlus Quant Engine 분석</p>
+                </td>
+            </tr>
+        </table>
         ''')
 
-        # AI Summary Block
+        # AI Summary Block (Using Naver-Certified 1x1 Table Cell Background)
         if ai_summary:
             html_lines.append(f'''
-            <div style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;">
-                <div style="color: #0369a1; font-size: 16px; font-weight: bold; margin-bottom: 8px;">🤖 AI 퀀트 시장 종합 가이드</div>
-                <div style="color: #334155; font-size: 14px; line-height: 1.7; white-space: pre-line;">{ai_summary}</div>
-            </div>
+            <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px; border: none;">
+                <tr>
+                    <td style="background-color: #f0f9ff; border-left: 6px solid #0284c7; padding: 20px 24px; border-radius: 8px; border-top: none; border-right: none; border-bottom: none;">
+                        <div style="color: #0369a1; font-size: 17px; font-weight: bold; margin-bottom: 10px;">🤖 AI 퀀트 시장 종합 가이드</div>
+                        <div style="color: #334155; font-size: 15px; line-height: 1.8; white-space: pre-line;">{ai_summary}</div>
+                    </td>
+                </tr>
+            </table>
             ''')
 
         # Section 1: Hot Themes
         html_lines.append('<h2 style="font-size: 18px; color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 6px; margin-top: 28px; font-weight: bold;">🔥 오늘의 핫 테마 TOP 5</h2>')
         if themes:
             html_lines.append('<table border="0" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px;">')
-            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px; color: #334155; font-weight: bold; width: 50px;">순위</th><th style="padding: 10px; color: #334155; font-weight: bold;">테마명</th><th style="padding: 10px; color: #334155; font-weight: bold; width: 100px;">등락률</th><th style="padding: 10px; color: #334155; font-weight: bold;">주도주</th></tr>')
+            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 12px; color: #334155; font-weight: bold; width: 50px;">순위</th><th style="padding: 12px; color: #334155; font-weight: bold;">테마명</th><th style="padding: 12px; color: #334155; font-weight: bold; width: 100px;">등락률</th><th style="padding: 12px; color: #334155; font-weight: bold;">주도주</th></tr>')
             for idx, t in enumerate(themes[:5], 1):
                 rate_str = self.format_rate(t.get('change_rate'))
                 stocks = t.get('lead_stocks', '-') or '-'
                 bg_color = "#ffffff" if idx % 2 != 0 else "#f8fafc"
-                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px; font-weight: bold; color: #64748b;">{idx}</td><td style="padding: 10px; font-weight: bold; color: #0f172a;">{t.get("theme_name")}</td><td style="padding: 10px;">{rate_str}</td><td style="padding: 10px; color: #475569;">{stocks}</td></tr>')
+                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px; font-weight: bold; color: #64748b;">{idx}</td><td style="padding: 12px; font-weight: bold; color: #0f172a;">{t.get("theme_name")}</td><td style="padding: 12px;">{rate_str}</td><td style="padding: 12px; color: #475569;">{stocks}</td></tr>')
             html_lines.append('</table>')
         else:
             html_lines.append('<p style="color: #94a3b8; font-size: 14px;">오늘 수집된 테마 데이터가 없습니다.</p>')
@@ -88,12 +96,12 @@ class BlogTemplateEngine:
         html_lines.append('<h2 style="font-size: 18px; color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 6px; margin-top: 28px; font-weight: bold;">🏭 WICS 업종 주도주 동향</h2>')
         if sectors:
             html_lines.append('<table border="0" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px;">')
-            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px; color: #334155; font-weight: bold;">업종명</th><th style="padding: 10px; color: #334155; font-weight: bold; width: 100px;">등락률</th><th style="padding: 10px; color: #334155; font-weight: bold;">업종 주도주</th></tr>')
+            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 12px; color: #334155; font-weight: bold;">업종명</th><th style="padding: 12px; color: #334155; font-weight: bold; width: 100px;">등락률</th><th style="padding: 12px; color: #334155; font-weight: bold;">업종 주도주</th></tr>')
             for idx, s in enumerate(sectors[:5], 1):
                 rate_str = self.format_rate(s.get('change_rate'))
                 stocks = s.get('lead_stocks', '-') or '-'
                 bg_color = "#ffffff" if idx % 2 != 0 else "#f8fafc"
-                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px; font-weight: bold; color: #0f172a;">{s.get("industry_name")}</td><td style="padding: 10px;">{rate_str}</td><td style="padding: 10px; color: #475569;">{stocks}</td></tr>')
+                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px; font-weight: bold; color: #0f172a;">{s.get("industry_name")}</td><td style="padding: 12px;">{rate_str}</td><td style="padding: 12px; color: #475569;">{stocks}</td></tr>')
             html_lines.append('</table>')
         else:
             html_lines.append('<p style="color: #94a3b8; font-size: 14px;">오늘 수집된 업종 데이터가 없습니다.</p>')
@@ -102,18 +110,18 @@ class BlogTemplateEngine:
         if ai_leaders:
             html_lines.append('<h2 style="font-size: 18px; color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 6px; margin-top: 28px; font-weight: bold;">🤖 AI 주도주 예측 (LSTM / XGBoost)</h2>')
             html_lines.append('<table border="0" cellpadding="10" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px;">')
-            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 10px; color: #334155; font-weight: bold;">종목코드</th><th style="padding: 10px; color: #334155; font-weight: bold;">종목명</th><th style="padding: 10px; color: #334155; font-weight: bold;">예측 모델</th><th style="padding: 10px; color: #334155; font-weight: bold;">신뢰도</th><th style="padding: 10px; color: #334155; font-weight: bold;">시그널</th></tr>')
+            html_lines.append('<tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #cbd5e1;"><th style="padding: 12px; color: #334155; font-weight: bold;">종목코드</th><th style="padding: 12px; color: #334155; font-weight: bold;">종목명</th><th style="padding: 12px; color: #334155; font-weight: bold;">예측 모델</th><th style="padding: 12px; color: #334155; font-weight: bold;">신뢰도</th><th style="padding: 12px; color: #334155; font-weight: bold;">시그널</th></tr>')
             for idx, leader in enumerate(ai_leaders[:5], 1):
                 score = leader.get('confidence_score', 0)
                 signal = leader.get('predicted_signal', 'BUY')
                 sig_style = 'color: #e11d48; font-weight: bold;' if signal == 'BUY' else 'color: #64748b;'
                 bg_color = "#ffffff" if idx % 2 != 0 else "#f8fafc"
-                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 10px; color: #64748b; font-family: monospace;">{leader.get("stock_code")}</td><td style="padding: 10px; font-weight: bold; color: #0f172a;">{leader.get("stock_name")}</td><td style="padding: 10px; color: #475569;">{leader.get("model_type")}</td><td style="padding: 10px; font-weight: bold; color: #0284c7;">{score}%</td><td style="padding: 10px; {sig_style}">{signal}</td></tr>')
+                html_lines.append(f'<tr style="background-color: {bg_color}; border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px; color: #64748b; font-family: monospace;">{leader.get("stock_code")}</td><td style="padding: 12px; font-weight: bold; color: #0f172a;">{leader.get("stock_name")}</td><td style="padding: 12px; color: #475569;">{leader.get("model_type")}</td><td style="padding: 12px; font-weight: bold; color: #0284c7;">{score}%</td><td style="padding: 12px; {sig_style}">{signal}</td></tr>')
             html_lines.append('</table>')
 
         # Footer Hashtags
         html_lines.append(f'''
-        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px dashed #cbd5e1; color: #0284c7; font-size: 13px; font-weight: bold;">
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px dashed #cbd5e1; color: #0284c7; font-size: 14px; font-weight: bold;">
             #오늘주식 #주식시황 #{top_theme_name} #{top_sector_name} #퀀트분석 #외국인순매수 #StockPlus #주식투자
         </div>
         </div>
