@@ -341,21 +341,35 @@ const BlogView = ({ theme, onShowToast }) => {
     if (onShowToast) onShowToast('❌ Harness AI Self-Correction 최종 실패. 로그를 확인하세요.');
   };
 
-  const handleCopy = async (content) => {
+  const handleCopyRichHtml = async (contentHtml) => {
     try {
-      // Copy raw string (matches .html file download 100%)
-      await navigator.clipboard.writeText(content);
+      const blobHtml = new Blob([contentHtml], { type: 'text/html' });
+      const blobText = new Blob([contentHtml], { type: 'text/plain' });
+      const item = new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText
+      });
+      await navigator.clipboard.write([item]);
       setCopied(true);
       if (onShowToast) {
-        onShowToast(
-          viewTab === 'html'
-            ? '📋 [.html 파일 100% 동일 원본 코드 복사 완료!] 네이버 스마트에디터 [HTML 탭]에서 Ctrl+V 하세요!'
-            : '📋 [마크다운 원문 복사 완료!] 벨로그/티스토리에 바로 Ctrl+V 하세요!'
-        );
+        onShowToast('📋 [네이버 서식 복사 완료!] 네이버 글쓰기 화면에서 바로 Ctrl+V 하시면 표와 스타일이 짠! 하고 나타납니다!');
       }
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Clipboard copy error:', err);
+      await navigator.clipboard.writeText(contentHtml);
+    }
+  };
+
+  const handleCopyRawText = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (onShowToast) {
+        onShowToast('📋 [HTML 소스 코드 복사 완료!] 원본 소스 코드 복사됨.');
+      }
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -527,13 +541,23 @@ const BlogView = ({ theme, onShowToast }) => {
                     <span>{viewTab === 'html' ? '.html 저장' : '.md 저장'}</span>
                   </button>
 
-                  <button
-                    onClick={() => handleCopy(viewTab === 'html' ? selectedPost.html_content : selectedPost.markdown_content)}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{viewTab === 'html' ? 'HTML 복사' : '마크다운 복사'}</span>
-                  </button>
+                  {viewTab === 'html' ? (
+                    <button
+                      onClick={() => handleCopyRichHtml(selectedPost.html_content)}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>🎨 렌더링 서식 복사</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleCopyRawText(selectedPost.markdown_content)}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>마크다운 복사</span>
+                    </button>
+                  )}
 
                   {selectedPost.status !== 'PUBLISHED' && (
                     <button
