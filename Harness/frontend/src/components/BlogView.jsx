@@ -342,41 +342,21 @@ const BlogView = ({ theme, onShowToast }) => {
   };
 
   const handleCopy = async (content) => {
-    const previewEl = document.getElementById('quant-blog-preview-container');
-    if (viewTab === 'html' && previewEl) {
-      try {
-        const range = document.createRange();
-        range.selectNodeContents(previewEl);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        const success = document.execCommand('copy');
-        selection.removeAllRanges();
-        if (success) {
-          setCopied(true);
-          if (onShowToast) onShowToast('📋 [화면 렌더링 100% 동일 복사 완료!] 네이버/티스토리 글쓰기 창에서 Ctrl+V 하세요.');
-          setTimeout(() => setCopied(false), 2000);
-          return;
-        }
-      } catch (err) {
-        console.error('DOM selection copy error:', err);
-      }
-    }
-
     try {
-      const blobHtml = new Blob([content], { type: 'text/html' });
-      const blobText = new Blob([content], { type: 'text/plain' });
-      const item = new ClipboardItem({
-        'text/html': blobHtml,
-        'text/plain': blobText
-      });
-      await navigator.clipboard.write([item]);
-    } catch (e) {
+      // Copy raw string (matches .html file download 100%)
       await navigator.clipboard.writeText(content);
+      setCopied(true);
+      if (onShowToast) {
+        onShowToast(
+          viewTab === 'html'
+            ? '📋 [.html 파일 100% 동일 원본 코드 복사 완료!] 네이버 스마트에디터 [HTML 탭]에서 Ctrl+V 하세요!'
+            : '📋 [마크다운 원문 복사 완료!] 벨로그/티스토리에 바로 Ctrl+V 하세요!'
+        );
+      }
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Clipboard copy error:', err);
     }
-    setCopied(true);
-    if (onShowToast) onShowToast('📋 [서식 적용 복사 완료!] 네이버/티스토리에 바로 Ctrl+V 하세요!');
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDelete = async (postId) => {
