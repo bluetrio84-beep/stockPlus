@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   FileText, Sparkles, Copy, Check, Calendar, RefreshCw, Trash2, Eye,
-  Cpu, AlertCircle, CheckCircle, Clock, Download, HelpCircle, ExternalLink, Share2
+  Cpu, AlertCircle, CheckCircle, Clock, Download, HelpCircle, ExternalLink, Share2, Zap
 } from 'lucide-react';
 
 // ── Harness Task Status Badge ─────────────────────────────
