@@ -207,7 +207,18 @@ const BlogView = ({ theme, onShowToast }) => {
       localStorage.setItem('wp_app_password', wpAppPassword);
 
       if (publishPlatform === 'naver') {
-        navigator.clipboard.writeText(selectedPost.html_content);
+        if (!naverId) {
+          alert('네이버 아이디를 입력해주세요.');
+          setPublishingDirect(false);
+          return;
+        }
+        await navigator.clipboard.writeText(selectedPost.html_content);
+        if (onShowToast) {
+          onShowToast('📋 [본문 HTML 클립보드 복사 완료!] 네이버 스마트에디터 우측 하단 [HTML] 탭에 Ctrl+V 하세요!');
+        }
+        setShowAutoPublishModal(false);
+        window.open(`https://blog.naver.com/${naverId}?Redirect=Write`, '_blank');
+        return;
       }
 
       const res = await axios.post(`/api/blog/posts/${selectedPost.id}/auto-publish`, {
@@ -676,19 +687,50 @@ const BlogView = ({ theme, onShowToast }) => {
               </div>
 
               {publishPlatform === 'naver' && (
-                <div className="space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
+                <div className="space-y-4 bg-[#051c14] p-5 rounded-2xl border border-emerald-500/30">
                   <div>
-                    <label className="block text-slate-400 font-bold mb-1">네이버 아이디 (Naver ID)</label>
+                    <label className="block text-emerald-400 font-bold mb-1">네이버 아이디 (Naver ID)</label>
                     <input
                       type="text"
                       value={naverId}
                       onChange={e => setNaverId(e.target.value)}
-                      placeholder="예: mynaverid (blog.naver.com/mynaverid의 아이디)"
-                      className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      placeholder="예: bluetrio (blog.naver.com/bluetrio의 아이디)"
+                      className="w-full bg-black/60 border border-emerald-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
                     />
                   </div>
-                  <p className="text-[11px] text-emerald-400/90 leading-relaxed font-bold bg-emerald-950/40 p-3 rounded-xl border border-emerald-500/20">
-                    💡 <strong>스마트 1클릭 원스톱 게시:</strong> 버튼 클릭 시 퀀트 인라인 HTML 코드가 클립보드에 자동 복사되고, 네이버 스마트에디터 ONE 글쓰기 창이 바로 열립니다. HTML 탭에 붙여넣으시면 표 및 등락률 디자인이 100% 원본 그대로 표현됩니다!
+
+                  <div className="space-y-2 pt-2 border-t border-emerald-500/20">
+                    <p className="text-[11px] font-bold text-emerald-300">
+                      ⚡ 네이버 스마트 3단계 원스톱 게시:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedPost.title);
+                          if (onShowToast) onShowToast('📋 제목이 클립보드에 복사되었습니다!');
+                        }}
+                        className="py-2.5 px-3 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> 1. 포스팅 제목 복사
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedPost.html_content);
+                          if (onShowToast) onShowToast('📋 본문 HTML 코드가 복사되었습니다! 네이버 [HTML] 탭에 붙여넣으세요.');
+                        }}
+                        className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> 2. 본문 HTML 복사
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-emerald-200/80 leading-relaxed bg-black/40 p-3 rounded-xl border border-emerald-500/20">
+                    💡 <strong>네이버 보안 방침 안내:</strong> 네이버는 2019년부터 외부 자동 글쓰기 API를 전면 차단하였습니다.<br/>
+                    위 <strong>[2. 본문 HTML 복사]</strong> 누른 후, 네이버 글쓰기 화면 우측 하단 <strong className="text-emerald-300">[HTML] 탭 ➔ Ctrl + V (붙여넣기)</strong> 하시면 퀀트 표 및 수급 디자인이 100% 원본 그대로 완벽 완성됩니다!
                   </p>
                 </div>
               )}
