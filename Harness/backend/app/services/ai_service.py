@@ -65,28 +65,51 @@ class AiService:
 
     async def analyze_error(self, job_name: str, step_name: str, error_log: str, payload: dict):
         """
-        에러 로그를 분석하여 복구 전략을 제안합니다. (Self-Correction)
+        [Harness Self-Correction Orchestrator]
+        에러 분류 → 원인 분석 → Strategy 변경 → Context(Payload) 수정 → RETRY/FAIL 판단
         """
         if not self.model:
-            return {"action": "FAIL", "explanation": "Gemini API Key not configured."}
+            return {
+                "action": "FAIL",
+                "error_category": "CONFIG_ERROR",
+                "cause_analysis": "Gemini API Key가 설정되지 않았습니다.",
+                "strategy": "ABORT",
+                "new_payload": payload,
+                "explanation": "API Key 미설정으로 인한 복구 불가능"
+            }
 
         raw_prompt = f"""
-        당신은 하네스 자율 주행 에이전트의 '복구 오케스트레이터'입니다.
-        현재 작업이 실패했습니다. 에러 로그를 분석하여 해결책을 JSON으로 응답하세요.
+        당신은 하네스 자율 주행 에이전트의 '복구 오케스트레이터 (Recovery Orchestrator)'입니다.
+        현재 작업이 실패했습니다. 에러 로그를 5단계 정밀 분석하여 복구 전략을 JSON으로 응답하세요.
 
         [작업 정보]
         - Job Name: {job_name}
         - Step Name: {step_name}
-        - Original Payload: {payload}
+        - Current Payload: {payload}
 
-        [에러 로그]
+        [에러 로그 및 검증 실패 사유]
         {error_log}
+
+        [분석 지침]
+        1. error_category 분류: RATE_LIMIT, HALLUCINATION, DATA_MISSING, TIMEOUT, PARSE_ERROR, FATAL 중 선택
+        2. cause_analysis: 에러가 발생한 근본 원인 1~2문장 요약
+        3. strategy: 복구 전략 선택
+           - STRICT_PROMPT: AI 검증/환각 실패 시 프롬프트 제약조건 강화
+           - FALLBACK_DATA: 데이터 수집 실패 시 전일/대시보드 폴백 데이터 지정
+           - BACKOFF_WAIT: API 쿼터 초과 시 지연 대기 후 재시도
+           - PAYLOAD_FIX: 파라미터/날짜 포맷 보정
+           - ABORT: 복구 불가능한 시스템/DB 붕괴 에러 시 중단
+        4. action: "RETRY" (복구 가능) 또는 "FAIL" (복구 불가능)
+        5. new_payload: 기존 payload에 recovery_context(strategy, attempt_count, strict_mode 등)를 반영하여 수정한 객체
 
         [응답 형식 (반드시 이 JSON만 출력)]
         {{
             "action": "RETRY" 또는 "FAIL",
-            "new_payload": {{ ... 수정된 페이로드 ... }},
-            "explanation": "에러 원인 및 수정 사항 요약"
+            "error_category": "RATE_LIMIT | HALLUCINATION | DATA_MISSING | TIMEOUT | PARSE_ERROR | FATAL",
+            "cause_analysis": "근본 원인 요약",
+            "strategy": "STRICT_PROMPT | FALLBACK_DATA | BACKOFF_WAIT | PAYLOAD_FIX | ABORT",
+            "new_payload": {{ ... 수정 및 보강된 페이로드 ... }},
+            "explanation": "복구 전략 수립 배경 한줄 요약"
         }}
         """
         # [Context Compaction] 에러 로그가 너무 길 경우 압축
@@ -94,7 +117,6 @@ class AiService:
 
         try:
             response = self.model.generate_content(prompt)
-            # JSON 응답만 추출 (마크다운 코드 블록 제거 등)
             content = response.text.strip()
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
@@ -102,9 +124,30 @@ class AiService:
                 content = content.split("```")[1].split("```")[0].strip()
             
             import json
-            return json.loads(content)
+            result = json.loads(content)
+
+            # fallback 덮어쓰기 안전 장치
+            if "new_payload" not in result or not result["new_payload"]:
+                result["new_payload"] = payload.copy()
+
+            # recovery_context 자동 주입
+            result["new_payload"]["recovery_context"] = {
+                "category": result.get("error_category", "UNKNOWN"),
+                "strategy": result.get("strategy", "PAYLOAD_FIX"),
+                "cause": result.get("cause_analysis", ""),
+                "attempted_at": payload.get("recovery_context", {}).get("attempt_count", 0) + 1
+            }
+
+            return result
         except Exception as e:
-            return {"action": "FAIL", "explanation": f"Recovery AI failed: {str(e)}"}
+            return {
+                "action": "FAIL",
+                "error_category": "ANALYZER_ERROR",
+                "cause_analysis": f"AI 분석기 자체 오류: {str(e)}",
+                "strategy": "ABORT",
+                "new_payload": payload,
+                "explanation": f"Recovery AI 분석 실패: {str(e)}"
+            }
 
     async def generate_blog_insight(self, quant_data: dict) -> str:
         """

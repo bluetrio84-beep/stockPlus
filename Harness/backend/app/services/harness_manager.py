@@ -349,19 +349,53 @@ class HarnessManager:
             db.rollback()
 
     async def recover_task(self, task_id: int, job_name: str, step_name: str, error_trace: str, payload: dict):
-        """Self-Correction 루프: 실패한 작업 복구 시도"""
-        await log_broadcaster.broadcast("SYSTEM", f"Initiating AI Self-Correction for Task [{task_id}]...", "WARNING")
+        """
+        [Harness Self-Correction Orchestrator]
+        1. 실패 감지 → 2. 에러 분류 → 3. 원인 분석 → 4. Context/전략 수정 → 5. RETRY/FAIL 판단
+        """
+        await log_broadcaster.broadcast(
+            "SYSTEM",
+            f"🔍 [Recovery Orchestrator] Task [{task_id}] 실패 감지 → 정밀 원인 분석 & 복구 전략 수립 시작...",
+            "WARNING"
+        )
         
         recovery_plan = await ai_service.analyze_error(job_name, step_name, error_trace, payload)
         
         action = recovery_plan.get("action", "FAIL")
-        explanation = recovery_plan.get("explanation", "No explanation provided.")
+        category = recovery_plan.get("error_category", "UNKNOWN")
+        cause = recovery_plan.get("cause_analysis", "원인 분석 미제공")
+        strategy = recovery_plan.get("strategy", "PAYLOAD_FIX")
+        explanation = recovery_plan.get("explanation", "")
         new_payload = recovery_plan.get("new_payload", payload)
+
+        await log_broadcaster.broadcast(
+            "SYSTEM",
+            f"📋 [Recovery Plan] Category: {category} | Strategy: {strategy} | Cause: {cause}",
+            "PROCESS"
+        )
+
+        # BACKOFF_WAIT 전략 선택 시 지연 대기
+        if strategy == "BACKOFF_WAIT":
+            await log_broadcaster.broadcast("SYSTEM", "⏳ [Backoff Strategy] API 쿼터 회복을 위해 10초 대기 중...", "WARNING")
+            await asyncio.sleep(10)
 
         db = SessionLocal()
         try:
             if action == "RETRY":
-                await log_broadcaster.broadcast("SYSTEM", f"AI Decision: RETRY - {explanation}", "PROCESS")
+                await log_broadcaster.broadcast(
+                    "SYSTEM",
+                    f"🔄 [Recovery RETRY] 전략={strategy} | 사유={explanation}",
+                    "SUCCESS"
+                )
+                formatted_log = (
+                    f"=== [HE Recovery Orchestrator Report] ===\n"
+                    f"• Error Category : {category}\n"
+                    f"• Cause Analysis : {cause}\n"
+                    f"• Applied Strategy: {strategy}\n"
+                    f"• Explanation    : {explanation}\n"
+                    f"=========================================\n\n"
+                    f"[Original Traceback]\n{error_trace}"
+                )
                 retry_query = text("""
                     UPDATE task_queue 
                     SET status = 'RETRY', payload = :new_payload, error_log = :error_log
@@ -369,13 +403,25 @@ class HarnessManager:
                 """)
                 db.execute(retry_query, {
                     "new_payload": json.dumps(new_payload), 
-                    "error_log": f"AI 분석 결과: {explanation}\n\n이전 에러:\n{error_trace}",
+                    "error_log": formatted_log,
                     "task_id": task_id
                 })
             else:
-                await log_broadcaster.broadcast("SYSTEM", f"AI Decision: FINAL FAILURE - {explanation}", "ERROR")
+                await log_broadcaster.broadcast(
+                    "SYSTEM",
+                    f"❌ [Recovery FINAL FAIL] 카테고리={category} | 사유={explanation}",
+                    "ERROR"
+                )
+                formatted_log = (
+                    f"=== [HE Recovery Orchestrator ABORT] ===\n"
+                    f"• Error Category : {category}\n"
+                    f"• Cause Analysis : {cause}\n"
+                    f"• Decision       : ABORT (복구 불가능)\n"
+                    f"========================================\n\n"
+                    f"[Original Traceback]\n{error_trace}"
+                )
                 db.execute(text("UPDATE task_queue SET error_log = :error_log WHERE task_id = :task_id"), {
-                    "error_log": f"AI 복구 불가 판정: {explanation}\n\n이전 에러:\n{error_trace}",
+                    "error_log": formatted_log,
                     "task_id": task_id
                 })
             db.commit()

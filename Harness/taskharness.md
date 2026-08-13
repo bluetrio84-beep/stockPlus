@@ -2,6 +2,15 @@
 
 ---
 
+## ✅ [2026-08-13] 5단계 정밀 자율 복구 파이프라인 (Harness Self-Correction Orchestrator)
+- **개선 사유:** 단순 `except Exception: retry()` 방식 탈피. 에러 발생 시 5단계 정밀 복구 파이프라인을 거치도록 고도화.
+- **5단계 복구 파이프라인:**
+  1. `실패 감지` (KAIROS / Verifier / DB 에러 Intercept)
+  2. `에러 분류 (Error Category)`: `RATE_LIMIT`, `HALLUCINATION`, `DATA_MISSING`, `TIMEOUT`, `PARSE_ERROR`, `FATAL` 6가지 분류
+  3. `원인 분석 (Cause Analysis)`: Gemini AI가 에러 로그의 근본 원인을 1~2문장으로 정밀 규명
+  4. `전략 변경 (Strategy)`: `STRICT_PROMPT`(프롬프트 강화), `FALLBACK_DATA`(대체 데이터), `BACKOFF_WAIT`(10초 지연 대기), `PAYLOAD_FIX`(파라미터 수정), `ABORT`(중단) 중 동적 선택
+  5. `Context 수정 & 재실행`: `new_payload`에 `recovery_context`(시도 횟수, 적용 전략, 사유)를 주입하고 `task_queue`를 `RETRY` 상태로 업데이트하여 재실행.
+
 ## ✅ [2026-08-13] Content Verification (Anti-Hallucination) 엔진 구축
 - **문제 정의:** 기존 Structural Verification(형식/길이)만으로는 AI가 DB 수치를 hallucination으로 바꿔치기하는 것을 탐지 불가.
 - **`ContentVerifier` 클래스 신규 구현 (6가지 검증 항목):**
