@@ -16,6 +16,8 @@ class BlogBuilderService:
         """
         if not target_date:
             target_date = datetime.now().strftime("%Y.%m.%d")
+        # 날짜 포맷 통일: YYYY-MM-DD → YYYY.MM.DD
+        target_date = target_date.replace("-", ".")
 
         logger.info(f"Starting daily quant blog generation for {target_date}...")
 

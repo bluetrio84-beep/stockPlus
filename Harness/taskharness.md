@@ -2,6 +2,11 @@
 
 ---
 
+## ✅ [2026-08-13] 스케줄러 날짜 포맷 버그 수정 (YYYY-MM-DD vs YYYY.MM.DD)
+- **버그 원인:** 자동 스케줄러(`blog_scheduler.py`)는 `"2026-08-13"` (하이픈 형식)으로 날짜 전달, `blog_builder.py`는 `"%Y.%m.%d"` (점 형식)으로 파싱 시도 → `ValueError` 발생 → task_queue는 SUCCESS 표시되나 실제 포스팅 DB 미생성.
+- **수정:** `blog_builder.py`에 `target_date = target_date.replace("-", ".")` 한 줄 추가로 하이픈/점 포맷 모두 허용.
+- **검증:** 수동 태스크 발주 후 `[2026.08.13] 전자장비와기기·야놀자(Yanolja) 강세` 포스팅 정상 생성 확인(ID=8, status=READY).
+
 ## ✅ [2026-08-13] 매일 평일(월~금) 16:00 정각 퀀트 블로그 자동 생성 스케줄러 탑재
 - **`blog_scheduler.py` 신규 구축:** 한국 표준시(KST) 기준 **매주 월~금요일 16:00 (오후 4시)** 정각에 오늘 자 퀀트 블로그 포스팅 자율 파이프라인(`BLOG_GENERATE` → `BLOG_SEO_ENHANCE` → `BLOG_PUBLISH`)을 `task_queue`에 자동 발주.
 - **주말 스킵 & 중복 방지:** 주말(토/일) 자동 스킵, 하루 1회만 트리거되도록 오늘 날짜(`last_triggered_date`) 체크 및 DB 중복 검사 탑재.
