@@ -1,5 +1,65 @@
 # ⚠️ [절대 금지: 덮어쓰기 금지 !! 정밀타격 !!]
 
+---
+
+## ✅ [2026-08-13] 퀀트 블로그 PNG 이미지 자동 변환 & 네이버 Ctrl+V 발행 시스템 구축
+- **`blog_screenshot.py` 신규 구축:** Playwright 헤드리스 Chromium을 이용해 HTML 콘텐츠를 Full-Page PNG 이미지로 100% 완벽 렌더링 변환하는 스크린샷 서비스 탑재.
+- **`GET /api/blog/posts/{post_id}/screenshot` 엔드포인트 추가:** PNG 이미지를 bytes로 즉시 반환하는 FastAPI 라우터 추가 완료.
+- **프론트엔드 `🖼️ 이미지 복사` 버튼 추가:** 버튼 클릭 시 Playwright 백엔드 렌더링 PNG → `ClipboardItem('image/png')` → 네이버 글쓰기에서 **Ctrl+V** 바로 붙여넣기 완벽 지원.
+- **`PNG 저장` 버튼 추가:** PNG 파일 다운로드로 네이버 이미지 직접 업로드 지원.
+- **네이버 에디터 서식 문제 완전 우회:** HTML 방식의 배경색 삭제 문제 → 이미지 방식으로 전환하여 남색 박스·배지·표 100% 완벽 보존.
+
+## ✅ [2026-08-13] 우분투 로그인 시 agy 자동 실행 설정
+- **`~/.bashrc` 자동 실행 블록 추가:** SSH/터미널 로그인 시 자동으로 `/Projects` 폴더로 이동 후 `agy` 구동.
+- **무한 루프 방어:** `AGY_ACTIVE=1` 환경변수로 중복 실행 방지.
+- **인터랙티브 터미널만 감지:** 스크립트/SCP/SFTP 등 비인터랙티브 연결 시에는 agy 미실행 안전 처리.
+
+## ✅ [2026-08-13] 네이버 블로그 1x1 Table Cell 배경 박스 완전 호환 구조 전환
+- **문제 원인 확인:** 네이버 스마트에디터 ONE이 `<div>` 배경색(`background-color`)을 보안 정책으로 제거하는 특성 발견.
+- **`blog_template.py` 1x1 Table Cell 구조 전환:** 헤더 남색 박스 및 AI 가이드 박스를 `<table><tr><td bgcolor>` 구조로 래핑하여 네이버 에디터 필터링 완전 우회.
+- **DAILY QUANT MARKET REPORT 배지 폰트 확대:** 0.85rem → 14px로 가독성 향상.
+
+## ✅ [2026-08-13] 네이버 100% 원본 뷰어 팝업 & 복사 엔진 구축
+- **`🌟 원본 뷰어` 팝업 창 추가:** HTML 전체 렌더링 팝업 창을 열고 0.3초 후 `execCommand('copy')`로 DOM 실물 선택 복사 자동 수행.
+- **`openNaverSmartCopyWindow()` 함수 구현:** `window.open()` + `document.write()` + `Range.selectNodeContents()` 파이프라인 완성.
+
+## ✅ [2026-08-12] 퀀트 블로그 네이버 이미지/서식 복사 시스템 고도화
+- **`🎨 렌더링 서식 복사` 버튼 탑재:** `ClipboardItem({'text/html': blob})` 방식으로 Rich Text 클립보드 복사 지원.
+- **`handleCopyRichHtml()` / `handleCopyRawText()` 분리 구현:** HTML 탭과 마크다운 탭 각각 최적화된 복사 방식 분기.
+- **`id="quant-blog-preview-container"` 추가:** DOM Selection API 기반 실물 렌더링 복사 대상 컨테이너 ID 지정.
+
+## ✅ [2026-08-12] 네이버 블로그 Playwright 100% 매크로 자동 발행 엔진 구축
+- **`naver_macro_publisher.py` 신규 구축:** Playwright 헤드리스 Chromium 브라우저 봇으로 네이버 ID/PW 자동 로그인 → 글쓰기 에디터 진입 → 제목/본문 입력 → [발행] 버튼 클릭까지 100% 자동 수행.
+- **`blog_auto_publisher.py` 매크로 모드 라우팅 추가:** `mode="macro"` 파라미터로 Playwright 매크로 봇 분기 처리.
+- **`AutoPublishRequest` 스키마 확장:** `naver_pw`, `naver_mode`, `nid_aut`, `nid_ses` 필드 추가.
+- **`POST /api/blog/posts/{post_id}/auto-publish` 매크로 모드 연동 완료.**
+- **`BlogView.jsx` 네이버 발행 모드 토글 UI 추가:**
+  - `🤖 100% 매크로 봇 발행` (ID + PW 입력 → 백엔드 Playwright 자동 완주)
+  - `🟢 1-Click 스마트 복사` (ID만 입력 → 클립보드 복사 + 네이버 글쓰기 창 자동 오픈)
+- **발행 모드 기본값:** `🟢 1-Click 스마트 복사`로 설정 (비밀번호 입력 불필요).
+- **`playwright install chromium` + `playwright install-deps` 컨테이너 내 설치 완료.**
+
+## ✅ [2026-08-12] 퀀트 블로그 발행 보조 기능 구축
+- **1-Click 원스톱 복사:** `handleDirectAutoPublish()`에서 제목 + 렌더링 서식을 한 번에 클립보드에 복사 후 네이버 글쓰기 창 자동 오픈.
+- **`🌐 내 블로그로 직접 자동 게시` 모달 구현:** 네이버(1-Click 스마트/매크로), 티스토리 API, 워드프레스 REST API, Webhook 4가지 플랫폼 탑재.
+- **네이버 블로그 SmartEditor HTML 복사 꿀팁 가이드:** `showGuideModal` 팝업으로 네이버 기본에디터 HTML 탭 붙여넣기 3단계 가이드 제공.
+- **`.html` / `.md` 파일 1-Click 다운로드 기능 추가.**
+
+## ✅ [2026-08-12] 퀀트 블로그 HTML 템플릿 엔진 네이버 호환 전면 개편
+- **`blog_template.py` 완전 재설계:** 네이버 스마트에디터 ONE 인증 순수 인라인 스타일 + 표준 HTML 테이블 구조로 재설계.
+- **교차 배경색(zebra striping):** 홀/짝 행 배경색(`#ffffff`/`#f8fafc`) 자동 적용으로 가독성 향상.
+- **등락률 색상 개선:** 상승 `#e11d48`(빨강), 하락 `#2563eb`(파랑)으로 선명하게 구분.
+
+## ✅ [2026-08-12] 주요 버그 수정
+- **`publishingDirect is not defined` 오류 수정:** `BlogView.jsx` 상태 변수 전체 복구 (`publishingDirect`, `naverId`, `tistoryBlogName`, `wpUrl` 등).
+- **`NameError: Optional is not defined` 수정:** `blog_auto_publisher.py`에 `from typing import Optional` 누락 추가.
+- **`ReferenceError: Zap is not defined` 수정:** `BlogView.jsx` lucide-react Zap 아이콘 임포트 누락 수정.
+- **502 Bad Gateway 영구 해결:** `stockplus-frontend-1` Nginx에 `resolver 127.0.0.11 valid=5s;` 동적 Docker DNS 리졸버 추가.
+
+## ✅ [2026-08-12] TaskQueueView 상세 모달 수정
+- **상세 보기 미표시 버그 수정:** `task.payload` 객체를 `JSON.stringify(task.payload, null, 2)`로 안전 직렬화.
+- **모달 z-index 강화:** `z-[100]` 오버레이로 상세 모달이 다른 요소에 가려지지 않도록 수정.
+
 ## ✅ [2026-08-12] BlogHarness 풀 하네스 엔지니어링 (HE) 알고리즘 100% 완전 연동
 - **task_queue 3단계 자율 체이닝:** 단일 생성을 넘어 `BLOG_GENERATE` (DB수집+포스팅생성) → `BLOG_SEO_ENHANCE` (Gemini AI 키워드 강화) → `BLOG_PUBLISH` (READY 확정) 3단계 연쇄 자동 수행.
 - **BaseHarness & KAIROS 연동:** `BlogHarness`가 `BaseHarness` 샌드박스 격리(Total Safety Sandbox) 및 KAIROS 재시도 루프(3회)를 직접 실행하도록 `HarnessManager` 라우터 전면 통합.
@@ -35,15 +95,18 @@
 - **Harness 오리지널 테마 복구:** 요청에 따라 하네스 전용 테마를 오리지널 딥 네이비(#020617)로 원복.
 - **시스템 안정화:** 빌드 캐시 없이 전체 재빌드 및 재배포를 통한 런타임 안정성 확보.
 
+---
+
 # 🦾 Harness Engineering (HE) Platform Project
 
 ## 🎯 Project Vision
 단순한 자동화 툴이 아니라, **'Agent Harness'** 아키텍처를 기반으로 한 **지능형 에이전트 오케스트레이션 플랫폼**입니다. Anthropic의 Claude Harness와 같은 '에이전트-도구 결합' 방식을 채택하여, 각 기능을 독립적인 하네스 모듈로 관리합니다.
 
-### 🚀 Phase 1: YouTube Monetization Harness
-첫 번째 목표는 유튜브 채널 수익 창출을 위한 완전 자동화/검수형 하네스를 구축하는 것입니다.
-- **Goal:** 트렌드 분석 -> 대본 작성 -> 영상 편집 -> 업로드 자동화
-- **Profitability:** 효율적인 영상 생산으로 광고 수익 및 제휴 마케팅 극대화
+### 🚀 Phase 1: Quant Stock Blog Harness (현재 운영 중)
+StockPlus 실시간 시세/수급/테마/WICS 데이터를 기반으로 매일 자동으로 퀀트 주식 블로그 포스팅을 생성·발행하는 완전 자동화 엔진.
+- **데이터 소스:** StockPlus MySQL (`market_themes`, `industry_quotes`, `stock_supply_demand`, `ai_next_leaders`)
+- **생성:** Gemini AI SEO 강화 → HTML/마크다운 포스팅 자동 생성
+- **발행:** 이미지(PNG) 변환 → 네이버 블로그 Ctrl+V 발행 / 티스토리 API 자동 발행
 
 ---
 
@@ -63,49 +126,42 @@
 
 ---
 
-## 🗄️ Database Schema (`h_` for Core, `yt_` for Module)
+## 🗄️ Database Schema
 
 ### [Core] 하네스 운영 계층
-- `h_users`: 사용자 계정 및 권한 (가려 받기 기능)
+- `h_users`: 사용자 계정 및 권한
 - `h_modules`: 등록된 하네스 모듈 (YOUTUBE, BLOG, STOCK 등)
-- `h_tasks`: 중앙 작업 큐 (상태: IDLE, WORKING, COMPLETED, FAILED)
-- `h_logs`: 통합 에이전트 로그 (사고 과정 추적)
+- `h_tasks` / `task_queue`: 중앙 작업 큐 (상태: PENDING, RUNNING, COMPLETED, FAILED)
+- `h_logs`: 통합 에이전트 로그
 
-### [YouTube] 영상 제작 모듈
-- `yt_harness_projects`: 영상 기획 주제 및 타겟 니치
-- `yt_harness_contents`: AI 대본, 최종 수정 대본, 영상/음성 경로
-- `yt_harness_results`: 완성본, 썸네일, 업로드 상태 및 URL
-
-### [AI Agent] 지능형 에이전트 계층
-- `ai_harness_agents`: 에이전트 페르소나 및 LLM 설정
-- `ai_harness_memories`: 에이전트 장기 기억 및 피드백
+### [Blog] 퀀트 블로그 모듈
+- `blog_posts`: 생성된 포스팅 (제목, HTML, 마크다운, SEO 키워드, 발행 상태)
+- `blog_data_snapshots`: 포스팅 생성 시점의 원본 수급/테마/업종 데이터 스냅샷
 
 ---
 
-## 🗓️ Roadmap
+## 📁 주요 파일 구조
 
-- [ ] **Step 1: 환경 구축**
-    - [ ] `/Projects/Harness` 폴더 구조 및 Git 초기화
-    - [ ] MySQL 스키마 생성 (`schema.sql`)
-    - [ ] FastAPI 백엔드 보일러플레이트 작성
-- [ ] **Step 2: 핵심 하네스 프로토콜 개발**
-    - [ ] 하네스 베이스 클래스 정의
-    - [ ] 에이전트 작업 로그 시스템 구현
-- [ ] **Step 3: YouTube 하네스 MVP 개발**
-    - [ ] 트렌드 분석 에이전트 (Google Trends API 연동)
-    - [ ] 대본 작성 에이전트 (Gemini API 연동)
-    - [ ] 영상 렌더링 엔진 (FFmpeg/MoviePy 연동)
-- [ ] **Step 4: 대시보드(홈페이지) 구현**
-    - [ ] 로그인 및 회원가입 페이지
-    - [ ] 하네스 모니터링 및 대본 검수 페이지
-- [ ] **Step 5: 유튜브 API 연동 및 실제 업로드**
-    - [ ] YouTube Data API v3 연동
-    - [ ] 자동 업로드 및 예약 발행 테스트
+```
+Harness/
+├── backend/
+│   └── app/
+│       ├── api/
+│       │   ├── blog.py           # 블로그 REST API (generate, posts, screenshot, auto-publish)
+│       │   └── auth.py           # 인증 API
+│       ├── services/
+│       │   ├── blog_template.py      # HTML/MD 포스팅 생성 템플릿 엔진 (네이버 1x1 Table 호환)
+│       │   ├── blog_screenshot.py    # Playwright HTML → PNG 스크린샷 서비스
+│       │   ├── blog_auto_publisher.py # 티스토리/워드프레스/Webhook 자동 발행
+│       │   └── naver_macro_publisher.py # Playwright 네이버 매크로 자동 발행
+│       └── models/
+│           └── blog.py           # BlogPost ORM 모델
+└── frontend/
+    └── src/
+        └── components/
+            └── BlogView.jsx      # 퀀트 블로그 엔진 UI (이미지복사, PNG저장, 원본뷰어, 자동게시)
+```
 
 ---
+
 *본 프로젝트는 하네스 엔지니어링 원칙에 따라 모듈의 확장성과 에이전트의 자율성을 최우선으로 합니다.*
-
-## [2026-04-10] UI/UX 구조 개편 및 테마 안정화 작업 착수
-- Dashboard.jsx 비대화로 인한 유지보수성 저하 해결을 위해 기능별 컴포넌트 분리 결정.
-- 다크 모드 시 배경색 #000000 강제 적용 및 셀렉트박스 브라우저 기본 스타일링 박멸 추진.
-- Git Push를 통한 현재 상태 백업 완료.
