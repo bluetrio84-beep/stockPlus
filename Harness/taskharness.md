@@ -2,6 +2,12 @@
 
 ---
 
+## ✅ [2026-08-13] HE Guide STAGE2 & STAGE4 완전 구현 (Tool Sandbox + Context Compaction)
+- **[STAGE4] Context Compaction 실제 구현:** `ai_service.py`에 `compact_text()` 정적 메서드 추가. 프롬프트가 `12,000자`(≈3,000 토큰) 초과 시 자동 잘라내기 & 경고 로그. `generate_blog_insight()` 및 `analyze_error()` 두 곳에 일괄 적용.
+- **[STAGE2] Tool Sandbox 강화 - `he_tools.py` 신규:** `BlogTool` 클래스를 만들어 Blog 파이프라인이 DB에 **직접 접근하는 것을 금지**하고, 반드시 `BlogTool.fetch_quant_data()`, `build_post()`, `get_post()`, `update_seo_keywords()`, `publish_post()` 5개 Tool 메서드를 통해서만 접근하도록 아키텍처 준수 강화.
+- **`blog_harness.py` 전면 리팩토링:** 모든 DB 직접 접근 코드 제거 → `BlogTool(sandbox_id=self.sandbox_id)` 인스턴스 기반 Tool 접근으로 교체. `sandbox_id` 추적 포함.
+- **확장성 설계:** `he_tools.py`는 추후 `YoutubeTool`, `StockAlertTool` 등 다른 하네스 모듈 Tool도 동일 패턴으로 추가 가능한 구조로 설계됨.
+
 ## ✅ [2026-08-13] 스케줄러 날짜 포맷 버그 수정 (YYYY-MM-DD vs YYYY.MM.DD)
 - **버그 원인:** 자동 스케줄러(`blog_scheduler.py`)는 `"2026-08-13"` (하이픈 형식)으로 날짜 전달, `blog_builder.py`는 `"%Y.%m.%d"` (점 형식)으로 파싱 시도 → `ValueError` 발생 → task_queue는 SUCCESS 표시되나 실제 포스팅 DB 미생성.
 - **수정:** `blog_builder.py`에 `target_date = target_date.replace("-", ".")` 한 줄 추가로 하이픈/점 포맷 모두 허용.

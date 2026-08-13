@@ -2,6 +2,9 @@ import os
 import google.generativeai as genai
 from app.core.config import settings
 
+# 토큰 1개 ≈ 4자(영문) 기준 실용적 추정치
+MAX_PROMPT_CHARS = 12000  # ~3,000 tokens — Gemini Flash 안전 상한
+
 class AiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
@@ -10,6 +13,20 @@ class AiService:
             self.model = genai.GenerativeModel('gemini-2.0-flash')
         else:
             self.model = None
+
+    @staticmethod
+    def compact_text(text: str, max_chars: int = MAX_PROMPT_CHARS) -> str:
+        """
+        [Context Compaction] 텍스트가 max_chars를 초과하면 앞부분을 잘라
+        토큰 오버플로우를 방지합니다.
+        """
+        if len(text) <= max_chars:
+            return text
+        import logging
+        logging.getLogger("ai_service").warning(
+            f"[Context Compaction] Prompt too long ({len(text)} chars) → truncating to {max_chars} chars"
+        )
+        return text[:max_chars] + "\n...[이하 Context Compaction으로 생략됨]"
 
     async def generate_script(self, topic: str, persona: str = "Professional", custom_prompt: str = ""):
         """
@@ -53,7 +70,7 @@ class AiService:
         if not self.model:
             return {"action": "FAIL", "explanation": "Gemini API Key not configured."}
 
-        prompt = f"""
+        raw_prompt = f"""
         당신은 하네스 자율 주행 에이전트의 '복구 오케스트레이터'입니다.
         현재 작업이 실패했습니다. 에러 로그를 분석하여 해결책을 JSON으로 응답하세요.
 
@@ -72,6 +89,8 @@ class AiService:
             "explanation": "에러 원인 및 수정 사항 요약"
         }}
         """
+        # [Context Compaction] 에러 로그가 너무 길 경우 압축
+        prompt = self.compact_text(raw_prompt)
 
         try:
             response = self.model.generate_content(prompt)
@@ -100,7 +119,7 @@ class AiService:
         if not self.model:
             return f"1. 금일 주식 시장은 {top_theme} 및 {top_sector} 업종을 중심 강세를 보였습니다.\n2. 수급 측면에서 기관과 외국인의 매수세가 선별적으로 유입되었습니다.\n3. 주도주 퀀트 분석에 따른 단기 변동성 관리가 필요한 시점입니다."
 
-        prompt = f"""
+        raw_prompt = f"""
         당신은 수석 퀀트 에이널리스트입니다. 아래 오늘 자 대한민국 주식 시장 데이터(테마, 업종)를 보고,
         블로그 독자를 위한 '오늘의 3줄 시장 종합 가이드'를 전문적이고 인디고/퀀트 스타일로 3문장 작성해주세요.
 
@@ -115,6 +134,8 @@ class AiService:
         - 투자의견(주도주 수급 및 단기 대응 전략)을 명확하게 제시할 것.
         - 불필요한 인사말 없이 정확히 3문장의 가이드라인만 출력할 것.
         """
+        # [Context Compaction] 실제 적용
+        prompt = self.compact_text(raw_prompt)
 
         try:
             response = self.model.generate_content(prompt)
