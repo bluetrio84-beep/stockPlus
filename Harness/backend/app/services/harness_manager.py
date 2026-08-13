@@ -8,6 +8,8 @@ from app.api.deps import SessionLocal
 from app.core.mcp_tools import FilesystemTool, ShellTool, APITool
 from app.core.broadcaster import log_broadcaster
 from app.services.ai_service import ai_service
+from app.core.he_rules import rule_engine
+from app.core.he_verifier import verifier
 from gtts import gTTS
 
 class HarnessManager:
@@ -136,9 +138,29 @@ class HarnessManager:
             try:
                 # payload 로드
                 payload = json.loads(payload_str) if payload_str else {}
-                
-                # 도구(Tool) 실행 라우팅 (진짜 제작 로직 가동)
+
+                # ── [RULES] 실행 전 규칙 검사 ─────────────────────────
+                rule_passed, rule_reason = rule_engine.evaluate(job_name, step_name, payload, db)
+                if not rule_passed:
+                    await log_broadcaster.broadcast(
+                        "SYSTEM",
+                        f"Task [{task_id}] BLOCKED by Rules: {rule_reason}",
+                        "WARNING"
+                    )
+                    db.execute(text("""
+                        UPDATE task_queue SET status = 'BLOCKED', error_log = :reason
+                        WHERE task_id = :task_id
+                    """), {"reason": rule_reason, "task_id": task_id})
+                    db.commit()
+                    return
+
+                # ── [EXECUTION] 도구 실행 ─────────────────────────────
                 result_data = await self.execute_tool(step_name, payload)
+
+                # ── [VERIFICATION] 실행 결과 검증 ─────────────────────
+                verify_passed, verify_reason = verifier.verify(job_name, step_name, result_data, db)
+                if not verify_passed:
+                    raise ValueError(f"[Verification Failed] {verify_reason}")
 
                 # 성공 시 상태 업데이트 및 다음 단계 연쇄 생성 (Chaining)
                 success_query = text("""
@@ -148,7 +170,7 @@ class HarnessManager:
                 """)
                 db.execute(success_query, {"result_path": str(result_data), "task_id": task_id})
                 db.commit()
-                await log_broadcaster.broadcast("SYSTEM", f"Task [{task_id}] SUCCESS.", "INFO")
+                await log_broadcaster.broadcast("SYSTEM", f"Task [{task_id}] SUCCESS ✅ (Verified)", "INFO")
 
                 # --- 자율 연쇄 주행 (Chaining) 로직 ---
                 await self.queue_next_step(db, task_id, job_name, step_name, result_data, payload)

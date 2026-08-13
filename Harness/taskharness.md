@@ -2,6 +2,12 @@
 
 ---
 
+## ✅ [2026-08-13] HE Guide STAGE4(Rules) + STAGE6(Verification) 완전 구현 & agents.md 신규 작성
+- **[STAGE4] `he_rules.py` 중앙 규칙 엔진 구축:** `RuleEngine` 클래스 + job_name별 규칙 등록 시스템. BLOG 전용 5개 규칙 구현(B01~B05: payload 검사, 주말 차단, 중복 방지, 날짜 포맷, post_id 필수). 규칙 위반 시 `BLOCKED` 상태로 실행 차단.
+- **[STAGE6] `he_verifier.py` 결과 품질 검증 계층 구축:** 실행 후 결과물 자동 검증. BLOG 3스텝 전부 커버: `GENERATE`(post_id+DB확인+title5자+HTML500자), `SEO_ENHANCE`(keywords확인), `PUBLISH`(DB status=READY 확인). 검증 실패 시 자동으로 Retry/Recovery 트리거.
+- **`harness_manager.py` 파이프라인 통합:** `[RULES] → [EXECUTION] → [VERIFICATION]` 3레이어 순서로 `process_task()`에 완전 통합.
+- **`agents.md` 필수 명세서 신규 작성:** 하네스 플랫폼의 에이전트 공식 명세 문서. 전체 8단계 아키텍처 흐름, 5개 에이전트 스펙(파이프라인/Tool/Rules/Verification), 공통 인프라 파일 목록, 추후 추가 예정 에이전트, 신규 추가 체크리스트 포함.
+
 ## ✅ [2026-08-13] HE Guide STAGE2 & STAGE4 완전 구현 (Tool Sandbox + Context Compaction)
 - **[STAGE4] Context Compaction 실제 구현:** `ai_service.py`에 `compact_text()` 정적 메서드 추가. 프롬프트가 `12,000자`(≈3,000 토큰) 초과 시 자동 잘라내기 & 경고 로그. `generate_blog_insight()` 및 `analyze_error()` 두 곳에 일괄 적용.
 - **[STAGE2] Tool Sandbox 강화 - `he_tools.py` 신규:** `BlogTool` 클래스를 만들어 Blog 파이프라인이 DB에 **직접 접근하는 것을 금지**하고, 반드시 `BlogTool.fetch_quant_data()`, `build_post()`, `get_post()`, `update_seo_keywords()`, `publish_post()` 5개 Tool 메서드를 통해서만 접근하도록 아키텍처 준수 강화.
