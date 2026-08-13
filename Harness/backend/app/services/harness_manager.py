@@ -20,6 +20,44 @@ class HarnessManager:
         self.audio_dir = "/app/exports/audio"
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.audio_dir, exist_ok=True)
+        # job_name → asyncio.Semaphore (인스턴스 수 기반 동시성 제한)
+        self._semaphores: dict[str, asyncio.Semaphore] = {}
+
+    def _get_instances(self, job_name: str) -> int:
+        """h_modules 테이블에서 해당 job_name의 instances 수를 조회"""
+        db = SessionLocal()
+        try:
+            # job_name → module name 매핑 (BLOG → BlogHarness 등)
+            name_map = {
+                "BLOG": "BlogHarness",
+                "YOUTUBE": "YouTubeHarness",
+                "STOCK": "StockHarness",
+                "NEWS": "NewsHarness",
+            }
+            module_name = name_map.get(job_name.upper(), job_name)
+            row = db.execute(
+                text("SELECT instances FROM h_modules WHERE name = :name LIMIT 1"),
+                {"name": module_name}
+            ).fetchone()
+            return max(1, row[0]) if row else 1
+        except Exception:
+            return 1
+        finally:
+            db.close()
+
+    def _get_semaphore(self, job_name: str) -> asyncio.Semaphore:
+        """job_name별 Semaphore를 최신 instances 수로 갱신하여 반환"""
+        instances = self._get_instances(job_name)
+        existing = self._semaphores.get(job_name)
+        # Semaphore 값이 달라지면 새로 생성
+        if existing is None or existing._value != instances:
+            self._semaphores[job_name] = asyncio.Semaphore(instances)
+            asyncio.ensure_future(log_broadcaster.broadcast(
+                "SYSTEM",
+                f"[Fleet Manager] {job_name} 동시 처리 슬롯 → {instances}개 적용",
+                "INFO"
+            ))
+        return self._semaphores[job_name]
 
     async def start_worker(self):
         self.is_running = True
@@ -28,34 +66,70 @@ class HarnessManager:
         
         while self.is_running:
             try:
-                await self.process_next_task()
+                await self._dispatch_pending_tasks()
             except Exception as e:
                 print(f"Worker Error: {e}")
                 traceback.print_exc()
             await asyncio.sleep(2)  # 폴링 주기
 
-    async def process_next_task(self):
+    async def _dispatch_pending_tasks(self):
+        """PENDING 태스크를 job_name별 instances 수만큼 병렬 디스패치"""
         db = SessionLocal()
         try:
-            # PENDING 작업 가져오기 및 상태 업데이트 (트랜잭션)
-            task_query = text("""
+            # 현재 PENDING/RETRY 태스크 전체 조회 (job_name 그룹별로)
+            rows = db.execute(text("""
                 SELECT task_id, job_name, step_name, payload 
                 FROM task_queue 
-                WHERE status = 'PENDING' OR status = 'RETRY'
-                ORDER BY created_at ASC 
-                LIMIT 1 FOR UPDATE
-            """)
-            result = db.execute(task_query).fetchone()
+                WHERE status IN ('PENDING', 'RETRY')
+                ORDER BY created_at ASC
+            """)).fetchall()
 
-            if not result:
+            if not rows:
                 return
 
-            task_id, job_name, step_name, payload_str = result
-            
-            # RUNNING으로 상태 변경
-            update_query = text("UPDATE task_queue SET status = 'RUNNING' WHERE task_id = :task_id")
-            db.execute(update_query, {"task_id": task_id})
+            # job_name별로 그룹핑
+            grouped: dict[str, list] = {}
+            for row in rows:
+                jn = row[1] or "BLOG"
+                grouped.setdefault(jn, []).append(row)
+
+            # 각 job_name별로 Semaphore 슬롯 수 만큼만 병렬 실행
+            coroutines = []
+            for job_name, tasks in grouped.items():
+                sem = self._get_semaphore(job_name)
+                # Semaphore 슬롯 수까지만 태스크 선택
+                slots = sem._value  # 현재 남은 슬롯
+                selected = tasks[:max(1, slots)]
+                for task_row in selected:
+                    coroutines.append(self._run_with_semaphore(sem, task_row))
+
+            if coroutines:
+                await asyncio.gather(*coroutines, return_exceptions=True)
+
+        finally:
+            db.close()
+
+    async def _run_with_semaphore(self, sem: asyncio.Semaphore, task_row):
+        """Semaphore로 동시성을 제한하며 태스크 실행"""
+        async with sem:
+            await self.process_task(task_row)
+
+    async def process_task(self, task_row):
+        """단일 태스크를 실행 (Semaphore 병렬 안전 처리)"""
+        db = SessionLocal()
+        try:
+            task_id, job_name, step_name, payload_str = task_row
+
+            # 중복 실행 방지: RUNNING으로 원자적 업데이트 후 확인
+            updated = db.execute(text("""
+                UPDATE task_queue SET status = 'RUNNING'
+                WHERE task_id = :task_id AND status IN ('PENDING', 'RETRY')
+            """), {"task_id": task_id}).rowcount
             db.commit()
+
+            if updated == 0:
+                # 이미 다른 코루틴이 처리 중 → 스킵
+                return
 
             await log_broadcaster.broadcast("SYSTEM", f"Executing Task [{task_id}] - {job_name}: {step_name}", "INFO")
 
