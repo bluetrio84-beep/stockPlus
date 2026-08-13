@@ -420,6 +420,50 @@ const BlogView = ({ theme, onShowToast }) => {
     }
   };
 
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
+
+  const handleImageScreenshot = async (action = 'download') => {
+    if (!selectedPost) return;
+    setScreenshotLoading(true);
+    try {
+      const res = await axios.get(`/api/blog/posts/${selectedPost.id}/screenshot`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: 'image/png' });
+
+      if (action === 'copy') {
+        // 클립보드에 이미지 복사 (Ctrl+V로 네이버에 바로 붙여넣기)
+        try {
+          const item = new ClipboardItem({ 'image/png': blob });
+          await navigator.clipboard.write([item]);
+          if (onShowToast) onShowToast('🖼️ [이미지 클립보드 복사 완료!] 네이버 글쓰기에서 바로 Ctrl+V 하세요! 남색 박스 100% 완벽 출력!');
+        } catch (e) {
+          // 클립보드 이미지 복사 불가 시 다운로드로 대체
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `quant_report_${selectedPost.post_date}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          if (onShowToast) onShowToast('⬇️ [이미지 저장 완료!] 저장된 PNG를 네이버 글쓰기에 드래그하거나 이미지 삽입으로 업로드하세요!');
+        }
+      } else {
+        // PNG 파일 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quant_report_${selectedPost.post_date}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        if (onShowToast) onShowToast('⬇️ [PNG 이미지 저장 완료!] 저장된 파일을 네이버 글쓰기에 업로드하세요!');
+      }
+    } catch (err) {
+      if (onShowToast) onShowToast('❌ 이미지 생성 실패: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setScreenshotLoading(false);
+    }
+  };
+
   const handleDelete = async (postId) => {
     if (!window.confirm('이 포스팅을 삭제하시겠습니까?')) return;
     try {
@@ -585,7 +629,31 @@ const BlogView = ({ theme, onShowToast }) => {
                     className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-orange-500/20"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                    <span>🌟 네이버 100% 원본 뷰어 팝업</span>
+                    <span>🌟 원본 뷰어</span>
+                  </button>
+
+                  {/* 이미지 복사 (Ctrl+V 네이버 붙여넣기용) */}
+                  <button
+                    onClick={() => handleImageScreenshot('copy')}
+                    disabled={screenshotLoading}
+                    className="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-pink-600/20"
+                  >
+                    {screenshotLoading ? (
+                      <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                    <span>🖼️ 이미지 복사</span>
+                  </button>
+
+                  {/* PNG 다운로드 */}
+                  <button
+                    onClick={() => handleImageScreenshot('download')}
+                    disabled={screenshotLoading}
+                    className="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all border border-white/10"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>PNG 저장</span>
                   </button>
 
                   <button

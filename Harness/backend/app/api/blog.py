@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 from app.api.deps import get_db
 from app.models.blog import BlogPost
 from app.services.blog_auto_publisher import BlogAutoPublisher
+from app.services.blog_screenshot import BlogScreenshotService
 
 logger = logging.getLogger("blog_api")
 router = APIRouter(prefix="/blog", tags=["blog"])
@@ -291,3 +293,30 @@ def auto_publish_post(post_id: int, req: AutoPublishRequest, db: Session = Depen
         db.commit()
     
     return res
+
+
+# ─────────────────────────────────────────────────────────
+#  GET /api/blog/posts/{post_id}/screenshot
+#  Playwright로 HTML → PNG 이미지 변환 (네이버 이미지 붙여넣기용)
+# ─────────────────────────────────────────────────────────
+@router.get("/posts/{post_id}/screenshot", summary="퀀트 블로그 포스팅 PNG 이미지 생성")
+def get_post_screenshot(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(BlogPost).filter(BlogPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="포스팅을 찾을 수 없습니다.")
+    
+    try:
+        png_bytes = BlogScreenshotService.html_to_image_sync(
+            html_content=post.html_content,
+            title=post.title
+        )
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": f'attachment; filename="quant_report_{post.post_date}.png"'
+            }
+        )
+    except Exception as e:
+        logger.error(f"Screenshot 생성 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"이미지 생성 실패: {str(e)}")
