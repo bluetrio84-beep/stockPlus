@@ -2,6 +2,15 @@
 
 ---
 
+## ✅ [2026-08-13] Agent Fleet Manager 실제 병렬 처리 엔진 & 4대 에이전트 역할 정립
+- **`asyncio.Semaphore` 동시성 엔진 탑재:** `HarnessManager` 워커에서 `h_modules` 테이블의 `instances` 값을 동적으로 읽어 job_name별 병렬 슬롯(Semaphore)을 제어하도록 전면 리팩토링.
+- **실시간 슬롯 핫리로드 (Hot-Reload):** Fleet Manager UI에서 `+ / -` 버튼 클릭 시 재시작 없이 즉시 백엔드 병렬 슬롯 갱신.
+- **4대 에이전트 모듈 정밀 역할 매핑:**
+  - `Quant-Data-Scraper` : StockPlus DB 수급/테마/WICS 데이터 파싱
+  - `Gemini-Quant-Analyst` : 퀀트 시황 분석 및 블로그 포스팅 템플릿/AI 합성
+  - `SEO-Enricher-Agent` : 네이버/티스토리 검색 상위 노출용 인기 키워드 10개 Gemini AI 자동 추출
+  - `Human-Inspector-Agent` : KAIROS 셀프 힐링 검수 및 1-Click 복사/발행 조율
+
 ## ✅ [2026-08-13] 퀀트 블로그 PNG 이미지 자동 변환 & 네이버 Ctrl+V 발행 시스템 구축
 - **`blog_screenshot.py` 신규 구축:** Playwright 헤드리스 Chromium을 이용해 HTML 콘텐츠를 Full-Page PNG 이미지로 100% 완벽 렌더링 변환하는 스크린샷 서비스 탑재.
 - **`GET /api/blog/posts/{post_id}/screenshot` 엔드포인트 추가:** PNG 이미지를 bytes로 즉시 반환하는 FastAPI 라우터 추가 완료.
