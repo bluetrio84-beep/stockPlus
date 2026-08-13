@@ -33,6 +33,7 @@ app.include_router(api_blog.router, prefix="/api", tags=["blog"])
 async def start_background_tasks():
     from app.services.memory_service import memory_service
     from app.services.harness_manager import harness_manager
+    from app.services.blog_scheduler import blog_scheduler
     from app.api.deps import SessionLocal
     
     async def heartbeat():
@@ -55,6 +56,7 @@ async def start_background_tasks():
     asyncio.create_task(heartbeat())
     asyncio.create_task(auto_dream_loop())
     asyncio.create_task(harness_manager.start_worker())
+    asyncio.create_task(blog_scheduler.start())
 
 @app.get("/")
 def root():
