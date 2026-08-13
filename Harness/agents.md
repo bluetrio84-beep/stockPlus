@@ -62,10 +62,18 @@ BLOG_GENERATE → BLOG_SEO_ENHANCE → BLOG_PUBLISH
 - `RULE-B04`: 날짜 포맷 유효성 검사 (YYYY-MM-DD 또는 YYYY.MM.DD)
 - `RULE-B05`: SEO/Publish 스텝에서 post_id 필수
 
-#### Verification (사후 검증)
-- `BLOG_GENERATE`: post_id 존재 + DB 저장 확인 + title 5자 이상 + HTML 500자 이상
-- `BLOG_SEO_ENHANCE`: post_id + seo_keywords 3자 이상
-- `BLOG_PUBLISH`: post_id + DB status = READY 확인
+#### Verification (사후 검증: Structural + Content Verification)
+- **[Structural Verification]**
+  - `BLOG_GENERATE`: post_id 존재 + DB 저장 확인 + title 5자 이상 + HTML 500자 이상
+  - `BLOG_SEO_ENHANCE`: post_id + seo_keywords 3자 이상
+  - `BLOG_PUBLISH`: post_id + DB status = READY 확인
+- **[Content Verification (Anti-Hallucination Engine)]**
+  - `CV-01` **이름 일치율 검증**: DB 원본 테마/업종명이 HTML에 30% 이상 존재해야 함 (0%일 경우 AI 창작 환각으로 판정하여 차단)
+  - `CV-02` **등락률 범위 검증**: HTML 내 등락률(%) 수치가 DB 실제 등락률 범위(±2%) 내에 존재하는지 추적 및 경고
+  - `CV-03` **날짜 일치 검증**: HTML 내 날짜가 target_date와 동일한지 확인하여 전일 데이터 꼬임 방지
+  - `CV-04` **문장 반복 탐지**: 20자 이상 동일 문장이 2회 이상 중복 출력되는 AI 루프 패턴 차단
+  - `CV-05` **제목-본문 연관도**: 제목의 주요 키워드가 본문에도 50% 이상 등장하는지 검증
+  - `CV-06` **SEO 관련성**: 추출된 SEO 키워드가 실제 포스팅 본문과 20% 이상 일치하는지 확인
 
 #### 사용 DB 테이블 (via BlogTool)
 | DB | 테이블 | 접근 방식 |

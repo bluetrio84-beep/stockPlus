@@ -2,6 +2,17 @@
 
 ---
 
+## ✅ [2026-08-13] Content Verification (Anti-Hallucination) 엔진 구축
+- **문제 정의:** 기존 Structural Verification(형식/길이)만으로는 AI가 DB 수치를 hallucination으로 바꿔치기하는 것을 탐지 불가.
+- **`ContentVerifier` 클래스 신규 구현 (6가지 검증 항목):**
+  - `CV-01` 이름 일치율: DB 원본 테마명/업종명이 HTML에 30% 이상 등장해야 함. 하나도 없으면 Hallucination으로 차단.
+  - `CV-02` 등락률 범위: HTML 내 등락률이 DB 실제 수치 ±2% 범위 내에 있는지 확인. 범위 밖 수치 경고 로깅.
+  - `CV-03` 날짜 일치: HTML 내 날짜가 target_date와 일치하는지 검사. 전일 데이터 혼입 탐지.
+  - `CV-04` 문장 반복: 20자 이상 동일 문장이 2회 이상 반복되면 차단. AI 루프 패턴 탐지.
+  - `CV-05` 제목-본문 일치: 제목의 핵심 키워드 50% 이상이 본문에 없으면 차단.
+  - `CV-06` SEO 관련성: SEO 키워드가 실제 본문과 20% 이상 매칭되어야 함.
+- **우선순위:** `blog_data_snapshots` 테이블에 저장된 원본 `raw_json`을 비교 기준으로 사용하여 DB ↔ HTML 크로스 체크 수행.
+
 ## ✅ [2026-08-13] HE Guide STAGE4(Rules) + STAGE6(Verification) 완전 구현 & agents.md 신규 작성
 - **[STAGE4] `he_rules.py` 중앙 규칙 엔진 구축:** `RuleEngine` 클래스 + job_name별 규칙 등록 시스템. BLOG 전용 5개 규칙 구현(B01~B05: payload 검사, 주말 차단, 중복 방지, 날짜 포맷, post_id 필수). 규칙 위반 시 `BLOCKED` 상태로 실행 차단.
 - **[STAGE6] `he_verifier.py` 결과 품질 검증 계층 구축:** 실행 후 결과물 자동 검증. BLOG 3스텝 전부 커버: `GENERATE`(post_id+DB확인+title5자+HTML500자), `SEO_ENHANCE`(keywords확인), `PUBLISH`(DB status=READY 확인). 검증 실패 시 자동으로 Retry/Recovery 트리거.
