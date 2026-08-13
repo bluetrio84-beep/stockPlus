@@ -60,7 +60,7 @@ class BlogTemplateEngine:
                 <td bgcolor="#0f172a" style="background-color: #0f172a; padding: 28px; border-radius: 16px;">
                     <div style="font-size: 14px; font-weight: bold; color: #38bdf8; letter-spacing: 1px; margin-bottom: 8px;">DAILY QUANT MARKET REPORT</div>
                     <div style="font-size: 22px; font-weight: bold; color: #ffffff; margin-bottom: 12px; line-height: 1.3;">{title}</div>
-                    <div style="font-size: 12px; color: #94a3b8;">작성일자: {date_str} | StockPlus Quant Engine 분석</div>
+                    <div style="font-size: 12px; color: #94a3b8;">작성일자: {date_str} | Quant Engine 분석</div>
                 </td>
             </tr>
         </table>
@@ -149,7 +149,7 @@ class BlogTemplateEngine:
         # Footer Hashtags
         html_lines.append(f'''
         <div style="margin-top: 32px; padding-top: 16px; border-top: 1px dashed #cbd5e1; color: #0284c7; font-size: 14px; font-weight: bold;">
-            #오늘주식 #주식시황 #{top_theme_name} #{top_sector_name} #퀀트분석 #외국인순매수 #StockPlus #주식투자
+            #오늘주식 #주식시황 #{top_theme_name} #{top_sector_name} #퀀트분석 #외국인순매수 #주식투자
         </div>
         </div>
         ''')
@@ -159,7 +159,7 @@ class BlogTemplateEngine:
         # 3. Generate Markdown Content
         md_lines = []
         md_lines.append(f"# {title}\n")
-        md_lines.append(f"**작성일자**: {date_str} | **분석엔진**: StockPlus Quant Harness Engine\n")
+        md_lines.append(f"**작성일자**: {date_str} | **분석엔진**: Quant Harness Engine\n")
 
         if ai_summary:
             md_lines.append("### 🤖 AI 퀀트 시장 종합 가이드")
