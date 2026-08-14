@@ -314,106 +314,129 @@ class BlogInfographicBuilder:
         return "\n".join(html_lines)
 
     def generate_foreigner_top10_infographic_html(self, date_str: str, raw_data: Dict[str, Any], ai_summary: str = "") -> str:
-        """기존 하위 호환성 래퍼 — 기본 NVIDIA/금융 밸류체인 config 빌드"""
+        """StockPlus 실시간 퀀트 데이터(외국인 TOP 10 + 주도 업종/테마)를 동적으로 인포그래픽 스키마에 결합"""
+        foreigner_top10 = raw_data.get("foreigner_top10", [])
+        themes = raw_data.get("themes", [])
+        sectors = raw_data.get("sectors", [])
+
+        top_theme = themes[0]["theme_name"] if themes else "주도 테마"
+        top_sector = sectors[0]["industry_name"] if sectors else "강세 업종"
+
+        top_stock_name = foreigner_top10[0].get("stock_name", "주도주") if foreigner_top10 else "메이저 주도주"
+        top_stock_code = foreigner_top10[0].get("stock_code", "") if foreigner_top10 else ""
+
+        if not ai_summary:
+            ai_summary = (
+                f"1. 금일 메이저 수급은 {top_sector} 및 {top_theme} 관련주에 집중 유입되었습니다.\n"
+                f"2. {top_stock_name}({top_stock_code}) 등 외국인 5일/20일 연속 매집 종목을 중심으로 기관 동시 매수세가 가세하고 있습니다.\n"
+                f"3. 수급 집적 상위 종목 중심의 스위칭 및 단기 모멘텀 대응 전략이 유효합니다."
+            )
+
+        # 동적 퀀트 스키마 설정 (NVIDIA 하드코딩 제거 ➔ StockPlus 데이터 매핑)
         config = {
-            "title": "금융이 AI 인프라를 확대 ➔ NVIDIA / 메이저 수급 매출을 폭발적으로 증대시키는 구조",
-            "subtitle": "금융이 리스크를 분산하고 자금을 공급하여 AI 데이터센터 건설과 GPU 수요를 지속적으로 창출 ➔ 메이저 주도주의 매출·이익·현금흐름이 확대되는 선순환 구조",
+            "title": f"외국인 자본 유입 ➔ <span style='color: #38bdf8;'>[{top_sector}·{top_theme}] 메이저 수급 주도주</span> 선순환 구조",
+            "subtitle": f"금일 외국인 순매수 상위 종목({top_stock_name} 등)과 기관 쌍끌이 매집 주도주 퀀트 분석 선순환 구조",
             "date_str": date_str,
             "theme_color": "#0b1329",
             "steps": [
                 {
-                    "num": 1, "title": "금융 자본의 유입", "desc": "다양한 금융 자본이 AI 인프라 생태계로 유입",
+                    "num": 1, "title": "외국인 자본 유입", "desc": "글로벌 패시브 & 메이저 자본 국내 증시 유입",
                     "color": "#0f172a",
                     "bullets": [
-                        {"text": "<b>은행</b>: 대출·신디케이션", "icon": "bank"},
-                        {"text": "<b>채권 시장</b>: 회사채·인프라 채권", "icon": "bond"},
-                        {"text": "<b>사모펀드/PE</b>: 인프라·성장 투자", "icon": "pe"},
-                        {"text": "<b>보험사</b>: 장기 자금 운용", "icon": "shield"},
-                        {"text": "<b>연기금·국부펀드</b>: 전략적 투자", "icon": "pension"}
+                        {"text": "<b>글로벌 펀드</b>: 패시브 자금 매집", "icon": "bank"},
+                        {"text": "<b>외국계 창구</b>: 연속 순매수 개시", "icon": "bond"},
+                        {"text": "<b>사모펀드/PE</b>: 대형주 자금집행", "icon": "pe"},
+                        {"text": "<b>기관 동시 유입</b>: 투신/연기금 가세", "icon": "pension"}
                     ]
                 },
                 {
-                    "num": 2, "title": "금융 구조화 (수급 핵심)", "desc": "AI 인프라 투자 리스크 분산·재구성",
-                    "color": "#0f172a", "effect": "효과: 대규모 장기 자금 조달 & 리스크 분산",
+                    "num": 2, "title": "수급 구조화 (쌍끌이)", "desc": "외국인 + 기관 동시 매집으로 수급 강도 축적",
+                    "color": "#0f172a", "effect": "효과: 수급 안정성 확보 & 하방 지지력 형성",
                     "bullets": [
-                        {"text": "<b>프로젝트 파이낸싱(PF)</b>: 데이터센터 건설", "icon": "pf"},
-                        {"text": "<b>선순위·후순위 구조</b>: 리스크 분산", "icon": "check"},
-                        {"text": "<b>인프라 펀드 / JV</b>: 대형 금융사+테크", "icon": "check"},
-                        {"text": "<b>GPU Financing / 리스</b>: 담보 자금 조달", "icon": "check"}
+                        {"text": f"<b>강세 업종</b>: {top_sector} 집중", "icon": "pf"},
+                        {"text": f"<b>주도 테마</b>: {top_theme} 수급유입", "icon": "check"},
+                        {"text": "<b>체결강도 폭발</b>: 100% 이상 유지", "icon": "check"},
+                        {"text": "<b>양매수 형성</b>: 메이저 쌍끌이 매집", "icon": "check"}
                     ]
                 },
                 {
-                    "num": 3, "title": "AI 인프라 확장 (GPU 창출)", "desc": "대규모 데이터센터 건설 & GPU 수요 창출",
+                    "num": 3, "title": "수급 집적 (5D/20D)", "desc": "5일/20일 누적 순매수 수량 급증",
                     "color": "#0284c7", "icon_key": "gpu",
                     "bullets": [
-                        {"text": "<b>GPU 수요 폭발</b>: AI 학습/추론 확대", "icon": "gpu"},
-                        {"text": "<b>전력/냉각</b>: 액체 냉각 솔루션", "icon": "bolt"},
-                        {"text": "<b>네트워크</b>: 고속 연결망", "icon": "network"},
-                        {"text": "<b>스토리지/서버</b>: AI 서버 장비", "icon": "server"}
+                        {"text": f"<b>TOP 주도주</b>: {top_stock_name} 매집", "icon": "rocket"},
+                        {"text": "<b>5일 누적 수급</b>: 연속 매수 우위", "icon": "chart"},
+                        {"text": "<b>20일 누적 수급</b>: 수급 베이스 구축", "icon": "money"},
+                        {"text": "<b>지분율 확대</b>: 메이저 비중 상승", "icon": "shield"}
                     ]
                 },
                 {
-                    "num": 4, "title": "NVIDIA / 메이저 매출 증대", "desc": "핵심 제품·솔루션 독점 공급",
-                    "color": "#e11d48", "effect": "결과: 매출 급증 & 이익·현금흐름 확대",
+                    "num": 4, "title": "주가 모멘텀 돌파", "desc": "수급 폭발에 따른 주가 신고가 / 강세 분출",
+                    "color": "#e11d48", "effect": "결과: 거래대금 급증 & 시가총액 상승",
                     "bullets": [
-                        {"text": "<b>GPU (H100, Blackwell)</b>: AI 핵심", "icon": "gpu"},
-                        {"text": "<b>NVLink / 네트워킹</b>: 고속 연결", "icon": "network"},
-                        {"text": "<b>DGX / AI 서버</b>: AI 시스템", "icon": "server"}
+                        {"text": "<b>신고가 형성</b>: 상승 파동 본격화", "icon": "rocket"},
+                        {"text": "<b>거래대금 폭발</b>: 시장 관심 집중", "icon": "bolt"},
+                        {"text": "<b>추세 강화</b>: 이동평균선 정렬", "icon": "chart"}
                     ]
                 },
                 {
-                    "num": 5, "title": "선순환 구조 완성", "desc": "NVIDIA의 성장 ➔ 금융 확대",
-                    "color": "#10b981", "effect": "선순환 핵심: 금융이 AI 연계 성장 견인",
+                    "num": 5, "title": "퀀트 선순환 완성", "desc": "기업가치 재평가 & 자본 재유입 선순환",
+                    "color": "#10b981", "effect": "선순환 핵심: 수급이 실적 및 주가 평가 견인",
                     "bullets": [
-                        {"text": "<b>NVIDIA 실적 증가</b>: 매출·이익", "icon": "chart"},
-                        {"text": "<b>평가 상승</b>: 주가 상승 & 신용도", "icon": "rocket"},
-                        {"text": "<b>더 많은 금융 자본 유입</b>", "icon": "money"}
+                        {"text": "<b>가치 재평가</b>: PER/PBR 밸류업", "icon": "chart"},
+                        {"text": "<b>신용도 상승</b>: 기관 비중 확충", "icon": "shield"},
+                        {"text": "<b>후속 자본 유입</b>: 추가 랠리 동력", "icon": "money"}
                     ]
                 }
             ],
             "mechanisms": [
                 {
-                    "title": "프라임 브로커 (Prime Broker)", "color": "#0284c7", "icon_key": "bank",
-                    "desc": "AI 인프라 투자자에 대한 종합 금융 서비스 제공",
-                    "flow": "자금 대출 ➔ 담보 관리 ➔ 리스크 제어"
+                    "title": f"❶ 주도 업종 수급 ({top_sector})", "color": "#0284c7", "icon_key": "bank",
+                    "desc": f"금일 {top_sector} 업종 내 메이저 자금 집적",
+                    "flow": f"{top_sector} ➔ 외국인 매집 ➔ 업종 지수 상승"
                 },
                 {
-                    "title": "GPU 자산유동화 (Securitization)", "color": "#7c3aed", "icon_key": "pe",
-                    "desc": "GPU를 자산으로 묶어 유동화 ➔ 자본시장에 판매",
-                    "flow": "GPU 보유자 ➔ SPV ➔ 투자자 (채권/ABS)"
+                    "title": f"❷ 주도 테마 수급 ({top_theme})", "color": "#7c3aed", "icon_key": "pe",
+                    "desc": f"{top_theme} 모멘텀에 따른 수급 유동화",
+                    "flow": f"{top_theme} ➔ 기관 쌍끌이 ➔ 테마 돌파"
                 },
                 {
-                    "title": "GPU 선물시장 (Futures Market)", "color": "#db2777", "icon_key": "chart",
-                    "desc": "GPU 가격-공급에 대한 가격 발견 및 리스크 헷지",
-                    "flow": "가격 발견 ➔ 선물 거래소 ➔ 헷지/위험 관리"
+                    "title": "❸ 메이저 수급 집적 (Quant Flow)", "color": "#db2777", "icon_key": "chart",
+                    "desc": "5일/20일 연속 순매수 우위 종목의 수급 헷지 및 상승 동력",
+                    "flow": "외국인/기관 ➔ 누적 매집 ➔ 주가 모멘텀"
                 }
             ],
             "innovation": {
-                "title": "금융 혁신 ➔ AI 인프라 투자 가속",
-                "bullets": ["더 많은 자금: 더 낮은 비용으로 조달", "리스크 분산: 금융 시스템이 흡수", "투명성 향상: 자산 가치 평가 개선", "유동성 확대: 투자·회수 용이해짐"],
-                "highlight": "➔ AI 인프라 투자 규모 확대<br/>➔ GPU 수요 지속 증가"
+                "title": "StockPlus 퀀트 ➔ 주도주 가속",
+                "bullets": [
+                    f"강세 업종: {top_sector}",
+                    f"주도 테마: {top_theme}",
+                    f"최고 매집주: {top_stock_name}",
+                    "수급 강도: 5D/20D 지속 연속 매집"
+                ],
+                "highlight": f"➔ {top_sector}·{top_theme} 수급 확대<br/>➔ {top_stock_name} 주가 모멘텀 지속"
             },
             "bottom_cards": {
                 "card1": {
-                    "title": "금융이 NVIDIA/주도주 매출을 증가시키는 메커니즘",
-                    "flow_text": "<b>1. 금융 자금 조달</b> ➔ <b>2. 데이터센터 건설</b> ➔ <b>3. GPU 대량 구매</b> ➔ <b>4. AI 서비스 확장</b> ➔ <b>5. 더 큰 수요 창출</b>",
-                    "badge_text": "🔄 더 많은 자금이 다시 유입되어 규모가 확대되는 선순환"
+                    "title": "StockPlus 메이저 수급 주가 상승 메커니즘",
+                    "flow_text": f"<b>1. {top_sector} 자금 유입</b> ➔ <b>2. 기관 쌍끌이 매집</b> ➔ <b>3. {top_stock_name} 수급 폭발</b> ➔ <b>4. 신고가 돌파</b> ➔ <b>5. 선순환 완성</b>",
+                    "badge_text": f"🔄 {top_theme} 테마 중심으로 더 많은 메이저 자금이 유입되는 선순환"
                 },
                 "card2_donut": {
-                    "title": "NVIDIA가 창출하는 가치 (매출 구성 예시)",
-                    "center_text": "NVIDIA",
-                    "footer_text": "• <b style='color:#10b981;'>GPU (데이터센터)</b>: 70~80% | • <b style='color:#0284c7;'>Networking</b>: 10~15%<br/>• <b style='color:#f59e0b;'>시스템</b>: 5~10% | • <b>소프트웨어/기타</b>: 5% 내외"
+                    "title": f"StockPlus 퀀트 수급 비중 ({top_sector} 중심)",
+                    "center_text": top_sector[:6],
+                    "footer_text": f"• <b style='color:#10b981;'>{top_sector}</b>: 70~80% | • <b style='color:#0284c7;'>{top_theme}</b>: 10~15%<br/>• <b style='color:#f59e0b;'>수급 특이주</b>: 5~10% | • <b>기타</b>: 5% 내외"
                 },
                 "card3_bar": {
-                    "title": "NVIDIA 데이터센터 매출 추이 (최근)",
-                    "unit": "단위: 억 달러 (FY2026 1,156억 달러 +114% YoY)"
+                    "title": f"외국인/기관 수급 누적 추이 ({top_stock_name})",
+                    "unit": f"단위: 만 주 / 억 원 ({top_stock_name} 메이저 수급 확충)"
                 }
             },
             "summary": {
-                "title": "🎯 핵심 요약",
-                "text": "💳 <b>금융이 AI 인프라에 대규모 자금 공급</b> ➔ 🏛️ <b>프라임 브로커·유동화로 리스크 분산</b> ➔ ⚡ <b>데이터센터 확장과 GPU 수요 폭발</b> ➔ 🚀 <b>NVIDIA가 핵심 공급자로서 막대한 매출·이익 창출 (선순환)</b>"
+                "title": "🎯 StockPlus 퀀트 요약",
+                "text": f"💳 <b>외국인 메이저 자본이 {top_sector} 및 {top_theme}에 대규모 자금 공급</b> ➔ 🏛️ <b>기관 동시 매집으로 수급 가속</b> ➔ ⚡ <b>{top_stock_name} 등 수급 상위주 모멘텀 폭발 ➔ 주가 선순환 구조 확정</b>"
             }
         }
         return self.build_dynamic_infographic(config)
 
 blog_infographic_builder = BlogInfographicBuilder()
+
