@@ -670,7 +670,7 @@ const BlogView = ({ theme, onShowToast }) => {
                     <span>🌟 원본 뷰어</span>
                   </button>
 
-                  {/* 이미지 복사 (Ctrl+V 네이버 붙여넣기용) */}
+                  {/* 이미지 복사 (Ctrl+V 네이버/티스토리 붙여넣기용) */}
                   <button
                     onClick={() => handleImageScreenshot('copy')}
                     disabled={screenshotLoading}
@@ -681,10 +681,10 @@ const BlogView = ({ theme, onShowToast }) => {
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    <span>🖼️ 이미지 복사</span>
+                    <span>🖼️ 전체 이미지 복사</span>
                   </button>
 
-                  {/* 외국인 TOP 10 인포그래픽 PNG 복사 */}
+                  {/* 외국인 TOP 10 인포그래픽 PNG 복사 (핵심 버튼) */}
                   <button
                     onClick={() => handleInfographicScreenshot('copy')}
                     disabled={screenshotLoading}
@@ -704,23 +704,7 @@ const BlogView = ({ theme, onShowToast }) => {
                     <span>PNG 저장</span>
                   </button>
 
-                  <button
-                    onClick={() => handleDownload(viewTab === 'html' ? selectedPost.html_content : selectedPost.markdown_content, viewTab)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>{viewTab === 'html' ? '.html 저장' : '.md 저장'}</span>
-                  </button>
-
-                  {viewTab === 'html' ? (
-                    <button
-                      onClick={() => handleCopyRichHtml(selectedPost.html_content)}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>🎨 렌더링 서식 복사</span>
-                    </button>
-                  ) : (
+                  {viewTab === 'markdown' && (
                     <button
                       onClick={() => handleCopyRawText(selectedPost.markdown_content)}
                       className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
