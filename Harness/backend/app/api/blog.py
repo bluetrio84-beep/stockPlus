@@ -320,3 +320,46 @@ def get_post_screenshot(post_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Screenshot 생성 실패: {e}")
         raise HTTPException(status_code=500, detail=f"이미지 생성 실패: {str(e)}")
+
+
+# ─────────────────────────────────────────────────────────
+#  GET /api/blog/infographic/foreigner-top10
+#  AAAA.PNG 고품질 퀀트 인포그래픽 PNG 이미지 생성 엔드포인트
+# ─────────────────────────────────────────────────────────
+@router.get("/infographic/foreigner-top10", summary="외국인 매집 TOP 10 고품질 인포그래픽 PNG 생성")
+async def get_foreigner_top10_infographic(
+    target_date: Optional[str] = Query(None, description="형식: YYYY.MM.DD")
+):
+    from app.services.blog_data_service import blog_data_service
+    from app.services.blog_infographic_builder import blog_infographic_builder
+    from app.services.ai_service import ai_service
+
+    if not target_date:
+        target_date = datetime.now().strftime("%Y.%m.%d")
+
+    try:
+        raw_data = blog_data_service.fetch_daily_quant_data()
+        ai_summary = await ai_service.generate_blog_insight(raw_data)
+        
+        html_content = blog_infographic_builder.generate_foreigner_top10_infographic_html(
+            date_str=target_date,
+            raw_data=raw_data,
+            ai_summary=ai_summary
+        )
+
+        png_bytes = await BlogScreenshotService.html_to_image(
+            html_content=html_content,
+            title=f"외국인 매집 TOP 10 인포그래픽 - {target_date}"
+        )
+
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": f'inline; filename="foreigner_top10_infographic_{target_date}.png"'
+            }
+        )
+    except Exception as e:
+        logger.error(f"Infographic 생성 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"인포그래픽 이미지 생성 실패: {str(e)}")
+

@@ -2,6 +2,12 @@
 
 ---
 
+## ✅ [2026-08-14] AAAA.PNG 스타일 퀀트 인포그래픽 PNG 자동 생성 엔진 탑재
+- **`blog_infographic_builder.py` 신규 구축:** `AAAA.PNG` 디자인 시스템(Dark Indigo 헤더, 5단계 수급 메커니즘 카드, AI 퀀트 가이드 박스, 외국인 매집 TOP 10 데이터 카드, 하단 4단계 요약 바)을 100% 반영한 고해상도 인포그래픽 HTML 렌더러 탑재.
+- **StockPlus DB "외국인 매집 TOP 10" 연동:** `stock_supply_demand` 테이블에서 당일 외국인 순매수, 5일/20일 누적 수급, 기관 동시 매집(쌍끌이 배지), 현재가 수집.
+- **Playwright 고해상도 PNG 스크린샷 엔진 연동:** `GET /api/blog/infographic/foreigner-top10` 엔드포인트 추가 → 실시간 인포그래픽 PNG 이미지(163KB) 즉시 반환.
+- **네이버 스마트에디터 100% 호환:** HTML 스타일 손상 없이 통 이미지(PNG)로 복사/다운로드 가능하도록 하네스 퀀트 블로그 파이프라인과 완벽 통합.
+
 ## ✅ [2026-08-13] 5단계 정밀 자율 복구 파이프라인 (Harness Self-Correction Orchestrator)
 - **개선 사유:** 단순 `except Exception: retry()` 방식 탈피. 에러 발생 시 5단계 정밀 복구 파이프라인을 거치도록 고도화.
 - **5단계 복구 파이프라인:**

@@ -66,22 +66,38 @@ class BlogDataService:
                 # 3. 수급 특이 종목 (외국인 + 기관 순매수)
                 try:
                     cursor.execute("""
-                        SELECT s.stock_code, m.stock_name, s.foreign_net_buy, s.inst_net_buy, s.current_price, s.captured_at
+                        SELECT s.stock_code, COALESCE(m.stock_name, s.stock_code) as stock_name, 
+                               s.foreign_net_buy, s.institution_net_buy as inst_net_buy, s.current_price, s.captured_at
                         FROM stock_supply_demand s
                         LEFT JOIN stock_master m ON s.stock_code = m.stock_code
-                        ORDER BY s.captured_at DESC, (s.foreign_net_buy + s.inst_net_buy) DESC
+                        ORDER BY s.captured_at DESC, (s.foreign_net_buy + s.institution_net_buy) DESC
                         LIMIT 10
                     """)
                     result["supply_demand"] = cursor.fetchall() or []
                 except Exception as e:
                     logger.error(f"Error fetching stock_supply_demand: {e}")
 
+                # 3.5. 외국인 연속 매집 TOP 10 (당일 순매수 + 5일/20일 누적 수급)
+                try:
+                    cursor.execute("""
+                        SELECT s.stock_code, COALESCE(m.stock_name, s.stock_code) as stock_name,
+                               s.foreign_net_buy, s.foreign_5d, s.foreign_20d,
+                               s.institution_net_buy, s.current_price, s.execution_strength
+                        FROM stock_supply_demand s
+                        LEFT JOIN stock_master m ON s.stock_code = m.stock_code
+                        ORDER BY s.captured_at DESC, s.foreign_net_buy DESC
+                        LIMIT 10
+                    """)
+                    result["foreigner_top10"] = cursor.fetchall() or []
+                except Exception as e:
+                    logger.error(f"Error fetching foreigner_top10: {e}")
+
                 # 4. AI 다음 주도주 예측 (ai_next_leaders)
                 try:
                     cursor.execute("""
-                        SELECT stock_code, stock_name, model_type, confidence_score, predicted_signal, created_at
+                        SELECT stock_code, stock_name, 'Ensemble/LSTM' as model_type, total_score as confidence_score, hit_result as predicted_signal, captured_at as created_at
                         FROM ai_next_leaders
-                        ORDER BY confidence_score DESC
+                        ORDER BY total_score DESC
                         LIMIT 5
                     """)
                     result["ai_leaders"] = cursor.fetchall() or []
@@ -91,7 +107,7 @@ class BlogDataService:
                 # 5. 시장 지수 (market_index_history)
                 try:
                     cursor.execute("""
-                        SELECT index_name, current_val, change_val, change_rate, captured_at
+                        SELECT index_name, index_value as current_val, change_val, change_rate, captured_at
                         FROM market_index_history
                         ORDER BY captured_at DESC
                         LIMIT 4
