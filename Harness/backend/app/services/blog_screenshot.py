@@ -21,15 +21,15 @@ class BlogScreenshotService:
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=900">
+  <meta name="viewport" content="width=1260">
   <title>{title}</title>
   <style>
     * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     body {{
       font-family: 'Apple SD Gothic Neo', '맑은 고딕', 'Noto Sans KR', sans-serif;
       background: #ffffff;
-      padding: 32px;
-      width: 860px;
+      padding: 24px;
+      width: 1240px;
     }}
   </style>
 </head>
@@ -43,7 +43,7 @@ class BlogScreenshotService:
                 headless=True,
                 args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
             )
-            page = await browser.new_page(viewport={"width": 900, "height": 1200})
+            page = await browser.new_page(viewport={"width": 1260, "height": 1200})
             await page.set_content(full_html, wait_until="networkidle")
 
             # 전체 페이지 높이에 맞게 스크린샷
