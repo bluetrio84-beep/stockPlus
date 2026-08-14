@@ -37,6 +37,10 @@ class BlogTool:
             from app.services.blog_template import blog_template_engine
             from app.models.blog import BlogPost, BlogDataSnapshot
 
+            # 날짜 포맷 통일: YYYY-MM-DD → YYYY.MM.DD
+            if target_date:
+                target_date = target_date.replace("-", ".").replace("/", ".")
+
             rendered = blog_template_engine.generate_post(target_date, raw_data, ai_insight)
             post = BlogPost(
                 post_date=datetime.strptime(target_date, "%Y.%m.%d").date(),
