@@ -42,7 +42,7 @@ class BlogDataService:
                 # 1. 핫 테마 TOP 10 (상승률 기준)
                 try:
                     cursor.execute("""
-                        SELECT theme_name, avg_change_rate as change_rate, lead_stocks, updated_at
+                        SELECT theme_name, avg_change_rate as change_rate, lead_stocks, trade_amount, trade_volume, updated_at
                         FROM market_themes
                         ORDER BY avg_change_rate DESC
                         LIMIT 10
@@ -54,7 +54,7 @@ class BlogDataService:
                 # 2. WICS 업종 주도주 TOP 10
                 try:
                     cursor.execute("""
-                        SELECT industry_name, change_rate, lead_stocks, updated_at
+                        SELECT industry_name, change_rate, lead_stocks, top_stocks, rising_count, falling_count, steady_count, trade_amount, trade_volume, updated_at
                         FROM industry_quotes
                         ORDER BY change_rate DESC
                         LIMIT 10
@@ -67,7 +67,8 @@ class BlogDataService:
                 try:
                     cursor.execute("""
                         SELECT s.stock_code, COALESCE(m.stock_name, s.stock_code) as stock_name, 
-                               s.foreign_net_buy, s.institution_net_buy as inst_net_buy, s.current_price, s.captured_at
+                               s.foreign_net_buy, s.institution_net_buy as inst_net_buy, s.current_price, 
+                               s.execution_strength, s.top_brokers, s.captured_at
                         FROM stock_supply_demand s
                         LEFT JOIN stock_master m ON s.stock_code = m.stock_code
                         ORDER BY s.captured_at DESC, (s.foreign_net_buy + s.institution_net_buy) DESC
@@ -77,18 +78,27 @@ class BlogDataService:
                 except Exception as e:
                     logger.error(f"Error fetching stock_supply_demand: {e}")
 
-                # 3.5. 외국인 연속 매집 TOP 10 (당일 순매수 + 5일/20일 누적 수급)
+                # 3.5. 외국인 연속 매집 TOP 10 (당일 순매수 + 5일/20일/60일 누적 수급 + 5대 창구)
                 try:
                     cursor.execute("""
                         SELECT s.stock_code, COALESCE(m.stock_name, s.stock_code) as stock_name,
-                               s.foreign_net_buy, s.foreign_5d, s.foreign_20d,
-                               s.institution_net_buy, s.current_price, s.execution_strength
+                               s.foreign_net_buy, s.foreign_5d, s.foreign_20d, s.foreign_60d,
+                               s.institution_net_buy, s.institution_5d, s.institution_20d,
+                               s.current_price, s.execution_strength, s.top_brokers, s.volume
                         FROM stock_supply_demand s
                         LEFT JOIN stock_master m ON s.stock_code = m.stock_code
                         ORDER BY s.captured_at DESC, s.foreign_net_buy DESC
                         LIMIT 10
                     """)
-                    result["foreigner_top10"] = cursor.fetchall() or []
+                    items = cursor.fetchall() or []
+                    for item in items:
+                        # Smart Money Score 계산 (0~100점)
+                        f_buy = item.get("foreign_net_buy", 0) or 0
+                        i_buy = item.get("institution_net_buy", 0) or 0
+                        ex_st = float(item.get("execution_strength", 100) or 100)
+                        score = min(99.5, max(60.0, round(70 + (f_buy + i_buy)/20000 + (ex_st - 100)*0.1, 1)))
+                        item["smart_money_score"] = score
+                    result["foreigner_top10"] = items
                 except Exception as e:
                     logger.error(f"Error fetching foreigner_top10: {e}")
 
