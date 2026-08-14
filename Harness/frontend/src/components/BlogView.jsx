@@ -464,6 +464,44 @@ const BlogView = ({ theme, onShowToast }) => {
     }
   };
 
+  const handleInfographicScreenshot = async (action = 'copy') => {
+    setScreenshotLoading(true);
+    try {
+      const res = await axios.get('/api/blog/infographic/foreigner-top10', {
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: 'image/png' });
+
+      if (action === 'copy') {
+        try {
+          const item = new ClipboardItem({ 'image/png': blob });
+          await navigator.clipboard.write([item]);
+          if (onShowToast) onShowToast('🖼️ [외국인 TOP 10 인포그래픽 이미지 복사 완료!] 네이버 글쓰기에 Ctrl+V 하세요!');
+        } catch (e) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `foreigner_top10_infographic.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          if (onShowToast) onShowToast('⬇️ [인포그래픽 이미지 저장 완료!] 네이버 글쓰기에 업로드하세요!');
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `foreigner_top10_infographic.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        if (onShowToast) onShowToast('⬇️ [인포그래픽 PNG 저장 완료!] 저장된 파일을 네이버 글쓰기에 업로드하세요!');
+      }
+    } catch (err) {
+      if (onShowToast) onShowToast('❌ 인포그래픽 생성 실패: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setScreenshotLoading(false);
+    }
+  };
+
   const handleDelete = async (postId) => {
     if (!window.confirm('이 포스팅을 삭제하시겠습니까?')) return;
     try {
@@ -644,6 +682,16 @@ const BlogView = ({ theme, onShowToast }) => {
                       <Copy className="w-3.5 h-3.5" />
                     )}
                     <span>🖼️ 이미지 복사</span>
+                  </button>
+
+                  {/* 외국인 TOP 10 인포그래픽 PNG 복사 */}
+                  <button
+                    onClick={() => handleInfographicScreenshot('copy')}
+                    disabled={screenshotLoading}
+                    className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>📊 외국인 TOP 10 인포그래픽</span>
                   </button>
 
                   {/* PNG 다운로드 */}
