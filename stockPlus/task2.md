@@ -1,6 +1,19 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.47) - Gemini 3.5 Flash 고성능 모델 도입 & UI 표기 동기화 ✨
+## 🚀 최신 업데이트 현황 (v16.48) - 레버리지/인버스 ETF 전체 DB 적재 & UI 우측 정렬 레이아웃 최적화 ✨
+
+### 1. 국내 상장 전체 1,163개 ETF (레버리지/인버스 곱버스 103개 포함) DB 일괄 적재
+- **ETF 종목 누락 문제 해결**: `stockplus.stock_master`에 누락되어 있던 KODEX 레버리지(`122630`), KODEX 200선물인버스2X 곱버스(`252670`), KODEX 코스닥150레버리지(`233740`), KODEX 코스닥150선물인버스(`251340`), TIGER 2차전지/반도체 레버리지 등 국내 상장 전체 1,163개 ETF 종목을 깨끗한 한글 명칭과 함께 100% 일괄 적재(Upsert).
+- **KOSPI/KOSDAQ API 호환**: KIS REST API 기반 자바 백엔드(`KisStockService`)에서 레버리지/인버스 ETF의 실시간 시세, master-detail, 200일+ 차트 데이터가 0.1초 만에 정상 리턴됨을 입증.
+
+### 2. 긴 종목명 ETF (KODEX SK하이닉스단일종목레버리지 등) UI 레이아웃 및 우측 정렬 최적화
+- **등락금액/수익률 우측 정렬 고정**: `StockListItem.jsx` 및 `WatchlistSummary.jsx` 내 긴 종목명으로 인한 좌우 레이아웃 밀림/두 줄 꺾임 현상 수정.
+- **`truncate` & `whitespace-nowrap` 가공**: 좌측 종목명은 말줄임표(`truncate`) 처리, 우측 등락금액/수익률(`1390(14.21%)`)은 `shrink-0`, `whitespace-nowrap`, `justify-end`, `min-w-[110px]`를 부여하여 일관된 1줄 우측 정렬 완성.
+- **프론트엔드 리빌드**: `stockplus-frontend-1` 컨테이너 리빌드 및 배포 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.47) - Gemini 3.5 Flash 고성능 모델 도입 & UI 표기 동기화 ✨
 
 ### 1. Google Gemini 3.5 Flash 고성능 추론 모델 채택
 - **Gemini 3.5 Flash 전환**: 구형 모델(`gemini-2.0-flash`) 퇴역 대응 및 복잡한 주식 수급/WICS 업종/퀀트 지표 간 연관성 추론 능력 극대화를 위해 `gemini-3.5-flash`로 전면 교체.
