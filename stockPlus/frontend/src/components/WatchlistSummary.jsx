@@ -437,9 +437,9 @@ const WatchlistSummary = () => {
                                                             <div className="text-[11px] text-slate-500 font-medium mt-0.5">{stock.code}</div>
                                                         )}
                                                     </div>
-                                                    <div className="text-right shrink-0">
-                                                        <div className={classNames("text-lg font-black tabular-nums tracking-tight", getColorClass(stock.priceSign, stock.change))}>{stock.price ? stock.price.toLocaleString() : '-'}</div>
-                                                        <div className={classNames("text-xs font-bold mt-0.5 inline-flex items-center gap-1", getColorClass(stock.priceSign, stock.change))}>
+                                                    <div className="text-right shrink-0 min-w-[110px] flex flex-col items-end">
+                                                        <div className={classNames("text-lg font-black tabular-nums tracking-tight text-right whitespace-nowrap", getColorClass(stock.priceSign, stock.change))}>{stock.price ? stock.price.toLocaleString() : '-'}</div>
+                                                        <div className={classNames("text-xs font-bold mt-0.5 inline-flex items-center gap-1 justify-end text-right whitespace-nowrap", getColorClass(stock.priceSign, stock.change))}>
                                                             {getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({stock.changeRate?.toFixed(2) || '0.00'}%)
                                                         </div>
                                                     </div>
