@@ -9,6 +9,7 @@ import com.stockPlus.service.KisStockService;
 import com.stockPlus.service.StockDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -23,7 +24,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") 
+@CrossOrigin(origins = {
+    "https://stockplus.158.180.66.45.nip.io",
+    "http://localhost:5173",
+    "http://localhost:3000"
+})
 @lombok.extern.slf4j.Slf4j
 public class StockDashboardController {
 
@@ -133,7 +138,9 @@ public class StockDashboardController {
 
     /**
      * [디버그] KIS 웹소켓 세션이 고착되었을 때 강제로 토큰을 폐기하고 재연결합니다.
+     * [보안] 관리자 전용 API
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/debug/refresh-approval")
     public ResponseEntity<String> forceRefreshApproval() {
         log.warn("Manual KIS session reset triggered via API.");
@@ -291,7 +298,9 @@ public class StockDashboardController {
 
     /**
      * 수동으로 AI 특별 리포트 생성을 트리거합니다.
+     * [보안] 관리자 전용 API
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/debug/trigger-special-report")
     public void triggerSpecialReport() {
         log.info("[Debug] Manually triggering Special AI Report...");

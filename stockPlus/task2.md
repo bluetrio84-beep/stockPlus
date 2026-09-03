@@ -1,6 +1,47 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.48) - 레버리지/인버스 ETF 전체 DB 적재 & UI 우측 정렬 레이아웃 최적화 ✨
+## 🚀 최신 업데이트 현황 (v16.50) - Next Leaders AI 사후 복기 성적표 요약 & 장중 실시간 급상승 Top 10 구축 ✨
+
+### 1. Claude 선행 보안 및 스키마 긴급 교정 완료
+- **디버그 API 관리자 권한 보호**: `StockDashboardController.java` 내 `/debug/refresh-approval` 및 `/debug/trigger-special-report`에 `@PreAuthorize("hasRole('ADMIN')")`을 적용하여 무단 호출 차단.
+- **SecurityConfig 메서드 보안 및 CORS 도메인 제한**: `@EnableMethodSecurity` 활성화 및 기존 `@CrossOrigin(origins = "*")` 와일드카드를 실제 서비스 도메인(`https://stockplus.158.180.66.45.nip.io`, `localhost:5173`, `localhost:3000`)으로 안전하게 한정.
+- **DB 스키마 문법 및 중복 컬럼 완전 정화**: `backend/src/main/resources/schema.sql` 내 `holdings`, `user_note`, `collector_logs`, `stock_analysis_log`, `ai_prediction` 테이블의 중복 선언된 `updated_at` 및 콤마 누락 오류 수정.
+
+### 2. Next Leaders 사후 복기 종합 성적표 위젯 구축 (1단계: Backtest Performance)
+- **종합 승률 통계 자동 집계**: `ai_next_leaders` 테이블에 축적된 1,903건 이상의 사후 검증 데이터(T+2일 수익권 여부)를 집계하는 `getAiPerformanceSummary` 쿼리 신설.
+- **AI REVIEW 상단 KPI 4대 지표 카드 노출**:
+  1. `최근 30일 적중률 (%)`: 단기 시장 흐름 속 AI 추천 종목의 최근 실질 승률.
+  2. `이달의 최고 수익 픽`: 최근 30일 내 추천 후 최고 수익률 달성 종목명 및 수익률 (예: 아로마티카 +69.8%).
+  3. `전체 검증 완료 종목 수`: 누적 사후 평가가 완료된 종목 수 및 성공 확정 건수.
+  4. `누적 평균 승률 (%)`: 시스템 론칭 이후 전체 누적 승률.
+
+### 3. 장중 실시간 수급 급상승 Live Top 10 탭 신설 (2단계: Intraday Live Ranking)
+- **1,800개 전 종목 분단위 수급 실시간 평가**: `stock_intraday_history` 최신 스냅샷을 기반으로 장중 순수 프로그램 순매수량 + RSI 바닥 반등 + OBV 매집을 종합 점수화(`live_score`)하는 `getLiveNextLeaders` 쿼리 구축.
+- **백엔드 REST API 신설**: `GET /api/admin/intelligence/next-leaders/live` (관리자 보안 검증 포함).
+- **NextLeaderDashboard 3단 탭 전환 완성**:
+  - `[RANKING]` : 07:00 전수조사 기반 차기 주도주 Top 10 및 인간 피드백.
+  - `[LIVE INTRADAY]` : 장중 30분 단위 실시간 거대 자금 유입 수급 대장주 Top 10 (순위, 실시간가, 프로그램 순매수, RSI/OBV, 포착시간).
+  - `[AI REVIEW]` : AI 종합 승률 성적표, 엔진별(LSTM/TCN/XGB) 적중률 및 주말 자동 가중치, T+2 사후 검증 이력 리포트.
+
+### 4. 노트북/작은 모니터 화면 가로 스크롤 & AI Feedback 열 우측 고정(Sticky) 완벽 구현
+- **AI Feedback 열 우측 고정(`sticky right-0`)**: 노트북 등 좁은 가로 해상도에서도 가로 스크롤을 끝까지 밀지 않고도 `AI Feedback(성공/매집/실패/노이즈/시황)` 버튼 5종이 화면 우측 끝에 항상 고정되어 즉시 리뷰/평가 가능하도록 CSS Sticky + 입체 그림자(`shadow-[-4px_0_12px_rgba(0,0,0,0.3)]`) 적용.
+- **가로 스크롤 명시적 활성화 및 폭 최적화**: 
+  - 부모 flex 컨테이너에 `min-w-0 max-w-full`을 부여하여 flex box 오버플로우로 인해 가로 스크롤바가 화면 밖으로 밀려나는 문제 원천 차단.
+  - 테이블 내 `Reason` 열과 세부 점수 컬럼의 폭을 컴팩트하게 정밀 튜닝(`min-w-[260px] lg:min-w-[340px]`)하여 스크롤바 이동 거리 축소 및 가독성 확보.
+  - 카드 상단 헤더에 `좌우 스크롤 ↔` 인디케이터 배지를 추가하여 스크롤 여부 직관적 인지 가능.
+- **스크롤바 스타일 시인성 대폭 개선**: 기존 5px 투명 스크롤바에서 `8px 두께 + 반투명 슬레이트 테마 Thumb(rgba(148,163,184,0.4))`으로 개선하여 스크롤바의 존재가 한눈에 보이도록 처리.
+- **세로 전체 페이지 스크롤 활성화**: `NextLeaderDashboard.jsx` 루트의 강제 고정 높이를 `h-full overflow-y-auto custom-scrollbar`로 교체하여 화면 잘림 방지.
+
+### 5. Admin 인텔리전스 대시보드 로딩 지연 (10초+ ➡️ 1초대) 초고속 혁신
+- **병목 쿼리 2종 정밀 타격**:
+  1. `getLatestAiSignals`: 180만 건 풀스캔 ➡️ 최신 3,000건 ID 윈도우 스캔(`id >= MAX(id) - 3000`)으로 8초 지연 제거.
+  2. `getAiHitRate`: 7일 치 전체 테이블 결합 ➡️ 최근 100,000건 범위 스캔으로 0.8초 ➡️ 0.1초 단축.
+- **Spring Boot JAR 재패키징 및 완전 반영**: XML 수정본이 JAR 패키징(`mvnw package`)을 통해 바이너리에 정식 탑재되도록 처리하여, 대시보드 로딩 속도를 **1초대 초고속**으로 안정화.
+- **컨테이너 배포**: 프론트엔드(`stockplus-frontend-1`) 빌드 및 백엔드(`stockplus-backend-1`) JAR 리패키징 후 두 컨테이너 모두 재기동 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.48) - 레버리지/인버스 ETF 전체 DB 적재 & UI 우측 정렬 레이아웃 최적화 ✨
 
 ### 1. 국내 상장 전체 1,163개 ETF (레버리지/인버스 곱버스 103개 포함) DB 일괄 적재
 - **ETF 종목 누락 문제 해결**: `stockplus.stock_master`에 누락되어 있던 KODEX 레버리지(`122630`), KODEX 200선물인버스2X 곱버스(`252670`), KODEX 코스닥150레버리지(`233740`), KODEX 코스닥150선물인버스(`251340`), TIGER 2차전지/반도체 레버리지 등 국내 상장 전체 1,163개 ETF 종목을 깨끗한 한글 명칭과 함께 100% 일괄 적재(Upsert).

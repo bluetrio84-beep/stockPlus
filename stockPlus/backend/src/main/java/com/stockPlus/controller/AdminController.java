@@ -214,12 +214,19 @@ public class AdminController {
         adminMapper.updateNextLeaderFeedback(stockCode, date, feedbackTag);
     }
 
+    @GetMapping("/intelligence/next-leaders/live")
+    public List<Map<String, Object>> getLiveNextLeaders(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        return adminMapper.getLiveNextLeaders();
+    }
+
     @GetMapping("/intelligence/ai-review")
     public Map<String, Object> getAiReviewData(org.springframework.security.core.Authentication authentication) {
         validateAdmin(authentication);
         Map<String, Object> response = new HashMap<>();
         response.put("modelPerformance", adminMapper.getAiModelPerformance());
         response.put("pastRecommendations", adminMapper.getPastRecommendations());
+        response.put("summary", adminMapper.getAiPerformanceSummary());
         return response;
     }
 

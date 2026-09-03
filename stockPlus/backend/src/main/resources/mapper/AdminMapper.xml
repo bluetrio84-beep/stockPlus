@@ -65,15 +65,10 @@
 
     <select id="getLatestAiSignals" resultType="map">
         SELECT ap.*, sm.stock_name 
-        FROM ai_prediction ap 
-        INNER JOIN (
-          SELECT target_name, MAX(id) as max_id 
-          FROM ai_prediction 
-          WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR) 
-          GROUP BY target_name
-        ) latest ON ap.id = latest.max_id 
-        JOIN stock_master sm ON ap.target_name = CONCAT('STOCK_', sm.stock_code) 
-        WHERE ap.signal_type NOT IN ('WAIT', 'NORMAL') 
+        FROM ai_prediction ap
+        JOIN stock_master sm ON ap.target_name COLLATE utf8mb4_unicode_ci = CONCAT('STOCK_', sm.stock_code) COLLATE utf8mb4_unicode_ci
+        WHERE ap.id &gt;= (SELECT COALESCE(MAX(id), 0) - 3000 FROM ai_prediction)
+        AND ap.signal_type NOT IN ('WAIT', 'NORMAL')
         ORDER BY ap.id DESC LIMIT 10
     </select>
 
@@ -99,7 +94,8 @@
         COALESCE(ROUND((COUNT(CASE WHEN i.change_rate &gt; 0 THEN 1 END) / NULLIF(COUNT(*), 0)) * 100, 1), 0) as hit_rate 
         FROM ai_prediction ap 
         JOIN industry_quotes i ON ap.target_name = i.industry_name 
-        WHERE ap.signal_type = 'BUY' 
+        WHERE ap.id &gt;= (SELECT COALESCE(MAX(id), 0) - 100000 FROM ai_prediction)
+        AND ap.signal_type = 'BUY' 
         AND ap.created_at &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY)
     </select>
 
@@ -202,6 +198,58 @@
             GROUP BY stock_code
         ) t2 ON t1.id = t2.max_id
         ORDER BY t1.captured_at DESC
+    </select>
+
+    <!-- [v16.50] AI 백테스트 전체 및 최근 30일 성적표 요약 -->
+    <select id="getAiPerformanceSummary" resultType="map">
+        SELECT 
+            COUNT(*) as total_evaluated,
+            COUNT(CASE WHEN hit_result = 'SUCCESS' THEN 1 END) as success_cnt,
+            ROUND(COUNT(CASE WHEN hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(*), 0) * 100, 1) as overall_hit_rate,
+            ROUND(AVG(CASE WHEN hit_result != 'PENDING' AND price_at_recom > 0 THEN (price_after_3d - price_at_recom) / price_at_recom * 100 END), 2) as avg_return_rate,
+            COALESCE((
+                SELECT ROUND(COUNT(CASE WHEN hit_result = 'SUCCESS' THEN 1 END) / NULLIF(COUNT(*), 0) * 100, 1)
+                FROM ai_next_leaders
+                WHERE hit_result IN ('SUCCESS', 'FAIL') AND captured_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ), 0.0) as recent_30d_hit_rate,
+            COALESCE((
+                SELECT stock_name FROM ai_next_leaders 
+                WHERE hit_result = 'SUCCESS' AND captured_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                ORDER BY (price_after_3d - price_at_recom) / price_at_recom DESC LIMIT 1
+            ), '-') as best_pick_name,
+            COALESCE((
+                SELECT ROUND(MAX((price_after_3d - price_at_recom) / price_at_recom * 100), 1)
+                FROM ai_next_leaders 
+                WHERE hit_result = 'SUCCESS' AND captured_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ), 0.0) as best_pick_return
+        FROM ai_next_leaders 
+        WHERE hit_result IN ('SUCCESS', 'FAIL')
+    </select>
+
+    <!-- [v16.50] 장중 실시간 급상승 Next Leaders Top 10 (30분 수급 스냅샷 기반) -->
+    <select id="getLiveNextLeaders" resultType="map">
+        SELECT 
+            h.stock_code,
+            m.stock_name,
+            h.price,
+            h.volume,
+            ROUND(h.rsi, 1) as rsi,
+            h.program_net_buy,
+            h.obv,
+            (
+                (CASE WHEN h.rsi &lt;= 40 THEN 30 WHEN h.rsi &lt;= 55 THEN 20 ELSE 10 END) +
+                (CASE WHEN h.program_net_buy > 0 THEN LEAST(40, ROUND(h.program_net_buy / 10000)) ELSE 0 END) +
+                (CASE WHEN h.obv > 0 THEN 20 ELSE 5 END)
+            ) as live_score,
+            DATE_FORMAT(h.captured_at, '%H:%i') as captured_time
+        FROM (
+            SELECT * FROM stock_intraday_history
+            WHERE captured_at >= (SELECT MAX(captured_at) FROM stock_intraday_history) - INTERVAL 15 MINUTE
+        ) h
+        JOIN stock_master m ON h.stock_code COLLATE utf8mb4_unicode_ci = m.stock_code COLLATE utf8mb4_unicode_ci
+        GROUP BY h.stock_code, m.stock_name, h.price, h.volume, h.rsi, h.program_net_buy, h.obv, h.captured_at
+        ORDER BY live_score DESC, h.program_net_buy DESC
+        LIMIT 10
     </select>
 
 </mapper>

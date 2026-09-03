@@ -27,26 +27,23 @@
  * 전역 테마 시스템과 연동하여 라이트/다크 모드에 최적화된 디자인 적용
  */
 ::-webkit-scrollbar {
-  width: 5px;  /* 스크롤바 너비 살짝 축소 (더 세련되게) */
-  height: 5px;
+  width: 8px;  /* 가로/세로 스크롤바 터치 및 가시성 확보 */
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  /* 스크롤바 트랙(배경)은 배경색과 통일하거나 투명하게 처리 */
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb {
-  /* 스크롤바 핸들은 테마의 경계선 색상을 활용하여 가독성 확보 */
-  background: var(--theme-border);
-  border-radius: 10px;
-  /* 마우스 호버 시 조금 더 진하게 강조 */
-  transition: background 0.3s;
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--theme-point);
-  opacity: 0.8;
 }
 
 /** 

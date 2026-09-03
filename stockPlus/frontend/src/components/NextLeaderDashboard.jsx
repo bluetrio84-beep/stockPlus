@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuthHeader } from '../api/stockApi';
-import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown, Sparkles } from 'lucide-react';
+import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown, Sparkles, Zap, Target } from 'lucide-react';
 import classNames from 'classnames';
 
 import { useNavigate } from 'react-router-dom';
@@ -20,13 +20,14 @@ const NextLeaderDashboard = () => {
 
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [nextLeaders, setNextLeaders] = useState([]);
+    const [liveLeaders, setLiveLeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('ranking'); 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); 
     const [isFeedbackHelpOpen, setIsFeedbackHelpOpen] = useState(false); 
     const [isReasonHelpOpen, setIsReasonHelpOpen] = useState(false); 
 
-    const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [] });
+    const [reviewData, setReviewData] = useState({ modelPerformance: [], pastRecommendations: [], summary: {} });
 
     const fetchNextLeaders = async (date) => {
         try {
@@ -65,6 +66,23 @@ const NextLeaderDashboard = () => {
         }
     };
 
+    const fetchLiveLeaders = async () => {
+        try {
+            setIsLoading(true);
+            const res = await fetch(`/api/admin/intelligence/next-leaders/live`, {
+                headers: getAuthHeader()
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setLiveLeaders(json);
+            }
+        } catch (e) {
+            console.error("Live Leaders Fetch Error:", e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const fetchReviewData = async () => {
         try {
             setIsLoading(true);
@@ -85,6 +103,8 @@ const NextLeaderDashboard = () => {
     useEffect(() => {
         if (activeTab === 'ranking') {
             fetchNextLeaders(selectedDate);
+        } else if (activeTab === 'live') {
+            fetchLiveLeaders();
         } else {
             fetchReviewData();
         }
@@ -113,7 +133,7 @@ const NextLeaderDashboard = () => {
     };
 
     const renderRankingTab = () => (
-        <div id="next-leader-ranking-area" className="flex-1 min-h-0 bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0.5 lg:mx-0 animate-in fade-in duration-500">
+        <div id="next-leader-ranking-area" className="flex-1 w-full min-w-0 max-w-full min-h-[480px] bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0 lg:mx-0 animate-in fade-in duration-500">
             <div className="p-3 border-b border-[var(--theme-border)] transition-colors duration-500 flex items-center justify-between bg-[var(--theme-header)] transition-colors duration-500/80 shrink-0">
                 <div className="flex items-center gap-2">
                     <h3 className="text-[var(--theme-text)] text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter transition-colors">
@@ -121,27 +141,30 @@ const NextLeaderDashboard = () => {
                     </h3>
                     <button onClick={() => setIsHelpModalOpen(true)} className="text-slate-500 hover:text-indigo-400 transition-colors"><HelpCircle size={16} /></button>
                 </div>
-                <span className="text-[9px] text-slate-500 font-mono italic">Daily Top 10 Elite Analysis</span>
+                <div className="flex items-center gap-2">
+                    <span className="hidden sm:inline text-[9px] text-slate-500 font-mono italic">Daily Top 10 Elite Analysis</span>
+                    <span className="text-[9px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
+                </div>
             </div>
 
-            <div className="flex-1 overflow-auto custom-scrollbar">
+            <div className="w-full min-w-0 overflow-x-auto custom-scrollbar flex-1 relative">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
-                    <thead className="sticky top-0 z-10 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
+                    <thead className="sticky top-0 z-20 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
                         <tr>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Rank</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 w-32 lg:w-40">Stock</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Total</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Score Breakdown (Q / L / T / X / S)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 min-w-[380px] lg:min-w-[550px]">
+                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Rank</th>
+                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-28 lg:w-36">Stock</th>
+                            <th className="px-3 lg:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)]">Total</th>
+                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Score Breakdown (Q / L / T / X / S)</th>
+                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] min-w-[260px] lg:min-w-[340px]">
                                 <div className="flex items-center gap-1">
                                     Reason
                                     <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
                                 </div>
                             </th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500 min-w-[250px] lg:min-w-[280px]">
-                                <div className="flex items-center justify-center gap-1.5">
+                            <th className="sticky right-0 z-30 px-3 lg:px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
+                                <div className="flex items-center justify-center gap-1">
                                     AI Feedback (Review)
-                                    <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={14} /></button>
+                                    <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-500 hover:text-indigo-400 transition-colors"><HelpCircle size={13} /></button>
                                 </div>
                             </th>
                         </tr>
@@ -152,22 +175,22 @@ const NextLeaderDashboard = () => {
                         ) : nextLeaders.length > 0 ? (
                             nextLeaders.map((item, idx) => (
                                 <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>{idx + 1}</div></td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 w-32 lg:w-40">
+                                    <td className="px-3 lg:px-5 py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>{idx + 1}</div></td>
+                                    <td className="px-3 lg:px-5 py-2 w-28 lg:w-36">
                                         <div 
-                                            className="flex flex-col transition-colors cursor-pointer group/stock"
-                                            onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}
+                                             className="flex flex-col transition-colors cursor-pointer group/stock"
+                                             onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}
                                         >
-                                            <span className="text-[var(--theme-text)] font-black text-sm lg:text-base group-hover:text-indigo-400 transition-colors truncate flex items-center gap-1.5">
+                                            <span className="text-[var(--theme-text)] font-black text-xs lg:text-sm group-hover:text-indigo-400 transition-colors truncate flex items-center gap-1">
                                                 {item.stock_name}
-                                                <ArrowUpRight size={12} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400" />
+                                                <ArrowUpRight size={11} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400" />
                                             </span>
-                                            <span className="text-slate-500 font-mono text-[10px] font-black">{item.stock_code}</span>
+                                            <span className="text-slate-500 font-mono text-[9px] font-black">{item.stock_code}</span>
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 text-center"><div className="inline-block px-3 py-1 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors"><span className="text-indigo-600 font-black text-sm lg:text-base transition-colors">{item.total_score.toFixed(1)}</span></div></td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2">
-                                        <div className="flex items-center gap-3">
+                                    <td className="px-3 lg:px-4 py-2 text-center"><div className="inline-block px-2.5 py-0.5 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors"><span className="text-indigo-500 font-black text-xs lg:text-sm">{item.total_score.toFixed(1)}</span></div></td>
+                                    <td className="px-3 lg:px-5 py-2">
+                                        <div className="flex items-center gap-2">
                                             {[ 
                                                 { label: 'Q', score: item.algo_score, color: 'bg-rose-500' },
                                                 { label: 'L', score: item.lstm_score, color: 'bg-indigo-500' },
@@ -175,14 +198,14 @@ const NextLeaderDashboard = () => {
                                                 { label: 'X', score: item.xgb_score, color: 'bg-cyan-500' },
                                                 { label: 'S', score: item.smart_money_score, color: 'bg-orange-500' }
                                             ].map((m, i) => (
-                                                <div key={i} className="flex flex-col gap-0.5 w-10 lg:w-14">
-                                                    <div className="flex justify-between text-[8px] font-bold text-slate-500 uppercase"><span>{m.label}</span><span>{(m.score || 0).toFixed(0)}</span></div>
+                                                <div key={i} className="flex flex-col gap-0.5 w-9 lg:w-11">
+                                                    <div className="flex justify-between text-[7px] font-bold text-slate-500 uppercase"><span>{m.label}</span><span>{(m.score || 0).toFixed(0)}</span></div>
                                                     <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full", m.color)} style={{width: `${m.score || 0}%`}}></div></div>
                                                 </div>
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 min-w-[380px] lg:min-w-[550px]">
+                                    <td className="px-3 lg:px-5 py-2 min-w-[260px] lg:min-w-[340px]">
                                         <div className="flex flex-wrap gap-1 transition-colors">
                                             {item.reason.split(',').map((r, i) => {
                                                 const txt = r.trim();
@@ -193,7 +216,7 @@ const NextLeaderDashboard = () => {
                                                 
                                                 return (
                                                     <span key={i} className={classNames(
-                                                        "px-2 py-1 text-[9px] lg:text-[10px] font-black rounded-md border transition-all uppercase tracking-wider shadow-sm transition-colors",
+                                                        "px-1.5 py-0.5 text-[8.5px] lg:text-[9.5px] font-black rounded border transition-all uppercase tracking-wider shadow-sm",
                                                         isHot ? "bg-rose-500/20 text-rose-500 border-rose-500/40 shadow-rose-900/20" :
                                                         isGood ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/40 shadow-emerald-900/20" :
                                                         isSupply ? "bg-violet-600/20 text-violet-400 border-violet-500/40 shadow-violet-900/20" :
@@ -206,7 +229,7 @@ const NextLeaderDashboard = () => {
                                             })}
                                         </div>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-1.5 lg:py-2 min-w-[250px] lg:min-w-[280px]">
+                                    <td className="sticky right-0 z-10 px-3 lg:px-4 py-2 bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
                                         <div className="flex items-center justify-center gap-1 transition-colors">
                                             {['성공', '매집', '실패', '노이즈', '시황'].map(tag => {
                                                 const icons = { '성공': <ThumbsUp size={8} />, '매집': <Package size={8} />, '실패': <ThumbsDown size={8} />, '노이즈': <Ghost size={8} />, '시황': <CloudRain size={8} /> };
@@ -214,7 +237,7 @@ const NextLeaderDashboard = () => {
                                                 const c = colors[tag];
                                                 const active = item.feedback_tag === tag;
                                                 return (
-                                                    <button key={tag} onClick={() => handleFeedback(item.stock_code, tag)} className={classNames("px-2 py-1 rounded-lg text-[8px] font-black transition-all flex items-center gap-1 border transition-colors", active ? `bg-${c}-600 text-white border-${c}-500 shadow-lg` : `bg-[var(--theme-header)] text-slate-500 border-[var(--theme-border)] hover:text-${c}-600 shadow-sm`)}>{icons[tag]} {tag}</button>
+                                                    <button key={tag} onClick={() => handleFeedback(item.stock_code, tag)} className={classNames("px-1.5 py-0.5 rounded text-[8px] font-black transition-all flex items-center gap-0.5 border", active ? `bg-${c}-600 text-white border-${c}-500 shadow-md` : `bg-[var(--theme-bg)] text-slate-400 border-[var(--theme-border)] hover:text-${c}-400 hover:border-${c}-500/50 shadow-sm`)}>{icons[tag]} {tag}</button>
                                                 );
                                             })}
                                         </div>
@@ -230,8 +253,136 @@ const NextLeaderDashboard = () => {
         </div>
     );
 
-    const renderReviewTab = () => (
+    const renderLiveTab = () => (
+        <div id="next-leader-live-area" className="flex-1 w-full min-w-0 max-w-full min-h-[480px] bg-[var(--theme-header)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm flex flex-col mx-0 lg:mx-0 animate-in fade-in duration-500">
+            <div className="p-3 border-b border-[var(--theme-border)] transition-colors duration-500 flex items-center justify-between bg-[var(--theme-header)] transition-colors duration-500/80 shrink-0">
+                <div className="flex items-center gap-2">
+                    <h3 className="text-[var(--theme-text)] text-xs lg:text-base font-black flex items-center gap-1.5 uppercase tracking-tighter transition-colors">
+                        <Zap className="text-amber-400" size={16} /> 장중 수급 급상승 Top 10 (실시간 30분)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
+                        LIVE INTRADAY
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
+                    <button onClick={fetchLiveLeaders} className="text-xs font-black text-slate-500 hover:text-amber-400 transition-colors flex items-center gap-1">
+                        <Activity size={13} /> 갱신
+                    </button>
+                </div>
+            </div>
+
+            <div className="w-full min-w-0 overflow-x-auto custom-scrollbar flex-1 relative">
+                <table className="w-full text-left border-collapse min-w-[980px]">
+                    <thead className="sticky top-0 z-10 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
+                        <tr>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Rank</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 w-36 lg:w-44">Stock</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Live Score</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)] transition-colors duration-500">Current Price</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)] transition-colors duration-500">Program Net (주)</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">RSI / OBV</th>
+                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Captured Time</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                        {isLoading ? (
+                            <tr><td colSpan="7" className="py-20 text-center"><Loader2 className="animate-spin text-amber-500 mx-auto" size={32} /></td></tr>
+                        ) : liveLeaders.length > 0 ? (
+                            liveLeaders.map((item, idx) => (
+                                <tr key={item.stock_code} className="hover:bg-[var(--theme-bg)]/40 transition-colors">
+                                    <td className="px-4 lg:px-6 py-3 font-mono font-black text-xs text-slate-400">
+                                        <span className={classNames("w-6 h-6 rounded-lg inline-flex items-center justify-center", idx < 3 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-slate-500/10 text-slate-400")}>
+                                            {idx + 1}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 cursor-pointer group" onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}>
+                                        <div className="font-black text-sm text-[var(--theme-text)] group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                                            {item.stock_name}
+                                            <ArrowUpRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                        <span className="text-[10px] font-mono text-slate-500">{item.stock_code}</span>
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 text-center">
+                                        <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                            {item.live_score} pt
+                                        </span>
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 text-right font-mono font-black text-sm text-[var(--theme-text)]">
+                                        {Number(item.price || 0).toLocaleString()}원
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 text-right font-mono font-black text-xs">
+                                        <span className={item.program_net_buy > 0 ? "text-rose-400" : "text-blue-400"}>
+                                            {item.program_net_buy > 0 ? "+" : ""}{Number(item.program_net_buy || 0).toLocaleString()}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-400">
+                                        <span className="px-1.5 py-0.5 rounded bg-slate-500/10 border border-slate-500/20 mr-1">RSI {item.rsi}</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{item.obv > 0 ? 'OBV양호' : 'OBV관망'}</span>
+                                    </td>
+                                    <td className="px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-500">
+                                        {item.captured_time}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr><td colSpan="7" className="py-20 text-center text-slate-500 text-xs font-bold">장중 수급 데이터 준비 중입니다 (장 시작 후 자동 집계)</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
+    const renderReviewTab = () => {
+        const s = reviewData.summary || {};
+        return (
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 lg:gap-6 animate-in slide-in-from-bottom-4 duration-500 pb-10 px-1">
+            {/* [v16.50] 사후 검증 종합 성적 카드 */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <Target size={12} className="text-emerald-400" /> 최근 30일 적중률
+                    </span>
+                    <span className="text-xl lg:text-2xl font-black font-mono text-emerald-400 tracking-tight">
+                        {s.recent_30d_hit_rate || 0}%
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-bold">검증 기준: T+2일 이내 수익권</span>
+                </div>
+
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <Award size={12} className="text-amber-400" /> 이달의 최고 수익 픽
+                    </span>
+                    <span className="text-base lg:text-lg font-black text-[var(--theme-text)] truncate">
+                        {s.best_pick_name || '-'}
+                    </span>
+                    <span className="text-xs font-mono font-black text-rose-500">
+                        +{s.best_pick_return || 0}% 달성
+                    </span>
+                </div>
+
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <CheckCircle2 size={12} className="text-indigo-400" /> 전체 검증 완료 종목
+                    </span>
+                    <span className="text-xl lg:text-2xl font-black font-mono text-indigo-400 tracking-tight">
+                        {s.total_evaluated ? Number(s.total_evaluated).toLocaleString() : 0}개
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-bold">성공 {s.success_cnt || 0}회 확정</span>
+                </div>
+
+                <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                        <TrendingUp size={12} className="text-cyan-400" /> 누적 평균 승률
+                    </span>
+                    <span className="text-xl lg:text-2xl font-black font-mono text-cyan-400 tracking-tight">
+                        {s.overall_hit_rate || 0}%
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-bold">T+2 사후 누적 통계</span>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {reviewData.modelPerformance.map((m, i) => {
                     const color = m.model_name === 'LSTM' ? '#6366f1' : (m.model_name === 'TCN' ? '#f43f5e' : '#06b6d4');
@@ -377,7 +528,8 @@ const NextLeaderDashboard = () => {
                 </div>
             </div>
         </div>
-    );
+        );
+    };
 
     const renderReasonHelp = () => (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -523,7 +675,7 @@ const NextLeaderDashboard = () => {
     );
 
     return (
-        <div className="flex-1 bg-[var(--theme-bg)] transition-colors duration-500 pt-2 px-1 lg:pt-6 lg:px-6 h-[100dvh] lg:h-full flex flex-col gap-2 lg:gap-4 overflow-hidden relative pb-27 lg:pb-5 font-sans">
+        <div className="flex-1 w-full min-w-0 max-w-full bg-[var(--theme-bg)] transition-colors duration-500 pt-2 px-1 lg:pt-6 lg:px-6 h-full overflow-y-auto custom-scrollbar flex flex-col gap-2 lg:gap-4 relative pb-12 font-sans">
             <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0 px-1 transition-colors">
                 <div className="flex items-center gap-3 transition-colors">
                     <div className="p-1.5 lg:p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30 transition-colors"><Award className="text-[var(--theme-point)]" size={20} /></div>
@@ -538,11 +690,12 @@ const NextLeaderDashboard = () => {
             <div className="flex justify-end lg:mt-[-8px] shrink-0 transition-colors">
                 <div className="flex bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 p-1 rounded-xl w-full lg:w-fit shadow-xl transition-colors">
                     <button onClick={() => setActiveTab('ranking')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 transition-colors", activeTab === 'ranking' ? "bg-[var(--theme-point)] text-white shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:text-[var(--theme-text)]")}><TrendingUp size={12} /> RANKING</button>
+                    <button onClick={() => setActiveTab('live')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 transition-colors", activeTab === 'live' ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20" : "text-slate-500 hover:text-[var(--theme-text)]")}><Zap size={12} /> LIVE INTRADAY</button>
                     <button onClick={() => setActiveTab('review')} className={classNames("flex-1 lg:flex-none px-4 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-2 transition-colors", activeTab === 'review' ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-slate-500 hover:text-[var(--theme-text)]")}><Brain size={12} /> AI REVIEW</button>
                 </div>
             </div>
 
-            {activeTab === 'ranking' ? renderRankingTab() : renderReviewTab()}
+            {activeTab === 'ranking' ? renderRankingTab() : (activeTab === 'live' ? renderLiveTab() : renderReviewTab())}
 
             {isHelpModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
