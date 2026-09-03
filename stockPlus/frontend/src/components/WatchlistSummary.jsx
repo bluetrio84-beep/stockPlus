@@ -467,17 +467,80 @@ const WatchlistSummary = () => {
                 })}>
                     <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-point)]/5 to-purple-500/5 pointer-events-none"></div>
                     <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 relative z-10 shrink-0 transition-colors duration-500"><div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={24} /></div><div><h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">전담 AI 분석가</h2><p className="text-xs text-[var(--theme-point)] font-bold transition-colors">전략적 투자 브리핑</p></div></div>
-                    <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-10 text-sm leading-relaxed text-[var(--theme-text)] transition-colors">
-                        {aiReport.split('\n').filter(l => l.trim()).map((line, i) => (
-                            <div key={i} className="mb-4 last:mb-0">
-                                {/^\d+\./.test(line.trim()) ? (
-                                    <div className="flex gap-2.5">
-                                        <span className="text-[var(--theme-point)] font-black shrink-0 text-base">{line.match(/^\d+\./)[0]}</span>
-                                        <span className="text-[var(--theme-text)] font-black text-[15px] leading-tight transition-colors">{line.replace(/^\d+\./, '').trim()}</span>
-                                    </div>
-                                ) : <span className="text-[var(--theme-text)] font-bold text-[14px] opacity-100 transition-colors">{line}</span>}
+                    <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-10 text-sm leading-relaxed text-[var(--theme-text)] transition-colors space-y-3">
+                        {aiReport ? (
+                            aiReport.split('\n').filter(l => l.trim()).map((line, i) => {
+                                const trimmed = line.trim();
+                                if (trimmed.startsWith('###') || trimmed.startsWith('##')) {
+                                    return (
+                                        <div key={i} className="pt-4 pb-1 border-b border-[var(--theme-border)]/50">
+                                            <h3 className="text-base lg:text-lg font-black text-[var(--theme-point)] tracking-tight flex items-center gap-2">
+                                                <TrendingUp size={18} /> {trimmed.replace(/^#+\s*/, '')}
+                                            </h3>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('####')) {
+                                    return (
+                                        <h4 key={i} className="pt-2 font-black text-sm lg:text-base text-[var(--theme-text)] flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--theme-point)]"></span>
+                                            {trimmed.replace(/^####\s*/, '')}
+                                        </h4>
+                                    );
+                                }
+                                if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
+                                    const content = trimmed.replace(/^[\*\-]\s*/, '');
+                                    return (
+                                        <div key={i} className="flex items-start gap-2 pl-2 text-[13px] lg:text-[14px]">
+                                            <span className="text-indigo-400 mt-1 shrink-0 font-bold">•</span>
+                                            <span className="text-[var(--theme-text)] opacity-95 leading-relaxed font-medium">
+                                                {content.split(/(\*\*.*?\*\*)/g).map((chunk, ci) => {
+                                                    if (chunk.startsWith('**') && chunk.endsWith('**')) {
+                                                        return <strong key={ci} className="font-black text-[var(--theme-point)]">{chunk.slice(2, -2)}</strong>;
+                                                    }
+                                                    return chunk;
+                                                })}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                if (/^\d+\./.test(trimmed)) {
+                                    const num = trimmed.match(/^\d+\./)[0];
+                                    const text = trimmed.replace(/^\d+\./, '').trim();
+                                    return (
+                                        <div key={i} className="flex items-start gap-2.5 pl-1 my-1.5">
+                                            <span className="text-[var(--theme-point)] font-black shrink-0 text-base leading-none mt-0.5">{num}</span>
+                                            <span className="text-[var(--theme-text)] font-bold text-[14px] leading-relaxed">
+                                                {text.split(/(\*\*.*?\*\*)/g).map((chunk, ci) => {
+                                                    if (chunk.startsWith('**') && chunk.endsWith('**')) {
+                                                        return <strong key={ci} className="font-black text-emerald-400">{chunk.slice(2, -2)}</strong>;
+                                                    }
+                                                    return chunk;
+                                                })}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed === '---') {
+                                    return <hr key={i} className="my-3 border-[var(--theme-border)]/40" />;
+                                }
+                                return (
+                                    <p key={i} className="text-[var(--theme-text)] opacity-90 text-[13.5px] lg:text-[14px] leading-relaxed font-normal">
+                                        {trimmed.split(/(\*\*.*?\*\*)/g).map((chunk, ci) => {
+                                            if (chunk.startsWith('**') && chunk.endsWith('**')) {
+                                                return <strong key={ci} className="font-black text-[var(--theme-text)]">{chunk.slice(2, -2)}</strong>;
+                                            }
+                                            return chunk;
+                                        })}
+                                    </p>
+                                );
+                            })
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-64 text-slate-600">
+                                <Sparkles size={40} className="mb-4 opacity-10 animate-pulse" />
+                                <p className="text-sm">분석 리포트 생성 중...</p>
                             </div>
-                        )) || <div className="flex flex-col items-center justify-center h-64 text-slate-600"><Sparkles size={40} className="mb-4 opacity-10 animate-pulse" /><p className="text-sm">분석 중...</p></div>}
+                        )}
                     </div>
                 </div>
                 </div>
