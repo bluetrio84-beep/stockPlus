@@ -230,6 +230,67 @@ public class AdminController {
         return response;
     }
 
+    // [v16.54] 시장 전환점 나침반 (Market Compass) 데이터 API
+    @GetMapping("/intelligence/market-compass")
+    public Map<String, Object> getMarketCompassData(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> metrics = adminMapper.getMarketCompassMetrics();
+        List<Map<String, Object>> investorFlow = adminMapper.getMarketCompassInvestorFlow();
+        List<Map<String, Object>> indices = adminMapper.getLatestIndices();
+
+        // 1. 복합 공포/탐욕 지수 (Fear & Greed Index, 0~100) 산출 로직
+        // 가중치: 업종 상승비율(30%) + 평균 AI 스코어(25%) + 시장 RSI(25%) + 과매수/과매도 비율(20%)
+        double fearGreedScore = 50.0;
+        if (metrics != null) {
+            long rising = metrics.get("rising_industries") != null ? ((Number) metrics.get("rising_industries")).longValue() : 0;
+            long falling = metrics.get("falling_industries") != null ? ((Number) metrics.get("falling_industries")).longValue() : 0;
+            double industryRatio = (rising + falling) > 0 ? (double) rising / (rising + falling) * 100 : 50.0;
+            double avgAi = metrics.get("avg_market_ai_score") != null ? ((Number) metrics.get("avg_market_ai_score")).doubleValue() : 50.0;
+            double avgRsi = metrics.get("avg_rsi") != null ? ((Number) metrics.get("avg_rsi")).doubleValue() : 50.0;
+
+            fearGreedScore = (industryRatio * 0.3) + (avgAi * 0.25) + (avgRsi * 0.25) + (50.0 * 0.20);
+            fearGreedScore = Math.max(5.0, Math.min(95.0, Math.round(fearGreedScore * 10) / 10.0));
+        }
+
+        // 2. 시장 국면 라벨 및 변곡점 시그널 판정
+        String phase;
+        String signalStatus; // 'BOTTOM_BUY', 'PEAK_WARN', 'NEUTRAL'
+        String actionAdvice;
+
+        if (fearGreedScore <= 30.0) {
+            phase = "EXTREME_FEAR (극단적 공포 / 바닥권)";
+            signalStatus = "BOTTOM_BUY";
+            actionAdvice = "투매가 절정에 달하며 역사적 바닥 구간에 진입했습니다. 손절을 자제하고 실적주 중심의 분할 매수 타점입니다.";
+        } else if (fearGreedScore <= 45.0) {
+            phase = "FEAR (공포 / 위축)";
+            signalStatus = "CAUTION_ACCUMULATE";
+            actionAdvice = "수급 관망세가 짙은 눌림목 구간입니다. 세력 잠행 매집 종목 위주로 선별 접근이 유리합니다.";
+        } else if (fearGreedScore <= 60.0) {
+            phase = "NEUTRAL (중립 / 횡보)";
+            signalStatus = "NEUTRAL";
+            actionAdvice = "지수는 박스권 횡보 양상입니다. 개별 섹터 순환매 및 밸류에이션 매력주 중심의 트레이딩이 유효합니다.";
+        } else if (fearGreedScore <= 75.0) {
+            phase = "GREED (탐욕 / 과열 조짐)";
+            signalStatus = "PROFIT_TAKING";
+            actionAdvice = "상승 피로도가 누적되는 구간입니다. 추격 매수를 지양하고 단기 급등 종목은 분할 익절로 현금을 확보하세요.";
+        } else {
+            phase = "EXTREME_GREED (극단적 탐욕 / 상투 경보)";
+            signalStatus = "PEAK_WARN";
+            actionAdvice = "과열 경보가 점등되었습니다. 지수 급락 및 변동성 확대 위험이 높으므로 현금 비중을 대폭 확대하세요.";
+        }
+
+        response.put("fearGreedScore", fearGreedScore);
+        response.put("phase", phase);
+        response.put("signalStatus", signalStatus);
+        response.put("actionAdvice", actionAdvice);
+        response.put("metrics", metrics);
+        response.put("investorFlow", investorFlow);
+        response.put("indices", indices);
+
+        return response;
+    }
+
     // [v36.60] 관리자 권한 통합 검증 유틸리티
     private void validateAdmin(org.springframework.security.core.Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {

@@ -268,6 +268,44 @@
         LIMIT 20
     </select>
 
+    <!-- [v16.54] 시장 전환점 나침반 (Market Turning Point / Peak & Bottom) 종합 지표 -->
+    <select id="getMarketCompassMetrics" resultType="map">
+        SELECT 
+            (SELECT COUNT(CASE WHEN change_rate > 0 THEN 1 END) FROM industry_quotes) as rising_industries,
+            (SELECT COUNT(CASE WHEN change_rate &lt; 0 THEN 1 END) FROM industry_quotes) as falling_industries,
+            (SELECT ROUND(AVG(change_rate), 2) FROM industry_quotes) as avg_industry_rate,
+            (SELECT ROUND(AVG(COALESCE(prediction_score, 50)), 1) FROM ai_prediction WHERE id >= (SELECT COALESCE(MAX(id), 0) - 1000 FROM ai_prediction)) as avg_market_ai_score,
+            COALESCE(t.rsi_oversold, 0) as rsi_oversold_cnt,
+            COALESCE(t.rsi_overbought, 0) as rsi_overbought_cnt,
+            COALESCE(t.avg_rsi, 50.0) as avg_rsi,
+            COALESCE(t.golden_cross_cnt, 0) as golden_cross_cnt,
+            COALESCE(t.total_program_net_buy, 0) as total_program_net_buy,
+            COALESCE(t.total_stocks, 0) as total_tracked_stocks
+        FROM (
+            SELECT 
+                COUNT(*) as total_stocks,
+                COUNT(CASE WHEN rsi &lt;= 30 THEN 1 END) as rsi_oversold,
+                COUNT(CASE WHEN rsi >= 70 THEN 1 END) as rsi_overbought,
+                ROUND(AVG(rsi), 1) as avg_rsi,
+                COUNT(CASE WHEN is_golden_cross = 1 THEN 1 END) as golden_cross_cnt,
+                SUM(program_net_buy) as total_program_net_buy
+            FROM stock_intraday_history
+            WHERE captured_at >= (SELECT MAX(captured_at) FROM stock_intraday_history) - INTERVAL 20 MINUTE
+        ) t
+    </select>
+
+    <select id="getMarketCompassInvestorFlow" resultType="map">
+        SELECT 
+            d.bsop_date as date,
+            SUM(d.foreign_net_buy) as foreign_net_buy,
+            SUM(d.institution_net_buy) as inst_net_buy,
+            SUM(d.individual_net_buy) as indiv_net_buy
+        FROM daily_stock_investor d
+        WHERE d.bsop_date >= (SELECT MIN(bsop_date) FROM (SELECT DISTINCT bsop_date FROM daily_stock_investor ORDER BY bsop_date DESC LIMIT 7) tmp)
+        GROUP BY d.bsop_date
+        ORDER BY d.bsop_date ASC
+    </select>
+
     <!-- [v16.50] AI 백테스트 전체 및 최근 30일 성적표 요약 -->
     <select id="getAiPerformanceSummary" resultType="map">
         SELECT 

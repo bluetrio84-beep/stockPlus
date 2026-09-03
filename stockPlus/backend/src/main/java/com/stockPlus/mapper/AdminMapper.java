@@ -94,4 +94,9 @@ public interface AdminMapper {
 
     // [v16.50] 장중 실시간 급상승 Next Leaders Top 10
     List<Map<String, Object>> getLiveNextLeaders();
+
+    // [v16.54] 시장 전환점 나침반 지표 및 수급 플로우
+    Map<String, Object> getMarketCompassMetrics();
+
+    List<Map<String, Object>> getMarketCompassInvestorFlow();
 }

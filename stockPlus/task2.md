@@ -1,6 +1,31 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.53) - 스마트머니 '세력 잠행 매집 레이더(Stealth Accumulation)' 신설 및 2단 탭 통합 구축 ✨
+## 🚀 최신 업데이트 현황 (v16.54) - 인텔리전스 대시보드 '시장 전환점 나침반 (MARKET COMPASS)' 탭 신설 및 복합 지수 엔진 가동 ✨
+
+### 1. 시장 전환점 나침반(Market Turning Point Radar) 종합 엔진 신설
+- **기능 개요**:
+  - 개별 종목 매매의 성공률을 좌우하는 **시장 전체의 투매(바닥)와 과열(상투) 변곡점**을 실시간 역추적하는 한국형 거시 나침반 시스템.
+  - **한국형 공포/탐욕 복합 지수 (Fear & Greed Index, 0~100)**: 업종 상승/하락 비율(30%) + AI 점수(25%) + 시장 평균 RSI(25%) + 중립 기본치(20%)를 종합 가중평균하여 시장 심리를 5단계(극단적 공포, 공포, 중립, 탐욕, 극단적 탐욕)로 정밀 분류.
+  - **변곡점 대응 가이드(Action Advice)**:
+    - `0 ~ 30 (EXTREME FEAR)`: "🚨 바닥 매수 유효" 점등 및 손절 자제, 실적주 분할 매수 타점 제시.
+    - `75 ~ 100 (EXTREME GREED)`: "⚠️ 상투 과열 경보" 점등 및 추격 매수 금지, 현금화 비중 확대 경보.
+- **백엔드 구현 내역**:
+  - `AdminMapper.xml` & `AdminMapper.java`: 
+    1. `getMarketCompassMetrics`: 실시간 업종 상승/하락 수, 시장 평균 RSI, 1,500+ 종목의 RSI 과매도(바닥) 및 과매수(과열) 종목 수, 당일 골든크로스 종목 수 종합 집계.
+    2. `getMarketCompassInvestorFlow`: 최근 7거래일간 외국인, 기관, 개인의 시장 전체 일별 순매수 데이터 집계.
+  - `AdminController.java`: `/api/admin/intelligence/market-compass` 신설, 공포/탐욕 점수 및 국면 판단 로직 내장.
+- **프론트엔드(`AdminIntelligenceDashboard.jsx`) UI 고도화**:
+  - **상단 3번째 탭 `[🧭 MARKET COMPASS]` 신설** (MONITOR, AI STRATEGY 옆).
+  - **모바일 하단 네비게이션 `나침반` 탭 동시 지원**.
+  - **핵심 UI 컴포넌트**:
+    1. *상단 종합 알림 배너*: 공포/탐욕 수치(X/100), 국면 라벨 및 실전 대응 행동 가이드.
+    2. *3단 핵심 지표 카드*: 반원형 공포/탐욕 나침반 게이지, 1,500+ 종목 과열/침체(RSI) 바 게이지, 기술적 모멘텀(골든크로스) 카드.
+    3. *최근 7거래일 일별 자금 흐름 테이블*: 일자별 외인/기관/개인 순매수량 및 주도 수급 주체 뱃지 표출.
+  - **빌드 & 배포 완료**: 스프링부트 재패키징 및 Vite 빌드, Nginx 배포 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.53) - 스마트머니 '세력 잠행 매집 레이더(Stealth Accumulation)' 신설 및 2단 탭 통합 구축 ✨
 
 ### 1. 세력 잠행 매집(Stealth Accumulation) 분석 엔진 신설
 - **기능 개요 및 판단 기준**: 
