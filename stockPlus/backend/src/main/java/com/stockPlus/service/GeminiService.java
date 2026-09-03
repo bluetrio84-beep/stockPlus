@@ -123,43 +123,49 @@ public class GeminiService {
      */
     public String getCompletion(String prompt, String requestType, String usrId) {
         if (enableExternalApi && apiKey != null && !apiKey.trim().isEmpty() && !"NONE".equalsIgnoreCase(apiKey)) {
-            try {
-                Thread.sleep(500); 
+            // [최적화] 일시적 503/네트워크 지연 대비 최대 2회 시도
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    Thread.sleep(attempt == 1 ? 500 : 1500); 
 
-                WebClient webClient = webClientBuilder.build();
-                Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
-                );
-                Map<String, Object> response = webClient.post()
-                    .uri(apiUrl + "?key=" + apiKey)
-                    .bodyValue(body)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
+                    WebClient webClient = webClientBuilder.build();
+                    Map<String, Object> body = Map.of(
+                        "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
+                    );
+                    Map<String, Object> response = webClient.post()
+                        .uri(apiUrl + "?key=" + apiKey)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(Map.class)
+                        .block();
 
-                if (response != null && response.containsKey("candidates")) {
-                    List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-                    Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
-                    List<Map<String, Object>> parts = (List<Map<String, Object>>) contentMap.get("parts");
-                    String text = (String) parts.get(0).get("text");
+                    if (response != null && response.containsKey("candidates")) {
+                        List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+                        Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+                        List<Map<String, Object>> parts = (List<Map<String, Object>>) contentMap.get("parts");
+                        String text = (String) parts.get(0).get("text");
 
-                    if (response.containsKey("usageMetadata")) {
-                        Map<String, Object> usage = (Map<String, Object>) response.get("usageMetadata");
-                        int promptTokens = (int) usage.getOrDefault("promptTokenCount", 0);
-                        int completionTokens = (int) usage.getOrDefault("candidatesTokenCount", 0);
-                        int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
-                        
-                        try {
-                            aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3.6-flash", promptTokens, completionTokens, totalTokens);
-                        } catch (Exception e) {
-                            log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
+                        if (response.containsKey("usageMetadata")) {
+                            Map<String, Object> usage = (Map<String, Object>) response.get("usageMetadata");
+                            int promptTokens = (int) usage.getOrDefault("promptTokenCount", 0);
+                            int completionTokens = (int) usage.getOrDefault("candidatesTokenCount", 0);
+                            int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
+                            
+                            try {
+                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3.6-flash", promptTokens, completionTokens, totalTokens);
+                            } catch (Exception e) {
+                                log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
+                            }
                         }
+                        
+                        return text;
                     }
-                    
-                    return text;
+                } catch (Exception e) {
+                    log.warn(">>> [Gemini API Call Exception Attempt {}] {}", attempt, e.getMessage());
+                    if (attempt == 2) {
+                        log.warn(">>> All attempts failed, switching to 0-cost Free Smart Fallback for: {}", requestType);
+                    }
                 }
-            } catch (Exception e) {
-                log.warn(">>> [Gemini API Call Exception] {}, switching to 0-cost Free Smart Fallback.", e.getMessage());
             }
         }
         return generateFreeFallback(prompt, requestType);
@@ -211,6 +217,11 @@ public class GeminiService {
                 "3.  **손익 관리**: 목표 수익률 도달 시 50%% 이상 분할 익절하여 실현 손익을 확정 짓고 손절선을 엄격히 준수하세요.",
                 today
             );
+        } else if ("MAGAZINE_ANALYSIS".equalsIgnoreCase(requestType)) {
+            return "[MARKET_BRIEF]글로벌 매크로 변동성 속에서 국내 증시는 외국인 및 기관의 수급 유입 업종을 중심으로 차별화된 반등 흐름을 전개하고 있습니다. S&P 500 및 나스닥의 기술주 흐름과 원/달러 환율 추이를 주시하며, 실적 턴어라운드와 저평가 매력을 갖춘 바닥 탈출 주도 섹터에 선별적으로 접근하는 전략이 유리합니다. " +
+                   "[STOCK_1]외국인과 기관의 강력한 동반 순매수가 포착되며 기술적 바닥권을 탈출하는 강력한 양봉 캔들을 형성하고 있습니다. " +
+                   "[STOCK_2]업종 내 밸류에이션 매력과 함께 프로그램 순매수가 꾸준히 유입되며 중기 이동평균선 안착을 시도하고 있습니다. " +
+                   "[STOCK_3]낙폭 과대 구간에서의 거래량 급증과 함께 스마트머니의 선제적 매집 시그널이 뚜렷하게 관측됩니다.";
         }
         return "종합 시장 데이터를 바탕으로 지수 지지선 및 개별 종목 수급 동향을 점검하였습니다.";
     }

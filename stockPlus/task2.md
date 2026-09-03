@@ -1,6 +1,20 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.51) - 전담 AI 분석가 100줄 심층 브리핑 복구 & Gemini 3.6 Flash 전환 및 쿼터 최적화 ✨
+## 🚀 최신 업데이트 현황 (v16.52) - 데일리 매거진 '데이터가 가리키는 오늘의 주도주 맥점' AI 브리핑 복구 완료 ✨
+
+### 1. 데일리 매거진 '데이터 분석 중...' 무한 대기 원인 규명 및 해결
+- **원인 분석**:
+  1. 매거진 데이터 조회 엔드포인트(`/api/admin/magazine/data`) 실행 시, `AdminMapper.xml`에서 `getDailyReport` 및 `insertDailyReport` 매핑 쿼리가 누락되어 `500 Internal Server Error (Invalid bound statement: com.stockPlus.mapper.AdminMapper.getDailyReport)`가 발생하고 있었습니다.
+  2. 이로 인해 프론트엔드의 `fetchMagazineData()` 호출이 실패하며 기본 상태값인 `"데이터 분석 중..."`에서 화면이 멈춰 있었습니다.
+  3. 또한 일시적인 네트워크 지연이나 외부 API 503 발생 시 백엔드 Fallback 엔진에서 매거진 규격 대괄호 태그(`[MARKET_BRIEF]`, `[STOCK_1]`, `[STOCK_2]`, `[STOCK_3]`)가 빠진 단문 텍스트를 반환하여 프론트엔드 파서(`parseBriefing`)가 내용을 추출하지 못하는 구조적 결함이 있었습니다.
+- **조치 및 고도화**:
+  1. **`AdminMapper.xml` 누락 쿼리 완벽 복구**: `ai_daily_report` 테이블을 참조하는 `getDailyReport`, `insertDailyReport` 및 수집기 통계 조회 태그들을 정식 추가.
+  2. **매거진 브리핑 2회 재시도 및 자체 스마트 템플릿 보강**: 일시적 API 지연 시 자동 2회 재시도 로직을 적용하고, 비상 시에도 규격화된 주도주/매크로 브리핑(`[MARKET_BRIEF]`, `[STOCK_1~3]`)을 반환하도록 Fallback 엔진 보강.
+  3. **백엔드 빌드 및 실서버 배포 완료**: 정상 HTTP 200 응답 및 규격화된 매거진 브리핑(글로벌 매크로 + TOP 3 종목 분석 코멘트) 적재 검증 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.51) - 전담 AI 분석가 100줄 심층 브리핑 복구 & Gemini 3.6 Flash 전환 및 쿼터 최적화 ✨
 
 ### 1. 전담 AI 분석가 브리핑 축소(1~3줄 요약) 원인 규명 및 해결
 - **원인 분석**: 

@@ -30,7 +30,40 @@
         WHERE id IN (SELECT MAX(id) FROM market_index_history GROUP BY index_name)
     </select>
 
-    <!-- ... (report/config queries remain same) ... -->
+    <select id="getDailyReport" resultType="string">
+        SELECT content FROM ai_daily_report WHERE report_date = #{date}
+    </select>
+
+    <insert id="insertDailyReport">
+        INSERT INTO ai_daily_report (report_date, content) VALUES (#{date}, #{content})
+        ON DUPLICATE KEY UPDATE content = #{content}
+    </insert>
+
+    <select id="getCollectorLogs" resultType="map">
+        SELECT * FROM collector_logs ORDER BY id DESC LIMIT 100
+    </select>
+
+    <select id="getHourlyStats" resultType="map">
+        SELECT stat_hour as hour, row_count as count, avg_latency_ms as latency 
+        FROM collector_hourly_stats 
+        ORDER BY stat_hour DESC LIMIT 24
+    </select>
+
+    <select id="getCollectedData" resultType="map">
+        SELECT * FROM collector_logs WHERE log_level = 'INFO' ORDER BY id DESC LIMIT 20
+    </select>
+
+    <select id="getRecentRankings" resultType="map">
+        SELECT * FROM stock_rankings ORDER BY captured_at DESC LIMIT 20
+    </select>
+
+    <select id="getRecentThemes" resultType="map">
+        SELECT * FROM market_themes ORDER BY updated_at DESC LIMIT 20
+    </select>
+
+    <select id="getRecentIndustries" resultType="map">
+        SELECT * FROM industry_quotes ORDER BY updated_at DESC LIMIT 20
+    </select>
 
     <!-- 3. 인텔리전스 및 대시보드 -->
     <select id="getIndustryHeatmap" resultType="map">
