@@ -86,6 +86,9 @@ public interface AdminMapper {
     // [v23.5] 스마트머니 90점 돌파 종목 조회 (최근 30일)
     List<Map<String, Object>> getSmartMoneyStocks();
 
+    // [v16.53] 세력 잠행 매집 추적 종목 조회
+    List<Map<String, Object>> getStealthAccumulationStocks();
+
     // [v16.50] AI 백테스트 종합 요약 통계
     Map<String, Object> getAiPerformanceSummary();
 

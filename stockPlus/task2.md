@@ -1,6 +1,25 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.52) - 데일리 매거진 '데이터가 가리키는 오늘의 주도주 맥점' AI 브리핑 복구 완료 ✨
+## 🚀 최신 업데이트 현황 (v16.53) - 스마트머니 '세력 잠행 매집 레이더(Stealth Accumulation)' 신설 및 2단 탭 통합 구축 ✨
+
+### 1. 세력 잠행 매집(Stealth Accumulation) 분석 엔진 신설
+- **기능 개요**: 
+  - 최근 7거래일 동안 주가를 급등시키지 않고 바닥권/박스권에서 외국인과 기관이 조용히 쓸어 담은 **순매수 누적 집중 종목**을 실시간 역추적.
+  - 거래량과 일자별 종가 데이터를 기반으로 **'추정 세력 평단가(Estimated Big Hands Price)'**를 산출하고 현재가와의 **'괴리율(%)'**을 정밀 계산.
+  - 괴리율이 2% 이내이거나 마이너스(역괴리)인 종목에는 **'세력 평단가 이하 (매수 유효)'** 안전 진입 배지 부여.
+- **백엔드 구현 내역**:
+  - `AdminMapper.xml` & `AdminMapper.java`: `getStealthAccumulationStocks` 쿼리 신설 (`daily_stock_investor`, `stock_master`, `ai_next_leaders` 결합 및 Collation 정합성 보장, ETF 제외, 외인/기관 순매수 합계 2만 주 이상 필터링).
+  - `AdminController.java`: 관리자 보안 검증(`validateAdmin`)이 적용된 `/api/admin/intelligence/stealth-accumulation` REST 엔드포인트 신설.
+- **프론트엔드(`SmartMoneyDashboard.jsx`) UI 고도화**:
+  - **2단 서브 탭 스위처 구축**: 
+    1. `🥷 세력 잠행 매집 (Stealth Accumulation)`: 실시간 세력 평단가 괴리율, 주포(외인/기관 양매수 등), 7일 누적 수급 2x2 카드 그리드.
+    2. `🏆 90%+ 명예의 전당 (Hall of Fame)`: 기존의 30일 이내 S-Score 90점 돌파 급등주 박제 리스트.
+  - **디테일한 반응형 카드 디자인**: 세력 평단가 대비 안전 진입 여부(`CheckCircle2`), 종목 코드/명 검색 및 새로고침 지원, 테마 색상(Indigo & Amber) 완벽 연동.
+  - **백엔드/프론트엔드 빌드 및 배포 완료**: API 응답(20개 종목) 및 웹 브라우저 렌더링 정상 검증 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.52) - 데일리 매거진 '데이터가 가리키는 오늘의 주도주 맥점' AI 브리핑 복구 완료 ✨
 
 ### 1. 데일리 매거진 '데이터 분석 중...' 무한 대기 원인 규명 및 해결
 - **원인 분석**:

@@ -233,6 +233,41 @@
         ORDER BY t1.captured_at DESC
     </select>
 
+    <!-- [v16.53] 세력 잠행 매집 추적 (최근 7거래일 기준 외인/기관 순매수 집중 및 평단가 역산) -->
+    <select id="getStealthAccumulationStocks" resultType="map">
+        SELECT 
+            d.stock_code,
+            m.stock_name,
+            COUNT(d.bsop_date) as days,
+            SUM(d.foreign_net_buy) as foreign_buy,
+            SUM(d.institution_net_buy) as inst_buy,
+            (SUM(d.foreign_net_buy) + SUM(d.institution_net_buy)) as total_smart_buy,
+            ROUND(SUM((d.foreign_net_buy + d.institution_net_buy) * d.close_price) / NULLIF(SUM(d.foreign_net_buy + d.institution_net_buy), 0)) as est_avg_price,
+            MAX(CASE WHEN d.bsop_date = (SELECT MAX(bsop_date) FROM daily_stock_investor) THEN d.close_price END) as current_price,
+            ROUND((MAX(CASE WHEN d.bsop_date = (SELECT MAX(bsop_date) FROM daily_stock_investor) THEN d.close_price END) - 
+                   (SUM((d.foreign_net_buy + d.institution_net_buy) * d.close_price) / NULLIF(SUM(d.foreign_net_buy + d.institution_net_buy), 0))) / 
+                   (SUM((d.foreign_net_buy + d.institution_net_buy) * d.close_price) / NULLIF(SUM(d.foreign_net_buy + d.institution_net_buy), 0)) * 100, 2) as diff_rate,
+            (CASE 
+                WHEN SUM(d.foreign_net_buy) > 0 AND SUM(d.institution_net_buy) > 0 THEN '외인/기관 양매수'
+                WHEN SUM(d.foreign_net_buy) > SUM(d.institution_net_buy) THEN '외국인 주도'
+                ELSE '기관 주도'
+             END) as main_actor,
+            COALESCE((
+                SELECT ROUND(smart_money_score, 1) 
+                FROM ai_next_leaders 
+                WHERE stock_code = d.stock_code COLLATE utf8mb4_unicode_ci 
+                ORDER BY id DESC LIMIT 1
+            ), 75.0) as smart_score
+        FROM daily_stock_investor d
+        JOIN stock_master m ON d.stock_code COLLATE utf8mb4_unicode_ci = m.stock_code COLLATE utf8mb4_unicode_ci
+        WHERE d.bsop_date >= (SELECT MIN(bsop_date) FROM (SELECT DISTINCT bsop_date FROM daily_stock_investor ORDER BY bsop_date DESC LIMIT 7) tmp)
+        AND m.stock_name NOT LIKE 'KODEX%' AND m.stock_name NOT LIKE 'TIGER%' AND m.stock_name NOT LIKE 'ACE%'
+        GROUP BY d.stock_code, m.stock_name
+        HAVING total_smart_buy > 20000 AND est_avg_price > 0
+        ORDER BY total_smart_buy DESC
+        LIMIT 20
+    </select>
+
     <!-- [v16.50] AI 백테스트 전체 및 최근 30일 성적표 요약 -->
     <select id="getAiPerformanceSummary" resultType="map">
         SELECT 

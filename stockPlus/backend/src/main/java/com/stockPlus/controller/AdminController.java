@@ -349,6 +349,13 @@ public class AdminController {
         return adminMapper.getSmartMoneyStocks();
     }
 
+    // [v16.53] 세력 잠행 매집 추적 (Smart-Money Stealth Accumulation)
+    @GetMapping("/intelligence/stealth-accumulation")
+    public List<Map<String, Object>> getStealthAccumulationStocks(org.springframework.security.core.Authentication authentication) {
+        validateAdmin(authentication);
+        return adminMapper.getStealthAccumulationStocks();
+    }
+
     // [v36.10] 시스템 장애 관제 (NOC) 데이터 조회
     @GetMapping("/system/metrics")
     public Map<String, Object> getSystemMetrics() {
