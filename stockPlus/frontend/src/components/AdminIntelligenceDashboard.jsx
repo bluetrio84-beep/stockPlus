@@ -266,10 +266,10 @@ const AdminIntelligenceDashboard = () => {
                 <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1 custom-scrollbar">
                     <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-2xl">
                         <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-[10px] font-black bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-mono">0 ~ 30점</span>
-                            <span className="text-xs font-black text-emerald-400">🚨 바닥 매수 유효 (BOTTOM_BUY)</span>
+                            <span className="text-[10px] font-black bg-emerald-500 text-white px-2.5 py-0.5 rounded-full font-mono">0 ~ 30점</span>
+                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">🚨 바닥 매수 유효 (BOTTOM_BUY)</span>
                         </div>
-                        <p className="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        <p className="text-[11px] text-[var(--theme-text)] opacity-90 font-bold leading-relaxed">
                             투매가 절정에 달하며 역사적 바닥 구간에 진입했습니다. 손절을 자제하고 실적주 중심의 분할 매수 타점입니다.
                         </p>
                     </div>
@@ -277,9 +277,9 @@ const AdminIntelligenceDashboard = () => {
                     <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-2xl">
                         <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[10px] font-black bg-blue-500 text-white px-2.5 py-0.5 rounded-full font-mono">31 ~ 45점</span>
-                            <span className="text-xs font-black text-blue-400">수급 관망 눌림목 (CAUTION_ACCUMULATE)</span>
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">수급 관망 눌림목 (CAUTION_ACCUMULATE)</span>
                         </div>
-                        <p className="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        <p className="text-[11px] text-[var(--theme-text)] opacity-90 font-bold leading-relaxed">
                             수급 관망세가 짙은 눌림목 구간입니다. 세력 잠행 매집 종목 위주로 선별 접근이 유리합니다.
                         </p>
                     </div>
@@ -287,19 +287,19 @@ const AdminIntelligenceDashboard = () => {
                     <div className="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-2xl">
                         <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[10px] font-black bg-indigo-500 text-white px-2.5 py-0.5 rounded-full font-mono">46 ~ 60점</span>
-                            <span className="text-xs font-black text-indigo-300">⚖️ 중립 국면 (NEUTRAL)</span>
+                            <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">⚖️ 중립 국면 (NEUTRAL)</span>
                         </div>
-                        <p className="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        <p className="text-[11px] text-[var(--theme-text)] opacity-90 font-bold leading-relaxed">
                             지수는 박스권 횡보 양상입니다. 개별 섹터 순환매 및 밸류에이션 매력주 중심의 트레이딩이 유효합니다.
                         </p>
                     </div>
 
                     <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl">
                         <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-[10px] font-black bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full font-mono">61 ~ 75점</span>
-                            <span className="text-xs font-black text-amber-400">수익 실현 조짐 (PROFIT_TAKING)</span>
+                            <span className="text-[10px] font-black bg-amber-500 text-white px-2.5 py-0.5 rounded-full font-mono">61 ~ 75점</span>
+                            <span className="text-xs font-black text-amber-600 dark:text-amber-400">수익 실현 조짐 (PROFIT_TAKING)</span>
                         </div>
-                        <p className="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        <p className="text-[11px] text-[var(--theme-text)] opacity-90 font-bold leading-relaxed">
                             상승 피로도가 누적되는 구간입니다. 추격 매수를 지양하고 단기 급등 종목은 분할 익절로 현금을 확보하세요.
                         </p>
                     </div>
@@ -307,9 +307,9 @@ const AdminIntelligenceDashboard = () => {
                     <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl">
                         <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[10px] font-black bg-rose-500 text-white px-2.5 py-0.5 rounded-full font-mono">76 ~ 100점</span>
-                            <span className="text-xs font-black text-rose-400">⚠️ 상투 과열 경보 (PEAK_WARN)</span>
+                            <span className="text-xs font-black text-rose-600 dark:text-rose-400">⚠️ 상투 과열 경보 (PEAK_WARN)</span>
                         </div>
-                        <p className="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        <p className="text-[11px] text-[var(--theme-text)] opacity-90 font-bold leading-relaxed">
                             과열 경보가 점등되었습니다. 지수 급락 및 변동성 확대 위험이 높으므로 현금 비중을 대폭 확대하세요.
                         </p>
                     </div>
@@ -498,29 +498,29 @@ const AdminIntelligenceDashboard = () => {
                                 </span>
                                 <button 
                                     onClick={() => setHelpModal('compass')} 
-                                    className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-300 hover:text-white transition-all flex items-center gap-1 text-[11px] font-bold px-2 border border-cyan-500/30"
+                                    className="p-1 rounded-lg bg-[var(--theme-bg)] hover:opacity-80 text-cyan-500 hover:text-cyan-600 dark:text-cyan-300 transition-all flex items-center gap-1 text-[11px] font-black px-2 border border-cyan-500/30 shadow-sm"
                                     title="5단계 국면 가이드 보기"
                                 >
                                     <HelpCircle size={13} /> <span>국면 가이드</span>
                                 </button>
                             </div>
-                            <h2 className="text-xl lg:text-2xl font-black text-white tracking-tight">
+                            <h2 className="text-xl lg:text-2xl font-black text-[var(--theme-text)] tracking-tight">
                                 {phase}
                             </h2>
-                            <p className="text-xs lg:text-sm text-slate-200 mt-1.5 font-bold leading-relaxed max-w-2xl">
+                            <p className="text-xs lg:text-sm text-[var(--theme-text)] opacity-90 mt-1.5 font-bold leading-relaxed max-w-2xl">
                                 {advice}
                             </p>
                         </div>
                     </div>
-                    <div className="flex flex-col items-end shrink-0 pl-4 border-l border-white/10">
-                        <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-1">
+                    <div className="flex flex-col items-end shrink-0 pl-4 border-l border-[var(--theme-border)]">
+                        <span className="text-[11px] font-black text-[var(--theme-text)] opacity-70 uppercase tracking-widest flex items-center gap-1">
                             Fear & Greed Index
-                            <button onClick={() => setHelpModal('compass')} className="text-cyan-400 hover:text-white transition-colors">
+                            <button onClick={() => setHelpModal('compass')} className="text-cyan-500 dark:text-cyan-400 hover:opacity-80 transition-colors">
                                 <HelpCircle size={13} />
                             </button>
                         </span>
                         <div className={classNames("text-4xl lg:text-5xl font-black font-mono tracking-tight drop-shadow-md", gaugeColor)}>
-                            {score}<span className="text-xl text-slate-400">/100</span>
+                            {score}<span className="text-xl opacity-60">/100</span>
                         </div>
                     </div>
                 </div>
@@ -530,10 +530,10 @@ const AdminIntelligenceDashboard = () => {
                     {/* 1. 복합 공포/탐욕 반원 나침반 게이지 */}
                     <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-6 shadow-xl flex flex-col items-center justify-between">
                         <div className="flex items-center gap-2 mb-4 w-full justify-between">
-                            <span className="text-xs font-black text-white flex items-center gap-1.5 uppercase tracking-wider">
-                                <Gauge size={16} className="text-cyan-400" /> 공포 / 탐욕 게이지
+                            <span className="text-xs font-black text-[var(--theme-text)] flex items-center gap-1.5 uppercase tracking-wider">
+                                <Gauge size={16} className="text-cyan-500 dark:text-cyan-400" /> 공포 / 탐욕 게이지
                             </span>
-                            <button onClick={() => setHelpModal('compass')} className="text-[11px] text-cyan-400 hover:text-white font-bold flex items-center gap-0.5">
+                            <button onClick={() => setHelpModal('compass')} className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline font-black flex items-center gap-0.5">
                                 <HelpCircle size={12} /> 기준표
                             </button>
                         </div>
@@ -552,45 +552,45 @@ const AdminIntelligenceDashboard = () => {
                         </div>
 
                         <div className="flex justify-between w-full text-[11px] font-black px-2 pt-2 border-t border-[var(--theme-border)]">
-                            <span className="text-emerald-400 font-bold">0 바닥(극단공포)</span>
-                            <span className="text-indigo-300 font-bold">50 중립</span>
-                            <span className="text-rose-400 font-bold">100 상투(극단탐욕)</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black">0 바닥(극단공포)</span>
+                            <span className="text-indigo-600 dark:text-indigo-300 font-black">50 중립</span>
+                            <span className="text-rose-600 dark:text-rose-400 font-black">100 상투(극단탐욕)</span>
                         </div>
                     </div>
 
                     {/* 2. 장중 시장 폭 (Market Breadth) & 과매도/과매수 */}
                     <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-black text-white flex items-center gap-1.5 uppercase tracking-wider">
-                                <Activity size={16} className="text-indigo-400" /> 시장 과열/침체 지표
+                            <span className="text-xs font-black text-[var(--theme-text)] flex items-center gap-1.5 uppercase tracking-wider">
+                                <Activity size={16} className="text-indigo-500 dark:text-indigo-400" /> 시장 과열/침체 지표
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono font-bold">1,500+ 종목 전수</span>
+                            <span className="text-[10px] text-[var(--theme-text)] opacity-60 font-mono font-bold">1,500+ 종목 전수</span>
                         </div>
 
                         <div className="space-y-3.5">
                             <div>
                                 <div className="flex justify-between text-xs font-bold mb-1">
-                                    <span className="text-slate-200">RSI 과매도 종목 (침체 바닥):</span>
-                                    <span className="text-emerald-400 font-black">{metrics.rsi_oversold_cnt || 0} 종목</span>
+                                    <span className="text-[var(--theme-text)] opacity-80">RSI 과매도 종목 (침체 바닥):</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-black">{metrics.rsi_oversold_cnt || 0} 종목</span>
                                 </div>
-                                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, ((metrics.rsi_oversold_cnt || 0) / 300) * 100)}%` }}></div>
                                 </div>
                             </div>
 
                             <div>
                                 <div className="flex justify-between text-xs font-bold mb-1">
-                                    <span className="text-slate-200">RSI 과매수 종목 (과열 경보):</span>
-                                    <span className="text-rose-400 font-black">{metrics.rsi_overbought_cnt || 0} 종목</span>
+                                    <span className="text-[var(--theme-text)] opacity-80">RSI 과매수 종목 (과열 경보):</span>
+                                    <span className="text-rose-600 dark:text-rose-400 font-black">{metrics.rsi_overbought_cnt || 0} 종목</span>
                                 </div>
-                                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-rose-500" style={{ width: `${Math.min(100, ((metrics.rsi_overbought_cnt || 0) / 100) * 100)}%` }}></div>
                                 </div>
                             </div>
 
                             <div className="pt-2 border-t border-[var(--theme-border)] flex justify-between items-center text-xs">
-                                <span className="text-slate-300 font-bold">전체 시장 평균 RSI:</span>
-                                <span className="text-indigo-200 font-black">{metrics.avg_rsi || 50}</span>
+                                <span className="text-[var(--theme-text)] opacity-70 font-bold">전체 시장 평균 RSI:</span>
+                                <span className="text-[var(--theme-text)] font-black">{metrics.avg_rsi || 50}</span>
                             </div>
                         </div>
                     </div>
@@ -598,31 +598,31 @@ const AdminIntelligenceDashboard = () => {
                     {/* 3. 업종 등락 비율 및 골든크로스 현황 */}
                     <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-black text-white flex items-center gap-1.5 uppercase tracking-wider">
-                                <ShieldCheck size={16} className="text-yellow-400" /> 수급 및 기술적 모멘텀
+                            <span className="text-xs font-black text-[var(--theme-text)] flex items-center gap-1.5 uppercase tracking-wider">
+                                <ShieldCheck size={16} className="text-amber-500 dark:text-yellow-400" /> 수급 및 기술적 모멘텀
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono font-bold">골든크로스</span>
+                            <span className="text-[10px] text-[var(--theme-text)] opacity-60 font-mono font-bold">골든크로스</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 my-auto">
                             <div className="bg-[var(--theme-bg)] p-3 rounded-2xl border border-[var(--theme-border)] text-center">
-                                <span className="text-[10px] text-slate-300 font-bold block mb-1">상승 vs 하락 업종</span>
+                                <span className="text-[10px] text-[var(--theme-text)] opacity-70 font-bold block mb-1">상승 vs 하락 업종</span>
                                 <div className="text-sm font-black">
-                                    <span className="text-rose-400">{metrics.rising_industries || 0}</span>
-                                    <span className="text-slate-400 mx-1">/</span>
-                                    <span className="text-blue-400">{metrics.falling_industries || 0}</span>
+                                    <span className="text-rose-600 dark:text-rose-400">{metrics.rising_industries || 0}</span>
+                                    <span className="text-[var(--theme-text)] opacity-40 mx-1">/</span>
+                                    <span className="text-blue-600 dark:text-blue-400">{metrics.falling_industries || 0}</span>
                                 </div>
                             </div>
                             <div className="bg-[var(--theme-bg)] p-3 rounded-2xl border border-[var(--theme-border)] text-center">
-                                <span className="text-[10px] text-slate-300 font-bold block mb-1">골든크로스 종목</span>
-                                <span className="text-sm font-black text-amber-400">
+                                <span className="text-[10px] text-[var(--theme-text)] opacity-70 font-bold block mb-1">골든크로스 종목</span>
+                                <span className="text-sm font-black text-amber-600 dark:text-amber-400">
                                     {metrics.golden_cross_cnt || 0} 종목
                                 </span>
                             </div>
                         </div>
 
-                        <div className="pt-2 border-t border-[var(--theme-border)] text-[11px] text-slate-200 font-medium">
-                            전체 업종 평균 등락률: <strong className={parseFloat(metrics.avg_industry_rate || 0) >= 0 ? "text-rose-400" : "text-blue-400"}>
+                        <div className="pt-2 border-t border-[var(--theme-border)] text-[11px] text-[var(--theme-text)] opacity-80 font-medium">
+                            전체 업종 평균 등락률: <strong className={parseFloat(metrics.avg_industry_rate || 0) >= 0 ? "text-rose-600 dark:text-rose-400" : "text-blue-600 dark:text-blue-400"}>
                                 {parseFloat(metrics.avg_industry_rate || 0) >= 0 ? '+' : ''}{metrics.avg_industry_rate || 0}%
                             </strong>
                         </div>
@@ -633,18 +633,18 @@ const AdminIntelligenceDashboard = () => {
                 <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-6 shadow-xl">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-2">
-                            <Navigation size={18} className="text-cyan-400" />
-                            <h3 className="text-sm lg:text-base font-black text-white">
+                            <Navigation size={18} className="text-cyan-500 dark:text-cyan-400" />
+                            <h3 className="text-sm lg:text-base font-black text-[var(--theme-text)]">
                                 최근 시장 주체별 순매수 추이 (일별 자금 흐름)
                             </h3>
                         </div>
-                        <span className="text-[11px] text-slate-400 font-bold">단위: 주</span>
+                        <span className="text-[11px] text-[var(--theme-text)] opacity-60 font-bold">단위: 주</span>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
                             <thead>
-                                <tr className="border-b border-[var(--theme-border)] text-slate-300 font-black text-[11px]">
+                                <tr className="border-b border-[var(--theme-border)] text-[var(--theme-text)] opacity-70 font-black text-[11px]">
                                     <th className="py-2.5 px-3">일자</th>
                                     <th className="py-2.5 px-3 text-right">외국인 순매수</th>
                                     <th className="py-2.5 px-3 text-right">기관 순매수</th>
@@ -660,21 +660,21 @@ const AdminIntelligenceDashboard = () => {
                                     const mainActor = foreign > 0 && inst > 0 ? '외인/기관 양매수' : (foreign > 0 ? '외국인 순매수' : (inst > 0 ? '기관 순매수' : '개인 순매수'));
 
                                     return (
-                                        <tr key={idx} className="hover:bg-white/[0.03] transition-colors font-mono">
-                                            <td className="py-2.5 px-3 font-bold text-slate-200">{row.date}</td>
-                                            <td className={classNames("py-2.5 px-3 text-right font-black", foreign >= 0 ? "text-red-400" : "text-blue-400")}>
+                                        <tr key={idx} className="hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition-colors font-mono">
+                                            <td className="py-2.5 px-3 font-bold text-[var(--theme-text)]">{row.date}</td>
+                                            <td className={classNames("py-2.5 px-3 text-right font-black", foreign >= 0 ? "text-rose-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400")}>
                                                 {foreign > 0 ? `+${foreign.toLocaleString()}` : foreign.toLocaleString()}
                                             </td>
-                                            <td className={classNames("py-2.5 px-3 text-right font-black", inst >= 0 ? "text-red-400" : "text-blue-400")}>
+                                            <td className={classNames("py-2.5 px-3 text-right font-black", inst >= 0 ? "text-rose-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400")}>
                                                 {inst > 0 ? `+${inst.toLocaleString()}` : inst.toLocaleString()}
                                             </td>
-                                            <td className={classNames("py-2.5 px-3 text-right font-black", indiv >= 0 ? "text-red-400" : "text-blue-400")}>
+                                            <td className={classNames("py-2.5 px-3 text-right font-black", indiv >= 0 ? "text-rose-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400")}>
                                                 {indiv > 0 ? `+${indiv.toLocaleString()}` : indiv.toLocaleString()}
                                             </td>
                                             <td className="py-2.5 px-3 text-center font-sans">
                                                 <span className={classNames(
                                                     "text-[10px] font-black px-2.5 py-0.5 rounded-full border",
-                                                    mainActor.includes('양매수') ? "bg-red-500/20 text-red-300 border-red-500/30" : "bg-slate-800 text-slate-200 border-slate-700"
+                                                    mainActor.includes('양매수') ? "bg-red-500/15 text-rose-600 dark:text-red-300 border-rose-500/30" : "bg-[var(--theme-bg)] text-[var(--theme-text)] border-[var(--theme-border)] shadow-sm"
                                                 )}>
                                                     {mainActor}
                                                 </span>
@@ -683,7 +683,7 @@ const AdminIntelligenceDashboard = () => {
                                     );
                                 }) : (
                                     <tr>
-                                        <td colSpan={5} className="py-6 text-center text-slate-400">수급 데이터를 집계 중입니다.</td>
+                                        <td colSpan={5} className="py-6 text-center text-[var(--theme-text)] opacity-60">수급 데이터를 집계 중입니다.</td>
                                     </tr>
                                 )}
                             </tbody>
