@@ -164,12 +164,14 @@ class AIEngine:
                 except: tcn_pred = lstm_pred
                 
                 final_pred = (lstm_pred + tcn_pred) / 2
+                xgb_pred = final_pred
                 if self.xgb_model is not None:
                     try:
                         meta_features = [lstm_pred, tcn_pred] + list(scaled_data[-1, :])
                         if len(meta_features) == 7:
                             meta_input = np.array([meta_features], dtype=np.float32)
-                            final_pred = float(self.xgb_model.predict(meta_input)[0])
+                            xgb_pred = float(self.xgb_model.predict(meta_input)[0])
+                            final_pred = xgb_pred
                     except: pass
                 
                 # 4. 개별 점수화 (50점 기준 강도 측정)
@@ -181,7 +183,7 @@ class AIEngine:
                     'total': calc_score(final_pred, base_val),
                     'lstm': calc_score(lstm_pred, base_val),
                     'tcn': calc_score(tcn_pred, base_val),
-                    'xgb': calc_score(final_pred, base_val) # XGB가 최종 결정자이므로 total과 유사
+                    'xgb': calc_score(xgb_pred, base_val) # XGBoost 독립 점수 산출
                 }
         except Exception:
             return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}

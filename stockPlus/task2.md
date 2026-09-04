@@ -1,6 +1,18 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.54) - 인텔리전스 대시보드 '시장 전환점 나침반 (MARKET COMPASS)' 탭 신설 및 복합 지수 엔진 가동 ✨
+## 🚀 최신 업데이트 현황 (v16.55) - 파이썬 QLTX 넥스트리더 AI 엔진 고도화 (XGBoost 독립 산출 분리) 🧠 ⚡
+
+### 1. QLTX AI 앙상블 엔진 정밀화 (`collector/ai_engine.py`)
+- **문제점 진단**:
+  - 기존 `get_ensemble_score_details`에서 XGBoost 점수가 독자적인 예측 점수 대신 최종 앙상블 값(`final_pred`)으로 덮어씌워져 반환되는 논리적 결함 존재.
+  - 이로 인해 LSTM / TCN / XGB 3대 삼각편대 중 XGB 점수가 독립성을 잃고 모델별 사후 적중률 평가(`optimize_weights`) 시 3개 모델이 동일한 적중률로 왜곡 계산되던 현상 발생.
+- **개선 및 반영 내역**:
+  - `ai_engine.py` 내 `xgb_pred`를 명시적으로 독립 분리하여 `calc_score(xgb_pred, base_val)`로 반환하도록 로직 정밀 수정.
+  - 컨테이너 배포 및 단위 테스트 완료: 삼성전자 등 개별 종목 테스트 시 LSTM(75.2점), TCN(55.1점), XGB(53.6점)으로 각각 고유한 AI 추론 강도가 산출됨을 검증 완료.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.54) - 인텔리전스 대시보드 '시장 전환점 나침반 (MARKET COMPASS)' 탭 신설 및 복합 지수 엔진 가동 ✨
 
 ### 1. 시장 전환점 나침반(Market Turning Point Radar) 종합 엔진 신설
 - **기능 개요**:
