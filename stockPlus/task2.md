@@ -26,7 +26,14 @@
   - `next_leader_engine.py`는 1,863개 전 종목을 대상으로 퀀트를 돌렸으나, AI 앙상블 점수를 구하는 `get_ensemble_score_details`가 88개 대형주만 있는 `daily_stock_investor` 테이블을 조회하여 대다수 중소형 유망주들이 더미 기본값(50점)만 받던 결정적 병목 존재.
 - **개선 및 반영 내역**:
   - `daily_stock_investor`에 데이터가 없는 중소형 종목도 258만 건이 누적된 `stock_intraday_history`에서 최근 일별 종가, 프로그램 수급, 거래량 시계열을 추출하여 AI 앙상블 신경망으로 직접 주입.
-  - 전수조사 검증 완료: 오로라(LSTM 58.6, TCN 64.1, XGB 57.1), BYC(LSTM 58.4, TCN 63.0, XGB 57.2), 지니언스, 한국특강 등 코스닥/중소형 유망주들이 각각 고유의 딥러닝 추론 점수를 획득하며 완벽한 정밀 랭킹 형성 성공.
+### 5. AI 관제탑 블랙박스 레이더 가점 정상화 및 My-Dashboard 점수 누락 방지 연동 (`blackbox_analyst.py`, `PortfolioDashboardService.java`)
+- **문제점 진단**:
+  - `blackbox_analyst.py` 내부에서도 AI 앙상블 점수(LSTM, TCN, XGB)에 수급 가점(`p_boost`, `s_boost`)이 이중 합산되어 인위적 점수 왜곡이 발생하고 있었음.
+  - 내 포트폴리오 대시보드(`PortfolioDashboardService.java`)는 당일 TOP 20만 저장되는 `ai_next_leaders` 테이블에 의존하여, 보유 종목(예: SK하이닉스 등)이 20위 밖일 경우 AI 점수가 `NULL`로 비어 표출되던 문제 존재.
+- **개선 및 반영 내역**:
+  - `blackbox_analyst.py`: 수급/공매도 가점의 이중 반영을 걷어내고 순수 딥러닝 예측치 + 실적 가점만 유지하도록 넥스트리더 엔진과 100% 동기화.
+  - `PortfolioDashboardService.java`: `ai_next_leaders`에 없는 보유 종목이라도 블랙박스 인텔리전스(`user_market_insight`)의 최신 레이더 점수(`Q`, `L`, `T`, `X`, `S`, `total_score`, `reason`)를 100% Fallback 연동하도록 백엔드 확장 및 스프링부트 재배포 완료.
+  - 검증 완료: SK하이닉스(36.3점, 과열조정), 한일시멘트(53.8점), CMG제약(54.0점), 차바이오텍(56.4점) 등 모든 보유 종목의 AI 점수와 5각 레이더가 공백 없이 100% 정확하게 표출됨을 확인.
 
 ---
 

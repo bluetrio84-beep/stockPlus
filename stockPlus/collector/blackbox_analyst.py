@@ -191,9 +191,10 @@ class BlackBoxAnalyst:
                     
                     scores = self.ai.get_ensemble_score_details(clean_code, price, f_buy, vol)
                     f_boost = 5.0 
-                    data["lstm"] = round(max(0, min(100, float(scores["lstm"]) + f_boost + p_boost + s_boost)), 1)
-                    data["tcn"] = round(max(0, min(100, float(scores["tcn"]) + f_boost + p_boost + s_boost)), 1)
-                    data["xgb"] = round(max(0, min(100, float(scores["xgb"]) + f_boost + p_boost + s_boost)), 1)
+                    # [v54.1] 넥스트리더 엔진과 동기화: AI 모델(L, T, X)에 수급/공매도 가점 이중 합산 제거
+                    data["lstm"] = round(max(0, min(100, float(scores["lstm"]) + f_boost)), 1)
+                    data["tcn"] = round(max(0, min(100, float(scores["tcn"]) + f_boost)), 1)
+                    data["xgb"] = round(max(0, min(100, float(scores["xgb"]) + f_boost)), 1)
                     
                     w_algo, w_ai = self.strategy_config["w_algo"], self.strategy_config["w_ai"]
                     e_score = (data["lstm"] * 0.3) + (data["tcn"] * 0.3) + (data["xgb"] * 0.4) 
