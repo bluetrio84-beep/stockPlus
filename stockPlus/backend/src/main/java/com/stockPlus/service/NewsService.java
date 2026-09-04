@@ -68,38 +68,41 @@ public class NewsService {
 
             try {
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
-                // [v24.2] 하드코딩 제거: DB에서 시스템 공통 AI 중요 키워드 로드
-                List<String> importantKeywords = userKeywordMapper.findKeywordsByUsrId("SYSTEM_AI");
+                // [v54.3] 키워드 뉴스 수집 고도화: 사용자 직접 등록 키워드를 최우선 순위로 보장
+                final int MAX_PER_KEYWORD = 3; // 키워드당 최대 3건
+                final int MAX_USER_CYCLE_NEWS = 15; // 사이클당 최대 15건 수집
 
-                // 1. [가중치 1순위] 키워드 뉴스 수집 (사용자 키워드 + 시스템 중요 키워드)
-                if (!keywords.isEmpty() || !importantKeywords.isEmpty()) {
-                    // 두 리스트 통합 (중복 제거를 위해 Set 고려 가능하나 단순 루프로 처리)
-                    java.util.Set<String> combinedKeywords = new java.util.HashSet<>(keywords);
-                    combinedKeywords.addAll(importantKeywords);
-
-                    for (String keyword : combinedKeywords) {
-                        if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
+                if (!keywords.isEmpty()) {
+                    for (String keyword : keywords) {
+                        if (userSavedThisCycle >= MAX_USER_CYCLE_NEWS) break;
+                        String cleanKw = keyword.trim();
+                        if (cleanKw.isEmpty()) continue;
                         
                         // [v36.30] Naver API Throttling: 호출 전 미세 딜레이 주입 (429 에러 방지)
-                        try { Thread.sleep(850); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                        try { Thread.sleep(400); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
                         List<NewsItem> items = null;
                         try {
-                            items = naverService.searchNewsItems(keyword);
+                            items = naverService.searchNewsItems(cleanKw);
                         } catch (Exception e) {
-                            if (e.getMessage().contains("RATE_LIMIT_EXCEEDED")) {
+                            if (e.getMessage() != null && e.getMessage().contains("RATE_LIMIT_EXCEEDED")) {
                                 log.error(">>> [News Pipeline] Naver API Quota exceeded. Aborting this cycle entirely.");
                                 return; // 이번 시간대 뉴스 수집 전면 중단
                             }
+                            log.warn(">>> [News Pipeline] Search error for keyword '{}': {}", cleanKw, e.getMessage());
                         }
                         
                         if (items == null || items.isEmpty()) continue;
 
+                        int keywordSaved = 0;
                         for (NewsItem item : items) {
-                            if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
+                            if (userSavedThisCycle >= MAX_USER_CYCLE_NEWS || keywordSaved >= MAX_PER_KEYWORD) break;
                             if (isNotJunk(item.getTitle(), item.getDescription())) {
                                 item.setUsrId(usrId);
-                                if (newsMapper.saveNews(item) > 0) userSavedThisCycle++;
+                                if (newsMapper.saveNews(item) > 0) {
+                                    userSavedThisCycle++;
+                                    keywordSaved++;
+                                }
                             }
                         }
                     }
