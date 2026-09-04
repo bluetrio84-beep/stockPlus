@@ -133,9 +133,25 @@ class AIEngine:
                 """, (stock_code,))
                 rows = cursor.fetchall()
                 
-                # [v26.7] 데이터 부족 대응: 4일치가 안 되면 있는 만큼만 사용하거나 오늘 데이터로 채움
+                # [v54.0] 1,863개 전 종목 완벽 지원: daily_stock_investor에 데이터가 없는 중소형 유망주는 stock_intraday_history에서 시계열 추출
                 if len(rows) < 1:
-                    return {'total': 50.5, 'lstm': 50.2, 'tcn': 50.3, 'xgb': 50.5}
+                    cursor.execute("""
+                        SELECT price as close_price, 0 as individual_net_buy,
+                               program_net_buy as foreign_net_buy, 0 as institution_net_buy, volume
+                        FROM (
+                            SELECT price, program_net_buy, volume, captured_at,
+                                   ROW_NUMBER() OVER(PARTITION BY DATE(captured_at) ORDER BY captured_at DESC) as rn
+                            FROM stock_intraday_history
+                            WHERE stock_code = %s AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+                        ) t
+                        WHERE rn = 1
+                        ORDER BY captured_at DESC LIMIT 4
+                    """, (stock_code,))
+                    rows = cursor.fetchall()
+
+                # 여전히 데이터가 전혀 없으면 기본 중립값 반환
+                if len(rows) < 1:
+                    return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
                 
                 past_df = pd.DataFrame(rows[::-1])
                 # 부족한 일수만큼 첫 번째 데이터로 패딩하여 5일치(과거4+오늘1)를 강제로 맞춤
