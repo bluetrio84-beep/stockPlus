@@ -352,15 +352,14 @@ class NextLeaderEngine(AIEngine):
                     intuition_bonus = -15.0
                     reason = f"✖오판주의, {reason}"
 
-                # G. 최종 합산 (실적, 프로그램, 공매도 가점 반영)
-                # [v25.0] 숏커버 가점(s_boost)까지 모든 레이어에 투영
-                # 퀀트(Q) 점수에 수급 및 공매도 데이터 직접 반영
+                # G. 최종 합산 (가점 역할 분리 및 이중 반영 해소)
+                # 퀀트(Q) 점수에 기술적 지표 + 수급(프로그램) + 공매도(숏커버) 데이터 집약 반영
                 algo_score = max(0, min(100, algo_score + p_boost + s_boost))
 
-                # AI 모델(L, T, X) 각각의 점수에 통합 가점 반영
-                lstm_f = max(0, min(100, e_data['lstm'] + f_boost + p_boost + s_boost))
-                tcn_f = max(0, min(100, e_data['tcn'] + f_boost + p_boost + s_boost))
-                xgb_f = max(0, min(100, e_data['xgb'] + f_boost + p_boost + s_boost))
+                # AI 모델(L, T, X)은 순수 시계열 예측력 보존 + 펀더멘털 실적 가점(f_boost)만 연계
+                lstm_f = max(0, min(100, e_data['lstm'] + f_boost))
+                tcn_f = max(0, min(100, e_data['tcn'] + f_boost))
+                xgb_f = max(0, min(100, e_data['xgb'] + f_boost))
                 
                 e_score = (lstm_f * w_l) + (tcn_f * w_t) + (xgb_f * w_x)
                 total_score = (algo_score * weight_algo) + (e_score * weight_ai)
