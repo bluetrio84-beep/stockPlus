@@ -361,6 +361,13 @@ def main():
 
             # [v18.3] 주말(토:5, 일:6) 완전 정지 로직 (v19.4 주말 최적화 추가)
             if now_weekday >= 5 and policy['weekend'] == 'N':
+                # [v53.0] 일요일 20:30 ~ 20:35 주간 축적 데이터 기반 AI 3대 모델(LSTM, TCN, XGBoost) 전면 재학습 (Self-Evolution)
+                if now_weekday == 6 and now_hour == 20 and 30 <= now_min <= 35:
+                    mega.log_to_db("INFO", "[지능진화] 주말 3대 AI 앙상블 모델 정기 딥러닝 재학습 시작 (train_model.py)")
+                    subprocess.run(["python3", "train_model.py"])
+                    mega.log_to_db("INFO", "[지능진화] 주말 3대 AI 앙상블 모델 재학습 완료 및 가중치 파일 갱신 성공")
+                    time.sleep(360) # 중복 실행 방지 (6분 휴식)
+
                 # [v19.4] 일요일 21:00 ~ 21:05 사이에 차주 가중치 자동 최적화 수행
                 if now_weekday == 6 and now_hour == 21 and 0 <= now_min <= 5:
                     mega.log_to_db("INFO", "[지능가동] 주말 AI 가중치 자동 최적화 시작")
