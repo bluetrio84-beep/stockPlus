@@ -68,9 +68,9 @@ public class NewsService {
 
             try {
                 List<String> keywords = userKeywordMapper.findKeywordsByUsrId(usrId);
-                // [v54.3] 키워드 뉴스 수집 고도화: 사용자 직접 등록 키워드를 최우선 순위로 보장
-                final int MAX_PER_KEYWORD = 3; // 키워드당 최대 3건
-                final int MAX_USER_CYCLE_NEWS = 15; // 사이클당 최대 15건 수집
+                // [v54.4] 피로도 최적화: 시간당 최대 6개 수집, 키워드당 최대 2개로 컴팩트하게 엄선
+                final int MAX_PER_KEYWORD = 2; // 키워드당 최대 2건
+                final int MAX_USER_CYCLE_NEWS = 6; // 시간당 전체 최대 6건
 
                 if (!keywords.isEmpty()) {
                     for (String keyword : keywords) {
@@ -108,10 +108,10 @@ public class NewsService {
                     }
                 }
                 
-                // 2. [가중치 2순위] RSS 피드 보충 (키워드 매칭 강화)
-                if (userSavedThisCycle < MAX_NEWS_TO_SAVE && !keywords.isEmpty()) {
+                // 2. [가중치 2순위] RSS 피드 보충 (키워드 매칭 강화 - 6개 미만일 때만 보충)
+                if (userSavedThisCycle < MAX_USER_CYCLE_NEWS && !keywords.isEmpty()) {
                     for (String feedUrl : RSS_FEED_URLS) {
-                        if (userSavedThisCycle >= MAX_NEWS_TO_SAVE) break;
+                        if (userSavedThisCycle >= MAX_USER_CYCLE_NEWS) break;
                         try {
                             URL url = new URL(feedUrl);
                             SyndFeedInput input = new SyndFeedInput();
