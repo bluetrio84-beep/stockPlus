@@ -20,5 +20,6 @@ public class Watchlist {
     private String marketType;
     private String indexType; // [추가] KOSPI 200, KOSDAQ 150 등
     private Double aiScore; // [v13] AI 예측 점수
+    private Double currentPrice; // [v55.0] 현재가 필드 (AI 프롬프트 및 분석용)
     private LocalDateTime createdAt;
 }

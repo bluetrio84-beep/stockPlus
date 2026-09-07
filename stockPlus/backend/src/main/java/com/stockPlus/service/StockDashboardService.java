@@ -286,7 +286,10 @@ public class StockDashboardService {
                 List<String> favStockNames = new ArrayList<>();
                 int limit = 0;
                 for (Watchlist w : favorites) {
-                    favStockNames.add(w.getStockName());
+                    String priceStr = (w.getCurrentPrice() != null && w.getCurrentPrice() > 0)
+                            ? String.format("%,.0f원", w.getCurrentPrice())
+                            : "실시간 시세 확인중";
+                    favStockNames.add(w.getStockName() + " (코드: " + w.getStockCode() + ", 실시간 현재가: " + priceStr + ")");
                     if (limit++ < 5) { // 상위 5개 종목에 대해서만 뉴스 검색
                         List<String> res = naverService.searchNewsHeadlines(w.getStockName());
                         if (res != null) headlines.addAll(res);

@@ -11,6 +11,7 @@
         <result property="isFavorite" column="is_favorite"/>
         <result property="marketType" column="marketType"/>
         <result property="aiScore" column="aiScore"/>
+        <result property="currentPrice" column="currentPrice"/>
         <result property="createdAt" column="created_at"/>
     </resultMap>
 
@@ -47,16 +48,25 @@
         ORDER BY w.created_at DESC
     </select>
     
-    <!-- 즐겨찾기 종목 조회 (AI Score 조인) -->
+    <!-- 즐겨찾기 종목 조회 (AI Score 및 실시간 현재가 조인) -->
     <select id="findFavorites" resultMap="WatchlistMap">
         SELECT w.USRID, w.stock_code, w.stock_name, w.exchange_code, w.group_id, w.is_favorite, w.created_at, 
-               sm.market_type AS marketType, ap.prediction_score AS aiScore
+               sm.market_type AS marketType, ap.prediction_score AS aiScore,
+               COALESCE(ssd.current_price, sih.price, 0) AS currentPrice
         FROM watchlist w
         LEFT JOIN stock_master sm ON w.stock_code = sm.stock_code
         LEFT JOIN ai_prediction ap ON ap.id = (
             SELECT MAX(id) FROM ai_prediction 
             WHERE target_name = CONCAT('STOCK_', w.stock_code)
         )
+        LEFT JOIN (
+            SELECT stock_code, current_price FROM stock_supply_demand
+            WHERE id IN (SELECT MAX(id) FROM stock_supply_demand GROUP BY stock_code)
+        ) ssd ON w.stock_code COLLATE utf8mb4_unicode_ci = ssd.stock_code COLLATE utf8mb4_unicode_ci
+        LEFT JOIN (
+            SELECT stock_code, price FROM stock_intraday_history
+            WHERE id IN (SELECT MAX(id) FROM stock_intraday_history GROUP BY stock_code)
+        ) sih ON w.stock_code COLLATE utf8mb4_unicode_ci = sih.stock_code COLLATE utf8mb4_unicode_ci
         WHERE w.USRID = #{usrId} AND w.is_favorite = true
         ORDER BY w.created_at DESC
     </select>

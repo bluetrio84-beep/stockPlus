@@ -254,6 +254,15 @@ public class StockDashboardController {
         return dashboardService.getSpecializedReport();
     }
 
+    /**
+     * AI 맞춤 리포트(전담 AI 분석가)를 즉시 수동 갱신합니다.
+     */
+    @PostMapping("/special-report/refresh")
+    public String refreshSpecializedReport() {
+        dashboardService.updateSpecializedAnalysisScheduled();
+        return dashboardService.getSpecializedReport();
+    }
+
     // --- Notifications (알림) ---
 
     /**

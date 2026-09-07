@@ -1,6 +1,22 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.55) - 파이썬 QLTX 넥스트리더 AI 엔진 고도화 (XGBoost 독립 산출 분리) 🧠 ⚡
+## 🚀 최신 업데이트 현황 (v16.56) - 전담 AI 분석가 실시간 현재가 100% 반영 및 현실적 매수·목표가 정밀화 🎯 📈
+
+### 1. 전담 AI 분석가(Specialized Analysis) 과거 가격 왜곡 완벽 해결 (`Watchlist.java`, `WatchlistMapper.xml`, `StockDashboardService.java`, `GeminiService.java`)
+- **문제점 진단**:
+  - 전담 AI 분석가 브리핑에서 CMG제약(코드: 058820)의 현재가가 630원 수준임에도 과거 몇 년 전 가격대인 **1,850원**을 매수 구간으로 추천하는 등 현재가와 심각하게 괴리된 분석이 출력되는 현상 발생.
+  - 원인 분석 결과, `StockDashboardService.java`에서 Gemini AI에게 즐겨찾기 종목의 단순 종목명 텍스트만 전달하고 실시간 현재가를 일체 전달하지 않아, LLM이 과거 사전 학습 기억(Pre-trained weights)에 의존해 1,800~2,000원대 가격을 임의 생성한 구조적 결함 확인.
+- **개선 및 반영 내역**:
+  - **`Watchlist.java`**: DTO 객체에 실시간 시세를 담을 수 있는 `currentPrice` (Double) 필드 신설.
+  - **`WatchlistMapper.xml`**: `findFavorites` 쿼리에 `stock_supply_demand` 및 `stock_intraday_history` 최신 시세 테이블을 조인하여 실시간 현재가(`currentPrice`)를 즉시 로드하도록 쿼리 확장 (`COLLATE utf8mb4_unicode_ci` 인코딩 매핑 완벽 적용).
+  - **`StockDashboardService.java`**: 사용자 즐겨찾기 종목 리스트 구성 시 `종목명 (코드: XXXXXX, 실시간 현재가: 000원)` 형식으로 정밀 포맷팅하여 AI에게 전달하도록 개선.
+  - **`GeminiService.java`**: 시스템 프롬프트에 `[사용자 관심 종목 및 실시간 현재가]` 명세를 추가하고, "제공된 실시간 현재가를 100% 기준으로 삼아 현실적인 매수 유효 구간, 1차 목표가, 2차 목표가, 손절가를 산출하라"는 강력한 지침 부여.
+  - **즉시 수동 갱신 API 신설**: `StockDashboardController.java`에 `/api/dashboard/special-report/refresh` 엔드포인트를 추가하여 온디맨드 즉시 갱신 기능 제공.
+- **검증 완료**:
+  - 백엔드 재빌드 및 컨테이너 무중단 재기동 후 실시간 리포트 즉시 재생성 완료.
+  - **CMG제약**: 실시간 현재가 **632원** 기준 → **매수 유효 구간: 600원 ~ 635원**, **1차 목표가: 750원**, **2차 목표가: 880원**, **손절가: 570원**으로 완벽하게 현실화된 분석 리포트 생성 및 DB(`user_market_insight`) 반영 확인!
+
+## 🚀 이전 업데이트 현황 (v16.55) - 파이썬 QLTX 넥스트리더 AI 엔진 고도화 (XGBoost 독립 산출 분리) 🧠 ⚡
 
 ### 1. QLTX AI 앙상블 엔진 정밀화 (`collector/ai_engine.py`)
 - **문제점 진단**:
