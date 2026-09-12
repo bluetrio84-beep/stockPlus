@@ -1,6 +1,29 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.56) - 전담 AI 분석가 실시간 현재가 100% 반영 및 현실적 매수·목표가 정밀화 🎯 📈
+## 🚀 최신 업데이트 현황 (v16.57) - 9/14 KRX·NXT 애프터마켓(오후 4~8시) 개장에 따른 20:10 최종 마감 스케줄러 및 실시간 파이프라인 전면 개편 🌙 ⚡
+
+### 1. KRX & NXT 애프터마켓(16:00~20:00) 20시 10분 최종 마감 데이터 수집 파이프라인 구축
+- **배경 및 요구사항**:
+  - 2026년 9월 14일부터 한국거래소(KRX)가 오후 4시~8시 실시간 접속매매가 가능한 '애프터마켓'을 전격 개장함에 따라, 대체거래소 넥스트레이드(NXT)와 함께 본격적인 '12시간 거래 시대' 돌입.
+  - 기존 15:30~15:40 마감 기준 수집 체계로는 16:00~20:00 시간대의 대규모 거래량/수급 및 20:00 장 마감 직전 체결이 누락되므로, **20시 10분 최종 마감 확정 수집 체계**로의 전면 고도화 단행.
+- **주요 개선 및 반영 내역**:
+  1. **1,800개 전 종목 인트라데이 스냅샷 엔진 (`NextLeaderDataScheduler.java`)**:
+     - 정규 및 애프터마켓 수집 스케줄 확장: `cron = "0 10,40 10-19 * * MON-FRI"` (오전 10시~오후 7시 40분까지 매 30분 간격 수집).
+     - **애프터마켓 최종 마감 확정 스케줄 신설**: `cron = "0 5,10 20 * * MON-FRI"` (20시 05분 및 20시 10분 최종 마감 스냅샷 연속 실행).
+     - 컷오프 방어 조건 수정: 기존 15:45 차단 → `now.getHour() == 20 && now.getMinute() > 15`로 변경하여 20시 10분 마감 수집이 100% 안전하게 완료된 후 종료되도록 보장.
+     - 부팅 로그 업데이트: `09:03-20:10 (KRX & NXT Aftermarket)` 지원 명시.
+  2. **파이썬 통합 수집기 & AI 관제탑 (`collector/main.py`)**:
+     - 실시간 수집 루프 시간 조건 확장: `(8 <= now_hour < 20) or (now_hour == 20 and now_min <= 10)`로 변경하여 08:00~20:10 전 구간 동안 WICS 78개 업종, 테마 100개, 주도주 및 거래원 수급을 5분 주기로 연속 수집.
+     - **AI 관제탑 블랙박스 분석(`blackbox_analyst.py`)**: 애프터마켓이 종료되는 20:10까지 중단 없이 실시간 가동되도록 시간 조건 동기화.
+  3. **실시간 KIS 웹소켓 세션 유지 (`KisRealtimeService.java`)**:
+     - 웹소켓 종료 시간: 기존 `20:00` → `cron = "0 10 20 * * MON-FRI"` (**20:10**)으로 연장하여 장 마감 직후 동시호가/정산 체결까지 실시간 체결가/호가(UN 모드)를 단절 없이 수신.
+  4. **일별 투자자 매매동향 및 AI 성과 검증 스케줄 조정 (`DailyInvestorScheduler.java`)**:
+     - `collectDailyInvestorData`: 기존 19:00 수집 → 애프터마켓 20:10 최종 종료 후 데이터를 집계하도록 **20:15 (`cron = "0 15 20 * * MON-FRI"`)**로 이전.
+- **검증 및 배포 완료**:
+  - 백엔드 재컴파일 (`mvnw clean package -DskipTests`) 및 컨테이너(`stockplus-backend-1`, `stockplus-collector-1`) 무중단 재기동 완료.
+  - 백엔드 구동 로그: `>>> [NextLeaders] Snapshot engine READY. Active for Weekdays 09:03-20:10 (KRX & NXT Aftermarket).` 정상 등록 확인.
+
+## 🚀 이전 업데이트 현황 (v16.56) - 전담 AI 분석가 실시간 현재가 100% 반영 및 현실적 매수·목표가 정밀화 🎯 📈
 
 ### 1. 전담 AI 분석가(Specialized Analysis) 과거 가격 왜곡 완벽 해결 (`Watchlist.java`, `WatchlistMapper.xml`, `StockDashboardService.java`, `GeminiService.java`)
 - **문제점 진단**:

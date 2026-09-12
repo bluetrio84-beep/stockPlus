@@ -21,17 +21,23 @@ public class NextLeaderDataScheduler {
     private final com.stockPlus.mapper.AdminMapper adminMapper; // [v17.8] 추가
 
     /**
-     * [v21.3] 스케줄링 정밀화
-     * 9시: 10, 20, 40분 (장 초반 집중 수집)
-     * 10시-15시: 10, 40분 (정규 수집)
+     * [v21.3 -> v22.0] 스케줄링 정밀화 (KRX & NXT 애프터마켓 오후 8시까지 대응)
+     * 9시: 3, 20, 40분 (장 초반 집중 수집)
+     * 10시-19시: 10, 40분 (정규 및 애프터마켓 수집)
+     * 20시: 05, 10분 (애프터마켓 최종 마감 확정 수집)
      */
     @Scheduled(cron = "0 3,20,40 9 * * MON-FRI", zone = "Asia/Seoul")
     public void captureOpeningSnapshots() {
         captureIntradaySnapshots();
     }
 
-    @Scheduled(cron = "0 10,40 10-15 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 10,40 10-19 * * MON-FRI", zone = "Asia/Seoul")
     public void captureRegularSnapshots() {
+        captureIntradaySnapshots();
+    }
+
+    @Scheduled(cron = "0 5,10 20 * * MON-FRI", zone = "Asia/Seoul")
+    public void captureAftermarketClosingSnapshots() {
         captureIntradaySnapshots();
     }
 
@@ -39,8 +45,9 @@ public class NextLeaderDataScheduler {
         if (!isMarketOpen()) return;
         
         LocalDateTime now = LocalDateTime.now();
-        // 15:40 이후 실행 방지
-        if (now.getHour() == 15 && now.getMinute() > 45) return;
+        // 20:15 이후 실행 방지 (20:10 마감 스냅샷 정상 완료 후 차단)
+        if (now.getHour() == 20 && now.getMinute() > 15) return;
+        if (now.getHour() > 20) return;
 
         executeFullSnapshot();
     }
@@ -197,6 +204,6 @@ public class NextLeaderDataScheduler {
 
     @jakarta.annotation.PostConstruct
     public void init() {
-        log.info(">>> [NextLeaders] Snapshot engine READY. Active for Weekdays 09:10-15:40.");
+        log.info(">>> [NextLeaders] Snapshot engine READY. Active for Weekdays 09:03-20:10 (KRX & NXT Aftermarket).");
     }
 }

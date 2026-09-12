@@ -51,9 +51,9 @@ public class DailyInvestorScheduler {
     }
 
     /**
-     * 평일 오후 19:00 실행 (당일 데이터 최종 확정 수집)
+     * 평일 오후 20:15 실행 (애프터마켓 20:10 종료 후 당일 최종 확정 수집)
      */
-    @Scheduled(cron = "0 0 19 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 15 20 * * MON-FRI", zone = "Asia/Seoul")
     public void collectDailyInvestorData() {
         collectDailyInvestorDataInternal(false);
     }

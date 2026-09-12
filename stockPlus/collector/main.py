@@ -440,8 +440,9 @@ def main():
                 mega.sync_market_cap()
                 last_sync_date = now_str
 
-            # 8. 실시간 수집 (정책에 따라 가동)
-            if 8 <= now_hour < 16:
+            # 8. 실시간 수집 (정책에 따라 가동: 08:00 ~ 20:10 KRX 애프터마켓 및 야간장 최종 마감 대응)
+            is_realtime_market_hours = (8 <= now_hour < 20) or (now_hour == 20 and now_min <= 10)
+            if is_realtime_market_hours:
                 conn = mega.get_db_connection(); interval = 300
                 try:
                     with conn.cursor(pymysql.cursors.DictCursor) as cursor:
@@ -453,8 +454,9 @@ def main():
                 start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 
-                # [v35.90] 최우선 순위 가동: AI 관제탑 블랙박스 분석 (09:00 ~ 16:59)
-                if 9 <= now_hour <= 16:
+                # [v35.90] 최우선 순위 가동: AI 관제탑 블랙박스 분석 (09:00 ~ 20:10 애프터마켓 최종 마감 전구간 대응)
+                is_blackbox_hours = (9 <= now_hour < 20) or (now_hour == 20 and now_min <= 10)
+                if is_blackbox_hours:
                     try:
                         mega.log_to_db("INFO", "[지능가동] AI 관제탑 블랙박스 정밀 분석 수행")
                         subprocess.run(["python3", "blackbox_analyst.py"])

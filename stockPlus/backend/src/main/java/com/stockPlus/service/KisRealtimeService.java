@@ -54,7 +54,7 @@ public class KisRealtimeService {
         }
     }
 
-    @Scheduled(cron = "0 0 20 * * MON-FRI", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 10 20 * * MON-FRI", zone = "Asia/Seoul")
     public void stop() {
         disconnect();
     }
