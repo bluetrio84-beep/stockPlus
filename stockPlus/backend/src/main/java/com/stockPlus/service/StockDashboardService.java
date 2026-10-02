@@ -359,7 +359,7 @@ public class StockDashboardService {
         else if ("high52week".equalsIgnoreCase(type) || "high".equalsIgnoreCase(type)) rankingType = "high52week";
         else if ("low52week".equalsIgnoreCase(type) || "low".equalsIgnoreCase(type)) rankingType = "low52week";
 
-        String targetMarket = ("KOSDAQ".equalsIgnoreCase(market)) ? "KOSDAQ" : "KOSPI";
+        String targetMarket = "KOSDAQ".equalsIgnoreCase(market) ? "KOSDAQ" : ("ALL".equalsIgnoreCase(market) ? "all" : "KOSPI");
         String cacheKey = targetMarket + "_" + rankingType + "_p" + page + "_s" + pageSize;
         long now = System.currentTimeMillis();
         Long cachedTime = marketCapCacheTime.get(cacheKey);

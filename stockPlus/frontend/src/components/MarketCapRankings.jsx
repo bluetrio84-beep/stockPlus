@@ -132,26 +132,37 @@ const MarketCapRankings = () => {
                     <div className="flex items-center gap-2">
                         <div className="flex bg-[var(--theme-bg)] p-1 rounded-xl border border-[var(--theme-border)]">
                             <button
+                                onClick={() => handleMarketChange('ALL')}
+                                className={classNames(
+                                    "px-3.5 py-1.5 text-xs font-black rounded-lg transition-all",
+                                    market === 'ALL' 
+                                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" 
+                                        : "text-slate-500 hover:text-[var(--theme-text)]"
+                                )}
+                            >
+                                전체 (ALL)
+                            </button>
+                            <button
                                 onClick={() => handleMarketChange('KOSPI')}
                                 className={classNames(
-                                    "px-4 py-1.5 text-xs font-black rounded-lg transition-all",
+                                    "px-3.5 py-1.5 text-xs font-black rounded-lg transition-all",
                                     market === 'KOSPI' 
                                         ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" 
                                         : "text-slate-500 hover:text-[var(--theme-text)]"
                                 )}
                             >
-                                KOSPI (코스피)
+                                KOSPI
                             </button>
                             <button
                                 onClick={() => handleMarketChange('KOSDAQ')}
                                 className={classNames(
-                                    "px-4 py-1.5 text-xs font-black rounded-lg transition-all",
+                                    "px-3.5 py-1.5 text-xs font-black rounded-lg transition-all",
                                     market === 'KOSDAQ' 
                                         ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" 
                                         : "text-slate-500 hover:text-[var(--theme-text)]"
                                 )}
                             >
-                                KOSDAQ (코스닥)
+                                KOSDAQ
                             </button>
                         </div>
 
@@ -299,13 +310,23 @@ const MarketCapRankings = () => {
 
                                                 {/* 종목명 / 코드 */}
                                                 <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
                                                         <span className="font-black text-sm text-[var(--theme-text)] group-hover:text-[var(--theme-point)] transition-colors">
                                                             {stock.stockName}
                                                         </span>
                                                         <span className="text-[10px] text-slate-500 font-mono font-bold bg-[var(--theme-bg)] px-1.5 py-0.5 rounded border border-[var(--theme-border)]">
                                                             {stock.itemCode}
                                                         </span>
+                                                        {stock.sosok !== undefined && (
+                                                            <span className={classNames(
+                                                                "text-[9px] font-black px-1.5 py-0.5 rounded border",
+                                                                (String(stock.sosok) === '0' || stock.sosok === 0)
+                                                                    ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                                                                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                                            )}>
+                                                                {String(stock.sosok) === '0' || stock.sosok === 0 ? '코스피' : '코스닥'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </td>
 
