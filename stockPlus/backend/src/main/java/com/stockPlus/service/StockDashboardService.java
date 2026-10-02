@@ -348,11 +348,11 @@ public class StockDashboardService {
         return watchlistMapper.findYoutubeGallery(getCurrentUsrId());
     }
 
-    // --- Market Trend Rankings (증시 동향 순위 300위 페이징: 시가총액, 상승, 하락, 신고가, 신저가) ---
+    // --- Market Trend Rankings (증시 동향 순위 300위 페이징: 시가총액, 상승, 하락, 신고가, 신저가, ETF/ETN 제외 지원) ---
     private static final Map<String, Object> marketCapCache = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Map<String, Long> marketCapCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public Map<String, Object> getMarketCapRankings(String market, String type, int page, int pageSize) {
+    public Map<String, Object> getMarketCapRankings(String market, String type, int page, int pageSize, boolean excludeEtf) {
         String rankingType = "marketValue";
         if ("up".equalsIgnoreCase(type)) rankingType = "up";
         else if ("down".equalsIgnoreCase(type)) rankingType = "down";
@@ -360,7 +360,7 @@ public class StockDashboardService {
         else if ("low52week".equalsIgnoreCase(type) || "low".equalsIgnoreCase(type)) rankingType = "low52week";
 
         String targetMarket = "KOSDAQ".equalsIgnoreCase(market) ? "KOSDAQ" : ("ALL".equalsIgnoreCase(market) ? "all" : "KOSPI");
-        String cacheKey = targetMarket + "_" + rankingType + "_p" + page + "_s" + pageSize;
+        String cacheKey = targetMarket + "_" + rankingType + "_ex" + excludeEtf + "_p" + page + "_s" + pageSize;
         long now = System.currentTimeMillis();
         Long cachedTime = marketCapCacheTime.get(cacheKey);
 
@@ -372,27 +372,99 @@ public class StockDashboardService {
         }
 
         try {
-            String urlStr = "https://m.stock.naver.com/api/stocks/" + rankingType + "/" + targetMarket + "?page=" + page + "&pageSize=" + pageSize;
-            java.net.URL url = new java.net.URI(urlStr).toURL();
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)");
-            conn.setConnectTimeout(4000);
-            conn.setReadTimeout(4000);
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
 
-            if (conn.getResponseCode() == 200) {
-                java.io.InputStream is = conn.getInputStream();
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                @SuppressWarnings("unchecked")
-                Map<String, Object> responseData = mapper.readValue(is, Map.class);
-                is.close();
+            if (!excludeEtf) {
+                // ETF/ETN 포함인 경우: 기존 네이버 단일 페이징 호출
+                String urlStr = "https://m.stock.naver.com/api/stocks/" + rankingType + "/" + targetMarket + "?page=" + page + "&pageSize=" + pageSize;
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URI(urlStr).toURL().openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)");
+                conn.setConnectTimeout(4000);
+                conn.setReadTimeout(4000);
 
-                marketCapCache.put(cacheKey, responseData);
+                if (conn.getResponseCode() == 200) {
+                    java.io.InputStream is = conn.getInputStream();
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> responseData = mapper.readValue(is, Map.class);
+                    is.close();
+
+                    marketCapCache.put(cacheKey, responseData);
+                    marketCapCacheTime.put(cacheKey, now);
+                    return responseData;
+                }
+            } else {
+                // ETF/ETN 제외인 경우: 전체 풀(최대 300~500위)을 확보하여 ETF/ETN 필터링 후 가상 페이징
+                String fullCacheKey = "FULL_" + targetMarket + "_" + rankingType + "_exTrue";
+                Long fullCachedTime = marketCapCacheTime.get(fullCacheKey);
+                List<Map<String, Object>> filteredList;
+
+                if (fullCachedTime != null && (now - fullCachedTime) < 30000 && marketCapCache.containsKey(fullCacheKey)) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> cachedList = (List<Map<String, Object>>) marketCapCache.get(fullCacheKey);
+                    filteredList = cachedList;
+                } else {
+                    filteredList = new java.util.ArrayList<>();
+                    // 최대 100개씩 최대 4페이지(400개) 스캔
+                    for (int p = 1; p <= 4; p++) {
+                        String fetchUrl = "https://m.stock.naver.com/api/stocks/" + rankingType + "/" + targetMarket + "?page=" + p + "&pageSize=100";
+                        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URI(fetchUrl).toURL().openConnection();
+                        conn.setRequestMethod("GET");
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)");
+                        conn.setConnectTimeout(4000);
+                        conn.setReadTimeout(4000);
+
+                        if (conn.getResponseCode() == 200) {
+                            java.io.InputStream is = conn.getInputStream();
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> resp = mapper.readValue(is, Map.class);
+                            is.close();
+
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> stocks = (List<Map<String, Object>>) resp.get("stocks");
+                            if (stocks == null || stocks.isEmpty()) break;
+
+                            for (Map<String, Object> stock : stocks) {
+                                String endType = String.valueOf(stock.get("stockEndType")).toLowerCase();
+                                String name = String.valueOf(stock.get("stockName"));
+                                boolean isEtfOrEtn = "etf".equals(endType) || "etn".equals(endType) 
+                                        || name.contains("ETN") || name.contains("ETF");
+                                if (!isEtfOrEtn) {
+                                    filteredList.add(stock);
+                                }
+                            }
+                            if (filteredList.size() >= 300) break;
+                        } else {
+                            break;
+                        }
+                    }
+                    marketCapCache.put(fullCacheKey, filteredList);
+                    marketCapCacheTime.put(fullCacheKey, now);
+                }
+
+                // 페이징 슬라이스
+                int totalFiltered = filteredList.size();
+                int fromIndex = (page - 1) * pageSize;
+                List<Map<String, Object>> pageSublist;
+                if (fromIndex >= totalFiltered) {
+                    pageSublist = Collections.emptyList();
+                } else {
+                    int toIndex = Math.min(fromIndex + pageSize, totalFiltered);
+                    pageSublist = filteredList.subList(fromIndex, toIndex);
+                }
+
+                Map<String, Object> result = new java.util.HashMap<>();
+                result.put("stocks", pageSublist);
+                result.put("totalCount", totalFiltered);
+                result.put("page", page);
+                result.put("pageSize", pageSize);
+
+                marketCapCache.put(cacheKey, result);
                 marketCapCacheTime.put(cacheKey, now);
-                return responseData;
+                return result;
             }
         } catch (Exception e) {
-            log.error("Failed to fetch market rankings for {} ({}): {}", targetMarket, rankingType, e.getMessage());
+            log.error("Failed to fetch market rankings for {} ({}, exEtf={}): {}", targetMarket, rankingType, excludeEtf, e.getMessage());
         }
 
         // 캐시 폴백 또는 빈 응답

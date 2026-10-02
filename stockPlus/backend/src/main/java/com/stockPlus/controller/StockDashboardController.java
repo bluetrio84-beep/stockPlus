@@ -264,18 +264,19 @@ public class StockDashboardController {
     }
 
     /**
-     * 증시 동향 순위 목록을 조회합니다. (KOSPI / KOSDAQ 지원, 시가총액/상승/하락/신고가/신저가, 페이지당 50개, 최대 300위)
+     * 증시 동향 순위 목록을 조회합니다. (KOSPI / KOSDAQ / ALL 지원, 시가총액/상승/하락/신고가/신저가, ETF/ETN 제외 옵션)
      */
     @GetMapping("/market-cap-rankings")
     public Map<String, Object> getMarketCapRankings(
             @RequestParam(defaultValue = "KOSPI") String market,
             @RequestParam(defaultValue = "marketValue") String type,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "50") int pageSize) {
+            @RequestParam(defaultValue = "50") int pageSize,
+            @RequestParam(defaultValue = "true") boolean excludeEtf) {
         // 최대 300위 제한 (page * pageSize <= 300)
         int validPage = Math.max(1, Math.min(6, page));
         int validPageSize = Math.max(10, Math.min(100, pageSize));
-        return dashboardService.getMarketCapRankings(market, type, validPage, validPageSize);
+        return dashboardService.getMarketCapRankings(market, type, validPage, validPageSize, excludeEtf);
     }
 
     // --- Notifications (알림) ---

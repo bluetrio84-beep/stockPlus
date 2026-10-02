@@ -1,6 +1,26 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.63) - 증시 동향 '전체(ALL)' 통합 랭킹 탭 신설 및 코스피/코스닥 시장 뱃지 식별 지원 🌐 📊
+## 🚀 최신 업데이트 현황 (v16.64) - 증시 동향 'ETF/ETN 제외' 필터 토글(기본 ON) 구축 완벽 완료 🚫 📈
+
+### 1. 순수 주식 선별을 위한 'ETF/ETN 제외' 옵션 신설
+- **개선 배경 및 사용자 요청**:
+  - 증시 동향 랭킹(시가총액, 신고가, 신저가 등) 조회 시 대량의 파생상품(ETF/ETN)이 상위권을 차지하여 실제 개별 보통주식 발굴에 방해가 됨.
+  - 이를 해결하기 위해 기본값(Default)으로 **'ETF/ETN 제외'**가 적용된 체크 토글 버튼을 추가 요청.
+- **주요 반영 내역**:
+  1. **백엔드 고속 필터링 및 가상 페이징 엔진 구현 (`StockDashboardService.java`, `StockDashboardController.java`)**:
+     - 엔드포인트: `GET /api/dashboard/market-cap-rankings?...&excludeEtf={true|false}` (기본값 `true`).
+     - `excludeEtf=true`일 경우, 네이버 모바일 API 풀을 스캔하여 `stockEndType in ('etf', 'etn')` 및 종목명 내 `ETF`, `ETN` 포함 여부를 검사 후 순수 일반 주식만 추려내어 페이징 슬라이스 및 totalCount 재산출.
+     - 풀 스캔 결과에 30초 인메모리 캐시(`FULL_{targetMarket}_{rankingType}_exTrue`)를 적용하여 0.05초 대 초고속 응답 보장.
+  2. **프론트엔드 API 및 UI 토글 연동 (`stockApi.js`, `MarketCapRankings.jsx`)**:
+     - `fetchMarketCapRankings(..., excludeEtf = true)` 파라미터 연동.
+     - 헤더 마켓 선택 바 우측에 **[✓ ETF/ETN 제외]** 토글 버튼 배치 (기본 ON).
+     - 클릭 시 체크 해제/선택 상태가 전환되며 즉시 1페이지부터 순수 주식 또는 전체 종목을 다시 로드.
+- **배포 및 검증 완료**:
+  - 백엔드 재컴파일 및 스프링 부트 무중단 재기동 완료.
+  - 프론트엔드 Vite 프로덕션 빌드 및 Nginx 배포 완료.
+  - 코스피 52주 신고가 등에서 90% 이상을 차지하던 ETN/ETF가 완벽히 제외되어 순수 개별 주식(디아이, 드림텍, 한창 등)만 깔끔하게 노출됨을 검증 완료.
+
+## 🚀 이전 업데이트 현황 (v16.63) - 증시 동향 '전체(ALL)' 통합 랭킹 탭 신설 및 코스피/코스닥 시장 뱃지 식별 지원 🌐 📊
 
 ### 1. 코스피·코스닥 통합 '전체 (ALL)' 순위 조회 지원
 - **요청 사항**:

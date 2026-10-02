@@ -287,8 +287,8 @@ export async function fetchYoutubeGallery() {
     return Array.isArray(data) ? data : [];
 }
 
-// --- Market Trend Rankings (v16.62: 증시 동향) ---
-export async function fetchMarketCapRankings(market = 'KOSPI', type = 'marketValue', page = 1, pageSize = 50) {
-    const data = await safeFetch(`api/dashboard/market-cap-rankings?market=${market}&type=${type}&page=${page}&pageSize=${pageSize}`);
+// --- Market Trend Rankings (v16.62: 증시 동향, v16.64: ETF/ETN 제외 필터) ---
+export async function fetchMarketCapRankings(market = 'KOSPI', type = 'marketValue', page = 1, pageSize = 50, excludeEtf = true) {
+    const data = await safeFetch(`api/dashboard/market-cap-rankings?market=${market}&type=${type}&page=${page}&pageSize=${pageSize}&excludeEtf=${excludeEtf}`);
     return data || { stocks: [], totalCount: 0 };
 }

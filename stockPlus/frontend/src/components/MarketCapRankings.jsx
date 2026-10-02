@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchMarketCapRankings, toggleFavorite } from '../api/stockApi';
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Flame, Sparkles } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Flame, Sparkles, CheckSquare, Square } from 'lucide-react';
 import classNames from 'classnames';
 
 const MarketCapRankings = () => {
     const navigate = useNavigate();
-    const [market, setMarket] = useState('KOSPI'); // KOSPI | KOSDAQ
+    const [market, setMarket] = useState('KOSPI'); // ALL | KOSPI | KOSDAQ
     const [rankingType, setRankingType] = useState('marketValue'); // marketValue | up | down | high52week | low52week
+    const [excludeEtf, setExcludeEtf] = useState(true); // ETF/ETN 제외 여부 (기본값: true)
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 50;
     const [stocks, setStocks] = useState([]);
@@ -21,10 +22,10 @@ const MarketCapRankings = () => {
         return Math.min(6, pagesByCount); // 최대 6페이지 (300위)
     }, [totalCount]);
 
-    const loadRankings = useCallback(async (targetMarket, targetType, page) => {
+    const loadRankings = useCallback(async (targetMarket, targetType, page, isExcludeEtf) => {
         setIsLoading(true);
         try {
-            const data = await fetchMarketCapRankings(targetMarket, targetType, page, pageSize);
+            const data = await fetchMarketCapRankings(targetMarket, targetType, page, pageSize, isExcludeEtf);
             if (data && data.stocks) {
                 setStocks(data.stocks);
                 setTotalCount(data.totalCount || data.stocks.length);
@@ -42,8 +43,8 @@ const MarketCapRankings = () => {
     }, []);
 
     useEffect(() => {
-        loadRankings(market, rankingType, currentPage);
-    }, [market, rankingType, currentPage, loadRankings]);
+        loadRankings(market, rankingType, currentPage, excludeEtf);
+    }, [market, rankingType, currentPage, excludeEtf, loadRankings]);
 
     const handleMarketChange = (newMarket) => {
         if (market === newMarket) return;
@@ -57,6 +58,11 @@ const MarketCapRankings = () => {
         setRankingType(newType);
         setCurrentPage(1);
         setSearchKeyword('');
+    };
+
+    const handleToggleExcludeEtf = () => {
+        setExcludeEtf(prev => !prev);
+        setCurrentPage(1);
     };
 
     const handleToggleFavorite = async (e, stockCode) => {
@@ -166,8 +172,27 @@ const MarketCapRankings = () => {
                             </button>
                         </div>
 
+                        {/* ETF/ETN 제외 토글 버튼 (기본값: 체크됨) */}
+                        <button
+                            onClick={handleToggleExcludeEtf}
+                            className={classNames(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all active:scale-95 shrink-0",
+                                excludeEtf
+                                    ? "bg-indigo-500/15 border-indigo-500/40 text-[var(--theme-point)] shadow-sm"
+                                    : "bg-[var(--theme-bg)] border-[var(--theme-border)] text-slate-500 hover:text-[var(--theme-text)]"
+                            )}
+                            title="체크 시 순위 목록에서 ETF 및 ETN을 제외하고 순수 일반 주식만 표시합니다."
+                        >
+                            {excludeEtf ? (
+                                <CheckSquare size={15} className="text-indigo-500" />
+                            ) : (
+                                <Square size={15} className="text-slate-500" />
+                            )}
+                            <span>ETF/ETN 제외</span>
+                        </button>
+
                         <button 
-                            onClick={() => loadRankings(market, rankingType, currentPage)}
+                            onClick={() => loadRankings(market, rankingType, currentPage, excludeEtf)}
                             disabled={isLoading}
                             className="p-2 rounded-xl bg-[var(--theme-bg)] border border-[var(--theme-border)] hover:bg-slate-700/20 text-slate-400 hover:text-[var(--theme-text)] transition-all active:scale-95 shrink-0"
                             title="새로고침"
