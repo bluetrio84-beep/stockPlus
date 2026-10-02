@@ -1,6 +1,25 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.58) - 시가총액 순위(TOP 300) 전용 화면 신설 및 레프트 사이드바 전 사용자 개방 📊 🏆
+## 🚀 최신 업데이트 현황 (v16.59) - 관심종목 및 시세 화면 종목 상태 배지('정', '관', '주', '경', '위') KIS API 연동 복구 🏷️ 🛡️
+
+### 1. KIS 시세 API 응답 내 종목 상태(`stockStatus`) 및 시장 경고(`marketWarning`) 매핑 복구
+- **배경 및 원인 분석**:
+  - CMG제약(코드: `058820`) 등 현재 거래정지 상태인 종목에 '정' 마크(거래정지 배지)가 표출되지 않고, 과거 정상 지원되던 주의('주'), 경고('경'), 위험('위'), 관리('관') 배지 일체가 사라졌던 현상 접수.
+  - 조사 결과, 프론트엔드(`stockUtils.js`, `StockListItem.jsx`, `WatchlistSummary.jsx`, `Dashboard_Mobile.jsx`)에는 이미 `iscd_stat_cls_code` 및 `mrkt_warn_cls_code`를 기반으로 배지를 그리는 로직이 완벽히 구비되어 있었으나,
+  - 백엔드 `KisStockService.java`의 `fetchCurrentPriceInternal` 메서드에서 KIS API 응답 JSON(`output`)을 파싱하여 `StockPriceDto`를 빌드할 때 `stockStatus`와 `marketWarning` 필드 매핑 라인이 누락되어 프론트엔드로 `null`이 전달되고 있었던 원인을 규명.
+- **주요 개선 및 반영 내역**:
+  1. **백엔드 DTO 빌더 매핑 추가 (`KisStockService.java`)**:
+     - `getField(out, "iscd_stat_cls_code", "ISCD_STAT_CLS_CODE", "")` 매핑 복구 (58: 거래정지, 51: 관리종목 등).
+     - `getField(out, "mrkt_warn_cls_code", "MRKT_WARN_CLS_CODE", "00")` 매핑 복구 (01: 투자주의, 02: 투자경고, 03: 투자위험 등).
+  2. **프론트엔드 실시간 SSE 스트림 연동 안전성 확보**:
+     - 실시간 SSE 수신 버퍼 병합 시 기존 REST 초기 조회에서 확보된 `stockStatus` 및 `marketWarning` 필드가 불변 유지되도록 구조적 검증 완료.
+- **검증 및 배포 완료**:
+  - `KisStockService.java` 백엔드 컨테이너 복사 및 Maven 재컴파일(`mvnw clean package -DskipTests`) 완료.
+  - 백엔드 컨테이너 무중단 재기동 후 CMG제약(`/api/dashboard/stocks/058820/price?exchangeCode=UN`) 실시간 호출 검증:
+    `"stockStatus":"58"` (거래정지 코드) 정확히 반환 확인 완료.
+  - 관심종목 리스트 및 모바일 화면에서 '정' 배지(회색 테두리 및 배경) 정상 표출 확인.
+
+## 🚀 이전 업데이트 현황 (v16.58) - 시가총액 순위(TOP 300) 전용 화면 신설 및 레프트 사이드바 전 사용자 개방 📊 🏆
 
 ### 1. 시가총액 순위(Market Cap Rankings) 신규 화면 및 페이징(50개/페이지, 최대 300위) 구축
 - **배경 및 요구사항**:

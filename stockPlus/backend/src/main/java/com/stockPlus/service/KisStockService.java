@@ -78,6 +78,8 @@ public class KisStockService {
                                 .industryName(getField(out, "bstp_kor_isnm", "BSTP_KOR_ISNM", "")) // [v16.4] 업종명 추출
                                 .programNet(getField(out, "pgtr_ntby_qty", "PGTR_NTBY_QTY", "0")) // [v21.0] 프로그램 실시간 수급
                                 .foreignNet(getField(out, "frgn_ntby_qty", "FRGN_NTBY_QTY", "0")) // [v21.0] 외국인 실시간 수급
+                                .stockStatus(getField(out, "iscd_stat_cls_code", "ISCD_STAT_CLS_CODE", "")) // [v16.59] 종목상태(58:정지 등)
+                                .marketWarning(getField(out, "mrkt_warn_cls_code", "MRKT_WARN_CLS_CODE", "00")) // [v16.59] 시장경고(01:주의, 02:경고 등)
                                 .exchangeCode(requestExchange).build();
                     } catch (Exception e) { return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build(); }
                 })
