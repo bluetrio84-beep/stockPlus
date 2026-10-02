@@ -50,15 +50,15 @@ export const getStockStatusBadge = (input) => {
     } else {
         statusCode = input;
     }
-    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-500 border-amber-500/30' };
-    if (warnCode === '02') return { label: '경', color: 'bg-orange-500/20 text-orange-500 border-orange-500/30' };
-    if (warnCode === '03') return { label: '위', color: 'bg-red-500/20 text-red-500 border-red-500/30' };
+    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' };
+    if (warnCode === '02') return { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40' };
+    if (warnCode === '03') return { label: '위', color: 'bg-red-600/30 text-red-500 border-red-500/60 font-black animate-pulse' };
     if (!statusCode || statusCode === '00' || statusCode === ' ') return null;
     const statusMap = {
-        '51': { label: '관', color: 'bg-blue-500/20 text-blue-500 border-blue-500/30' },
-        '52': { label: '주', color: 'bg-amber-500/20 text-amber-500 border-amber-500/30' },
-        '53': { label: '경', color: 'bg-orange-500/20 text-orange-500 border-orange-500/30' },
-        '54': { label: '주', color: 'bg-amber-500/20 text-amber-500 border-amber-500/30' },
+        '51': { label: '관', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40' },
+        '52': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
+        '53': { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40' },
+        '54': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
         '58': { label: '정', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
     };
     return statusMap[statusCode] || null;
