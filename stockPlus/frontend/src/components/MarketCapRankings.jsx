@@ -220,7 +220,7 @@ const MarketCapRankings = () => {
                                         return (
                                             <tr
                                                 key={stock.itemCode}
-                                                onClick={() => navigate(`/stock/${stock.itemCode}`)}
+                                                onClick={() => navigate(`/stock/${stock.itemCode}`, { state: { stockName: stock.stockName } })}
                                                 className="hover:bg-[var(--theme-bg)]/70 cursor-pointer transition-colors group active:bg-[var(--theme-bg)]"
                                             >
                                                 {/* 순위 */}

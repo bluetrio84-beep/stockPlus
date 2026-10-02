@@ -25,6 +25,7 @@ public class KisStockService {
     private final KisAuthService kisAuthService;
     private final WebClient.Builder webClientBuilder;
     private final ObjectMapper objectMapper;
+    private final com.stockPlus.mapper.StockMasterMapper stockMasterMapper;
 
     public Mono<StockPriceDto> fetchCurrentPrice(final String stockCode) {
         return fetchUnifiedCurrentPrice(stockCode, "J");
@@ -67,7 +68,15 @@ public class KisStockService {
                         if (korName.contains("200")) { indexName = "KOSPI 200"; marketName = "KOSPI"; }
                         else if (korName.contains("150")) { indexName = "KOSDAQ 150"; marketName = "KOSDAQ"; }
                         else if (korName.contains("KOSDAQ") || korName.contains("코스닥")) { marketName = "KOSDAQ"; }
+                        String resolvedName = getField(out, "hts_kor_isnm", "HTS_KOR_ISNM", "");
+                        if (resolvedName.isEmpty() && stockMasterMapper != null) {
+                            try {
+                                com.stockPlus.domain.StockMaster master = stockMasterMapper.findByStockCode(stockCode);
+                                if (master != null && master.getStockName() != null) resolvedName = master.getStockName();
+                            } catch (Exception ignored) {}
+                        }
                         return StockPriceDto.builder().stockCode(stockCode).marketName(marketName)
+                                .stockName(resolvedName) // [v16.61] 종목명 매핑
                                 .currentPrice(getField(out, "stck_prpr", "STCK_PRPR", "0")).change(getField(out, "prdy_vrss", "PRDY_VRSS", "0"))
                                 .changeRate(getField(out, "prdy_ctrt", "PRDY_CTRT", "0.00")).priceSign(getField(out, "prdy_vrss_sign", "PRDY_VRSS_SIGN", "3"))
                                 .volume(getField(out, "acml_vol", "ACML_VOL", "0")).open(getField(out, "stck_oprc", "STCK_OPRC", "0"))
@@ -107,12 +116,13 @@ public class KisStockService {
         }
 
         if ("UN".equals(exchangeCode)) {
-            // [v16.43.2] UN(통합) 모드 최우선 사용: NXT 지원 종목의 데이터를 최대한 확보
+            // [v16.61] 주봉(1W), 월봉(1M)에서 UN(2026.09 신설) 데이터 캔들이 20개 미만이면 수년치 데이터가 보존된 J(정규장)으로 자동 보강/전환
             return fetchHistoryChart(stockCode, "UN", period)
                     .flatMap(list -> {
-                        // 데이터가 아예 없거나, 마지막 데이터가 7일 이상 과거인 경우 (NXT 미지원 종목 등)
-                        if (list.isEmpty() || isChartDataStale(list)) {
-                            log.info(">>> [UN Priority] Stock {} lacks valid UN data (Stale). Automatically switching to 'J' for continuity.", stockCode);
+                        boolean isLackOfHistory = ("1W".equals(period) || "1M".equals(period)) && (list.size() < 20);
+                        if (list.isEmpty() || isChartDataStale(list) || isLackOfHistory) {
+                            log.info(">>> [UN Fallback] Stock {} lacks sufficient UN data (count={}, stale={}). Switching to 'J'.", 
+                                stockCode, list.size(), isChartDataStale(list));
                             return fetchHistoryChart(stockCode, "J", period);
                         }
                         return Mono.just(list);

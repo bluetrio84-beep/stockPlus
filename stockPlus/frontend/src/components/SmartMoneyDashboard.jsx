@@ -201,7 +201,7 @@ const SmartMoneyDashboard = () => {
                                 return (
                                     <div 
                                         key={stock.stock_code} 
-                                        onClick={() => navigate(`/stock/${stock.stock_code}`)}
+                                        onClick={() => navigate(`/stock/${stock.stock_code}`, { state: { stockName: stock.stock_name } })}
                                         className="group relative bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] rounded-2xl p-5 hover:border-indigo-500/50 transition-all cursor-pointer shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1"
                                     >
                                         <div className="flex justify-between items-start mb-3">
@@ -289,7 +289,7 @@ const SmartMoneyDashboard = () => {
                                 return (
                                     <div 
                                         key={stock.stock_code} 
-                                        onClick={() => navigate(`/stock/${stock.stock_code}`)}
+                                        onClick={() => navigate(`/stock/${stock.stock_code}`, { state: { stockName: stock.stock_name } })}
                                         className="group relative bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] rounded-2xl p-5 hover:border-amber-500/40 transition-all cursor-pointer shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                                     >
                                         <div className="flex justify-between items-start mb-4">

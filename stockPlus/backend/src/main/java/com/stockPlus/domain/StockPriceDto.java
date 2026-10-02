@@ -14,6 +14,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StockPriceDto {
     private String stockCode;
+    private String stockName;
     private String exchangeCode;
     private String marketName;
     private String time;

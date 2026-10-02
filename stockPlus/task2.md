@@ -1,6 +1,37 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.60) - 종목 상태 배지('정', '관', '주', '경', '위') 시각적 구분 강화 및 차트 캔들 수 조사 🎨 📈
+## 🚀 최신 업데이트 현황 (v16.61) - 주봉·월봉 차트 데이터 자동 보강 및 스마트머니 차트 이동 시 종목명 완벽 표출 📊 🏷️
+
+### 1. UN 모드 주봉(`1W`)·월봉(`1M`) 장기 과거 데이터 보강 패치 (`KisStockService.java`)
+- **개선 배경**:
+  - 차AI헬스케어(`025620`) 등에서 UN(통합) 모드 시 최근 9월에 신설된 대체거래소 규격 특성상 주봉이 3개, 월봉이 2개만 조회되는 현상 발생.
+- **반영 내역**:
+  - 주봉(`1W`)과 월봉(`1M`) 요청 시 UN 데이터 캔들 수가 20개 미만인 경우(`isLackOfHistory`), 수년 치 데이터가 축적된 정규장(`J`) 데이터로 자동 전환/보강하도록 조건문 확장:
+    ```java
+    boolean isLackOfHistory = ("1W".equals(period) || "1M".equals(period)) && (list.size() < 20);
+    if (list.isEmpty() || isChartDataStale(list) || isLackOfHistory) {
+        return fetchHistoryChart(stockCode, "J", period);
+    }
+    ```
+  - **검증 결과**: 차AI헬스케어 주봉 **200개**(2022~2026), 월봉 **48개**(2022~2026) 캔들이 풍성하게 즉시 렌더링됨을 확인.
+
+### 2. 스마트머니 및 시가총액 순위에서 차트 이동 시 종목명(`stockName`) 완벽 보존
+- **원인 분석**:
+  - `SmartMoneyDashboard.jsx`(세력 잠행 매집, 90%+ 명예의 전당) 및 `MarketCapRankings.jsx`에서 종목 클릭 시 `navigate('/stock/' + code)`로 이동할 때 종목명을 라우터 state(`{ state: { stockName } }`)로 넘겨주지 않아, 관심종목에 없는 종목은 차트 상단에 코드(`059090`)만 표출되었음.
+  - 또한 백엔드 `/api/dashboard/stocks/{code}/price` DTO에 `stockName` 필드가 비어있던 문제를 발견.
+- **개선 및 반영 내역**:
+  1. **프론트엔드 라우터 state 전달**:
+     - `SmartMoneyDashboard.jsx`: 세력 잠행 매집 및 명예의 전당 클릭 시 `navigate('/stock/' + stock.stock_code, { state: { stockName: stock.stock_name } })` 전달.
+     - `MarketCapRankings.jsx`: `navigate('/stock/' + stock.itemCode, { state: { stockName: stock.stockName } })` 전달.
+  2. **백엔드 DTO 종목명 보강 (`StockPriceDto.java`, `KisStockService.java`)**:
+     - `StockPriceDto`에 `stockName` 필드 추가.
+     - `KisStockService`에서 `hts_kor_isnm` 파싱 및 비어있을 시 `stock_master` 테이블 조회를 통해 종목명 자동 매핑.
+- **배포 및 검증 완료**:
+  - 백엔드 재컴파일 및 무중단 재기동 완료.
+  - 프론트엔드 프로덕션 빌드 및 Nginx 배포 완료.
+  - 미코(`059090`) 클릭 시 차트 상단에 한글 종목명 **"미코"** 정상 표출 검증 완료.
+
+## 🚀 이전 업데이트 현황 (v16.60) - 종목 상태 배지('정', '관', '주', '경', '위') 시각적 구분 강화 및 차트 캔들 수 조사 🎨 📈
 
 ### 1. 종목 상태 및 시장 경고 배지 시각화 고도화 (`stockUtils.js`)
 - **개선 배경 및 작업 내역**:
