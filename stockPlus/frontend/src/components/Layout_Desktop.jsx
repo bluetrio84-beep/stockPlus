@@ -14,7 +14,7 @@ const LayoutDesktop = ({ logic }) => {
     const navItems = [
         { name: '대시보드', path: '/', icon: Home },
         { name: '관심종목 요약', path: '/summary', icon: Sparkles },
-        { name: '시가총액 순위', path: '/market-cap', icon: TrendingUp },
+        { name: '증시 동향', path: '/market-cap', icon: TrendingUp },
         { name: 'AI 키워드 관리', path: '/keywords', icon: Tag },
         { name: '투자 일지', path: '/notes', icon: Book },
     ];

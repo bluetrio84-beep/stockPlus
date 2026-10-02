@@ -1,43 +1,60 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchMarketCapRankings, toggleFavorite, addToWatchlist } from '../api/stockApi';
-import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { fetchMarketCapRankings, toggleFavorite } from '../api/stockApi';
+import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Flame, Sparkles } from 'lucide-react';
 import classNames from 'classnames';
 
 const MarketCapRankings = () => {
     const navigate = useNavigate();
-    const [market, setMarket] = useState('KOSPI');
+    const [market, setMarket] = useState('KOSPI'); // KOSPI | KOSDAQ
+    const [rankingType, setRankingType] = useState('marketValue'); // marketValue | up | down | high52week | low52week
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 50; // 페이지당 50개 (총 6페이지 = 300위)
+    const pageSize = 50;
     const [stocks, setStocks] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
     const [favorites, setFavorites] = useState(new Set());
 
-    const loadRankings = useCallback(async (targetMarket, page) => {
+    const maxPages = useMemo(() => {
+        const pagesByCount = Math.max(1, Math.ceil(totalCount / pageSize));
+        return Math.min(6, pagesByCount); // 최대 6페이지 (300위)
+    }, [totalCount]);
+
+    const loadRankings = useCallback(async (targetMarket, targetType, page) => {
         setIsLoading(true);
         try {
-            const data = await fetchMarketCapRankings(targetMarket, page, pageSize);
+            const data = await fetchMarketCapRankings(targetMarket, targetType, page, pageSize);
             if (data && data.stocks) {
                 setStocks(data.stocks);
+                setTotalCount(data.totalCount || data.stocks.length);
             } else {
                 setStocks([]);
+                setTotalCount(0);
             }
         } catch (e) {
             console.error(e);
             setStocks([]);
+            setTotalCount(0);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        loadRankings(market, currentPage);
-    }, [market, currentPage, loadRankings]);
+        loadRankings(market, rankingType, currentPage);
+    }, [market, rankingType, currentPage, loadRankings]);
 
     const handleMarketChange = (newMarket) => {
         if (market === newMarket) return;
         setMarket(newMarket);
+        setCurrentPage(1);
+        setSearchKeyword('');
+    };
+
+    const handleTypeChange = (newType) => {
+        if (rankingType === newType) return;
+        setRankingType(newType);
         setCurrentPage(1);
         setSearchKeyword('');
     };
@@ -58,7 +75,7 @@ const MarketCapRankings = () => {
         }
     };
 
-    // 검색 필터링 (현재 로드된 50개 내에서 필터링)
+    // 검색 필터링 (현재 로드된 목록 내에서 필터링)
     const filteredStocks = useMemo(() => {
         if (!searchKeyword.trim()) return stocks;
         const kw = searchKeyword.trim().toLowerCase();
@@ -71,7 +88,7 @@ const MarketCapRankings = () => {
     // 시가총액 금액 포맷 (억원 -> 조, 억 포맷팅)
     const formatMarketCap = (mcapStr) => {
         if (!mcapStr) return '-';
-        const num = parseInt(mcapStr.replace(/,/g, ''), 10);
+        const num = parseInt(String(mcapStr).replace(/,/g, ''), 10);
         if (isNaN(num)) return mcapStr;
         if (num >= 10000) {
             const jo = Math.floor(num / 10000);
@@ -82,7 +99,15 @@ const MarketCapRankings = () => {
     };
 
     const startRank = (currentPage - 1) * pageSize + 1;
-    const endRank = Math.min(currentPage * pageSize, 300);
+    const endRank = Math.min(currentPage * pageSize, totalCount || (startRank + stocks.length - 1));
+
+    const typeTabs = [
+        { id: 'marketValue', name: '시가총액', icon: Sparkles, color: 'text-amber-500' },
+        { id: 'up', name: '상승', icon: TrendingUp, color: 'text-red-500' },
+        { id: 'down', name: '하락', icon: TrendingDown, color: 'text-blue-500' },
+        { id: 'high52week', name: '신고가(52주)', icon: ArrowUpRight, color: 'text-rose-500' },
+        { id: 'low52week', name: '신저가(52주)', icon: ArrowDownRight, color: 'text-cyan-500' },
+    ];
 
     return (
         <div className="flex flex-col h-full bg-[var(--theme-bg)] text-[var(--theme-text)] overflow-hidden transition-colors duration-500">
@@ -91,15 +116,15 @@ const MarketCapRankings = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2.5">
-                            <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 shadow-lg text-white">
+                            <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-rose-500 shadow-lg text-white">
                                 <TrendingUp size={20} />
                             </div>
                             <h1 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-[var(--theme-point)] to-[var(--theme-sub-point)] bg-clip-text text-transparent">
-                                시가총액 순위 (TOP 300)
+                                실시간 증시 동향
                             </h1>
                         </div>
                         <p className="text-xs text-slate-500 mt-1 font-bold">
-                            코스피 및 코스닥 실시간 시총 상위 300대 종목을 50위씩 페이징하여 조회합니다.
+                            코스피 및 코스닥의 시가총액, 실시간 급등/급락, 52주 신고가/신저가 순위를 확인하세요.
                         </p>
                     </div>
 
@@ -131,7 +156,7 @@ const MarketCapRankings = () => {
                         </div>
 
                         <button 
-                            onClick={() => loadRankings(market, currentPage)}
+                            onClick={() => loadRankings(market, rankingType, currentPage)}
                             disabled={isLoading}
                             className="p-2 rounded-xl bg-[var(--theme-bg)] border border-[var(--theme-border)] hover:bg-slate-700/20 text-slate-400 hover:text-[var(--theme-text)] transition-all active:scale-95 shrink-0"
                             title="새로고침"
@@ -141,8 +166,31 @@ const MarketCapRankings = () => {
                     </div>
                 </div>
 
+                {/* 증시 동향 서브 탭 (시가총액, 상승, 하락, 신고가, 신저가) */}
+                <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                    {typeTabs.map(tab => {
+                        const Icon = tab.icon;
+                        const isSelected = rankingType === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => handleTypeChange(tab.id)}
+                                className={classNames(
+                                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 border",
+                                    isSelected
+                                        ? "bg-indigo-500/15 border-indigo-500/40 text-[var(--theme-point)] shadow-sm"
+                                        : "bg-[var(--theme-bg)]/80 border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] hover:border-slate-500/40"
+                                )}
+                            >
+                                <Icon size={14} className={classNames(tab.color, { "animate-pulse": isSelected && (tab.id === 'up' || tab.id === 'high52week') })} />
+                                <span>{tab.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
                 {/* 검색창 & 순위 인덱스 */}
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="relative w-full sm:w-72">
                         <input
                             type="text"
@@ -156,29 +204,31 @@ const MarketCapRankings = () => {
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 text-xs font-black text-slate-400">
                         <span>
-                            현재 순위: <strong className="text-[var(--theme-point)]">{startRank}위 ~ {endRank}위</strong> (총 300위)
+                            {market} {typeTabs.find(t => t.id === rankingType)?.name}: <strong className="text-[var(--theme-point)]">{startRank}위 ~ {endRank}위</strong> (총 {totalCount.toLocaleString()}개)
                         </span>
 
                         {/* 상단 미니 페이징 */}
-                        <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
-                            <button
-                                disabled={currentPage <= 1 || isLoading}
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                className="p-1 rounded text-slate-500 hover:text-[var(--theme-text)] disabled:opacity-30 disabled:hover:text-slate-500"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <span className="px-2 text-[11px] font-mono text-[var(--theme-point)] font-black">
-                                {currentPage} / 6
-                            </span>
-                            <button
-                                disabled={currentPage >= 6 || isLoading}
-                                onClick={() => setCurrentPage(p => Math.min(6, p + 1))}
-                                className="p-1 rounded text-slate-500 hover:text-[var(--theme-text)] disabled:opacity-30 disabled:hover:text-slate-500"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
-                        </div>
+                        {maxPages > 1 && (
+                            <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
+                                <button
+                                    disabled={currentPage <= 1 || isLoading}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="p-1 rounded text-slate-500 hover:text-[var(--theme-text)] disabled:opacity-30 disabled:hover:text-slate-500"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <span className="px-2 text-[11px] font-mono text-[var(--theme-point)] font-black">
+                                    {currentPage} / {maxPages}
+                                </span>
+                                <button
+                                    disabled={currentPage >= maxPages || isLoading}
+                                    onClick={() => setCurrentPage(p => Math.min(maxPages, p + 1))}
+                                    className="p-1 rounded text-slate-500 hover:text-[var(--theme-text)] disabled:opacity-30 disabled:hover:text-slate-500"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -188,11 +238,11 @@ const MarketCapRankings = () => {
                 {isLoading ? (
                     <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
                         <RefreshCw size={28} className="animate-spin text-indigo-500" />
-                        <span className="text-xs font-black">시가총액 순위를 불러오는 중...</span>
+                        <span className="text-xs font-black">증시 동향 순위를 불러오는 중...</span>
                     </div>
                 ) : filteredStocks.length === 0 ? (
                     <div className="h-64 flex flex-col items-center justify-center text-slate-500">
-                        <span className="text-sm font-black">검색된 종목이 없습니다.</span>
+                        <span className="text-sm font-black">해당 조건의 종목이 없습니다.</span>
                     </div>
                 ) : (
                     <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-xl overflow-hidden transition-colors">
@@ -206,6 +256,7 @@ const MarketCapRankings = () => {
                                         <th className="py-3 px-4 text-right">현재가</th>
                                         <th className="py-3 px-4 text-right">전일대비</th>
                                         <th className="py-3 px-4 text-right">등락률</th>
+                                        <th className="py-3 px-4 text-right">거래량</th>
                                         <th className="py-3 px-4 text-right">시가총액</th>
                                     </tr>
                                 </thead>
@@ -293,6 +344,11 @@ const MarketCapRankings = () => {
                                                     </span>
                                                 </td>
 
+                                                {/* 거래량 */}
+                                                <td className="py-3 px-4 text-right font-mono text-slate-400 text-xs">
+                                                    {stock.accumulatedTradingVolume || '-'}
+                                                </td>
+
                                                 {/* 시가총액 */}
                                                 <td className="py-3 px-4 text-right font-black font-mono text-[var(--theme-point)] text-xs">
                                                     {formatMarketCap(stock.marketValue)}
@@ -306,59 +362,61 @@ const MarketCapRankings = () => {
                     </div>
                 )}
 
-                {/* 하단 페이징 컨트롤 바 (1~6페이지 = 300위) */}
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pb-12">
-                    <span className="text-xs font-bold text-slate-500">
-                        {market} 시총 {startRank}위 ~ {endRank}위 표시 중 (페이지당 50개)
-                    </span>
+                {/* 하단 페이징 컨트롤 바 (1~maxPages) */}
+                {maxPages > 1 && (
+                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pb-12">
+                        <span className="text-xs font-bold text-slate-500">
+                            {market} {typeTabs.find(t => t.id === rankingType)?.name} {startRank}위 ~ {endRank}위 표시 중 (페이지당 50개)
+                        </span>
 
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            disabled={currentPage <= 1 || isLoading}
-                            onClick={() => setCurrentPage(1)}
-                            className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
-                        >
-                            처음
-                        </button>
-                        <button
-                            disabled={currentPage <= 1 || isLoading}
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
-                        >
-                            <ChevronLeft size={16} />
-                        </button>
-
-                        {[1, 2, 3, 4, 5, 6].map(pageNo => (
+                        <div className="flex items-center gap-1.5">
                             <button
-                                key={pageNo}
-                                onClick={() => setCurrentPage(pageNo)}
-                                className={classNames(
-                                    "w-8 h-8 rounded-xl text-xs font-black font-mono transition-all",
-                                    currentPage === pageNo
-                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105"
-                                        : "bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)]"
-                                )}
+                                disabled={currentPage <= 1 || isLoading}
+                                onClick={() => setCurrentPage(1)}
+                                className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
                             >
-                                {pageNo}
+                                처음
                             </button>
-                        ))}
+                            <button
+                                disabled={currentPage <= 1 || isLoading}
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
 
-                        <button
-                            disabled={currentPage >= 6 || isLoading}
-                            onClick={() => setCurrentPage(p => Math.min(6, p + 1))}
-                            className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
-                        >
-                            <ChevronRight size={16} />
-                        </button>
-                        <button
-                            disabled={currentPage >= 6 || isLoading}
-                            onClick={() => setCurrentPage(6)}
-                            className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
-                        >
-                            끝 (300위)
-                        </button>
+                            {Array.from({ length: maxPages }, (_, i) => i + 1).map(pageNo => (
+                                <button
+                                    key={pageNo}
+                                    onClick={() => setCurrentPage(pageNo)}
+                                    className={classNames(
+                                        "w-8 h-8 rounded-xl text-xs font-black font-mono transition-all",
+                                        currentPage === pageNo
+                                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105"
+                                            : "bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)]"
+                                    )}
+                                >
+                                    {pageNo}
+                                </button>
+                            ))}
+
+                            <button
+                                disabled={currentPage >= maxPages || isLoading}
+                                onClick={() => setCurrentPage(p => Math.min(maxPages, p + 1))}
+                                className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                            <button
+                                disabled={currentPage >= maxPages || isLoading}
+                                onClick={() => setCurrentPage(maxPages)}
+                                className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                            >
+                                끝 ({maxPages * pageSize}위)
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

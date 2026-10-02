@@ -348,16 +348,23 @@ public class StockDashboardService {
         return watchlistMapper.findYoutubeGallery(getCurrentUsrId());
     }
 
-    // --- Market Cap Rankings (시가총액 순위 300위 페이징) ---
+    // --- Market Trend Rankings (증시 동향 순위 300위 페이징: 시가총액, 상승, 하락, 신고가, 신저가) ---
     private static final Map<String, Object> marketCapCache = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Map<String, Long> marketCapCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public Map<String, Object> getMarketCapRankings(String market, int page, int pageSize) {
-        String cacheKey = (market != null ? market.toUpperCase() : "KOSPI") + "_p" + page + "_s" + pageSize;
+    public Map<String, Object> getMarketCapRankings(String market, String type, int page, int pageSize) {
+        String rankingType = "marketValue";
+        if ("up".equalsIgnoreCase(type)) rankingType = "up";
+        else if ("down".equalsIgnoreCase(type)) rankingType = "down";
+        else if ("high52week".equalsIgnoreCase(type) || "high".equalsIgnoreCase(type)) rankingType = "high52week";
+        else if ("low52week".equalsIgnoreCase(type) || "low".equalsIgnoreCase(type)) rankingType = "low52week";
+
+        String targetMarket = ("KOSDAQ".equalsIgnoreCase(market)) ? "KOSDAQ" : "KOSPI";
+        String cacheKey = targetMarket + "_" + rankingType + "_p" + page + "_s" + pageSize;
         long now = System.currentTimeMillis();
         Long cachedTime = marketCapCacheTime.get(cacheKey);
 
-        // 30초 캐싱 (실시간 시세 보장 + 트래픽 최적화)
+        // 30초 캐싱 (실시간 시세 보장 + 외부 트래픽 최적화)
         if (cachedTime != null && (now - cachedTime) < 30000 && marketCapCache.containsKey(cacheKey)) {
             @SuppressWarnings("unchecked")
             Map<String, Object> cachedData = (Map<String, Object>) marketCapCache.get(cacheKey);
@@ -365,8 +372,7 @@ public class StockDashboardService {
         }
 
         try {
-            String targetMarket = ("KOSDAQ".equalsIgnoreCase(market)) ? "KOSDAQ" : "KOSPI";
-            String urlStr = "https://m.stock.naver.com/api/stocks/marketValue/" + targetMarket + "?page=" + page + "&pageSize=" + pageSize;
+            String urlStr = "https://m.stock.naver.com/api/stocks/" + rankingType + "/" + targetMarket + "?page=" + page + "&pageSize=" + pageSize;
             java.net.URL url = new java.net.URI(urlStr).toURL();
             java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -386,7 +392,7 @@ public class StockDashboardService {
                 return responseData;
             }
         } catch (Exception e) {
-            log.error("Failed to fetch market cap rankings for {}: {}", market, e.getMessage());
+            log.error("Failed to fetch market rankings for {} ({}): {}", targetMarket, rankingType, e.getMessage());
         }
 
         // 캐시 폴백 또는 빈 응답

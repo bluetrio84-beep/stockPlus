@@ -1,6 +1,28 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.61) - 주봉·월봉 차트 데이터 자동 보강 및 스마트머니 차트 이동 시 종목명 완벽 표출 📊 🏷️
+## 🚀 최신 업데이트 현황 (v16.62) - 메뉴 개편 '증시 동향' 및 실시간 순위 5대 탭(시가총액, 상승, 하락, 신고가, 신저가) 완벽 구축 📈 🏆
+
+### 1. 좌측 네비게이션 명칭 변경 및 5대 핵심 순위 탭 신설
+- **개선 배경 및 요구사항**:
+  - 기존 '시가총액 순위'를 포괄적이고 직관적인 **'증시 동향'**으로 명칭 변경 요청.
+  - 코스피/코스닥 전환과 함께 **시가총액, 상승, 하락, 신고가(52주), 신저가(52주)** 5가지 핵심 시장 순위를 즉시 비교·탐색할 수 있도록 탭 구조 확장.
+- **주요 반영 내역**:
+  1. **좌측 네비게이션 바 메뉴명 변경 (`Layout_Desktop.jsx`, `Layout_Mobile.jsx`)**:
+     - PC 및 모바일 공통: `'시가총액 순위'` ➡️ **`'증시 동향'`**으로 전면 변경.
+  2. **백엔드 고속 증시 동향 멀티 타입 API 확장 (`StockDashboardService.java`, `StockDashboardController.java`)**:
+     - 엔드포인트: `GET /api/dashboard/market-cap-rankings?market={KOSPI|KOSDAQ}&type={marketValue|up|down|high52week|low52week}&page={1..6}&pageSize=50`
+     - 네이버 증권 모바일 API의 5대 엔드포인트(`marketValue`, `up`, `down`, `high52week`, `low52week`) 자동 매핑 및 30초 인메모리 캐시 적용.
+  3. **프론트엔드 증시 동향 대시보드 고도화 (`MarketCapRankings.jsx`, `stockApi.js`)**:
+     - **5대 순위 탭 UI**: 시가총액(Sparkles), 상승(TrendingUp/레드), 하락(TrendingDown/블루), 신고가(ArrowUpRight/로즈), 신저가(ArrowDownRight/시안).
+     - **거래량(Volume) 컬럼 추가**: 종목별 실시간 거래량 지표 추가 배치.
+     - **동적 페이징 계산**: 각 탭별 총 종목 수(`totalCount`)에 맞춰 최대 6페이지(최대 300위)까지 유동적 페이징 처리.
+     - **원클릭 차트 이동 & 한글 종목명 연동**: 클릭 시 `/stock/{code}`로 이동하며 종목명 state 전달 완벽 보장.
+- **배포 및 검증 완료**:
+  - 스프링 부트 백엔드 재컴파일 및 컨테이너 무중단 재시작 완료.
+  - 프론트엔드 Vite 프로덕션 빌드 및 Nginx 정적 리소스 배포 완료.
+  - 코스피/코스닥 상승, 하락, 신고가, 신저가, 시가총액 데이터 정상 반환 및 렌더링 확인.
+
+## 🚀 이전 업데이트 현황 (v16.61) - 주봉·월봉 차트 데이터 자동 보강 및 스마트머니 차트 이동 시 종목명 완벽 표출 📊 🏷️
 
 ### 1. UN 모드 주봉(`1W`)·월봉(`1M`) 장기 과거 데이터 보강 패치 (`KisStockService.java`)
 - **개선 배경**:

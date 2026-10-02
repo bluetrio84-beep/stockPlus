@@ -287,8 +287,8 @@ export async function fetchYoutubeGallery() {
     return Array.isArray(data) ? data : [];
 }
 
-// --- Market Cap Rankings (v16.58) ---
-export async function fetchMarketCapRankings(market = 'KOSPI', page = 1, pageSize = 50) {
-    const data = await safeFetch(`api/dashboard/market-cap-rankings?market=${market}&page=${page}&pageSize=${pageSize}`);
+// --- Market Trend Rankings (v16.62: 증시 동향) ---
+export async function fetchMarketCapRankings(market = 'KOSPI', type = 'marketValue', page = 1, pageSize = 50) {
+    const data = await safeFetch(`api/dashboard/market-cap-rankings?market=${market}&type=${type}&page=${page}&pageSize=${pageSize}`);
     return data || { stocks: [], totalCount: 0 };
 }
