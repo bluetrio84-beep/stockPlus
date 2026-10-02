@@ -358,4 +358,64 @@
         LIMIT 10
     </select>
 
+    <!-- [v16.70] 부동산 시장 요약 조회 -->
+    <select id="getRealEstateSummary" resultType="map">
+        SELECT base_date, source_type, nation_rate, capital_rate, seoul_rate, gyeonggi_rate, incheon_rate, local_rate, summary_text
+        FROM real_estate_market_summary
+        <where>
+            <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
+                source_type = #{sourceType}
+            </if>
+        </where>
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <!-- [v16.70] 부동산 주간 상승/하락 랭킹 조회 (전국/수도권/지방 필터링 지원, Top N) -->
+    <select id="getRealEstateWeeklyRankings" resultType="map">
+        SELECT r.base_date, r.source_type, r.region_name, r.region_type, r.fluctuation_rate, r.jeonse_rate
+        FROM real_estate_weekly_trend r
+        WHERE r.base_date = (
+            SELECT MAX(base_date) FROM real_estate_weekly_trend 
+            WHERE 1=1 
+            <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
+                AND source_type = #{sourceType}
+            </if>
+        )
+        <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
+            AND r.source_type = #{sourceType}
+        </if>
+        <if test="regionType != null and regionType != '' and regionType != 'ALL'">
+            AND r.region_type = #{regionType}
+        </if>
+        <choose>
+            <when test="orderType == 'DOWN'">
+                ORDER BY r.fluctuation_rate ASC
+            </when>
+            <otherwise>
+                ORDER BY r.fluctuation_rate DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
+    <!-- [v16.70] 아파트 실거래가 (신고가 / 하락거래) 조회 -->
+    <select id="getRealEstateTransactions" resultType="map">
+        SELECT id, trade_date, complex_name, region_name, area_m2, floor, price_krw, prev_price_krw, diff_krw, diff_rate, trade_type
+        FROM real_estate_transactions
+        <where>
+            <if test="tradeType != null and tradeType != '' and tradeType != 'ALL'">
+                trade_type = #{tradeType}
+            </if>
+        </where>
+        <choose>
+            <when test="tradeType == '하락거래'">
+                ORDER BY diff_krw ASC
+            </when>
+            <otherwise>
+                ORDER BY diff_krw DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
 </mapper>

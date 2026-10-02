@@ -292,3 +292,20 @@ export async function fetchMarketCapRankings(market = 'KOSPI', type = 'marketVal
     const data = await safeFetch(`api/dashboard/market-cap-rankings?market=${market}&type=${type}&page=${page}&pageSize=${pageSize}&excludeEtf=${excludeEtf}`);
     return data || { stocks: [], totalCount: 0 };
 }
+
+// --- Real Estate Market (v16.70: 부동산 현황 - KB / REB / 실거래가) ---
+export async function fetchRealEstateSummary(sourceType = 'KB') {
+    const data = await safeFetch(`api/dashboard/real-estate/summary?sourceType=${sourceType}`);
+    return data || null;
+}
+
+export async function fetchRealEstateRankings(sourceType = 'KB', regionType = 'ALL', orderType = 'UP', limit = 50) {
+    const data = await safeFetch(`api/dashboard/real-estate/rankings?sourceType=${sourceType}&regionType=${encodeURIComponent(regionType)}&orderType=${orderType}&limit=${limit}`);
+    return Array.isArray(data) ? data : [];
+}
+
+export async function fetchRealEstateTransactions(tradeType = 'ALL', limit = 50) {
+    const data = await safeFetch(`api/dashboard/real-estate/transactions?tradeType=${encodeURIComponent(tradeType)}&limit=${limit}`);
+    return Array.isArray(data) ? data : [];
+}
+

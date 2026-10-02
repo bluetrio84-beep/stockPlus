@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book, ShieldAlert, Palette, ChevronRight, PieChart, TrendingUp } from 'lucide-react';
+import { Bell, Menu, BarChart2, Home, X, Sparkles, Tag, LogOut, Settings, LayoutDashboard, Award, Activity, Newspaper, Book, ShieldAlert, Palette, ChevronRight, PieChart, TrendingUp, Building2 } from 'lucide-react';
 import classNames from 'classnames';
 import { isAdmin } from '../api/authApi';
 
@@ -15,6 +15,7 @@ const LayoutMobile = ({ logic }) => {
         { name: '대시보드', path: '/', icon: Home },
         { name: '관심종목 요약', path: '/summary', icon: Sparkles },
         { name: '증시 동향', path: '/market-cap', icon: TrendingUp },
+        { name: '부동산 현황', path: '/real-estate', icon: Building2 },
         { name: 'AI 키워드 관리', path: '/keywords', icon: Tag },
         { name: '투자 일지', path: '/notes', icon: Book },
     ];
