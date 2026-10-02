@@ -66,23 +66,23 @@ export const getStockStatusBadge = (input) => {
         statusCode = String(input);
     }
 
-    // 거래정지 플래그 또는 KIS 코드 58인 경우 최우선 '정' 배지 반환
+    // 거래정지 플래그 또는 KIS 코드 58인 경우 최우선 '정' 배지 반환 (화이트/다크 테마 모두 선명하도록 고대비 스타일 적용)
     if (isHalted || statusCode === '58') {
-        return { label: '정', color: 'bg-slate-500/25 text-slate-300 border-slate-500/40 font-black' };
+        return { label: '정', color: 'bg-slate-700 text-slate-100 border-slate-600 font-black shadow-xs' };
     }
 
     // 시장 경고 코드 판별 (01: 주의, 02: 경고, 03: 위험)
-    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' };
-    if (warnCode === '02') return { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-black' };
-    if (warnCode === '03') return { label: '위', color: 'bg-red-600/30 text-red-500 border-red-500/60 font-black animate-pulse' };
+    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/40 font-black' };
+    if (warnCode === '02') return { label: '경', color: 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border-rose-500/40 font-black' };
+    if (warnCode === '03') return { label: '위', color: 'bg-red-600/30 text-red-600 dark:text-red-500 border-red-500/60 font-black animate-pulse' };
 
     if (!statusCode || statusCode === '00' || statusCode === ' ') return null;
     const statusMap = {
-        '51': { label: '관', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40 font-black' },
-        '52': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' },
-        '53': { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-black' },
-        '54': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' },
-        '58': { label: '정', color: 'bg-slate-500/25 text-slate-300 border-slate-500/40 font-black' },
+        '51': { label: '관', color: 'bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 border-indigo-500/40 font-black' },
+        '52': { label: '주', color: 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/40 font-black' },
+        '53': { label: '경', color: 'bg-rose-500/20 text-rose-500 dark:text-rose-400 border-rose-500/40 font-black' },
+        '54': { label: '주', color: 'bg-amber-500/20 text-amber-500 dark:text-amber-400 border-amber-500/40 font-black' },
+        '58': { label: '정', color: 'bg-slate-700 text-slate-100 border-slate-600 font-black shadow-xs' },
     };
     return statusMap[statusCode] || null;
 };

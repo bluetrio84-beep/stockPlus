@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchMarketCapRankings, toggleFavorite } from '../api/stockApi';
+import { fetchMarketCapRankings, fetchStockPrice, toggleFavorite } from '../api/stockApi';
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Flame, Sparkles, CheckSquare, Square } from 'lucide-react';
 import classNames from 'classnames';
 import { getStockStatusBadge } from '../utils/stockUtils';
@@ -17,6 +17,7 @@ const MarketCapRankings = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
     const [favorites, setFavorites] = useState(new Set());
+    const [stockBadges, setStockBadges] = useState({});
 
     const maxPages = useMemo(() => {
         const pagesByCount = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -30,6 +31,31 @@ const MarketCapRankings = () => {
             if (data && data.stocks) {
                 setStocks(data.stocks);
                 setTotalCount(data.totalCount || data.stocks.length);
+
+                // 현재 페이지 종목들에 대한 정밀 상태(정지, 주의, 경고 등) 비동기 조회
+                setStockBadges(prev => {
+                    const missingStocks = data.stocks.filter(s => s.itemCode && !prev[s.itemCode]);
+                    if (missingStocks.length > 0) {
+                        Promise.all(missingStocks.map(async (s) => {
+                            try {
+                                const detail = await fetchStockPrice(s.itemCode);
+                                const badge = getStockStatusBadge(detail) || getStockStatusBadge(s);
+                                return { code: s.itemCode, badge };
+                            } catch {
+                                return { code: s.itemCode, badge: getStockStatusBadge(s) };
+                            }
+                        })).then(results => {
+                            setStockBadges(current => {
+                                const next = { ...current };
+                                results.forEach(r => {
+                                    if (r.badge) next[r.code] = r.badge;
+                                });
+                                return next;
+                            });
+                        });
+                    }
+                    return prev;
+                });
             } else {
                 setStocks([]);
                 setTotalCount(0);
@@ -344,7 +370,7 @@ const MarketCapRankings = () => {
                                                             {stock.itemCode}
                                                         </span>
                                                         {(() => {
-                                                            const badge = getStockStatusBadge(stock);
+                                                            const badge = stockBadges[stock.itemCode] || getStockStatusBadge(stock);
                                                             if (!badge) return null;
                                                             return (
                                                                 <span className={classNames("text-[10px] px-1.5 py-0.5 rounded border leading-tight shrink-0", badge.color)}>
