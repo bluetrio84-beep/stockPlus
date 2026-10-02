@@ -358,31 +358,50 @@
         LIMIT 10
     </select>
 
-    <!-- [v16.70] 부동산 시장 요약 조회 -->
+    <!-- [v16.70] 부동산 시장 요약 조회 (주간/월간/연간 지원) -->
     <select id="getRealEstateSummary" resultType="map">
-        SELECT base_date, source_type, nation_rate, capital_rate, seoul_rate, gyeonggi_rate, incheon_rate, local_rate, summary_text
+        SELECT base_date, source_type, period_type, nation_rate, capital_rate, seoul_rate, gyeonggi_rate, incheon_rate, local_rate, summary_text
         FROM real_estate_market_summary
         <where>
             <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
-                source_type = #{sourceType}
+                AND source_type = #{sourceType}
+            </if>
+            <if test="periodType != null and periodType != '' and periodType != 'ALL'">
+                AND period_type = #{periodType}
+            </if>
+            <if test="baseDate != null and baseDate != ''">
+                AND base_date = #{baseDate}
             </if>
         </where>
         ORDER BY id DESC LIMIT 1
     </select>
 
-    <!-- [v16.70] 부동산 주간 상승/하락 랭킹 조회 (전국/수도권/지방 필터링 지원, Top N) -->
+    <!-- [v16.70] 부동산 주간/월간/연간 상승/하락 랭킹 조회 (전국/수도권/지방 필터링 지원, Top N) -->
     <select id="getRealEstateWeeklyRankings" resultType="map">
-        SELECT r.base_date, r.source_type, r.region_name, r.region_type, r.fluctuation_rate, r.jeonse_rate
+        SELECT r.base_date, r.source_type, r.period_type, r.region_name, r.region_type, r.fluctuation_rate, r.jeonse_rate
         FROM real_estate_weekly_trend r
         WHERE r.base_date = (
-            SELECT MAX(base_date) FROM real_estate_weekly_trend 
-            WHERE 1=1 
-            <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
-                AND source_type = #{sourceType}
-            </if>
+            <choose>
+                <when test="baseDate != null and baseDate != ''">
+                    #{baseDate}
+                </when>
+                <otherwise>
+                    SELECT MAX(base_date) FROM real_estate_weekly_trend 
+                    WHERE 1=1 
+                    <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
+                        AND source_type = #{sourceType}
+                    </if>
+                    <if test="periodType != null and periodType != '' and periodType != 'ALL'">
+                        AND period_type = #{periodType}
+                    </if>
+                </otherwise>
+            </choose>
         )
         <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
             AND r.source_type = #{sourceType}
+        </if>
+        <if test="periodType != null and periodType != '' and periodType != 'ALL'">
+            AND r.period_type = #{periodType}
         </if>
         <if test="regionType != null and regionType != '' and regionType != 'ALL'">
             AND r.region_type = #{regionType}
@@ -396,6 +415,20 @@
             </otherwise>
         </choose>
         LIMIT #{limit}
+    </select>
+
+    <!-- [v16.70] 부동산 데이터 기준일자 목록 조회 (월간/연간 선택 드롭다운용) -->
+    <select id="getRealEstateDates" resultType="string">
+        SELECT DISTINCT base_date 
+        FROM real_estate_weekly_trend 
+        WHERE 1=1
+        <if test="sourceType != null and sourceType != '' and sourceType != 'ALL'">
+            AND source_type = #{sourceType}
+        </if>
+        <if test="periodType != null and periodType != '' and periodType != 'ALL'">
+            AND period_type = #{periodType}
+        </if>
+        ORDER BY base_date DESC
     </select>
 
     <!-- [v16.70] 아파트 실거래가 (신고가 / 하락거래) 조회 -->

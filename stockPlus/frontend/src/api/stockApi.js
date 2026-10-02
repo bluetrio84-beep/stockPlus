@@ -293,14 +293,21 @@ export async function fetchMarketCapRankings(market = 'KOSPI', type = 'marketVal
     return data || { stocks: [], totalCount: 0 };
 }
 
-// --- Real Estate Market (v16.70: 부동산 현황 - KB / REB / 실거래가) ---
-export async function fetchRealEstateSummary(sourceType = 'KB') {
-    const data = await safeFetch(`api/dashboard/real-estate/summary?sourceType=${sourceType}`);
+// --- Real Estate Market (v16.70: 부동산 현황 - KB / REB / 주간·월간·연간 / 실거래가) ---
+export async function fetchRealEstateSummary(sourceType = 'KB', periodType = 'WEEKLY', baseDate = '') {
+    const dateParam = baseDate ? `&baseDate=${encodeURIComponent(baseDate)}` : '';
+    const data = await safeFetch(`api/dashboard/real-estate/summary?sourceType=${sourceType}&periodType=${periodType}${dateParam}`);
     return data || null;
 }
 
-export async function fetchRealEstateRankings(sourceType = 'KB', regionType = 'ALL', orderType = 'UP', limit = 50) {
-    const data = await safeFetch(`api/dashboard/real-estate/rankings?sourceType=${sourceType}&regionType=${encodeURIComponent(regionType)}&orderType=${orderType}&limit=${limit}`);
+export async function fetchRealEstateRankings(sourceType = 'KB', periodType = 'WEEKLY', baseDate = '', regionType = 'ALL', orderType = 'UP', limit = 50) {
+    const dateParam = baseDate ? `&baseDate=${encodeURIComponent(baseDate)}` : '';
+    const data = await safeFetch(`api/dashboard/real-estate/rankings?sourceType=${sourceType}&periodType=${periodType}${dateParam}&regionType=${encodeURIComponent(regionType)}&orderType=${orderType}&limit=${limit}`);
+    return Array.isArray(data) ? data : [];
+}
+
+export async function fetchRealEstateDates(sourceType = 'KB', periodType = 'WEEKLY') {
+    const data = await safeFetch(`api/dashboard/real-estate/dates?sourceType=${sourceType}&periodType=${periodType}`);
     return Array.isArray(data) ? data : [];
 }
 

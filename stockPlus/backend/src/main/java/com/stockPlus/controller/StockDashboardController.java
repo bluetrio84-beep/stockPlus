@@ -322,23 +322,38 @@ public class StockDashboardController {
     // --- Real Estate Dashboard (v16.70 부동산 시장 현황) ---
 
     /**
-     * 부동산 시장 매크로 요약 지표 (KB부동산 / 한국부동산원)
+     * 부동산 시장 매크로 요약 지표 (KB부동산 / 한국부동산원 - 주간/월간/연간)
      */
     @GetMapping("/real-estate/summary")
-    public Map<String, Object> getRealEstateSummary(@RequestParam(defaultValue = "KB") String sourceType) {
-        return adminMapper.getRealEstateSummary(sourceType);
+    public Map<String, Object> getRealEstateSummary(
+            @RequestParam(defaultValue = "KB") String sourceType,
+            @RequestParam(defaultValue = "WEEKLY") String periodType,
+            @RequestParam(required = false) String baseDate) {
+        return adminMapper.getRealEstateSummary(sourceType, periodType, baseDate);
     }
 
     /**
-     * 부동산 주간 상승/하락률 랭킹 (Top 50)
+     * 부동산 주간/월간/연간 상승/하락률 랭킹 (Top 50)
      */
     @GetMapping("/real-estate/rankings")
     public List<Map<String, Object>> getRealEstateWeeklyRankings(
             @RequestParam(defaultValue = "KB") String sourceType,
+            @RequestParam(defaultValue = "WEEKLY") String periodType,
+            @RequestParam(required = false) String baseDate,
             @RequestParam(defaultValue = "ALL") String regionType,
             @RequestParam(defaultValue = "UP") String orderType,
             @RequestParam(defaultValue = "50") int limit) {
-        return adminMapper.getRealEstateWeeklyRankings(sourceType, regionType, orderType, limit);
+        return adminMapper.getRealEstateWeeklyRankings(sourceType, periodType, baseDate, regionType, orderType, limit);
+    }
+
+    /**
+     * 부동산 기준일자 목록 (월간/연간 선택 드롭다운용)
+     */
+    @GetMapping("/real-estate/dates")
+    public List<String> getRealEstateDates(
+            @RequestParam(defaultValue = "KB") String sourceType,
+            @RequestParam(defaultValue = "WEEKLY") String periodType) {
+        return adminMapper.getRealEstateDates(sourceType, periodType);
     }
 
     /**

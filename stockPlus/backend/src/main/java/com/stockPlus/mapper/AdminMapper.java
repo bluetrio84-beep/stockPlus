@@ -100,14 +100,23 @@ public interface AdminMapper {
 
     List<Map<String, Object>> getMarketCompassInvestorFlow();
 
-    // [v16.70] 부동산 시장 현황 (KB / REB / 실거래가)
-    Map<String, Object> getRealEstateSummary(@Param("sourceType") String sourceType);
+    // [v16.70] 부동산 시장 현황 (KB / REB / 주간·월간·연간 / 실거래가)
+    Map<String, Object> getRealEstateSummary(
+            @Param("sourceType") String sourceType,
+            @Param("periodType") String periodType,
+            @Param("baseDate") String baseDate);
 
     List<Map<String, Object>> getRealEstateWeeklyRankings(
             @Param("sourceType") String sourceType,
+            @Param("periodType") String periodType,
+            @Param("baseDate") String baseDate,
             @Param("regionType") String regionType,
             @Param("orderType") String orderType,
             @Param("limit") int limit);
+
+    List<String> getRealEstateDates(
+            @Param("sourceType") String sourceType,
+            @Param("periodType") String periodType);
 
     List<Map<String, Object>> getRealEstateTransactions(
             @Param("tradeType") String tradeType,
