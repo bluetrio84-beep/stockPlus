@@ -44,22 +44,45 @@ export const getStockStatusBadge = (input) => {
     if (!input) return null;
     let statusCode = '';
     let warnCode = '';
+    let isHalted = false;
+
     if (typeof input === 'object') {
-        statusCode = input.stockStatus;
-        warnCode = input.marketWarning;
+        statusCode = input.stockStatus || input.stock_status || '';
+        warnCode = input.marketWarning || input.market_warning || '';
+        
+        // 1. 네이버 증권 데이터의 거래정지 필드 확인 (tradeStopType, tradableStatus)
+        const tst = input.tradeStopType;
+        if (tst) {
+            if (typeof tst === 'object' && (tst.name === 'HALTED' || tst.code === '2' || (tst.text && tst.text.includes('정지')))) {
+                isHalted = true;
+            } else if (typeof tst === 'string' && (tst === 'HALTED' || tst.includes('정지'))) {
+                isHalted = true;
+            }
+        }
+        if (input.tradableStatus === 'halt' || (input.tradableStatusCode && String(input.tradableStatusCode).includes('Halt'))) {
+            isHalted = true;
+        }
     } else {
-        statusCode = input;
+        statusCode = String(input);
     }
-    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' };
-    if (warnCode === '02') return { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40' };
+
+    // 거래정지 플래그 또는 KIS 코드 58인 경우 최우선 '정' 배지 반환
+    if (isHalted || statusCode === '58') {
+        return { label: '정', color: 'bg-slate-500/25 text-slate-300 border-slate-500/40 font-black' };
+    }
+
+    // 시장 경고 코드 판별 (01: 주의, 02: 경고, 03: 위험)
+    if (warnCode === '01') return { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' };
+    if (warnCode === '02') return { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-black' };
     if (warnCode === '03') return { label: '위', color: 'bg-red-600/30 text-red-500 border-red-500/60 font-black animate-pulse' };
+
     if (!statusCode || statusCode === '00' || statusCode === ' ') return null;
     const statusMap = {
-        '51': { label: '관', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40' },
-        '52': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
-        '53': { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40' },
-        '54': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
-        '58': { label: '정', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
+        '51': { label: '관', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40 font-black' },
+        '52': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' },
+        '53': { label: '경', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-black' },
+        '54': { label: '주', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' },
+        '58': { label: '정', color: 'bg-slate-500/25 text-slate-300 border-slate-500/40 font-black' },
     };
     return statusMap[statusCode] || null;
 };

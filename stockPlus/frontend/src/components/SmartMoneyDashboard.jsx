@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { getAuthHeader } from '../api/stockApi';
+import { getAuthHeader, fetchStockPrice } from '../api/stockApi';
 import { Sparkles, Loader2, Calendar, TrendingUp, AlertCircle, Info, ArrowUpRight, BarChart3, Clock, LayoutDashboard, Search, ShieldAlert, Target, Users, Zap, CheckCircle2 } from 'lucide-react';
 import classNames from 'classnames';
 import { useNavigate } from 'react-router-dom';
+import { getStockStatusBadge } from '../utils/stockUtils';
 
 const SmartMoneyDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('stealth'); // 'stealth' (세력 잠행 매집) | 'hallOfFame' (90%+ 명예의 전당)
     const [stocks, setStocks] = useState([]);
     const [stealthStocks, setStealthStocks] = useState([]);
+    const [stockBadges, setStockBadges] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -33,6 +35,25 @@ const SmartMoneyDashboard = () => {
         }
     };
 
+    const loadBadgesForList = (list) => {
+        if (!Array.isArray(list) || list.length === 0) return;
+        Promise.all(list.map(async (item) => {
+            try {
+                const code = item.stock_code;
+                const priceData = await fetchStockPrice(code);
+                return { code, data: priceData };
+            } catch (e) {
+                return { code: item.stock_code, data: null };
+            }
+        })).then(results => {
+            const badgeMap = {};
+            results.forEach(r => {
+                if (r.data) badgeMap[r.code] = r.data;
+            });
+            setStockBadges(prev => ({ ...prev, ...badgeMap }));
+        });
+    };
+
     const fetchSmartMoneyStocks = async () => {
         try {
             const res = await fetch('/api/admin/intelligence/smart-money', {
@@ -41,6 +62,7 @@ const SmartMoneyDashboard = () => {
             if (res.ok) {
                 const json = await res.json();
                 setStocks(json);
+                loadBadgesForList(json);
             }
         } catch (e) {
             console.error("Fetch Smart Money Error:", e);
@@ -55,6 +77,7 @@ const SmartMoneyDashboard = () => {
             if (res.ok) {
                 const json = await res.json();
                 setStealthStocks(json);
+                loadBadgesForList(json);
             }
         } catch (e) {
             console.error("Fetch Stealth Stocks Error:", e);
@@ -206,8 +229,17 @@ const SmartMoneyDashboard = () => {
                                     >
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex flex-col">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-[var(--theme-text)] font-black text-lg group-hover:text-indigo-400 transition-colors">{stock.stock_name}</span>
+                                                    {(() => {
+                                                        const badge = getStockStatusBadge(stockBadges[stock.stock_code]);
+                                                        if (!badge) return null;
+                                                        return (
+                                                            <span className={classNames("text-[10px] px-1.5 py-0.5 rounded border leading-tight shrink-0 font-black", badge.color)}>
+                                                                {badge.label}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                     <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                                                         {stock.main_actor}
                                                     </span>
@@ -294,7 +326,18 @@ const SmartMoneyDashboard = () => {
                                     >
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex flex-col">
-                                                <span className="text-[var(--theme-text)] font-black text-lg group-hover:text-amber-600 transition-colors">{stock.stock_name}</span>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-[var(--theme-text)] font-black text-lg group-hover:text-amber-600 transition-colors">{stock.stock_name}</span>
+                                                    {(() => {
+                                                        const badge = getStockStatusBadge(stockBadges[stock.stock_code]);
+                                                        if (!badge) return null;
+                                                        return (
+                                                            <span className={classNames("text-[10px] px-1.5 py-0.5 rounded border leading-tight shrink-0 font-black", badge.color)}>
+                                                                {badge.label}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
                                                 <span className="text-slate-500 font-mono text-[11px] font-black tracking-widest">{stock.stock_code}</span>
                                             </div>
                                             <div className="flex flex-col items-end">

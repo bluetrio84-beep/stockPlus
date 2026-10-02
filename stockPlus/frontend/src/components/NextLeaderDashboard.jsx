@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getAuthHeader } from '../api/stockApi';
+import { getAuthHeader, fetchStockPrice } from '../api/stockApi';
 import { Calendar, Download, TrendingUp, Loader2, Award, X, Brain, CheckCircle2, AlertCircle, BarChart3, Activity, ArrowUpRight, ArrowDownRight, HelpCircle, Info, ThumbsUp, Ghost, Package, CloudRain, ThumbsDown, Sparkles, Zap, Target } from 'lucide-react';
 import classNames from 'classnames';
+import { getStockStatusBadge } from '../utils/stockUtils';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -21,6 +22,7 @@ const NextLeaderDashboard = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [nextLeaders, setNextLeaders] = useState([]);
     const [liveLeaders, setLiveLeaders] = useState([]);
+    const [stockBadges, setStockBadges] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('ranking'); 
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false); 
@@ -38,6 +40,23 @@ const NextLeaderDashboard = () => {
             if (res.ok) {
                 const json = await res.json();
                 setNextLeaders(json);
+                // 종목별 상태 배지(정지, 주의, 경고 등) 비동기 조회
+                if (Array.isArray(json) && json.length > 0) {
+                    Promise.all(json.map(async (item) => {
+                        try {
+                            const priceData = await fetchStockPrice(item.stock_code);
+                            return { code: item.stock_code, data: priceData };
+                        } catch (e) {
+                            return { code: item.stock_code, data: null };
+                        }
+                    })).then(results => {
+                        const badgeMap = {};
+                        results.forEach(r => {
+                            if (r.data) badgeMap[r.code] = r.data;
+                        });
+                        setStockBadges(prev => ({ ...prev, ...badgeMap }));
+                    });
+                }
             }
         } catch (e) {
             console.error("Fetch Error:", e);
@@ -181,10 +200,21 @@ const NextLeaderDashboard = () => {
                                              className="flex flex-col transition-colors cursor-pointer group/stock"
                                              onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}
                                         >
-                                            <span className="text-[var(--theme-text)] font-black text-xs lg:text-sm group-hover:text-indigo-400 transition-colors truncate flex items-center gap-1">
-                                                {item.stock_name}
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="text-[var(--theme-text)] font-black text-xs lg:text-sm group-hover:text-indigo-400 transition-colors truncate">
+                                                    {item.stock_name}
+                                                </span>
+                                                {(() => {
+                                                    const badge = getStockStatusBadge(stockBadges[item.stock_code]);
+                                                    if (!badge) return null;
+                                                    return (
+                                                        <span className={classNames("text-[9px] px-1 py-0.2 rounded border leading-tight shrink-0", badge.color)}>
+                                                            {badge.label}
+                                                        </span>
+                                                    );
+                                                })()}
                                                 <ArrowUpRight size={11} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400" />
-                                            </span>
+                                            </div>
                                             <span className="text-slate-500 font-mono text-[9px] font-black">{item.stock_code}</span>
                                         </div>
                                     </td>

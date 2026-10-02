@@ -1,6 +1,25 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.64) - 증시 동향 'ETF/ETN 제외' 필터 토글(기본 ON) 구축 완벽 완료 🚫 📈
+## 🚀 최신 업데이트 현황 (v16.65) - 증시동향, Next Leaders, Smart Money 전 화면 종목 상태/경고 배지 연동 완벽 구축 🏷️ 🚨
+
+### 1. 전사 핵심 대시보드 화면 종목 상태(정지/주의/경고/위험/관리) 배지 부착
+- **개선 배경 및 사용자 요청**:
+  - 기존 관심종목/차트 외에 신규 개발된 **실시간 증시동향**, **Next Leaders(차기 주도주)**, **Smart Money(세력 수급 추적)** 대시보드 화면의 종목명 옆에도 거래정지('정'), 투자주의('주'), 투자경고('경'), 투자위험('위'), 관리종목('관') 등의 상태 딱지가 누락되어 투자 위험도 즉각 식별이 어렵던 문제를 해결 요청.
+- **주요 반영 내역**:
+  1. **배지 판별 유틸리티 고도화 (`stockUtils.js`)**:
+     - 기존 KIS 코드 기반(`stockStatus='58'`, `marketWarning='01/02/03'`)뿐만 아니라 네이버 모바일 API의 실시간 증권 필드(`tradeStopType`, `tradableStatus`, `tradableStatusCode`)를 즉각 분석하도록 기능 확장.
+     - 거래정지(`tradeStopType` 존재 또는 `tradableStatus === 'halt'`) 시 즉시 `[정]` 배지 반환.
+  2. **실시간 증시동향 화면 연동 (`MarketCapRankings.jsx`)**:
+     - 네이버 API 응답 객체의 `tradeStopType` 등을 활용하여 추가 지연 없이 종목명 바로 옆에 `[정]`, `[주]`, `[경]` 등의 컬러 배지 실시간 표시.
+  3. **Next Leaders 화면 연동 (`NextLeaderDashboard.jsx`)**:
+     - Next Leader Top 10 추천 종목 로드 시 KIS 시세/상태 API(`fetchStockPrice`)를 병렬 조회하여 각 종목별 `stockBadges`를 상태로 캐싱 및 종목명 옆 배지 렌더링.
+  4. **Smart Money 화면 연동 (`SmartMoneyDashboard.jsx`)**:
+     - '세력 잠행 매집' 및 '90%+ 명예의 전당' 랭킹 리스트 로드 시 `loadBadgesForList`를 통해 KIS 실시간 상태를 로드하여 종목 카드 내 종목명 옆에 상태 배지 표시.
+- **배포 및 검증 완료**:
+  - 프론트엔드 Vite 프로덕션 빌드 및 Docker Nginx 웹 서버 복사 배포 완료.
+  - 증시동향(CMG제약, 금양 등 거래정지 종목 정상 식별), Next Leaders, Smart Money 화면 배지 렌더링 검증 완료.
+
+## 🚀 이전 업데이트 현황 (v16.64) - 증시 동향 'ETF/ETN 제외' 필터 토글(기본 ON) 구축 완벽 완료 🚫 📈
 
 ### 1. 순수 주식 선별을 위한 'ETF/ETN 제외' 옵션 신설
 - **개선 배경 및 사용자 요청**:

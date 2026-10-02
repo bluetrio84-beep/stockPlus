@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchMarketCapRankings, toggleFavorite } from '../api/stockApi';
 import { Search, ChevronLeft, ChevronRight, RefreshCw, Star, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight, Flame, Sparkles, CheckSquare, Square } from 'lucide-react';
 import classNames from 'classnames';
+import { getStockStatusBadge } from '../utils/stockUtils';
 
 const MarketCapRankings = () => {
     const navigate = useNavigate();
@@ -342,6 +343,15 @@ const MarketCapRankings = () => {
                                                         <span className="text-[10px] text-slate-500 font-mono font-bold bg-[var(--theme-bg)] px-1.5 py-0.5 rounded border border-[var(--theme-border)]">
                                                             {stock.itemCode}
                                                         </span>
+                                                        {(() => {
+                                                            const badge = getStockStatusBadge(stock);
+                                                            if (!badge) return null;
+                                                            return (
+                                                                <span className={classNames("text-[10px] px-1.5 py-0.5 rounded border leading-tight shrink-0", badge.color)}>
+                                                                    {badge.label}
+                                                                </span>
+                                                            );
+                                                        })()}
                                                         {stock.sosok !== undefined && (
                                                             <span className={classNames(
                                                                 "text-[9px] font-black px-1.5 py-0.5 rounded border",
