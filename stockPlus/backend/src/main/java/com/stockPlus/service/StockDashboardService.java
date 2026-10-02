@@ -347,4 +347,54 @@ public class StockDashboardService {
     public List<com.stockPlus.domain.YoutubeFeedDto> getYoutubeGallery() {
         return watchlistMapper.findYoutubeGallery(getCurrentUsrId());
     }
+
+    // --- Market Cap Rankings (시가총액 순위 300위 페이징) ---
+    private static final Map<String, Object> marketCapCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, Long> marketCapCacheTime = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public Map<String, Object> getMarketCapRankings(String market, int page, int pageSize) {
+        String cacheKey = (market != null ? market.toUpperCase() : "KOSPI") + "_p" + page + "_s" + pageSize;
+        long now = System.currentTimeMillis();
+        Long cachedTime = marketCapCacheTime.get(cacheKey);
+
+        // 30초 캐싱 (실시간 시세 보장 + 트래픽 최적화)
+        if (cachedTime != null && (now - cachedTime) < 30000 && marketCapCache.containsKey(cacheKey)) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cachedData = (Map<String, Object>) marketCapCache.get(cacheKey);
+            return cachedData;
+        }
+
+        try {
+            String targetMarket = ("KOSDAQ".equalsIgnoreCase(market)) ? "KOSDAQ" : "KOSPI";
+            String urlStr = "https://m.stock.naver.com/api/stocks/marketValue/" + targetMarket + "?page=" + page + "&pageSize=" + pageSize;
+            java.net.URL url = new java.net.URI(urlStr).toURL();
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)");
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+
+            if (conn.getResponseCode() == 200) {
+                java.io.InputStream is = conn.getInputStream();
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> responseData = mapper.readValue(is, Map.class);
+                is.close();
+
+                marketCapCache.put(cacheKey, responseData);
+                marketCapCacheTime.put(cacheKey, now);
+                return responseData;
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch market cap rankings for {}: {}", market, e.getMessage());
+        }
+
+        // 캐시 폴백 또는 빈 응답
+        if (marketCapCache.containsKey(cacheKey)) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> fallback = (Map<String, Object>) marketCapCache.get(cacheKey);
+            return fallback;
+        }
+        return Collections.emptyMap();
+    }
 }

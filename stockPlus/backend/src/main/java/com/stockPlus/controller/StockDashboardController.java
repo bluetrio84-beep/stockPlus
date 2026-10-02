@@ -263,6 +263,20 @@ public class StockDashboardController {
         return dashboardService.getSpecializedReport();
     }
 
+    /**
+     * 시가총액 순위 목록을 조회합니다. (KOSPI / KOSDAQ 지원, 페이지당 50개, 최대 300위)
+     */
+    @GetMapping("/market-cap-rankings")
+    public Map<String, Object> getMarketCapRankings(
+            @RequestParam(defaultValue = "KOSPI") String market,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "50") int pageSize) {
+        // 최대 300위 제한 (page * pageSize <= 300)
+        int validPage = Math.max(1, Math.min(6, page));
+        int validPageSize = Math.max(10, Math.min(100, pageSize));
+        return dashboardService.getMarketCapRankings(market, validPage, validPageSize);
+    }
+
     // --- Notifications (알림) ---
 
     /**

@@ -14,6 +14,7 @@ import AdminFailureManagement from "./components/AdminFailureManagement";
 import AdminAiUsageManagement from "./components/AdminAiUsageManagement";
 import MyPortfolioDashboard from "./components/MyPortfolioDashboard";
 import InvestmentJournal from "./components/InvestmentJournal";
+import MarketCapRankings from "./components/MarketCapRankings";
 import Layout from './components/Layout';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -46,6 +47,7 @@ function App() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/stock/:stockCode" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/summary" element={<ProtectedRoute><WatchlistSummary /></ProtectedRoute>} />
+        <Route path="/market-cap" element={<ProtectedRoute><MarketCapRankings /></ProtectedRoute>} />
         <Route path="/keywords" element={<ProtectedRoute><AiKeywordManager /></ProtectedRoute>} />
         <Route path="/notes" element={<ProtectedRoute><InvestmentJournal /></ProtectedRoute>} />
         
