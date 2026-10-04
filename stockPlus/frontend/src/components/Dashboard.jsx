@@ -13,11 +13,30 @@ function Dashboard() {
   const { stockName: passedName } = location.state || {}; // [v16.40.2] 전달받은 이름 확보
   const { stockCode: stockCodeFromUrl } = useParams();
 
+  // 모든 useState 상태 변수를 최상단에 선언하여 TDZ(Temporal Dead Zone) ReferenceError 방지
   const [displayStocks, setDisplayStocks] = useState([]);
   const [news, setNews] = useState([]);
   const [marketInsight, setMarketInsight] = useState('');
   const [isRefreshingInsight, setIsRefreshingInsight] = useState(false);
   const [specialReport, setSpecialReport] = useState('');
+  const [rankings, setRankings] = useState([]);
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [activeTab, setActiveTab] = useState('home'); 
+  const [watchlistSubTab, setWatchlistSubTab] = useState('list');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [globalMarketMode, setGlobalMarketMode] = useState('UN');
+  const [activeWatchlistTab, setActiveWatchlistTab] = useState(1);
+  const [currentPeriod, setCurrentPeriod] = useState('1D');
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDetailPopup, setShowDetailPopup] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const searchTimeoutRef = useRef(null);
+  const stockUpdatesBuffer = useRef(new Map());
 
   const handleRefreshInsight = async () => {
       setIsRefreshingInsight(true);
@@ -30,10 +49,7 @@ function Dashboard() {
           setIsRefreshingInsight(false);
       }
   };
-  const [rankings, setRankings] = useState([]); // [v13.5] 랭킹 상태 추가
-  const [selectedStock, setSelectedStock] = useState(null);
-  const [activeTab, setActiveTab] = useState('home'); 
-  
+
   // [v16.73] 내비게이션 시 이름과 코드를 즉시 차트에 박아넣는 초기화 로직 (URL 파라미터 및 쿼리스트링 동시 지원)
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -65,23 +81,6 @@ function Dashboard() {
       setActiveTab('watchlist');
     }
   }, [location]);
-
-  const [watchlistSubTab, setWatchlistSubTab] = useState('list');
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [globalMarketMode, setGlobalMarketMode] = useState('UN');
-  const [activeWatchlistTab, setActiveWatchlistTab] = useState(1);
-  const [currentPeriod, setCurrentPeriod] = useState('1D');
-  const [isLoading, setIsLoading] = useState(true);
-  const [showDetailPopup, setShowDetailPopup] = useState(false);
-  
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const searchTimeoutRef = useRef(null);
-  const stockUpdatesBuffer = useRef(new Map());
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const renderFormattedText = (text) => {
     if (!text) return null;
