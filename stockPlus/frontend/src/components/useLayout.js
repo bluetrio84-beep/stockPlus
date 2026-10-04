@@ -31,13 +31,19 @@ export const useLayout = () => {
 
     const loadMarketIndices = useCallback(async () => {
         try {
-            const [kospi, kosdaq] = await Promise.all([
+            const [kospi, kosdaq, usdkrw, jpykrw, gold] = await Promise.all([
                 fetchStockPrice('0001', 'IDX'),
-                fetchStockPrice('1001', 'IDX')
+                fetchStockPrice('1001', 'IDX'),
+                fetchStockPrice('FX_USDKRW', 'FX'),
+                fetchStockPrice('FX_JPYKRW', 'FX'),
+                fetchStockPrice('CM_GOLD', 'CM')
             ]);
             setMarketIndices([
-                { name: 'KOSPI', price: kospi?.currentPrice || '0', change: kospi?.change || '0', rate: kospi?.changeRate || '0' },
-                { name: 'KOSDAQ', price: kosdaq?.currentPrice || '0', change: kosdaq?.change || '0', rate: kosdaq?.changeRate || '0' }
+                { name: 'KOSPI', code: '0001', fullName: '코스피', price: kospi?.currentPrice || '0', change: kospi?.change || '0', rate: kospi?.changeRate || '0' },
+                { name: 'KOSDAQ', code: '1001', fullName: '코스닥', price: kosdaq?.currentPrice || '0', change: kosdaq?.change || '0', rate: kosdaq?.changeRate || '0' },
+                { name: 'USD/KRW', code: 'FX_USDKRW', fullName: '원/달러 환율 (달러)', isMacro: true, price: usdkrw?.currentPrice || '0', change: usdkrw?.change || '0', rate: usdkrw?.changeRate || '0' },
+                { name: '100엔', code: 'FX_JPYKRW', fullName: '원/엔 환율 (엔화)', isMacro: true, price: jpykrw?.currentPrice || '0', change: jpykrw?.change || '0', rate: jpykrw?.changeRate || '0' },
+                { name: '국제금', code: 'CM_GOLD', fullName: '국제금 시세 (금시세)', isMacro: true, prefix: '$', price: gold?.currentPrice || '0', change: gold?.change || '0', rate: gold?.changeRate || '0' }
             ]);
         } catch (error) {}
     }, []);

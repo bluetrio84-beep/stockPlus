@@ -114,12 +114,18 @@ const LayoutMobile = ({ logic }) => {
                 </div>
             </header>
 
-            <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-4 py-1.5 shrink-0 overflow-hidden transition-colors duration-500">
-                <div className="flex items-center justify-start gap-5 transition-colors">
+            <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-3 py-1.5 shrink-0 overflow-x-auto no-scrollbar transition-colors duration-500">
+                <div className="flex items-center justify-start gap-4 transition-colors min-w-max">
                     {marketIndices.map(index => (
-                        <div key={index.name} className="flex items-center gap-2 transition-colors">
+                        <div 
+                            key={index.name} 
+                            onClick={() => index.code && navigate(`/stock/${index.code}`, { state: { stockName: index.fullName || index.name } })}
+                            className="flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 py-0.5 px-1 rounded"
+                        >
                             <span className="text-[10px] font-black text-slate-500 uppercase transition-colors">{index.name}</span>
-                            <span className="text-[11px] font-black font-mono text-[var(--theme-text)] transition-colors">{parseFloat(index.price || 0).toLocaleString()}</span>
+                            <span className="text-[11px] font-black font-mono text-[var(--theme-text)] transition-colors">
+                                {index.prefix || ''}{parseFloat(index.price || 0).toLocaleString(undefined, index.isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}
+                            </span>
                             <span className={classNames("text-[9px] font-black font-mono flex items-center gap-0.5 transition-colors", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                 {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                             </span>

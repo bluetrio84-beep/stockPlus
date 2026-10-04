@@ -72,6 +72,7 @@ public class KisRealtimeService {
         connectionDisposable = client.execute(URI.create("ws://ops.koreainvestment.com:21000"), session -> {
             List<String> subMsgs = watchlistMapper.findAllGlobal().stream()
                 .filter(item -> Boolean.TRUE.equals(item.getIsFavorite()))
+                .filter(item -> item.getStockCode() != null && !item.getStockCode().startsWith("FX_") && !item.getStockCode().startsWith("CM_"))
                 .flatMap(item -> Arrays.asList(
                     buildMsg(approvalKey, item.getStockCode(), "H0UNCNT0"),
                     buildMsg(approvalKey, item.getStockCode(), "H0UNANC0")

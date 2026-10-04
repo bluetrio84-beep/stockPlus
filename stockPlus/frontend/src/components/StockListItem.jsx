@@ -10,6 +10,18 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
     const sign = stock.priceSign;
     const badge = getStockStatusBadge(stock);
 
+    const isMacro = stock.code && (stock.code.startsWith('FX_') || stock.code.startsWith('CM_') || stock.code.includes('USD') || stock.code.includes('JPY') || stock.code.includes('GOLD'));
+    const formattedPrice = stock.price 
+        ? (isMacro || stock.price % 1 !== 0 
+            ? Number(stock.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+            : Number(stock.price).toLocaleString()) 
+        : '-';
+    const formattedChange = stock.change !== undefined && stock.change !== null
+        ? (isMacro || stock.change % 1 !== 0
+            ? Math.abs(stock.change).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : Math.abs(stock.change).toLocaleString())
+        : '0';
+
     return (
         <div 
             onClick={() => onStockClick && onStockClick(stock)} 
@@ -36,16 +48,21 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                         <span className="truncate" title={stock.name}>{stock.name}</span>
                         {isKosdaq(stock) && <span className="text-[var(--theme-point)] shrink-0">*</span>}
                         {badge && <span className={classNames("text-[10px] px-1 rounded border leading-tight shrink-0", badge.color)}>{badge.label}</span>}
+                        {isMacro && (
+                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 shrink-0">
+                                {stock.code.startsWith('CM_') ? '원자재' : '환율'}
+                            </span>
+                        )}
                     </div>
                     <div className="text-xs text-slate-500 opacity-80">{stock.code}</div>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-0.5 shrink-0 text-right whitespace-nowrap min-w-[110px]">
-                <div className={classNames("text-xl font-bold tracking-tight text-right whitespace-nowrap", getColorClass(sign, stock.change))}>
-                    {stock.isExpected ? '*' : ''}{stock.price ? stock.price.toLocaleString() : '-'}
+                <div className={classNames("text-xl font-bold tracking-tight text-right whitespace-nowrap font-mono", getColorClass(sign, stock.change))}>
+                    {stock.isExpected ? '*' : ''}{formattedPrice}
                 </div>
-                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5 justify-end text-right whitespace-nowrap", getColorClass(sign, stock.change))}>
-                     {getSignSymbol(sign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
+                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5 justify-end text-right whitespace-nowrap font-mono", getColorClass(sign, stock.change))}>
+                     {getSignSymbol(sign, stock.change)} {formattedChange} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
                 </div>
             </div>
         </div>

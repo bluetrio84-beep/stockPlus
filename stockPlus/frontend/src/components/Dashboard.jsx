@@ -34,18 +34,26 @@ function Dashboard() {
   const [selectedStock, setSelectedStock] = useState(null);
   const [activeTab, setActiveTab] = useState('home'); 
   
-  // [v16.40.2] 내비게이션 시 이름과 코드를 즉시 차트에 박아넣는 초기화 로직
+  // [v16.73] 내비게이션 시 이름과 코드를 즉시 차트에 박아넣는 초기화 로직 (URL 파라미터 및 쿼리스트링 동시 지원)
   useEffect(() => {
-    if (stockCodeFromUrl && passedName) {
-      setSelectedStock({
-        id: stockCodeFromUrl,
-        code: stockCodeFromUrl,
-        name: passedName,
-        exchangeCode: globalMarketMode,
-        chartData: []
+    const queryParams = new URLSearchParams(location.search);
+    const targetCode = stockCodeFromUrl || queryParams.get('code');
+    const targetName = passedName || queryParams.get('name');
+
+    if (targetCode) {
+      setSelectedStock(prev => {
+        if (prev && prev.code === targetCode && prev.chartData && prev.chartData.length > 0) return prev;
+        return {
+          id: targetCode,
+          code: targetCode,
+          name: targetName || prev?.name || targetCode,
+          exchangeCode: globalMarketMode,
+          chartData: []
+        };
       });
+      setActiveTab('home');
     }
-  }, [stockCodeFromUrl, passedName]);
+  }, [stockCodeFromUrl, passedName, location.search, globalMarketMode]);
 
   // [v13.9] URL 파라미터 기반 탭 설정 로직
   useEffect(() => {

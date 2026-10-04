@@ -23,6 +23,12 @@ const ChartWidgetDesktop = (props) => {
   const ma20SeriesRef = useRef(null);
   const ma60SeriesRef = useRef(null);
 
+  const isMacro = stock?.code?.startsWith('FX_') || stock?.code?.startsWith('CM_');
+  const isMacroRef = useRef(isMacro);
+  useEffect(() => {
+    isMacroRef.current = isMacro;
+  }, [isMacro]);
+
   // [v13.9.1] 테마 변경 시 딜레이 없이 즉각 업데이트하는 Effect
   useEffect(() => {
     if (activeTab !== 'chart' || !chartRef.current) return;
@@ -51,6 +57,7 @@ const ChartWidgetDesktop = (props) => {
     tooltip.style.width = '140px';
     container.appendChild(tooltip);
 
+    const currentIsMacro = isMacroRef.current;
     const chart = createChart(container, {
       layout: { 
         background: { type: ColorType.Solid, color: colors.bg }, 
@@ -64,7 +71,7 @@ const ChartWidgetDesktop = (props) => {
       height: container.clientHeight || 400,
       timeScale: { borderColor: colors.border, timeVisible: true, secondsVisible: false, barSpacing: 6, fixRightEdge: true },
       rightPriceScale: { borderColor: colors.border, autoScale: true, entireTextOnly: true, scaleMargins: { top: 0.15, bottom: 0.35 } },
-      localization: { priceFormatter: price => price ? price.toLocaleString() : '' },
+      localization: { priceFormatter: price => price ? price.toLocaleString(undefined, currentIsMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '' },
     });
 
     chart.subscribeCrosshairMove(param => {
@@ -77,14 +84,22 @@ const ChartWidgetDesktop = (props) => {
                 tooltip.style.display = 'block';
                 const dateStr = currentPeriod === '5m' ? new Date(param.time * 1000).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(param.time * 1000).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 const colorClass = data.close >= data.open ? 'text-trade-up' : 'text-trade-down';
-                tooltip.innerHTML = `<div class="font-black text-slate-500 mb-1.5 border-b border-[var(--theme-border)] pb-1 transition-colors">${dateStr}</div><div class="grid grid-cols-2 gap-x-2 gap-y-1"><span class="text-slate-500 font-bold">시가</span><span class="text-right font-black text-[var(--theme-text)]">${(data.open || 0).toLocaleString()}</span><span class="text-slate-500 font-bold">고가</span><span class="text-right font-black text-trade-up">${(data.high || 0).toLocaleString()}</span><span class="text-slate-500 font-bold">저가</span><span class="text-right font-black text-trade-down">${(data.low || 0).toLocaleString()}</span><span class="text-slate-500 font-bold">종가</span><span class="text-right font-black ${colorClass}">${(data.close || 0).toLocaleString()}</span><span class="text-slate-500 font-bold border-t border-[var(--theme-border)] mt-1 pt-1">거래</span><span class="text-right font-black text-[var(--theme-text)] border-t border-[var(--theme-border)] mt-1 pt-1">${volData ? (volData.value || 0).toLocaleString() : '-'}</span></div>`;
+                const fmt = val => (val || 0).toLocaleString(undefined, isMacroRef.current ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {});
+                tooltip.innerHTML = `<div class="font-black text-slate-500 mb-1.5 border-b border-[var(--theme-border)] pb-1 transition-colors">${dateStr}</div><div class="grid grid-cols-2 gap-x-2 gap-y-1"><span class="text-slate-500 font-bold">시가</span><span class="text-right font-black text-[var(--theme-text)]">${fmt(data.open)}</span><span class="text-slate-500 font-bold">고가</span><span class="text-right font-black text-trade-up">${fmt(data.high)}</span><span class="text-slate-500 font-bold">저가</span><span class="text-right font-black text-trade-down">${fmt(data.low)}</span><span class="text-slate-500 font-bold">종가</span><span class="text-right font-black ${colorClass}">${fmt(data.close)}</span><span class="text-slate-500 font-bold border-t border-[var(--theme-border)] mt-1 pt-1">거래</span><span class="text-right font-black text-[var(--theme-text)] border-t border-[var(--theme-border)] mt-1 pt-1">${volData ? (volData.value || 0).toLocaleString() : '-'}</span></div>`;
                 const y = param.point.y; let left = param.point.x + 15; if (left > container.clientWidth - 150) left = param.point.x - 155;
                 tooltip.style.left = left + 'px'; tooltip.style.top = y + 15 + 'px';
             } else tooltip.style.display = 'none';
         }
     });
 
-    candleSeriesRef.current = chart.addCandlestickSeries({ upColor: '#ef4444', downColor: '#3b82f6', borderVisible: false, wickUpColor: '#ef4444', wickDownColor: '#3b82f6', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+    candleSeriesRef.current = chart.addCandlestickSeries({ 
+        upColor: '#ef4444', 
+        downColor: '#3b82f6', 
+        borderVisible: false, 
+        wickUpColor: '#ef4444', 
+        wickDownColor: '#3b82f6', 
+        priceFormat: { type: 'price', precision: currentIsMacro ? 2 : 0, minMove: currentIsMacro ? 0.01 : 1 } 
+    });
     volumeSeriesRef.current = chart.addHistogramSeries({ color: 'rgba(148, 163, 184, 0.2)', priceFormat: { type: 'volume' }, priceScaleId: 'volume_scale' });
     ma5SeriesRef.current = chart.addLineSeries({ color: '#22c55e', lineWidth: 1, lastValueVisible: false });
     ma10SeriesRef.current = chart.addLineSeries({ color: '#d946ef', lineWidth: 1, lastValueVisible: false });
@@ -99,6 +114,13 @@ const ChartWidgetDesktop = (props) => {
 
   useEffect(() => {
     if (activeTab !== 'chart' || !chartRef.current || !candleSeriesRef.current) return;
+    const precision = isMacro ? 2 : 0;
+    const minMove = isMacro ? 0.01 : 1;
+    candleSeriesRef.current.applyOptions({ priceFormat: { type: 'price', precision, minMove } });
+    chartRef.current.applyOptions({
+        localization: { priceFormatter: price => price ? price.toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '' }
+    });
+
     currentCandleRef.current = null;
     candleSeriesRef.current.setData([]);
     volumeSeriesRef.current.setData([]);
@@ -111,9 +133,9 @@ const ChartWidgetDesktop = (props) => {
         if (ma20SeriesRef.current) ma20SeriesRef.current.setData(smaData.ma20);
         if (ma60SeriesRef.current) ma60SeriesRef.current.setData(smaData.ma60);
         currentCandleRef.current = { ...processedChartData[processedChartData.length - 1] };
-        chartRef.current.timeScale().setVisibleLogicalRange({ from: processedChartData.length - 35, to: processedChartData.length });
+        chartRef.current.timeScale().setVisibleLogicalRange({ from: Math.max(0, processedChartData.length - 35), to: processedChartData.length });
     }
-  }, [processedChartData, activeTab]);
+  }, [processedChartData, activeTab, isMacro]);
 
   useEffect(() => {
     if (activeTab !== 'chart' || !candleSeriesRef.current || !currentCandleRef.current || !stock.price || stock.isExpected) return;
@@ -158,24 +180,32 @@ const ChartWidgetDesktop = (props) => {
                     </span>
                 </h2>
                 <div className={classNames("text-2xl font-bold mt-1 transition-colors", getColorClass(stock.priceSign, stock.change))}>
-                    {stock.price ? stock.price.toLocaleString() : '-'}
-                    <span className="text-sm ml-2 font-medium transition-colors">{getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
+                    {stock.price ? parseFloat(stock.price).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '-'}
+                    <span className="text-sm ml-2 font-medium transition-colors">
+                        {getSignSymbol(stock.priceSign, stock.change)} {Math.abs(parseFloat(stock.change || 0)).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})} ({Math.abs(parseFloat(stock.changeRate || 0)).toFixed(2)}%)
+                    </span>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-2 text-[11px] transition-colors">
                 <div className="flex items-center gap-4 transition-colors">
-                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">전일</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.prevClose || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">시가</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.open || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-up opacity-80">고가</span><span className="font-bold text-trade-up transition-colors">{parseFloat(stock.high || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-down opacity-80">저가</span><span className="font-bold text-trade-down transition-colors">{parseFloat(stock.low || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">거래량</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.volume || 0).toLocaleString()}</span></div>
+                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">전일</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.prevClose || 0).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}</span></div>
+                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">시가</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.open || 0).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}</span></div>
+                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-up opacity-80">고가</span><span className="font-bold text-trade-up transition-colors">{parseFloat(stock.high || 0).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}</span></div>
+                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-down opacity-80">저가</span><span className="font-bold text-trade-down transition-colors">{parseFloat(stock.low || 0).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}</span></div>
+                    {!isMacro && <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">거래량</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.volume || 0).toLocaleString()}</span></div>}
                 </div>
-                <div className="flex items-center gap-4 border-t border-[var(--theme-border)]/50 pt-1.5 transition-colors">
-                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">시총</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.marketCap || 0).toLocaleString()}억</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">상장주식</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.listedShares || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-up opacity-60">52주 최고</span><span className="font-bold text-trade-up transition-colors">{parseFloat(stock.high52w || 0).toLocaleString()}</span></div>
-                    <div className="flex flex-col items-end transition-colors"><span className="text-trade-down opacity-60">52주 최저</span><span className="font-bold text-trade-down transition-colors">{parseFloat(stock.low52w || 0).toLocaleString()}</span></div>
-                </div>
+                {!isMacro ? (
+                    <div className="flex items-center gap-4 border-t border-[var(--theme-border)]/50 pt-1.5 transition-colors">
+                        <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">시총</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.marketCap || 0).toLocaleString()}억</span></div>
+                        <div className="flex flex-col items-end transition-colors"><span className="text-slate-500 opacity-80">상장주식</span><span className="font-bold text-[var(--theme-text)] transition-colors">{parseFloat(stock.listedShares || 0).toLocaleString()}</span></div>
+                        <div className="flex flex-col items-end transition-colors"><span className="text-trade-up opacity-60">52주 최고</span><span className="font-bold text-trade-up transition-colors">{parseFloat(stock.high52w || 0).toLocaleString()}</span></div>
+                        <div className="flex flex-col items-end transition-colors"><span className="text-trade-down opacity-60">52주 최저</span><span className="font-bold text-trade-down transition-colors">{parseFloat(stock.low52w || 0).toLocaleString()}</span></div>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 border-t border-[var(--theme-border)]/50 pt-1.5 transition-colors">
+                        <span className="text-[10px] text-slate-400 font-bold">글로벌 매크로 마켓 인덱스 실시간 시세 연동</span>
+                    </div>
+                )}
             </div>
       </div>
       <div className="flex bg-[var(--theme-header)] border-b border-[var(--theme-border)] shrink-0 transition-colors duration-500">

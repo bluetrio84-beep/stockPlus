@@ -194,12 +194,19 @@ const LayoutDesktop = ({ logic }) => {
                 </aside>
 
                 <div className="flex-1 flex flex-col min-0 bg-[var(--theme-bg)] relative transition-colors duration-500">
-                    <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-6 py-2 flex items-center gap-8 overflow-hidden shrink-0 transition-colors duration-500">
-                        <div className="flex gap-8 shrink-0 transition-colors">
+                    <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-6 py-2 flex items-center gap-8 overflow-x-auto no-scrollbar shrink-0 transition-colors duration-500">
+                        <div className="flex gap-6 shrink-0 transition-colors">
                             {marketIndices.map(index => (
-                                <div key={index.name} className="flex items-center gap-2 whitespace-nowrap min-w-fit transition-colors">
-                                    <span className="text-xs font-black text-slate-500 transition-colors">{index.name}</span>
-                                    <span className="text-sm font-bold font-mono text-[var(--theme-text)] transition-colors">{parseFloat(index.price || 0).toLocaleString()}</span>
+                                <div 
+                                    key={index.name} 
+                                    onClick={() => index.code && navigate(`/stock/${index.code}`, { state: { stockName: index.fullName || index.name } })}
+                                    className="flex items-center gap-2 whitespace-nowrap min-w-fit transition-colors cursor-pointer hover:bg-slate-700/20 px-2 py-0.5 rounded-lg active:scale-95 group"
+                                    title={`${index.fullName || index.name} 차트 보기`}
+                                >
+                                    <span className="text-xs font-black text-slate-500 group-hover:text-[var(--theme-point)] transition-colors">{index.name}</span>
+                                    <span className="text-sm font-bold font-mono text-[var(--theme-text)] transition-colors">
+                                        {index.prefix || ''}{parseFloat(index.price || 0).toLocaleString(undefined, index.isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}
+                                    </span>
                                     <span className={classNames("text-[10px] font-bold font-mono transition-colors", { "text-trade-up": parseFloat(index.change) > 0, "text-trade-down": parseFloat(index.change) < 0, "text-slate-500": parseFloat(index.change) === 0 })}>
                                         {parseFloat(index.change) > 0 ? '▲' : (parseFloat(index.change) < 0 ? '▼' : '')} {Math.abs(parseFloat(index.change || 0)).toFixed(2)} ({index.rate}%)
                                     </span>

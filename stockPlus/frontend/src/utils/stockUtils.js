@@ -42,6 +42,17 @@ export const getPriceBgClass = (sign) => '';
 // 종목 상태 배지 정보를 반환합니다.
 export const getStockStatusBadge = (input) => {
     if (!input) return null;
+
+    // [v16.73] 외환 / 원자재 매크로 심볼 뱃지
+    const symCode = typeof input === 'object' ? (input.code || input.stockCode || '') : String(input);
+    const mType = typeof input === 'object' ? (input.marketType || input.market_type || '') : '';
+    if (symCode.startsWith('FX_') || mType === 'FX') {
+        return { label: '환율', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-black' };
+    }
+    if (symCode.startsWith('CM_') || mType === 'COMMODITY' || mType === 'CM') {
+        return { label: '원자재', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-black' };
+    }
+
     let statusCode = '';
     let warnCode = '';
     let isHalted = false;

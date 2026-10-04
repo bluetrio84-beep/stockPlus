@@ -23,6 +23,12 @@ const ChartWidgetMobile = (props) => {
   const ma20SeriesRef = useRef(null);
   const ma60SeriesRef = useRef(null);
 
+  const isMacro = stock?.code?.startsWith('FX_') || stock?.code?.startsWith('CM_');
+  const isMacroRef = useRef(isMacro);
+  useEffect(() => {
+    isMacroRef.current = isMacro;
+  }, [isMacro]);
+
   // [v13.9.1] 테마 변경 시 딜레이 없이 즉각 업데이트 (모바일)
   useEffect(() => {
     if (activeTab !== 'chart' || !chartRef.current) return;
@@ -51,6 +57,7 @@ const ChartWidgetMobile = (props) => {
     tooltip.style.width = '130px';
     container.appendChild(tooltip);
 
+    const currentIsMacro = isMacroRef.current;
     const chart = createChart(container, {
       layout: { 
         background: { type: ColorType.Solid, color: colors.bg }, 
@@ -66,7 +73,7 @@ const ChartWidgetMobile = (props) => {
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true },
       timeScale: { borderColor: colors.border, timeVisible: true, secondsVisible: false, barSpacing: 6, fixRightEdge: true },
       rightPriceScale: { borderColor: colors.border, autoScale: true, entireTextOnly: true, scaleMargins: { top: 0.15, bottom: 0.35 } },
-      localization: { priceFormatter: price => price ? price.toLocaleString() : '' },
+      localization: { priceFormatter: price => price ? price.toLocaleString(undefined, currentIsMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '' },
     });
 
     chart.subscribeCrosshairMove(param => {
@@ -78,17 +85,18 @@ const ChartWidgetMobile = (props) => {
             if (data) {
                 tooltip.style.display = 'block';
                 const dateStr = currentPeriod === '5m' ? new Date(param.time * 1000).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(param.time * 1000).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' });
+                const fmt = val => (val || 0).toLocaleString(undefined, isMacroRef.current ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {});
                 
                 tooltip.innerHTML = `
                     <div class="font-black text-slate-500 mb-1.5 border-b border-[var(--theme-border)] pb-1 flex justify-between items-center transition-colors">
                         <span>${dateStr}</span>
                     </div>
                     <div class="space-y-0.5 transition-colors">
-                        <div class="flex justify-between items-center transition-colors"><span className="text-slate-500 font-bold">시</span><span className="font-black text-[var(--theme-text)] opacity-80">${(data.open || 0).toLocaleString()}</span></div>
-                        <div class="flex justify-between items-center transition-colors"><span className="text-trade-up/80 font-bold">고</span><span className="font-black text-trade-up">${(data.high || 0).toLocaleString()}</span></div>
-                        <div class="flex justify-between items-center transition-colors"><span className="text-trade-down/80 font-bold">저</span><span className="font-black text-trade-down">${(data.low || 0).toLocaleString()}</span></div>
-                        <div class="flex justify-between items-center border-t border-[var(--theme-border)]/30 mt-1 pt-1 transition-colors"><span className="text-slate-500 font-bold">종</span><span className="font-black ${data.close >= data.open ? 'text-trade-up' : 'text-trade-down'}">${(data.close || 0).toLocaleString()}</span></div>
-                        <div class="flex justify-between items-center transition-colors"><span className="text-slate-500 font-bold">거</span><span className="font-black text-[var(--theme-text)] opacity-90">${volData ? (volData.value || 0).toLocaleString() : '-'}</span></div>
+                        <div class="flex justify-between items-center transition-colors"><span class="text-slate-500 font-bold">시</span><span class="font-black text-[var(--theme-text)] opacity-80">${fmt(data.open)}</span></div>
+                        <div class="flex justify-between items-center transition-colors"><span class="text-trade-up/80 font-bold">고</span><span class="font-black text-trade-up">${fmt(data.high)}</span></div>
+                        <div class="flex justify-between items-center transition-colors"><span class="text-trade-down/80 font-bold">저</span><span class="font-black text-trade-down">${fmt(data.low)}</span></div>
+                        <div class="flex justify-between items-center border-t border-[var(--theme-border)]/30 mt-1 pt-1 transition-colors"><span class="text-slate-500 font-bold">종</span><span class="font-black ${data.close >= data.open ? 'text-trade-up' : 'text-trade-down'}">${fmt(data.close)}</span></div>
+                        <div class="flex justify-between items-center transition-colors"><span class="text-slate-500 font-bold">거</span><span class="font-black text-[var(--theme-text)] opacity-90">${volData ? (volData.value || 0).toLocaleString() : '-'}</span></div>
                     </div>
                 `;
                 const y = param.point.y; let left = param.point.x + 10; if (left > container.clientWidth - 140) left = param.point.x - 145;
@@ -97,7 +105,14 @@ const ChartWidgetMobile = (props) => {
         }
     });
 
-    candleSeriesRef.current = chart.addCandlestickSeries({ upColor: '#ef4444', downColor: '#3b82f6', borderVisible: false, wickUpColor: '#ef4444', wickDownColor: '#3b82f6', priceFormat: { type: 'price', precision: 0, minMove: 1 } });
+    candleSeriesRef.current = chart.addCandlestickSeries({ 
+        upColor: '#ef4444', 
+        downColor: '#3b82f6', 
+        borderVisible: false, 
+        wickUpColor: '#ef4444', 
+        wickDownColor: '#3b82f6', 
+        priceFormat: { type: 'price', precision: currentIsMacro ? 2 : 0, minMove: currentIsMacro ? 0.01 : 1 } 
+    });
     volumeSeriesRef.current = chart.addHistogramSeries({ color: 'rgba(148, 163, 184, 0.2)', priceFormat: { type: 'volume' }, priceScaleId: 'volume_scale' });
     ma5SeriesRef.current = chart.addLineSeries({ color: '#22c55e', lineWidth: 1, lastValueVisible: false });
     ma10SeriesRef.current = chart.addLineSeries({ color: '#d946ef', lineWidth: 1, lastValueVisible: false });
@@ -112,6 +127,13 @@ const ChartWidgetMobile = (props) => {
 
   useEffect(() => {
     if (activeTab !== 'chart' || !chartRef.current || !candleSeriesRef.current) return;
+    const precision = isMacro ? 2 : 0;
+    const minMove = isMacro ? 0.01 : 1;
+    candleSeriesRef.current.applyOptions({ priceFormat: { type: 'price', precision, minMove } });
+    chartRef.current.applyOptions({
+        localization: { priceFormatter: price => price ? price.toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '' }
+    });
+
     currentCandleRef.current = null;
     candleSeriesRef.current.setData([]);
     volumeSeriesRef.current.setData([]);
@@ -124,9 +146,9 @@ const ChartWidgetMobile = (props) => {
         if (ma20SeriesRef.current) ma20SeriesRef.current.setData(smaData.ma20);
         if (ma60SeriesRef.current) ma60SeriesRef.current.setData(smaData.ma60);
         currentCandleRef.current = { ...processedChartData[processedChartData.length - 1] };
-        chartRef.current.timeScale().setVisibleLogicalRange({ from: processedChartData.length - 35, to: processedChartData.length });
+        chartRef.current.timeScale().setVisibleLogicalRange({ from: Math.max(0, processedChartData.length - 35), to: processedChartData.length });
     }
-  }, [processedChartData, activeTab]);
+  }, [processedChartData, activeTab, isMacro]);
 
   useEffect(() => {
     if (activeTab !== 'chart' || !candleSeriesRef.current || !currentCandleRef.current || !stock.price || stock.isExpected) return;
@@ -171,8 +193,10 @@ const ChartWidgetMobile = (props) => {
                     </span>
                 </h2>
                 <div className={classNames("text-xl font-black tabular-nums tracking-tight mt-0.5 transition-colors", getColorClass(stock.priceSign, stock.change))}>
-                    {stock.price ? stock.price.toLocaleString() : '-'}
-                    <span className="text-xs ml-2 font-bold transition-colors">{getSignSymbol(stock.priceSign, stock.change)} {Math.abs(stock.change || 0).toLocaleString()} ({Math.abs(stock.changeRate || 0)}%)</span>
+                    {stock.price ? parseFloat(stock.price).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {}) : '-'}
+                    <span className="text-xs ml-2 font-bold transition-colors">
+                        {getSignSymbol(stock.priceSign, stock.change)} {Math.abs(parseFloat(stock.change || 0)).toLocaleString(undefined, isMacro ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})} ({Math.abs(parseFloat(stock.changeRate || 0)).toFixed(2)}%)
+                    </span>
                 </div>
             </div>
       </div>

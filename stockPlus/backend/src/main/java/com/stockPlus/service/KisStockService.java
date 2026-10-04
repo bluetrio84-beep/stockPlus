@@ -32,6 +32,7 @@ public class KisStockService {
     }
 
     public Mono<StockPriceDto> fetchUnifiedCurrentPrice(final String stockCode, final String exchangeCode) {
+        if (isMacroSymbol(stockCode)) return fetchMacroCurrentPrice(stockCode);
         if ("IDX".equals(exchangeCode)) return fetchIndexCurrentPrice(stockCode);
         if ("UN".equals(exchangeCode)) {
             return fetchCurrentPriceInternal(stockCode, "UN", "UN");
@@ -107,7 +108,131 @@ public class KisStockService {
         });
     }
 
+    public boolean isMacroSymbol(String stockCode) {
+        if (stockCode == null) return false;
+        return stockCode.startsWith("FX_") || stockCode.startsWith("CM_") || "USDKRW".equals(stockCode) || "JPYKRW".equals(stockCode) || "GOLD".equals(stockCode);
+    }
+
+    private Mono<StockPriceDto> fetchMacroCurrentPrice(String stockCode) {
+        String category = stockCode.startsWith("CM_") ? "metals" : "exchange";
+        String reutersCode = "CM_GOLD".equals(stockCode) ? "GCcv1" : stockCode;
+        String uri = "https://m.stock.naver.com/front-api/marketIndex/prices?category=" + category + "&reutersCode=" + reutersCode + "&page=1&pageSize=10";
+
+        return webClientBuilder.build().get()
+                .uri(uri)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(json -> {
+                    try {
+                        JsonNode root = objectMapper.readTree(json);
+                        JsonNode result = root.path("result");
+                        if (result.isArray() && result.size() > 0) {
+                            JsonNode item = result.get(0);
+                            String close = item.path("closePrice").asText("0").replace(",", "");
+                            String diff = item.path("fluctuations").asText("0").replace(",", "");
+                            String rate = item.path("fluctuationsRatio").asText("0.00").replace(",", "");
+                            String open = item.path("openPrice").asText(close).replace(",", "");
+                            String high = item.path("highPrice").asText(close).replace(",", "");
+                            String low = item.path("lowPrice").asText(close).replace(",", "");
+
+                            String stockName = "원/달러 환율 (USD/KRW)";
+                            String marketName = "FX";
+                            if ("FX_JPYKRW".equals(stockCode)) {
+                                stockName = "원/엔 환율 (100엔당)";
+                            } else if ("CM_GOLD".equals(stockCode)) {
+                                stockName = "국제금 시세 (USD/OZS)";
+                                marketName = "COMMODITY";
+                            }
+
+                            String sign = "3";
+                            try {
+                                double d = Double.parseDouble(diff);
+                                if (d > 0) sign = "2";
+                                else if (d < 0) sign = "5";
+                            } catch (Exception ignored) {}
+
+                            return StockPriceDto.builder()
+                                    .stockCode(stockCode)
+                                    .stockName(stockName)
+                                    .marketName(marketName)
+                                    .currentPrice(close)
+                                    .change(diff)
+                                    .changeRate(rate)
+                                    .priceSign(sign)
+                                    .open(open)
+                                    .high(high)
+                                    .low(low)
+                                    .volume("0")
+                                    .exchangeCode(marketName)
+                                    .build();
+                        }
+                    } catch (Exception e) {
+                        log.error("Macro Price Parse Error for {}: {}", stockCode, e.getMessage());
+                    }
+                    return StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build();
+                })
+                .onErrorResume(e -> Mono.just(StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build()));
+    }
+
+    private Mono<List<StockChartDto>> fetchMacroHistoryChart(String stockCode, String period) {
+        String category = stockCode.startsWith("CM_") ? "metals" : "exchange";
+        String reutersCode = "CM_GOLD".equals(stockCode) ? "GCcv1" : stockCode;
+        String uri = "https://m.stock.naver.com/front-api/marketIndex/prices?category=" + category + "&reutersCode=" + reutersCode + "&page=1&pageSize=60";
+
+        return webClientBuilder.build().get()
+                .uri(uri)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(json -> {
+                    try {
+                        List<StockChartDto> list = new ArrayList<>();
+                        JsonNode root = objectMapper.readTree(json);
+                        JsonNode result = root.path("result");
+                        ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+                        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                        if (result.isArray()) {
+                            for (JsonNode item : result) {
+                                String localTradedAt = item.path("localTradedAt").asText("");
+                                if (localTradedAt.isEmpty()) continue;
+                                String dateStr = localTradedAt.length() >= 10 ? localTradedAt.substring(0, 10) : localTradedAt;
+                                LocalDate ld = LocalDate.parse(dateStr, df);
+                                long ts = ld.atStartOfDay(seoulZone).toInstant().getEpochSecond();
+
+                                String c = item.path("closePrice").asText("0").replace(",", "");
+                                String o = item.path("openPrice").asText(c).replace(",", "");
+                                String h = item.path("highPrice").asText(c).replace(",", "");
+                                String l = item.path("lowPrice").asText(c).replace(",", "");
+
+                                if ("0".equals(o)) o = c;
+                                if ("0".equals(h)) h = c;
+                                if ("0".equals(l)) l = c;
+
+                                list.add(StockChartDto.builder()
+                                        .time(ts)
+                                        .date(dateStr)
+                                        .open(o)
+                                        .high(h)
+                                        .low(l)
+                                        .close(c)
+                                        .volume("0")
+                                        .build());
+                            }
+                        }
+                        Collections.reverse(list); // 과거부터 최신순
+                        return list;
+                    } catch (Exception e) {
+                        log.error("Macro Chart Parse Error for {}: {}", stockCode, e.getMessage());
+                        return Collections.<StockChartDto>emptyList();
+                    }
+                })
+                .onErrorResume(e -> Mono.just(Collections.<StockChartDto>emptyList()));
+    }
+
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
+        if (isMacroSymbol(stockCode)) return fetchMacroHistoryChart(stockCode, period);
         if ("IDX".equals(exchangeCode)) return fetchIndexHistoryChart(stockCode, period);
         
         if ("5m".equalsIgnoreCase(period)) {
