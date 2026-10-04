@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -175,7 +176,82 @@ public class KisStockService {
                 .onErrorResume(e -> Mono.just(StockPriceDto.builder().stockCode(stockCode).currentPrice("0").build()));
     }
 
-    private Mono<List<StockChartDto>> fetchMacroHistoryChart(String stockCode, String period) {
+    private Mono<List<StockChartDto>> fetchYahooFinanceMacroChart(String stockCode) {
+        String symbol = "FX_USDKRW".equals(stockCode) ? "KRW=X" : ("FX_JPYKRW".equals(stockCode) ? "JPYKRW=X" : null);
+        if (symbol == null) return Mono.empty();
+
+        double multiplier = "FX_JPYKRW".equals(stockCode) ? 100.0 : 1.0;
+        String uri = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?range=3mo&interval=1d";
+
+        return webClientBuilder.build().get()
+                .uri(uri)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(json -> {
+                    try {
+                        List<StockChartDto> list = new ArrayList<>();
+                        JsonNode root = objectMapper.readTree(json);
+                        JsonNode resultArr = root.path("chart").path("result");
+                        if (!resultArr.isArray() || resultArr.size() == 0) return Collections.<StockChartDto>emptyList();
+
+                        JsonNode result = resultArr.get(0);
+                        JsonNode timestamps = result.path("timestamp");
+                        JsonNode quotesArr = result.path("indicators").path("quote");
+                        if (!timestamps.isArray() || !quotesArr.isArray() || quotesArr.size() == 0) return Collections.<StockChartDto>emptyList();
+
+                        JsonNode quote = quotesArr.get(0);
+                        JsonNode opens = quote.path("open");
+                        JsonNode highs = quote.path("high");
+                        JsonNode lows = quote.path("low");
+                        JsonNode closes = quote.path("close");
+
+                        ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+                        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                        for (int i = 0; i < timestamps.size(); i++) {
+                            long ts = timestamps.get(i).asLong(0);
+                            if (ts == 0) continue;
+
+                            JsonNode oNode = opens.get(i);
+                            JsonNode hNode = highs.get(i);
+                            JsonNode lNode = lows.get(i);
+                            JsonNode cNode = closes.get(i);
+
+                            if (oNode == null || oNode.isNull() || cNode == null || cNode.isNull()) continue;
+
+                            double oVal = oNode.asDouble(0) * multiplier;
+                            double hVal = (hNode != null && !hNode.isNull() ? hNode.asDouble(oVal) : oVal) * multiplier;
+                            double lVal = (lNode != null && !lNode.isNull() ? lNode.asDouble(oVal) : oVal) * multiplier;
+                            double cVal = cNode.asDouble(oVal) * multiplier;
+
+                            if (oVal <= 0 || cVal <= 0) continue;
+
+                            String dateStr = Instant.ofEpochSecond(ts).atZone(seoulZone).format(df);
+
+                            list.add(StockChartDto.builder()
+                                    .time(ts)
+                                    .date(dateStr)
+                                    .open(String.format(Locale.US, "%.2f", oVal))
+                                    .high(String.format(Locale.US, "%.2f", hVal))
+                                    .low(String.format(Locale.US, "%.2f", lVal))
+                                    .close(String.format(Locale.US, "%.2f", cVal))
+                                    .volume("0")
+                                    .build());
+                        }
+                        return list;
+                    } catch (Exception e) {
+                        log.error("Yahoo Finance Chart Parse Error for {}: {}", stockCode, e.getMessage());
+                        return Collections.<StockChartDto>emptyList();
+                    }
+                })
+                .onErrorResume(e -> {
+                    log.warn("Yahoo Finance Chart Fetch Failed for {}: {}", stockCode, e.getMessage());
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<List<StockChartDto>> fetchNaverMacroHistoryChart(String stockCode) {
         String category = stockCode.startsWith("CM_") ? "metals" : "exchange";
         String reutersCode = "CM_GOLD".equals(stockCode) ? "GCcv1" : stockCode;
         String uri = "https://m.stock.naver.com/front-api/marketIndex/prices?category=" + category + "&reutersCode=" + reutersCode + "&page=1&pageSize=60";
@@ -229,6 +305,20 @@ public class KisStockService {
                     }
                 })
                 .onErrorResume(e -> Mono.just(Collections.<StockChartDto>emptyList()));
+    }
+
+    private Mono<List<StockChartDto>> fetchMacroHistoryChart(String stockCode, String period) {
+        if ("FX_USDKRW".equals(stockCode) || "FX_JPYKRW".equals(stockCode)) {
+            return fetchYahooFinanceMacroChart(stockCode)
+                    .flatMap(list -> {
+                        if (list != null && !list.isEmpty()) {
+                            return Mono.just(list);
+                        }
+                        return fetchNaverMacroHistoryChart(stockCode);
+                    })
+                    .switchIfEmpty(Mono.defer(() -> fetchNaverMacroHistoryChart(stockCode)));
+        }
+        return fetchNaverMacroHistoryChart(stockCode);
     }
 
     public Mono<List<StockChartDto>> fetchUnifiedChart(String stockCode, String exchangeCode, String period) {
