@@ -340,6 +340,9 @@ def main():
     last_sync_date = ""
     last_next_leader_date = "" 
     last_snapshot_date = "" 
+    last_re_tx_hour = -1
+    last_reb_date = ""
+    last_kb_date = ""
     
     while True:
         try:
@@ -439,6 +442,34 @@ def main():
             if now_hour == 20 and now_min == 30 and last_sync_date != now_str:
                 mega.sync_market_cap()
                 last_sync_date = now_str
+
+            # [v16.72] 부동산 시장 데이터 정기/상시 수집 스케줄러
+            # (1) 아파트 실거래가 상시 수집: 매일 06:15, 12:30, 18:30, 21:30 (하루 4회)
+            if now_hour in [6, 12, 18, 21] and 15 <= now_min <= 35 and last_re_tx_hour != now_hour:
+                try:
+                    mega.log_to_db("INFO", f"[부동산] 아파트 실거래가(신고가/급락/상승) 상시 수집 가동 ({now_hour}시)")
+                    subprocess.run(["python3", "real_estate_collector.py"])
+                    last_re_tx_hour = now_hour
+                except Exception as e:
+                    mega.log_to_db("ERROR", f"[부동산 실거래 수집 오류] {e}")
+
+            # (2) 한국부동산원(REB) 주간 아파트 시세 동향: 매주 목요일 15:00 공표 직후 자동 동기화
+            if now_weekday == 3 and now_hour == 15 and 0 <= now_min <= 15 and last_reb_date != now_str:
+                try:
+                    mega.log_to_db("INFO", "[부동산] 한국부동산원(REB) 주간 아파트 시세 동향 정기 수집 (목요일 15시)")
+                    subprocess.run(["python3", "real_estate_collector.py"])
+                    last_reb_date = now_str
+                except Exception as e:
+                    mega.log_to_db("ERROR", f"[한국부동산원 수집 오류] {e}")
+
+            # (3) KB부동산 주간 아파트 시장 동향: 매주 금요일 10:00 공표 직후 자동 동기화
+            if now_weekday == 4 and now_hour == 10 and 0 <= now_min <= 15 and last_kb_date != now_str:
+                try:
+                    mega.log_to_db("INFO", "[부동산] KB부동산 주간 아파트 시장 동향 정기 수집 (금요일 10시)")
+                    subprocess.run(["python3", "real_estate_collector.py"])
+                    last_kb_date = now_str
+                except Exception as e:
+                    mega.log_to_db("ERROR", f"[KB부동산 수집 오류] {e}")
 
             # 8. 실시간 수집 (정책에 따라 가동: 08:00 ~ 20:10 KRX 애프터마켓 및 야간장 최종 마감 대응)
             is_realtime_market_hours = (8 <= now_hour < 20) or (now_hour == 20 and now_min <= 10)

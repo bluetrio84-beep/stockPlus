@@ -34,6 +34,8 @@ const RealEstateDashboard = () => {
 
     // 6. 실거래가 거래 유형 선택
     const [tradeType, setTradeType] = useState('ALL'); // 'ALL' | '신고가' | '하락거래'
+    // [신규] 실거래가 지역 퀵 필터 ('ALL' | '안양' | '서울' | '경기' | '지방')
+    const [txRegionFilter, setTxRegionFilter] = useState('ALL');
 
     // 데이터 상태
     const [summary, setSummary] = useState(null);
@@ -73,7 +75,7 @@ const RealEstateDashboard = () => {
                 setSummary(summaryRes);
                 setRankings(rankingsRes);
             } else {
-                const txRes = await fetchRealEstateTransactions(tradeType, 50);
+                const txRes = await fetchRealEstateTransactions(tradeType, 150);
                 setTransactions(txRes);
             }
         } catch (e) {
@@ -95,13 +97,22 @@ const RealEstateDashboard = () => {
     }, [rankings, searchKeyword]);
 
     const filteredTransactions = useMemo(() => {
-        if (!searchKeyword.trim()) return transactions;
-        const kw = searchKeyword.trim().toLowerCase();
-        return transactions.filter(t => 
-            (t.complex_name && t.complex_name.toLowerCase().includes(kw)) ||
-            (t.region_name && t.region_name.toLowerCase().includes(kw))
-        );
-    }, [transactions, searchKeyword]);
+        return transactions.filter(t => {
+            // 지역 퀵 칩 필터
+            if (txRegionFilter === '안양' && !t.region_name?.includes('안양')) return false;
+            if (txRegionFilter === '서울' && !t.region_name?.includes('서울')) return false;
+            if (txRegionFilter === '경기' && (!t.region_name?.includes('경기') || t.region_name?.includes('안양'))) return false;
+            if (txRegionFilter === '지방' && (t.region_name?.includes('서울') || t.region_name?.includes('경기'))) return false;
+
+            // 검색어 필터
+            if (!searchKeyword.trim()) return true;
+            const kw = searchKeyword.trim().toLowerCase();
+            return (
+                (t.complex_name && t.complex_name.toLowerCase().includes(kw)) ||
+                (t.region_name && t.region_name.toLowerCase().includes(kw))
+            );
+        });
+    }, [transactions, searchKeyword, txRegionFilter]);
 
     // 억/만원 포맷터
     const formatPrice = (val) => {
@@ -201,18 +212,19 @@ const RealEstateDashboard = () => {
                                 ))}
                             </div>
 
-                            {/* [신규] 월간/연간일 때 기준일자/월/년 선택 드롭다운 */}
+                            {/* 기준일자 선택 드롭다운 (주간 21개 주차, 월간 9개 월, 연간 자유 선택) */}
                             {availableDates.length > 0 && (
-                                <div className="flex items-center gap-1 bg-[var(--theme-bg)] px-2 py-0.5 rounded-lg border border-[var(--theme-border)]">
-                                    <Clock size={12} className="text-slate-400" />
+                                <div className="flex items-center gap-1.5 bg-[var(--theme-bg)] px-2.5 py-1 rounded-lg border border-[var(--theme-border)] shadow-xs">
+                                    <Calendar size={13} className="text-rose-500 shrink-0" />
+                                    <span className="text-[10px] font-black text-slate-400">기준</span>
                                     <select
                                         value={selectedDate}
                                         onChange={(e) => setSelectedDate(e.target.value)}
                                         aria-label="기준일자 선택"
-                                        className="bg-transparent text-xs font-black text-[var(--theme-text)] focus:outline-none cursor-pointer py-1"
+                                        className="bg-transparent text-xs font-black text-[var(--theme-text)] focus:outline-none cursor-pointer py-0.5 font-mono"
                                     >
                                         {availableDates.map(d => (
-                                            <option key={d} value={d} className="bg-slate-900 text-white">
+                                            <option key={d} value={d} className="bg-slate-900 text-white font-mono">
                                                 {d}
                                             </option>
                                         ))}
@@ -298,12 +310,13 @@ const RealEstateDashboard = () => {
                     </div>
                 ) : (
                     <div className="mt-3.5 pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* 거래 유형: 전체 / 신고가 / 하락거래 */}
                             <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
                                 {[
-                                    { id: 'ALL', name: '전체 실거래' },
-                                    { id: '신고가', name: '🔥 최고가 / 신고가 거래' },
-                                    { id: '하락거래', name: '❄️ 직전 대비 하락 거래' }
+                                    { id: 'ALL', name: '전체 거래' },
+                                    { id: '신고가', name: '🔥 최고가 / 신고가' },
+                                    { id: '하락거래', name: '❄️ 직전 대비 하락' }
                                 ].map(t => (
                                     <button
                                         key={t.id}
@@ -317,6 +330,28 @@ const RealEstateDashboard = () => {
                                     </button>
                                 ))}
                             </div>
+
+                            {/* [신규] 지역별 퀵 필터 칩 */}
+                            <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
+                                {[
+                                    { id: 'ALL', name: '전체 (100건+)' },
+                                    { id: '안양', name: '📍 안양시 (24건)' },
+                                    { id: '서울', name: '서울 (25건)' },
+                                    { id: '경기', name: '화성/경기 (28건)' },
+                                    { id: '지방', name: '인천/지방 (23건)' }
+                                ].map(f => (
+                                    <button
+                                        key={f.id}
+                                        onClick={() => setTxRegionFilter(f.id)}
+                                        className={classNames(
+                                            "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                            txRegionFilter === f.id ? "bg-rose-500 text-white shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
+                                        )}
+                                    >
+                                        {f.name}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="w-full sm:w-64">
@@ -324,7 +359,7 @@ const RealEstateDashboard = () => {
                                 type="text"
                                 value={searchKeyword}
                                 onChange={(e) => setSearchKeyword(e.target.value)}
-                                placeholder="단지명 또는 지역 검색 (헬리오시티 등)..."
+                                placeholder="단지명/지역 검색 (메가트리아, 평촌더샵 등)..."
                                 className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-bold px-3 py-1.5 rounded-xl border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
                             />
                         </div>

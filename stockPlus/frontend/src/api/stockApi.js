@@ -311,7 +311,7 @@ export async function fetchRealEstateDates(sourceType = 'KB', periodType = 'WEEK
     return Array.isArray(data) ? data : [];
 }
 
-export async function fetchRealEstateTransactions(tradeType = 'ALL', limit = 50) {
+export async function fetchRealEstateTransactions(tradeType = 'ALL', limit = 150) {
     const data = await safeFetch(`api/dashboard/real-estate/transactions?tradeType=${encodeURIComponent(tradeType)}&limit=${limit}`);
     return Array.isArray(data) ? data : [];
 }
