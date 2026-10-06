@@ -54,16 +54,21 @@ function Dashboard() {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const targetCode = stockCodeFromUrl || queryParams.get('code');
-    const targetName = passedName || queryParams.get('name');
+    const defaultIndexName = targetCode === '0001' ? '코스피' : (targetCode === '1001' ? '코스닥' : (targetCode === '2001' ? '코스피 200' : null));
+    const targetName = passedName || queryParams.get('name') || defaultIndexName;
 
     if (targetCode) {
+      const isIndex = targetCode === '0001' || targetCode === '1001' || targetCode === '2001';
+      const isMacro = targetCode?.startsWith('FX_') || targetCode?.startsWith('CM_');
+      const targetExchange = isIndex ? 'IDX' : (isMacro ? 'FX' : globalMarketMode);
+
       setSelectedStock(prev => {
         if (prev && prev.code === targetCode && prev.chartData && prev.chartData.length > 0) return prev;
         return {
           id: targetCode,
           code: targetCode,
           name: targetName || prev?.name || targetCode,
-          exchangeCode: globalMarketMode,
+          exchangeCode: targetExchange,
           chartData: []
         };
       });
@@ -162,20 +167,25 @@ function Dashboard() {
                   setSelectedStock(prev => (prev && prev.code === target.code) ? { ...target, chartData: prev.chartData || target.chartData } : target);
               } else {
                   // [v18.0] 관심종목에 없는 종목도 URL이 있으면 직접 로드 (v16.40.2 이름 보호)
-                  fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
+                  const isIndex = stockCodeFromUrl === '0001' || stockCodeFromUrl === '1001' || stockCodeFromUrl === '2001';
+                  const isMacro = stockCodeFromUrl.startsWith('FX_') || stockCodeFromUrl.startsWith('CM_');
+                  const reqMarket = isIndex ? 'IDX' : (isMacro ? 'FX' : market);
+                  const defaultIndexName = stockCodeFromUrl === '0001' ? '코스피' : (stockCodeFromUrl === '1001' ? '코스닥' : null);
+
+                  fetchStockPrice(stockCodeFromUrl, reqMarket).then(priceData => {
                       if (priceData) {
                           setSelectedStock(prev => ({
                               ...prev,
                               id: stockCodeFromUrl, 
                               code: stockCodeFromUrl, 
-                              name: passedName || priceData.stockName || priceData.name || prev?.name || stockCodeFromUrl,
+                              name: passedName || priceData.stockName || priceData.name || defaultIndexName || prev?.name || stockCodeFromUrl,
                               price: parseFloat(priceData.currentPrice) || 0, 
                               change: parseFloat(priceData.change) || 0,
                               changeRate: parseFloat(priceData.changeRate) || 0, 
                               priceSign: priceData.priceSign || '3',
                               volume: priceData.volume || '-',
                               marketName: priceData.marketName,
-                              exchangeCode: market,
+                              exchangeCode: reqMarket,
                               open: parseFloat(priceData.open) || 0,
                               high: parseFloat(priceData.high) || 0,
                               low: parseFloat(priceData.low) || 0,
@@ -194,15 +204,20 @@ function Dashboard() {
             setDisplayStocks([]);
             // [v18.0] 관심종목이 아예 비어있어도 URL 파라미터가 있으면 로드 시도 (v16.40.2 이름 보호)
             if (stockCodeFromUrl) {
-                fetchStockPrice(stockCodeFromUrl, market).then(priceData => {
+                const isIndex = stockCodeFromUrl === '0001' || stockCodeFromUrl === '1001' || stockCodeFromUrl === '2001';
+                const isMacro = stockCodeFromUrl.startsWith('FX_') || stockCodeFromUrl.startsWith('CM_');
+                const reqMarket = isIndex ? 'IDX' : (isMacro ? 'FX' : market);
+                const defaultIndexName = stockCodeFromUrl === '0001' ? '코스피' : (stockCodeFromUrl === '1001' ? '코스닥' : null);
+
+                fetchStockPrice(stockCodeFromUrl, reqMarket).then(priceData => {
                     if (priceData) {
                         setSelectedStock(prev => ({
                             ...prev,
                             id: stockCodeFromUrl, 
                             code: stockCodeFromUrl, 
-                            name: passedName || priceData.stockName || priceData.name || prev?.name || stockCodeFromUrl,
+                            name: passedName || priceData.stockName || priceData.name || defaultIndexName || prev?.name || stockCodeFromUrl,
                             price: parseFloat(priceData.currentPrice) || 0, 
-                            exchangeCode: market, 
+                            exchangeCode: reqMarket, 
                             chartData: prev?.chartData || [],
                             open: parseFloat(priceData.open) || 0,
                             high: parseFloat(priceData.high) || 0,
@@ -233,18 +248,29 @@ function Dashboard() {
   }, [stockCodeFromUrl, displayStocks, globalMarketMode]);
 
   useEffect(() => {
-    if (selectedStock) setSelectedStock(prev => ({ ...prev, exchangeCode: globalMarketMode }));
+    if (selectedStock) {
+        const isIndex = selectedStock.code === '0001' || selectedStock.code === '1001' || selectedStock.code === '2001';
+        const isMacro = selectedStock.code?.startsWith('FX_') || selectedStock.code?.startsWith('CM_');
+        if (!isIndex && !isMacro) {
+            setSelectedStock(prev => ({ ...prev, exchangeCode: globalMarketMode }));
+        }
+    }
   }, [globalMarketMode]);
 
   useEffect(() => {
     if (selectedStock?.code) {
+        const isIndex = selectedStock.code === '0001' || selectedStock.code === '1001' || selectedStock.code === '2001';
+        const isMacro = selectedStock.code?.startsWith('FX_') || selectedStock.code?.startsWith('CM_');
+        const targetExchange = isIndex ? 'IDX' : (isMacro ? 'FX' : globalMarketMode);
+
         const needsLoad = !selectedStock.lastLoadedPeriod || 
                           selectedStock.lastLoadedPeriod !== currentPeriod || 
-                          selectedStock.exchangeCode !== globalMarketMode ||
-                          !selectedStock.chartData || selectedStock.chartData.length === 0;
-        if (needsLoad) loadChartForPeriod(selectedStock.code, globalMarketMode, currentPeriod);
+                          (!isIndex && !isMacro && selectedStock.exchangeCode !== globalMarketMode) ||
+                          (!selectedStock.chartData || (selectedStock.chartData.length === 0 && selectedStock.lastLoadedPeriod !== currentPeriod));
+
+        if (needsLoad) loadChartForPeriod(selectedStock.code, targetExchange, currentPeriod);
     }
-  }, [selectedStock?.code, selectedStock?.chartData?.length, currentPeriod, globalMarketMode, loadChartForPeriod]);
+  }, [selectedStock?.code, selectedStock?.lastLoadedPeriod, selectedStock?.exchangeCode, currentPeriod, globalMarketMode, loadChartForPeriod]);
 
   useEffect(() => {
     const loadData = () => {

@@ -1,6 +1,37 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.73.5) - Next-Leaders 모바일 Score Breakdown(Q·L·T·X·S) 초슬림 게이지 바 복원 & 가로 사이즈(스크롤 없음) 완벽 유지 📱 ⚡ 🎯
+## 🚀 최신 업데이트 현황 (v16.73.6) - 코스피/코스닥 지수 차트 무한 로딩 버그 완벽 해결 & 100거래일 캔들 멀티패치 구축 📈 ⚡ 🎯
+
+### 1. 지수 클릭 시 차트 무한 로딩 원인 및 완전 해결
+- **사용자 요청**: "그리고 코스피 코스닥 top쪽에 지수 클릭하면 차트로 넘어가는데 무한로딩되네..."
+- **근본 원인 분석**:
+  1. **KIS 지수 차트 API 필수 날짜 파라미터 누락**: `KisStockService.java`의 지수 차트 조회 API(`/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice`) 호출 시 `FID_INPUT_DATE_1`(시작일), `FID_INPUT_DATE_2`(종료일)가 누락되어 KIS 서버로부터 `OPSQ2001 ERROR INPUT FIELD NOT FOUND` 에러와 함께 빈 캔들 배열(`[]`)이 반환됨.
+  2. **지수 심볼(`0001`, `1001`) 분기 누락**: 백엔드 `fetchUnifiedCurrentPrice` 및 `fetchUnifiedChart`에서 `exchangeCode`가 기본값('J' 또는 'UN')으로 들어왔을 때 일반 주식 API로 라우팅되어 조회가 실패함.
+  3. **지수 종목명(`stockName`) 누락**: 지수 현재가 조회 시 `stockName` 필드가 세팅되지 않아 차트 화면 헤더에 종목명이 공백 또는 코드(`0001`, `1001`)로 표시됨.
+  4. **프론트엔드 무한 재호출 루프**: `Dashboard.jsx`의 `needsLoad` 조건에서 `selectedStock.chartData.length === 0`일 때 데이터가 없는 상태에서 계속 `loadChartForPeriod`를 재호출하며 무한 로딩 상태가 유지됨.
+- **조치 내용**:
+  1. **백엔드 KIS 지수 차트 API 규격 정상화 & 100거래일 멀티패치 구축 (`KisStockService.java`)**:
+     - `FID_INPUT_DATE_1`(4년 전) 및 `FID_INPUT_DATE_2`(오늘 또는 1차 호출 기준 과거일자) 파라미터를 정확히 전달.
+     - 일봉(`1D`) 및 주봉(`1W`)의 경우 1차 호출(50개) + 2차 체이닝 호출(과거 50개)로 총 **100거래일 캔들 데이터 멀티패치 구축**.
+     - 월봉(`1M`)은 단일 호출로 수년 치(49개+ 월별 캔들) 정상 수신.
+     - 분봉(`5m`) 요청이 들어올 경우 지수는 안전하게 일봉(`1D`)으로 자동 폴백.
+  2. **지수 심볼 자동 감지 및 종목명 매핑 (`KisStockService.java`)**:
+     - `isIndexSymbol(stockCode)` 메서드를 도입하여 `0001`(코스피), `1001`(코스닥), `2001`(코스피 200)을 `exchangeCode` 인자와 상관없이 무조건 지수 API로 자동 라우팅.
+     - `fetchIndexCurrentPrice`에서 `stockName`('코스피', '코스닥'), `exchangeCode`('IDX'), 시가(`open`), 고가(`high`), 저가(`low`)를 완벽 매핑.
+     - 투자자 매매동향(`fetchInvestors`) 호출 시 지수/매크로 심볼은 불필요한 KIS 에러 방지를 위해 즉시 빈 DTO 반환.
+  3. **프론트엔드 대시보드 지수 상태 보존 및 무한 로딩 방어 (`Dashboard.jsx`)**:
+     - 상단 지수 바 클릭 또는 URL(`/stock/0001`, `/stock/1001`) 직접 진입 시 `defaultIndexName`('코스피', '코스닥') 및 `exchangeCode: 'IDX'`를 즉시 세팅.
+     - `globalMarketMode` 토글 시에도 지수('IDX') 및 매크로('FX') 심볼의 `exchangeCode`가 오염되지 않도록 보존.
+     - `needsLoad` 조건에서 빈 배열일 때의 무한 재호출 루프를 원천 제거하고, 로드 시도 및 기간/거래소 불일치 시에만 정밀하게 1회 호출하도록 개선.
+- **결과 검증**:
+  - `curl -s "http://localhost:8080/api/dashboard/stocks/0001/price"` -> `{"stockCode":"0001","stockName":"코스피","exchangeCode":"IDX","currentPrice":"6988.20", ...}` 즉시 응답 확인!
+  - `curl -s "http://localhost:8080/api/dashboard/stocks/0001/chart"` -> **100개의 OHLC 캔들 데이터 완벽 반환**!
+  - 코스닥(`1001`) 역시 **100개의 캔들 데이터 및 '코스닥' 명칭 즉시 반환**!
+  - 지수 바 클릭 시 차트 화면에서 무한 로딩이 완전히 사라지고, 코스피/코스닥 캔들 차트가 즉각 렌더링됨!
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.73.5) - Next-Leaders 모바일 Score Breakdown(Q·L·T·X·S) 초슬림 게이지 바 복원 & 가로 사이즈(스크롤 없음) 완벽 유지 📱 ⚡ 🎯
 
 ### 1. Next-Leaders 모바일 Score Breakdown 복원 및 초슬림 컴팩트화
 - **사용자 요청**: "모바일에서 score breakdown 이것도 없애버렸네 next-leaders 지금 가로 사이즈 유지하면서 저것도 나오게 할 수 있나?"
