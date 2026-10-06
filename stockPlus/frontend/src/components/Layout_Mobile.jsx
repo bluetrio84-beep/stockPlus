@@ -114,9 +114,9 @@ const LayoutMobile = ({ logic }) => {
                 </div>
             </header>
 
-            <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-3 py-1.5 shrink-0 overflow-x-auto no-scrollbar transition-colors duration-500">
-                <div className="flex items-center justify-start gap-4 transition-colors min-w-max">
-                    {marketIndices.map(index => (
+            <div className="bg-[var(--theme-header)] opacity-95 border-b border-[var(--theme-border)] px-4 py-1.5 shrink-0 transition-colors duration-500">
+                <div className="flex items-center justify-around transition-colors">
+                    {marketIndices.filter(index => ['KOSPI', 'KOSDAQ'].includes(index.name)).map(index => (
                         <div 
                             key={index.name} 
                             onClick={() => index.code && navigate(`/stock/${index.code}`, { state: { stockName: index.fullName || index.name } })}

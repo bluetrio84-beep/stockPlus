@@ -58,10 +58,10 @@ const StockListItem = ({ stock, isSelected, onStockClick, onToggleFavorite }) =>
                 </div>
             </div>
             <div className="flex flex-col items-end gap-0.5 shrink-0 text-right whitespace-nowrap min-w-[110px]">
-                <div className={classNames("text-xl font-bold tracking-tight text-right whitespace-nowrap font-mono", getColorClass(sign, stock.change))}>
+                <div className={classNames("text-xl font-bold tabular-nums tracking-tight text-right whitespace-nowrap", getColorClass(sign, stock.change))}>
                     {stock.isExpected ? '*' : ''}{formattedPrice}
                 </div>
-                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5 justify-end text-right whitespace-nowrap font-mono", getColorClass(sign, stock.change))}>
+                <div className={classNames("text-xs font-bold tabular-nums flex items-center gap-0.5 justify-end text-right whitespace-nowrap", getColorClass(sign, stock.change))}>
                      {getSignSymbol(sign, stock.change)} {formattedChange} ({Math.abs(stock.changeRate || 0).toFixed(2)}%)
                 </div>
             </div>

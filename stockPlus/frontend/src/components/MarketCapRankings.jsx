@@ -125,8 +125,7 @@ const MarketCapRankings = () => {
         if (isNaN(num)) return mcapStr;
         if (num >= 10000) {
             const jo = Math.floor(num / 10000);
-            const eok = num % 10000;
-            return eok > 0 ? `${jo.toLocaleString()}조 ${eok.toLocaleString()}억` : `${jo.toLocaleString()}조`;
+            return (num % 10000 === 0) ? `${jo.toLocaleString()}조` : `${(num / 10000).toFixed(1)}조`;
         }
         return `${num.toLocaleString()}억`;
     };
@@ -297,7 +296,7 @@ const MarketCapRankings = () => {
             </div>
 
             {/* 메인 리스트 영역 */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 sm:p-6">
                 {isLoading ? (
                     <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
                         <RefreshCw size={28} className="animate-spin text-indigo-500" />
@@ -308,22 +307,22 @@ const MarketCapRankings = () => {
                         <span className="text-sm font-black">해당 조건의 종목이 없습니다.</span>
                     </div>
                 ) : (
-                    <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-xl overflow-hidden transition-colors">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[620px]">
+                    <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl sm:rounded-2xl shadow-xl overflow-hidden transition-colors">
+                        <div className="overflow-x-auto sm:overflow-visible">
+                            <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-[var(--theme-border)] bg-[var(--theme-bg)]/60 text-[11px] font-black text-slate-400 uppercase tracking-wider">
-                                        <th className="py-3 px-3 text-center w-14">순위</th>
-                                        <th className="py-3 px-2 text-center w-10">관심</th>
-                                        <th className="py-3 px-4">종목명 / 코드</th>
-                                        <th className="py-3 px-4 text-right">현재가</th>
-                                        <th className="py-3 px-4 text-right">전일대비</th>
-                                        <th className="py-3 px-4 text-right">등락률</th>
-                                        <th className="py-3 px-4 text-right">거래량</th>
-                                        <th className="py-3 px-4 text-right">시가총액</th>
+                                    <tr className="border-b border-[var(--theme-border)] bg-[var(--theme-bg)]/60 text-[9px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                                        <th className="py-2 sm:py-3 px-1 sm:px-3 text-center w-6 sm:w-14">순위</th>
+                                        <th className="py-2 sm:py-3 px-0.5 sm:px-2 text-center w-5 sm:w-10">관심</th>
+                                        <th className="py-2 sm:py-3 px-1 sm:px-4">종목명 / 코드</th>
+                                        <th className="py-2 sm:py-3 px-1 sm:px-4 text-right">현재가</th>
+                                        <th className="py-2 sm:py-3 px-0.5 sm:px-4 text-right">전일대비</th>
+                                        <th className="py-2 sm:py-3 px-0.5 sm:px-4 text-right">등락률</th>
+                                        <th className="py-2 sm:py-3 px-0.5 sm:px-4 text-right">거래량</th>
+                                        <th className="py-2 sm:py-3 px-1 sm:px-4 text-right">시가총액</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[var(--theme-border)]/50 text-xs font-bold">
+                                <tbody className="divide-y divide-[var(--theme-border)]/50 text-[10px] sm:text-xs font-bold">
                                     {filteredStocks.map((stock, idx) => {
                                         const rank = (currentPage - 1) * pageSize + idx + 1;
                                         const rate = parseFloat(stock.fluctuationsRatio || '0');
@@ -338,9 +337,9 @@ const MarketCapRankings = () => {
                                                 className="hover:bg-[var(--theme-bg)]/70 cursor-pointer transition-colors group active:bg-[var(--theme-bg)]"
                                             >
                                                 {/* 순위 */}
-                                                <td className="py-3 px-3 text-center">
+                                                <td className="py-1.5 sm:py-3 px-0.5 sm:px-3 text-center">
                                                     <span className={classNames(
-                                                        "inline-flex items-center justify-center w-7 h-7 rounded-xl font-black text-xs font-mono",
+                                                        "inline-flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-xl font-black text-[9px] sm:text-xs font-mono",
                                                         rank === 1 ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm" :
                                                         rank === 2 ? "bg-slate-300/20 text-slate-300 border border-slate-300/40" :
                                                         rank === 3 ? "bg-amber-700/20 text-amber-600 border border-amber-700/40" :
@@ -351,9 +350,9 @@ const MarketCapRankings = () => {
                                                 </td>
 
                                                 {/* 즐겨찾기 별표 */}
-                                                <td className="py-3 px-2 text-center" onClick={(e) => handleToggleFavorite(e, stock.itemCode)}>
-                                                    <button className="p-1 text-slate-500 hover:text-yellow-400 transition-colors">
-                                                        <Star size={16} className={classNames({
+                                                <td className="py-1.5 sm:py-3 px-0.5 sm:px-2 text-center" onClick={(e) => handleToggleFavorite(e, stock.itemCode)}>
+                                                    <button className="p-0.5 sm:p-1 text-slate-500 hover:text-yellow-400 transition-colors">
+                                                        <Star className={classNames("w-3.5 h-3.5 sm:w-4 sm:h-4", {
                                                             "fill-yellow-400 text-yellow-400": isFav,
                                                             "hover:text-yellow-400": !isFav
                                                         })} />
@@ -361,63 +360,65 @@ const MarketCapRankings = () => {
                                                 </td>
 
                                                 {/* 종목명 / 코드 */}
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className="font-black text-sm text-[var(--theme-text)] group-hover:text-[var(--theme-point)] transition-colors">
+                                                <td className="py-1.5 sm:py-3 px-1 sm:px-4 min-w-0">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-1.5 min-w-0">
+                                                        <span className="font-black text-[11px] sm:text-sm text-[var(--theme-text)] group-hover:text-[var(--theme-point)] transition-colors truncate max-w-[65px] xs:max-w-[85px] sm:max-w-none" title={stock.stockName}>
                                                             {stock.stockName}
                                                         </span>
-                                                        <span className="text-[10px] text-slate-500 font-mono font-bold bg-[var(--theme-bg)] px-1.5 py-0.5 rounded border border-[var(--theme-border)]">
-                                                            {stock.itemCode}
-                                                        </span>
-                                                        {(() => {
-                                                            const badge = stockBadges[stock.itemCode] || getStockStatusBadge(stock);
-                                                            if (!badge) return null;
-                                                            return (
-                                                                <span className={classNames("text-[10px] px-1.5 py-0.5 rounded border leading-tight shrink-0", badge.color)}>
-                                                                    {badge.label}
-                                                                </span>
-                                                            );
-                                                        })()}
-                                                        {stock.sosok !== undefined && (
-                                                            <span className={classNames(
-                                                                "text-[9px] font-black px-1.5 py-0.5 rounded border",
-                                                                (String(stock.sosok) === '0' || stock.sosok === 0)
-                                                                    ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
-                                                                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                                            )}>
-                                                                {String(stock.sosok) === '0' || stock.sosok === 0 ? '코스피' : '코스닥'}
+                                                        <div className="flex items-center gap-1 min-w-0">
+                                                            <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono font-bold bg-[var(--theme-bg)] px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded border border-[var(--theme-border)] leading-tight">
+                                                                {stock.itemCode}
                                                             </span>
-                                                        )}
+                                                            {(() => {
+                                                                const badge = stockBadges[stock.itemCode] || getStockStatusBadge(stock);
+                                                                if (!badge) return null;
+                                                                return (
+                                                                    <span className={classNames("text-[8px] sm:text-[10px] px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded border leading-tight shrink-0", badge.color)}>
+                                                                        {badge.label}
+                                                                    </span>
+                                                                );
+                                                            })()}
+                                                            {stock.sosok !== undefined && (
+                                                                <span className={classNames(
+                                                                    "hidden xs:inline-block text-[8px] sm:text-[9px] font-black px-1 py-0.2 sm:px-1.5 sm:py-0.5 rounded border leading-tight shrink-0",
+                                                                    (String(stock.sosok) === '0' || stock.sosok === 0)
+                                                                        ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                                                                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                                                )}>
+                                                                    {String(stock.sosok) === '0' || stock.sosok === 0 ? '코스피' : '코스닥'}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
 
                                                 {/* 현재가 */}
-                                                <td className="py-3 px-4 text-right">
+                                                <td className="py-1.5 sm:py-3 px-1 sm:px-4 text-right whitespace-nowrap">
                                                     <span className={classNames(
-                                                        "font-black text-sm font-mono tracking-tight",
+                                                        "font-black text-[10px] sm:text-sm font-mono tracking-tight",
                                                         isUp ? "text-red-500" : isDown ? "text-blue-500" : "text-slate-400"
                                                     )}>
-                                                        {stock.closePrice}원
+                                                        {stock.closePrice}<span className="text-[8px] sm:text-xs font-normal ml-0.5 text-slate-400">원</span>
                                                     </span>
                                                 </td>
 
                                                 {/* 전일대비 */}
-                                                <td className="py-3 px-4 text-right">
+                                                <td className="py-1.5 sm:py-3 px-0.5 sm:px-4 text-right whitespace-nowrap">
                                                     <span className={classNames(
-                                                        "font-black text-xs font-mono inline-flex items-center gap-0.5",
+                                                        "font-bold text-[8.5px] sm:text-xs font-mono inline-flex items-center gap-0.5",
                                                         isUp ? "text-red-500" : isDown ? "text-blue-500" : "text-slate-400"
                                                     )}>
-                                                        {isUp && <TrendingUp size={12} />}
-                                                        {isDown && <TrendingDown size={12} />}
-                                                        {!isUp && !isDown && <Minus size={12} />}
+                                                        {isUp && <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                                                        {isDown && <TrendingDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                                                        {!isUp && !isDown && <Minus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                                                         {stock.compareToPreviousClosePrice || '0'}
                                                     </span>
                                                 </td>
 
                                                 {/* 등락률 */}
-                                                <td className="py-3 px-4 text-right">
+                                                <td className="py-1.5 sm:py-3 px-0.5 sm:px-4 text-right whitespace-nowrap">
                                                     <span className={classNames(
-                                                        "inline-block px-2 py-0.5 rounded-lg text-xs font-black font-mono",
+                                                        "inline-block px-1 sm:px-2 py-0.5 rounded sm:rounded-lg text-[8.5px] sm:text-xs font-black font-mono",
                                                         isUp ? "bg-red-500/10 text-red-500 border border-red-500/20" :
                                                         isDown ? "bg-blue-500/10 text-blue-500 border border-blue-500/20" :
                                                         "bg-slate-500/10 text-slate-400 border border-slate-500/20"
@@ -427,12 +428,12 @@ const MarketCapRankings = () => {
                                                 </td>
 
                                                 {/* 거래량 */}
-                                                <td className="py-3 px-4 text-right font-mono text-slate-400 text-xs">
+                                                <td className="py-1.5 sm:py-3 px-0.5 sm:px-4 text-right font-mono text-slate-400 text-[8px] sm:text-xs whitespace-nowrap">
                                                     {stock.accumulatedTradingVolume || '-'}
                                                 </td>
 
                                                 {/* 시가총액 */}
-                                                <td className="py-3 px-4 text-right font-black font-mono text-[var(--theme-point)] text-xs">
+                                                <td className="py-1.5 sm:py-3 px-1 sm:px-4 text-right font-black font-mono text-[var(--theme-point)] text-[8.5px] sm:text-xs whitespace-nowrap">
                                                     {formatMarketCap(stock.marketValue)}
                                                 </td>
                                             </tr>
@@ -446,25 +447,25 @@ const MarketCapRankings = () => {
 
                 {/* 하단 페이징 컨트롤 바 (1~maxPages) */}
                 {maxPages > 1 && (
-                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pb-12">
-                        <span className="text-xs font-bold text-slate-500">
+                    <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pb-12">
+                        <span className="text-[11px] sm:text-xs font-bold text-slate-500 text-center sm:text-left">
                             {market} {typeTabs.find(t => t.id === rankingType)?.name} {startRank}위 ~ {endRank}위 표시 중 (페이지당 50개)
                         </span>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
                             <button
                                 disabled={currentPage <= 1 || isLoading}
                                 onClick={() => setCurrentPage(1)}
-                                className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                                className="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-[11px] sm:text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
                             >
                                 처음
                             </button>
                             <button
                                 disabled={currentPage <= 1 || isLoading}
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                                className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
                             >
-                                <ChevronLeft size={16} />
+                                <ChevronLeft size={15} />
                             </button>
 
                             {Array.from({ length: maxPages }, (_, i) => i + 1).map(pageNo => (
@@ -472,7 +473,7 @@ const MarketCapRankings = () => {
                                     key={pageNo}
                                     onClick={() => setCurrentPage(pageNo)}
                                     className={classNames(
-                                        "w-8 h-8 rounded-xl text-xs font-black font-mono transition-all",
+                                        "w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black font-mono transition-all",
                                         currentPage === pageNo
                                             ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105"
                                             : "bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)]"
@@ -485,16 +486,16 @@ const MarketCapRankings = () => {
                             <button
                                 disabled={currentPage >= maxPages || isLoading}
                                 onClick={() => setCurrentPage(p => Math.min(maxPages, p + 1))}
-                                className="p-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                                className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
                             >
-                                <ChevronRight size={16} />
+                                <ChevronRight size={15} />
                             </button>
                             <button
                                 disabled={currentPage >= maxPages || isLoading}
                                 onClick={() => setCurrentPage(maxPages)}
-                                className="px-2.5 py-1.5 rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
+                                className="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-xl bg-[var(--theme-header)] border border-[var(--theme-border)] text-[11px] sm:text-xs font-bold text-slate-400 hover:text-[var(--theme-text)] disabled:opacity-30 transition-colors"
                             >
-                                끝 ({maxPages * pageSize}위)
+                                끝
                             </button>
                         </div>
                     </div>
