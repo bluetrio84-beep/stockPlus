@@ -1,6 +1,21 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.73.6) - 코스피/코스닥 지수 차트 무한 로딩 버그 완벽 해결 & 100거래일 캔들 멀티패치 구축 📈 ⚡ 🎯
+## 🚀 최신 업데이트 현황 (v16.74) - 네이버 증권 2026.09 리뉴얼(Next.js SPA) 완벽 대응 & 어드민 대시보드 Hot Themes 264개 전수 복구 ⚡ 🎯 💎
+
+### 1. 어드민 대시보드 Hot Themes 미출력 원인 규명 및 완벽 해결
+- **사용자 요청**: "현재 어드민 대시보드에 hot themes가 안나옴... 원인파악좀"
+- **근본 원인**:
+  1. 네이버 금융이 9월 중순 Next.js 기반(SPA / App Router)으로 전면 리뉴얼(`https://stock.naver.com/market/stock/kr/theme/1`)되면서 기존 EUC-KR 프레임셋 기반 `table.type_1` 태그가 사라짐.
+  2. 기존 수집기(`collector/main.py`)가 구 URL 및 구 `table.type_1` 로케이터를 대기하다가 10초 타임아웃 예외로 스킵되어 테마 수집 건수가 `0`건(`테마(0)`)으로 누락됨.
+  3. DB `market_themes` 테이블의 `updated_at`이 `2026-09-10`에 멈추어 있었고, 백엔드 `getThemePersistence`는 최근 3일 이내 데이터(`updated_at >= NOW() - 3 DAY`)만 조회하므로 프론트엔드 Hot Themes에 빈 배열이 반환됨.
+- **조치 내용**:
+  1. `collector/main.py`의 `scrape_lists`를 리뉴얼된 `https://stock.naver.com/market/stock/kr/theme/1` DOM 구조로 전격 개편. 단 1회 페이지 로드로 전체 **264개 테마(테마명, 등락률, 링크)** 전수 수집 및 `market_themes`에 자동 Upsert.
+  2. `run_deep_analysis`의 테마 주도주 파싱도 신규 SPA 상세 페이지의 TR 행 구조(`tr` 종목명 추출)에 맞춰 업데이트.
+  3. 컨테이너 내부 배포 및 수집 사이클 즉시 가동 -> `[메가수집] WICS(78)/테마(264)/지수(2) 반영 완료` 및 `lead_stocks`까지 완벽 업데이트 완료!
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.73.6) - 코스피/코스닥 지수 차트 무한 로딩 버그 완벽 해결 & 100거래일 캔들 멀티패치 구축 📈 ⚡ 🎯
 
 ### 1. 지수 클릭 시 차트 무한 로딩 원인 및 완전 해결
 - **사용자 요청**: "그리고 코스피 코스닥 top쪽에 지수 클릭하면 차트로 넘어가는데 무한로딩되네..."

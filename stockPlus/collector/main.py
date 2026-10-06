@@ -135,19 +135,22 @@ class MegaCollector:
                     except: continue
         except: pass
         try:
-            for p_idx in range(1, 10):
-                page.goto(f"https://finance.naver.com/sise/theme.naver?&page={p_idx}", timeout=20000)
-                try: page.wait_for_selector("table.type_1", timeout=10000)
-                except: break
-                soup = BeautifulSoup(page.content(), 'html.parser')
-                valid_rows = [r for r in soup.select("table.type_1 tr") if r.select_one("td.col_type1")]
-                if not valid_rows: break
-                for row in valid_rows:
-                    tds = row.select("td")
-                    if len(tds) >= 2 and tds[0].select_one("a"):
-                        a, s = tds[0].select_one("a"), tds[1].select_one("span")
-                        all_themes.append({'name': a.get_text(strip=True), 'rate': float(s.get_text(strip=True).replace('%','').replace('+','')), 'link': a['href']})
-        except: pass
+            # [v16.74] 2026.09 네이버 금융 리뉴얼(Next.js) 대응: 단 1회 로드로 전체 260+ 테마 전수 수집
+            page.goto("https://stock.naver.com/market/stock/kr/theme/1", timeout=30000, wait_until="networkidle")
+            page.wait_for_timeout(2000)
+            theme_links = page.locator("a[href*='/theme/']").all()
+            for a in theme_links:
+                try:
+                    href = a.get_attribute("href")
+                    txt_lines = [l.strip() for l in a.inner_text().split('\n') if l.strip()]
+                    if len(txt_lines) >= 3 and '%' in txt_lines[-1]:
+                        t_name = txt_lines[1]
+                        rate_m = re.search(r'([-+]?\d*\.?\d+)', txt_lines[-1])
+                        t_rate = float(rate_m.group(1)) if rate_m else 0.0
+                        all_themes.append({'name': t_name, 'rate': t_rate, 'link': href})
+                except: continue
+        except Exception as e:
+            print(f">>> [Naver Theme Scrape Error] {e}")
         return all_sects, all_themes
 
     def run_quick_sync(self):
@@ -232,10 +235,17 @@ class MegaCollector:
                                     for t in chunk:
                                         if not t.get('link'): continue
                                         try:
-                                            page.goto("https://finance.naver.com" + t['link'], timeout=15000, wait_until="commit")
-                                            page.wait_for_selector("table.type_5", timeout=5000)
-                                            raw_stocks = page.locator("td.name a").all_inner_texts()
-                                            valid = ", ".join([s.strip() for s in raw_stocks if s and len(s.strip()) > 1][:3])
+                                            detail_url = "https://stock.naver.com" + t['link'] if not t['link'].startswith('http') else t['link']
+                                            page.goto(detail_url, timeout=20000, wait_until="networkidle")
+                                            page.wait_for_timeout(1500)
+                                            trs = page.locator("tr").all()
+                                            valid_stocks = []
+                                            for tr in trs[1:6]:
+                                                parts = [pt.strip() for pt in tr.inner_text().split('\n') if pt.strip()]
+                                                if len(parts) >= 2 and parts[1] != '종목명':
+                                                    valid_stocks.append(parts[1])
+                                                if len(valid_stocks) >= 3: break
+                                            valid = ", ".join(valid_stocks)
                                             if valid:
                                                 cursor.execute("UPDATE market_themes SET lead_stocks = %s WHERE theme_name = %s", (valid, t['name']))
                                                 upd_cnt += 1
