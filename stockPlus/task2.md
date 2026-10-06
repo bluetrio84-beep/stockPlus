@@ -1,6 +1,23 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.73.4) - 부동산 시장현황 모바일 폰트 축소 & Next-Leaders 모바일 AI Feedback 제거 및 가로 스크롤 완전 제거 📱 🏠 🤖
+## 🚀 최신 업데이트 현황 (v16.73.5) - Next-Leaders 모바일 Score Breakdown(Q·L·T·X·S) 초슬림 게이지 바 복원 & 가로 사이즈(스크롤 없음) 완벽 유지 📱 ⚡ 🎯
+
+### 1. Next-Leaders 모바일 Score Breakdown 복원 및 초슬림 컴팩트화
+- **사용자 요청**: "모바일에서 score breakdown 이것도 없애버렸네 next-leaders 지금 가로 사이즈 유지하면서 저것도 나오게 할 수 있나?"
+- **조치 내용**:
+  - `Score Breakdown` 컬럼을 모바일에 전격 복원 (`hidden sm:table-cell` 제거).
+  - 모바일 전용 초슬림 너비(`w-[68px] ~ w-[82px]`) 설정.
+  - 5개 핵심 엔진(Q 알고리즘, L LSTM, T TCN, X XGBoost, S 스마트머니)의 게이지 바를 모바일 전용 미니 사이즈(`w-2.5 xs:w-3.5`, `h-1`)로 렌더링.
+  - 점수 라벨은 `Q`, `L`, `T`, `X`, `S` 1글자 심볼로 간결하게 표시하고 터치 시 점수 툴팁 제공.
+  - 데스크톱(`sm:` 이상)에서는 기존처럼 넉넉한 너비(`w-9 ~ w-11`)와 점수 숫자 표기를 100% 온전히 유지.
+- **결과**:
+  - **가로 스크롤 전혀 없음 (모바일 가로 360~400px 사이즈 100% 유지)**!
+  - **Rank, Stock, Total, Score Breakdown, Reason**의 5가지 핵심 데이터가 모바일 화면 한 줄에 한방에 쏙 들어오는 궁극의 컴팩트 UX 달성!
+  - `AI Feedback` 컬럼은 모바일에서 숨김 처리 유지 (`hidden md:table-cell`).
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.73.4) - 부동산 시장현황 모바일 폰트 축소 & Next-Leaders 모바일 AI Feedback 제거 및 가로 스크롤 완전 제거 📱 🏠 🤖
 
 ### 1. 부동산 시장현황(`RealEstateDashboard.jsx`) 모바일 전용 폰트 및 테이블 컴팩트화
 - **배경**: 모바일에서 `한국부동산원(REB)[주간]전국상승률 top 50` 헤더 텍스트 폰트가 크고, 테이블의 `min-w-[500px]`로 인해 가로 스크롤이 발생함.

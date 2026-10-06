@@ -172,9 +172,12 @@ const NextLeaderDashboard = () => {
                         <tr>
                             <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] text-center w-7 sm:w-16">Rank</th>
                             <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-24 sm:w-28 lg:w-36">Stock</th>
-                            <th className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] w-12 sm:w-16">Total</th>
-                            <th className="hidden sm:table-cell px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Score Breakdown (Q / L / T / X / S)</th>
-                            <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] sm:min-w-[260px] lg:min-w-[340px]">
+                            <th className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 text-[8.5px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] w-11 sm:w-16">Total</th>
+                            <th className="px-1 sm:px-3 lg:px-5 py-2 sm:py-3 text-[8.5px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-[68px] xs:w-[82px] sm:w-auto text-center sm:text-left">
+                                <span className="sm:hidden">점수(Q·L·T·X·S)</span>
+                                <span className="hidden sm:inline">Score Breakdown (Q / L / T / X / S)</span>
+                            </th>
+                            <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[8.5px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] sm:min-w-[260px] lg:min-w-[340px]">
                                 <div className="flex items-center gap-1">
                                     Reason
                                     <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
@@ -227,8 +230,8 @@ const NextLeaderDashboard = () => {
                                             <span className="text-indigo-500 font-black text-[10.5px] sm:text-xs lg:text-sm">{item.total_score.toFixed(1)}</span>
                                         </div>
                                     </td>
-                                    <td className="hidden sm:table-cell px-3 lg:px-5 py-2">
-                                        <div className="flex items-center gap-2">
+                                    <td className="px-1 sm:px-3 lg:px-5 py-1.5 sm:py-2 w-[68px] xs:w-[82px] sm:w-auto">
+                                        <div className="flex items-center justify-center sm:justify-start gap-0.5 sm:gap-2">
                                             {[ 
                                                 { label: 'Q', score: item.algo_score, color: 'bg-rose-500' },
                                                 { label: 'L', score: item.lstm_score, color: 'bg-indigo-500' },
@@ -236,9 +239,14 @@ const NextLeaderDashboard = () => {
                                                 { label: 'X', score: item.xgb_score, color: 'bg-cyan-500' },
                                                 { label: 'S', score: item.smart_money_score, color: 'bg-orange-500' }
                                             ].map((m, i) => (
-                                                <div key={i} className="flex flex-col gap-0.5 w-9 lg:w-11">
-                                                    <div className="flex justify-between text-[7px] font-bold text-slate-500 uppercase"><span>{m.label}</span><span>{(m.score || 0).toFixed(0)}</span></div>
-                                                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className={classNames("h-full", m.color)} style={{width: `${m.score || 0}%`}}></div></div>
+                                                <div key={i} className="flex flex-col gap-0.5 w-2.5 xs:w-3.5 sm:w-9 lg:w-11" title={`${m.label}: ${(m.score || 0).toFixed(0)}점`}>
+                                                    <div className="flex justify-between text-[6px] xs:text-[7px] font-bold text-slate-500 uppercase">
+                                                        <span>{m.label}</span>
+                                                        <span className="hidden sm:inline">{(m.score || 0).toFixed(0)}</span>
+                                                    </div>
+                                                    <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                                                        <div className={classNames("h-full", m.color)} style={{width: `${m.score || 0}%`}}></div>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
