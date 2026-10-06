@@ -162,25 +162,25 @@ const NextLeaderDashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="hidden sm:inline text-[9px] text-slate-500 font-mono italic">Daily Top 10 Elite Analysis</span>
-                    <span className="text-[9px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
+                    <span className="hidden sm:inline text-[9px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
                 </div>
             </div>
 
-            <div className="w-full min-w-0 overflow-x-auto custom-scrollbar flex-1 relative">
-                <table className="w-full text-left border-collapse min-w-[1000px]">
+            <div className="w-full min-w-0 overflow-x-auto sm:overflow-visible flex-1 relative">
+                <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-20 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
                         <tr>
-                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Rank</th>
-                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-28 lg:w-36">Stock</th>
-                            <th className="px-3 lg:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)]">Total</th>
-                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Score Breakdown (Q / L / T / X / S)</th>
-                            <th className="px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] min-w-[260px] lg:min-w-[340px]">
+                            <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] text-center w-7 sm:w-16">Rank</th>
+                            <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-24 sm:w-28 lg:w-36">Stock</th>
+                            <th className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] w-12 sm:w-16">Total</th>
+                            <th className="hidden sm:table-cell px-3 lg:px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)]">Score Breakdown (Q / L / T / X / S)</th>
+                            <th className="px-1.5 sm:px-3 lg:px-5 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] sm:min-w-[260px] lg:min-w-[340px]">
                                 <div className="flex items-center gap-1">
                                     Reason
                                     <button onClick={() => setIsReasonHelpOpen(true)} className="text-slate-600 hover:text-indigo-400 transition-colors"><HelpCircle size={12} /></button>
                                 </div>
                             </th>
-                            <th className="sticky right-0 z-30 px-3 lg:px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
+                            <th className="hidden md:table-cell sticky right-0 z-30 px-3 lg:px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
                                 <div className="flex items-center justify-center gap-1">
                                     AI Feedback (Review)
                                     <button onClick={() => setIsFeedbackHelpOpen(true)} className="text-slate-500 hover:text-indigo-400 transition-colors"><HelpCircle size={13} /></button>
@@ -194,32 +194,40 @@ const NextLeaderDashboard = () => {
                         ) : nextLeaders.length > 0 ? (
                             nextLeaders.map((item, idx) => (
                                 <tr key={item.id} className="group hover:bg-indigo-600/5 transition-colors">
-                                    <td className="px-3 lg:px-5 py-2"><div className={classNames("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center font-black text-xs lg:text-sm shadow-inner", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>{idx + 1}</div></td>
-                                    <td className="px-3 lg:px-5 py-2 w-28 lg:w-36">
+                                    <td className="px-1.5 sm:px-3 lg:px-5 py-1.5 sm:py-2 text-center">
+                                        <div className={classNames("w-5 h-5 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-md sm:rounded-lg flex items-center justify-center font-black text-[10px] sm:text-xs lg:text-sm shadow-inner mx-auto", idx < 3 ? "bg-indigo-600 text-white" : "bg-[var(--theme-bg)] text-slate-500 border border-[var(--theme-border)] transition-colors")}>
+                                            {idx + 1}
+                                        </div>
+                                    </td>
+                                    <td className="px-1.5 sm:px-3 lg:px-5 py-1.5 sm:py-2 min-w-0">
                                         <div 
                                              className="flex flex-col transition-colors cursor-pointer group/stock"
                                              onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}
                                         >
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <span className="text-[var(--theme-text)] font-black text-xs lg:text-sm group-hover:text-indigo-400 transition-colors truncate">
+                                            <div className="flex items-center gap-1 flex-wrap min-w-0">
+                                                <span className="text-[var(--theme-text)] font-black text-[11px] sm:text-xs lg:text-sm group-hover:text-indigo-400 transition-colors truncate max-w-[65px] xs:max-w-[85px] sm:max-w-none">
                                                     {item.stock_name}
                                                 </span>
                                                 {(() => {
                                                     const badge = getStockStatusBadge(stockBadges[item.stock_code]);
                                                     if (!badge) return null;
                                                     return (
-                                                        <span className={classNames("text-[9px] px-1 py-0.2 rounded border leading-tight shrink-0", badge.color)}>
+                                                        <span className={classNames("text-[8px] sm:text-[9px] px-1 py-0.2 rounded border leading-tight shrink-0", badge.color)}>
                                                             {badge.label}
                                                         </span>
                                                     );
                                                 })()}
-                                                <ArrowUpRight size={11} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400" />
+                                                <ArrowUpRight size={11} className="opacity-0 group-hover/stock:opacity-100 transition-opacity text-indigo-400 hidden sm:inline" />
                                             </div>
-                                            <span className="text-slate-500 font-mono text-[9px] font-black">{item.stock_code}</span>
+                                            <span className="text-slate-500 font-mono text-[8px] sm:text-[9px] font-black">{item.stock_code}</span>
                                         </div>
                                     </td>
-                                    <td className="px-3 lg:px-4 py-2 text-center"><div className="inline-block px-2.5 py-0.5 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors"><span className="text-indigo-500 font-black text-xs lg:text-sm">{item.total_score.toFixed(1)}</span></div></td>
-                                    <td className="px-3 lg:px-5 py-2">
+                                    <td className="px-1 sm:px-3 lg:px-4 py-1.5 sm:py-2 text-center">
+                                        <div className="inline-block px-1.5 sm:px-2.5 py-0.2 sm:py-0.5 bg-[var(--theme-bg)] rounded-full border border-[var(--theme-border)] transition-colors">
+                                            <span className="text-indigo-500 font-black text-[10.5px] sm:text-xs lg:text-sm">{item.total_score.toFixed(1)}</span>
+                                        </div>
+                                    </td>
+                                    <td className="hidden sm:table-cell px-3 lg:px-5 py-2">
                                         <div className="flex items-center gap-2">
                                             {[ 
                                                 { label: 'Q', score: item.algo_score, color: 'bg-rose-500' },
@@ -235,8 +243,8 @@ const NextLeaderDashboard = () => {
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="px-3 lg:px-5 py-2 min-w-[260px] lg:min-w-[340px]">
-                                        <div className="flex flex-wrap gap-1 transition-colors">
+                                    <td className="px-1.5 sm:px-3 lg:px-5 py-1.5 sm:py-2">
+                                        <div className="flex flex-wrap gap-0.5 sm:gap-1 transition-colors">
                                             {item.reason.split(',').map((r, i) => {
                                                 const txt = r.trim();
                                                 const isHot = txt.includes('★') || txt.includes('오판');
@@ -246,11 +254,11 @@ const NextLeaderDashboard = () => {
                                                 
                                                 return (
                                                     <span key={i} className={classNames(
-                                                        "px-1.5 py-0.5 text-[8.5px] lg:text-[9.5px] font-black rounded border transition-all uppercase tracking-wider shadow-sm",
-                                                        isHot ? "bg-rose-500/20 text-rose-500 border-rose-500/40 shadow-rose-900/20" :
-                                                        isGood ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/40 shadow-emerald-900/20" :
-                                                        isSupply ? "bg-violet-600/20 text-violet-400 border-violet-500/40 shadow-violet-900/20" :
-                                                        isNoise ? "bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-blue-900/20" :
+                                                        "px-1 sm:px-1.5 py-0.2 sm:py-0.5 text-[7.5px] sm:text-[8.5px] lg:text-[9.5px] font-black rounded border transition-all uppercase tracking-wider shadow-xs",
+                                                        isHot ? "bg-rose-500/20 text-rose-500 border-rose-500/40" :
+                                                        isGood ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/40" :
+                                                        isSupply ? "bg-violet-600/20 text-violet-400 border-violet-500/40" :
+                                                        isNoise ? "bg-blue-500/20 text-blue-400 border-blue-500/40" :
                                                         "bg-slate-500/10 text-slate-400 border-slate-500/20"
                                                     )}>
                                                         {txt}
@@ -259,7 +267,7 @@ const NextLeaderDashboard = () => {
                                             })}
                                         </div>
                                     </td>
-                                    <td className="sticky right-0 z-10 px-3 lg:px-4 py-2 bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
+                                    <td className="hidden md:table-cell sticky right-0 z-10 px-3 lg:px-4 py-2 bg-[var(--theme-header)] shadow-[-4px_0_12px_rgba(0,0,0,0.3)] border-l border-[var(--theme-border)] min-w-[180px] lg:min-w-[210px]">
                                         <div className="flex items-center justify-center gap-1 transition-colors">
                                             {['성공', '매집', '실패', '노이즈', '시황'].map(tag => {
                                                 const icons = { '성공': <ThumbsUp size={8} />, '매집': <Package size={8} />, '실패': <ThumbsDown size={8} />, '노이즈': <Ghost size={8} />, '시황': <CloudRain size={8} /> };
@@ -295,24 +303,24 @@ const NextLeaderDashboard = () => {
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
+                    <span className="hidden sm:inline text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">좌우 스크롤 ↔</span>
                     <button onClick={fetchLiveLeaders} className="text-xs font-black text-slate-500 hover:text-amber-400 transition-colors flex items-center gap-1">
                         <Activity size={13} /> 갱신
                     </button>
                 </div>
             </div>
 
-            <div className="w-full min-w-0 overflow-x-auto custom-scrollbar flex-1 relative">
-                <table className="w-full text-left border-collapse min-w-[980px]">
+            <div className="w-full min-w-0 overflow-x-auto sm:overflow-visible flex-1 relative">
+                <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-10 bg-[var(--theme-header)] transition-colors duration-500 shadow-sm">
                         <tr>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500">Rank</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] transition-colors duration-500 w-36 lg:w-44">Stock</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Live Score</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)] transition-colors duration-500">Current Price</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)] transition-colors duration-500">Program Net (주)</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">RSI / OBV</th>
-                            <th className="px-4 lg:px-6 py-3 lg:py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] transition-colors duration-500">Captured Time</th>
+                            <th className="px-1.5 sm:px-4 lg:px-6 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] text-center w-7 sm:w-16">Rank</th>
+                            <th className="px-1.5 sm:px-4 lg:px-6 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[var(--theme-header)] w-24 sm:w-36 lg:w-44">Stock</th>
+                            <th className="px-1 sm:px-4 lg:px-6 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)] w-14 sm:w-auto">Live Score</th>
+                            <th className="px-1.5 sm:px-4 lg:px-6 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)]">Current Price</th>
+                            <th className="px-1.5 sm:px-4 lg:px-6 py-2 sm:py-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-widest text-right bg-[var(--theme-header)]">Program Net (주)</th>
+                            <th className="hidden sm:table-cell px-4 lg:px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)]">RSI / OBV</th>
+                            <th className="hidden md:table-cell px-4 lg:px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center bg-[var(--theme-header)]">Captured Time</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -321,36 +329,36 @@ const NextLeaderDashboard = () => {
                         ) : liveLeaders.length > 0 ? (
                             liveLeaders.map((item, idx) => (
                                 <tr key={item.stock_code} className="hover:bg-[var(--theme-bg)]/40 transition-colors">
-                                    <td className="px-4 lg:px-6 py-3 font-mono font-black text-xs text-slate-400">
-                                        <span className={classNames("w-6 h-6 rounded-lg inline-flex items-center justify-center", idx < 3 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-slate-500/10 text-slate-400")}>
+                                    <td className="px-1.5 sm:px-4 lg:px-6 py-1.5 sm:py-3 text-center">
+                                        <span className={classNames("w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg inline-flex items-center justify-center font-mono font-black text-[9px] sm:text-xs", idx < 3 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-slate-500/10 text-slate-400")}>
                                             {idx + 1}
                                         </span>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 cursor-pointer group" onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}>
-                                        <div className="font-black text-sm text-[var(--theme-text)] group-hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                                    <td className="px-1.5 sm:px-4 lg:px-6 py-1.5 sm:py-3 cursor-pointer group min-w-0" onClick={() => navigate(`/stock/${item.stock_code}`, { state: { stockName: item.stock_name } })}>
+                                        <div className="font-black text-[11px] sm:text-sm text-[var(--theme-text)] group-hover:text-amber-400 transition-colors flex items-center gap-1 truncate max-w-[65px] xs:max-w-[90px] sm:max-w-none">
                                             {item.stock_name}
-                                            <ArrowUpRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <ArrowUpRight size={11} className="opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline" />
                                         </div>
-                                        <span className="text-[10px] font-mono text-slate-500">{item.stock_code}</span>
+                                        <span className="text-[8px] sm:text-[10px] font-mono text-slate-500">{item.stock_code}</span>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 text-center">
-                                        <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                    <td className="px-1 sm:px-4 lg:px-6 py-1.5 sm:py-3 text-center">
+                                        <span className="px-1.5 sm:px-2.5 py-0.2 sm:py-1 rounded-full text-[9.5px] sm:text-xs font-black bg-amber-500/10 text-amber-400 border border-amber-500/30 whitespace-nowrap">
                                             {item.live_score} pt
                                         </span>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 text-right font-mono font-black text-sm text-[var(--theme-text)]">
+                                    <td className="px-1.5 sm:px-4 lg:px-6 py-1.5 sm:py-3 text-right font-mono font-black text-[10px] sm:text-sm text-[var(--theme-text)] whitespace-nowrap">
                                         {Number(item.price || 0).toLocaleString()}원
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 text-right font-mono font-black text-xs">
+                                    <td className="px-1.5 sm:px-4 lg:px-6 py-1.5 sm:py-3 text-right font-mono font-black text-[9.5px] sm:text-xs whitespace-nowrap">
                                         <span className={item.program_net_buy > 0 ? "text-rose-400" : "text-blue-400"}>
                                             {item.program_net_buy > 0 ? "+" : ""}{Number(item.program_net_buy || 0).toLocaleString()}
                                         </span>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-400">
+                                    <td className="hidden sm:table-cell px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-400">
                                         <span className="px-1.5 py-0.5 rounded bg-slate-500/10 border border-slate-500/20 mr-1">RSI {item.rsi}</span>
                                         <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{item.obv > 0 ? 'OBV양호' : 'OBV관망'}</span>
                                     </td>
-                                    <td className="px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-500">
+                                    <td className="hidden md:table-cell px-4 lg:px-6 py-3 text-center font-mono text-xs text-slate-500">
                                         {item.captured_time}
                                     </td>
                                 </tr>

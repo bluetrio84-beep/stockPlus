@@ -420,33 +420,33 @@ const RealEstateDashboard = () => {
                             <span className="text-sm font-black">해당 조건의 부동산 지역 데이터가 없습니다.</span>
                         </div>
                     ) : (
-                        <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-xl overflow-hidden">
-                            <div className="px-4 py-3 border-b border-[var(--theme-border)] flex items-center justify-between bg-[var(--theme-bg)]/40">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-black text-[var(--theme-text)]">
+                        <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-xl sm:rounded-2xl shadow-xl overflow-hidden">
+                            <div className="px-2.5 sm:px-4 py-2 sm:py-3 border-b border-[var(--theme-border)] flex items-center justify-between gap-1.5 bg-[var(--theme-bg)]/40">
+                                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                                    <span className="text-[10px] sm:text-xs font-black text-[var(--theme-text)] truncate">
                                         {sourceType === 'KB' ? 'KB부동산' : '한국부동산원(REB)'} [{getPeriodName()}] {regionType === 'ALL' ? '전국' : regionType} {orderType === 'UP' ? '상승률 Top 50' : '하락률 Top 50'}
                                     </span>
-                                    <span className="text-[10px] font-mono font-bold text-slate-500">
-                                        (총 {filteredRankings.length}개 지역 표시)
+                                    <span className="hidden xs:inline text-[9px] sm:text-[10px] font-mono font-bold text-slate-500 shrink-0">
+                                        (총 {filteredRankings.length}개)
                                     </span>
                                 </div>
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                <span className="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 border border-rose-500/20 shrink-0">
                                     기준: {summary?.base_date || selectedDate || '최신'}
                                 </span>
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse min-w-[500px]">
+                            <div className="overflow-x-auto sm:overflow-visible">
+                                <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="border-b border-[var(--theme-border)] bg-[var(--theme-bg)]/60 text-[11px] font-black text-slate-400 uppercase tracking-wider">
-                                            <th className="py-3 px-4 text-center w-16">순위</th>
-                                            <th className="py-3 px-4">지역명 (시·군·구)</th>
-                                            <th className="py-3 px-4 text-center">권역 분류</th>
-                                            <th className="py-3 px-4 text-right">매매가격 증감률(%)</th>
-                                            <th className="py-3 px-4 text-center">기간 구분</th>
+                                        <tr className="border-b border-[var(--theme-border)] bg-[var(--theme-bg)]/60 text-[9px] sm:text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                                            <th className="py-2 sm:py-3 px-1 sm:px-4 text-center w-7 sm:w-16">순위</th>
+                                            <th className="py-2 sm:py-3 px-1.5 sm:px-4">지역명 (시·군·구)</th>
+                                            <th className="py-2 sm:py-3 px-1 sm:px-4 text-center w-14 sm:w-auto">권역</th>
+                                            <th className="py-2 sm:py-3 px-1.5 sm:px-4 text-right">매매가격 증감률</th>
+                                            <th className="py-2 sm:py-3 px-1 sm:px-4 text-center w-12 sm:w-auto">기간</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[var(--theme-border)]/50 text-xs font-bold">
+                                    <tbody className="divide-y divide-[var(--theme-border)]/50 text-[10px] sm:text-xs font-bold">
                                         {filteredRankings.map((r, idx) => {
                                             const rank = idx + 1;
                                             const rate = parseFloat(r.fluctuation_rate || '0');
@@ -455,9 +455,9 @@ const RealEstateDashboard = () => {
 
                                             return (
                                                 <tr key={idx} className="hover:bg-[var(--theme-bg)]/70 transition-colors">
-                                                    <td className="py-3 px-4 text-center">
+                                                    <td className="py-1.5 sm:py-3 px-1 sm:px-4 text-center">
                                                         <span className={classNames(
-                                                            "inline-flex items-center justify-center w-6 h-6 rounded-lg font-black text-xs font-mono",
+                                                            "inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg font-black text-[9px] sm:text-xs font-mono",
                                                             rank === 1 ? "bg-amber-500/20 text-amber-500 border border-amber-500/40" :
                                                             rank === 2 ? "bg-slate-400/20 text-slate-300 border border-slate-400/40" :
                                                             rank === 3 ? "bg-amber-700/20 text-amber-600 border border-amber-700/40" :
@@ -466,14 +466,14 @@ const RealEstateDashboard = () => {
                                                             {rank}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className="font-black text-sm text-[var(--theme-text)]">
+                                                    <td className="py-1.5 sm:py-3 px-1.5 sm:px-4">
+                                                        <span className="font-black text-[11px] sm:text-sm text-[var(--theme-text)] truncate max-w-[120px] xs:max-w-none block">
                                                             {r.region_name}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4 text-center">
+                                                    <td className="py-1.5 sm:py-3 px-1 sm:px-4 text-center">
                                                         <span className={classNames(
-                                                            "text-[10px] font-black px-2 py-0.5 rounded border",
+                                                            "text-[8.5px] sm:text-[10px] font-black px-1 sm:px-2 py-0.2 sm:py-0.5 rounded border",
                                                             r.region_type === '수도권' 
                                                                 ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30" 
                                                                 : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
@@ -481,9 +481,9 @@ const RealEstateDashboard = () => {
                                                             {r.region_type}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4 text-right">
+                                                    <td className="py-1.5 sm:py-3 px-1.5 sm:px-4 text-right whitespace-nowrap">
                                                         <span className={classNames(
-                                                            "inline-block px-2.5 py-0.5 rounded-lg text-xs font-black font-mono",
+                                                            "inline-block px-1.5 sm:px-2.5 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg text-[9.5px] sm:text-xs font-black font-mono",
                                                             isUp ? "bg-red-500/10 text-red-500 border border-red-500/20" :
                                                             isDown ? "bg-blue-500/10 text-blue-500 border border-blue-500/20" :
                                                             "bg-slate-500/10 text-slate-400"
@@ -491,8 +491,8 @@ const RealEstateDashboard = () => {
                                                             {isUp ? '+' : ''}{rate.toFixed(2)}%
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4 text-center">
-                                                        <span className="text-[10px] font-mono text-slate-400">
+                                                    <td className="py-1.5 sm:py-3 px-1 sm:px-4 text-center whitespace-nowrap">
+                                                        <span className="text-[9px] sm:text-[10px] font-mono text-slate-400">
                                                             {getPeriodName()}
                                                         </span>
                                                     </td>
