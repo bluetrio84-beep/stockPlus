@@ -10,6 +10,14 @@ import { fetchPortfolioIntelligence } from '../api/stockApi';
 
 import { useNavigate } from 'react-router-dom';
 
+const RADAR_KEYS = [
+    { key: 'quant', label: 'QUANT (Q)', color: 'bg-amber-600', stroke: '#f59e0b', text: 'text-amber-600' },
+    { key: 'lstm', label: 'LSTM (L)', color: 'bg-indigo-600', stroke: '#6366f1', text: 'text-indigo-600' },
+    { key: 'tcn', label: 'TCN (T)', color: 'bg-rose-600', stroke: '#f43f5e', text: 'text-rose-600' },
+    { key: 'xgb', label: 'XGB (X)', color: 'bg-emerald-600', stroke: '#10b981', text: 'text-emerald-600' },
+    { key: 'smart', label: 'SMART (S)', color: 'bg-orange-600', stroke: '#f97316', text: 'text-orange-600' },
+];
+
 const MyPortfolioDashboard = () => {
     const navigate = useNavigate();
     const [holdings, setHoldings] = useState([]);
@@ -206,25 +214,28 @@ const MyPortfolioDashboard = () => {
                                             <Target size={18} className="text-indigo-600 transition-colors" /> {insight.stockName}
                                         </h5>
                                         <div className="flex flex-col items-end scale-100 leading-none transition-colors">
-                                            <span className="text-[11px] font-black font-mono text-indigo-600 transition-colors">PROB {insight.hitRate}%</span>
+                                            <span className="text-[11px] font-black font-mono text-indigo-600 transition-colors" title="향후 3거래일 단기 상승 모멘텀 기대 확률">3D PROB {insight.hitRate}%</span>
                                             <div className="flex gap-0.5 mt-1 transition-colors">
                                                 {[1,2,3,4,5].map(s => <div key={s} className={`w-1 h-1 rounded-full transition-colors ${s <= (insight.hitRate/20) ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>)}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-1.5 transition-colors">
-                                        {Object.entries(insight.radar).filter(([k]) => k !== 'interpretation').map(([key, val]) => (
-                                            <div key={key} className="flex items-center gap-3 transition-colors">
-                                                <span className="w-10 text-[9px] font-black text-slate-500 uppercase transition-colors">{key}</span>
-                                                <div className="flex-1 h-1.5 bg-[var(--theme-header)] transition-colors duration-500 rounded-full overflow-hidden transition-colors shadow-inner">
-                                                    <div 
-                                                        className={`h-full transition-all duration-1000 ${key==='lstm' ? 'bg-indigo-600' : key==='tcn' ? 'bg-rose-600' : key==='quant' ? 'bg-amber-600' : key==='smart' ? 'bg-orange-600' : 'bg-emerald-600'}`} 
-                                                        style={{width: `${val}%`}}
-                                                    ></div>
+                                        {RADAR_KEYS.map(({ key, label, color }) => {
+                                            const val = insight.radar?.[key] ?? 0;
+                                            return (
+                                                <div key={key} className="flex items-center gap-2.5 transition-colors">
+                                                    <span className="w-16 text-[9px] font-black text-slate-500 uppercase tracking-tighter transition-colors">{label}</span>
+                                                    <div className="flex-1 h-1.5 bg-[var(--theme-header)] transition-colors duration-500 rounded-full overflow-hidden transition-colors shadow-inner">
+                                                        <div 
+                                                            className={`h-full transition-all duration-1000 ${color}`} 
+                                                            style={{width: `${Math.max(0, Math.min(100, val))}%`}}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="w-8 text-right text-[11px] font-black font-mono text-[var(--theme-text)] opacity-80 transition-colors">{val}</span>
                                                 </div>
-                                                <span className="w-8 text-right text-[11px] font-black font-mono text-[var(--theme-text)] opacity-80 transition-colors">{val}</span>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                     <p className="mt-2 text-[12px] text-slate-500 font-black leading-tight break-keep italic opacity-90 transition-colors">
                                         "{insight.radar.interpretation}"
@@ -270,8 +281,22 @@ const MyPortfolioDashboard = () => {
                                     <h5 className="text-[var(--theme-text)] font-black text-lg group-hover:text-indigo-600 transition-colors">{stock.stockName}</h5>
                                     <span className="text-xs font-black text-slate-500 font-mono transition-colors">{stock.stockCode}</span>
                                 </div>
-                                <div className={classNames("px-3 py-1 rounded-full text-[10px] font-black uppercase transition-colors", profitRate >= 0 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20")}>
-                                    {profitRate >= 0 ? '▲' : '▼'} {Math.abs(profitRate).toFixed(1)}%
+                                <div className="flex flex-col items-end gap-1.5 transition-colors">
+                                    <div className={classNames("px-3 py-1 rounded-full text-[10px] font-black uppercase transition-colors", profitRate >= 0 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20")}>
+                                        {profitRate >= 0 ? '▲' : '▼'} {Math.abs(profitRate).toFixed(1)}%
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[10px] font-black font-mono transition-colors">
+                                        {(stockInsight?.total_score || stock.aiScore) && (
+                                            <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 leading-none">
+                                                AI {stockInsight?.total_score || stock.aiScore}점
+                                            </span>
+                                        )}
+                                        {(stockInsight?.radar?.smart !== undefined || stock.smartMoneyScore !== undefined) && (
+                                            <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 border border-orange-500/20 leading-none">
+                                                S {stockInsight?.radar?.smart ?? stock.smartMoneyScore}점
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -348,18 +373,21 @@ const MyPortfolioDashboard = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-10 custom-scrollbar text-[var(--theme-text)] transition-colors">
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 transition-colors">
-                                {Object.entries(selectedInsight.radar).filter(([k]) => k !== 'interpretation').map(([key, val]) => (
-                                    <div key={key} className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-6 flex flex-col items-center gap-4 relative group hover:border-indigo-500/30 transition-all transition-colors shadow-inner">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest transition-colors">{key} Energy</span>
-                                        <div className="relative w-24 h-24 flex items-center justify-center transition-colors">
-                                            <svg className="w-full h-full transform -rotate-90">
-                                                <circle cx="50%" cy="50%" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-300 opacity-10 transition-colors" />
-                                                <circle cx="50%" cy="50%" r="40" stroke={key==='lstm' ? '#6366f1' : key==='tcn' ? '#f43f5e' : key==='quant' ? '#f59e0b' : key==='smart' ? '#f97316' : '#10b981'} strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (val / 100 * 251)} strokeLinecap="round" className="transition-all duration-1000 shadow-2xl" />
-                                            </svg>
-                                            <span className="absolute text-xl font-black font-mono italic transition-colors">{val}</span>
+                                {RADAR_KEYS.map(({ key, label, stroke }) => {
+                                    const val = selectedInsight.radar?.[key] ?? 0;
+                                    return (
+                                        <div key={key} className="bg-[var(--theme-bg)] transition-colors duration-500/50 border border-[var(--theme-border)] transition-colors duration-500 rounded-3xl p-6 flex flex-col items-center gap-4 relative group hover:border-indigo-500/30 transition-all transition-colors shadow-inner">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest transition-colors">{label}</span>
+                                            <div className="relative w-24 h-24 flex items-center justify-center transition-colors">
+                                                <svg className="w-full h-full transform -rotate-90">
+                                                    <circle cx="50%" cy="50%" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-300 opacity-10 transition-colors" />
+                                                    <circle cx="50%" cy="50%" r="40" stroke={stroke} strokeWidth="8" fill="transparent" strokeDasharray="251" strokeDashoffset={251 - (Math.max(0, Math.min(100, val)) / 100 * 251)} strokeLinecap="round" className="transition-all duration-1000 shadow-2xl" />
+                                                </svg>
+                                                <span className="absolute text-xl font-black font-mono italic transition-colors">{val}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-[2rem] p-8 space-y-4 transition-colors">
                                 <h3 className="font-black text-sm uppercase tracking-widest flex items-center gap-2 transition-colors"><Activity size={20} className="text-indigo-600" /> Tactical Scenario</h3>

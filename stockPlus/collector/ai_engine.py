@@ -15,35 +15,44 @@ DB_CONFIG = {
     'host': '127.0.0.1', 'port': 3306, 'user': 'lms', 'password': 'cnbas.2015', 'database': 'stockplus', 'charset': 'utf8mb4'
 }
 
-# [v1.7] 고도화된 LSTM 딥러닝 모델 정의
+# [v60.0] 고도화된 LSTM 딥러닝 모델 정의 (스케일 불변 정상 시계열 피처 6개)
 class StockLSTM(nn.Module):
-    def __init__(self, input_size=5, hidden_size=64, num_layers=2, output_size=1):
+    def __init__(self, input_size=6, hidden_size=64, num_layers=2, output_size=1):
         super(StockLSTM, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
-        self.fc = nn.Linear(hidden_size, output_size)
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, output_size)
+        )
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, device=x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, device=x.device)
         out, _ = self.lstm(x, (h0, c0))
         out = self.fc(out[:, -1, :])
         return out
 
-# [v15.0] TCN (Temporal Convolutional Network) 모델 정의
+# [v60.0] TCN (Temporal Convolutional Network) 모델 정의 (Dilation & BatchNorm 적용)
 class StockTCN(nn.Module):
-    def __init__(self, input_size=5, num_channels=[32, 64], kernel_size=2, dropout=0.2):
+    def __init__(self, input_size=6, num_channels=[32, 64], kernel_size=2, dropout=0.2):
         super(StockTCN, self).__init__()
         layers = []
         in_channels = input_size
         for out_channels in num_channels:
             layers.append(nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size-1))
+            layers.append(nn.BatchNorm1d(out_channels))
             layers.append(nn.ReLU())
             layers.append(nn.Dropout(dropout))
             in_channels = out_channels
         self.network = nn.Sequential(*layers)
-        self.fc = nn.Linear(num_channels[-1], 1)
+        self.fc = nn.Sequential(
+            nn.Linear(num_channels[-1], 32),
+            nn.ReLU(),
+            nn.Linear(32, 1)
+        )
 
     def forward(self, x):
         x = x.transpose(1, 2)
@@ -65,13 +74,13 @@ class AIEngine:
         try:
             self.scaler = joblib.load('stock_scaler.gz')
             
-            # [v15.6] 5개 피처 체계로 로드
-            self.lstm_model = StockLSTM(input_size=5)
+            # [v60.0] 6개 정상 시계열 피처 체계로 로드
+            self.lstm_model = StockLSTM(input_size=6)
             self.lstm_model.load_state_dict(torch.load("stock_lstm_v1.pth", map_location=torch.device('cpu')))
             self.lstm_model.eval()
             
             try:
-                self.tcn_model = StockTCN(input_size=5)
+                self.tcn_model = StockTCN(input_size=6)
                 self.tcn_model.load_state_dict(torch.load("stock_tcn_v1.pth", map_location=torch.device('cpu')))
                 self.tcn_model.eval()
             except: pass
@@ -118,22 +127,25 @@ class AIEngine:
 
     def get_ensemble_score_details(self, stock_code, curr_price, curr_f, curr_vol):
         """
-        [v17.7] 각 모델별 개별 점수를 포함한 상세 정보를 반환합니다.
+        [v60.0] 초정밀 3대 앙상블 (LSTM, TCN, XGB) 기대수익률 기반 추론 엔진
+        - 스케일 불변 정상 시계열 피처 (1d수익률, 5일이평괴리, 외인/기관/개인비율, 거래량서지) 6개
+        - 3일 후 미래 기대수익률(%) 예측 모델 및 캘리브레이션 스코어링 (0~100)
         """
         if self.lstm_model is None or self.scaler is None: 
             return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
         try:
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                # 1. 과거 일별 수급 데이터 조회 (최대 10일치)
                 cursor.execute("""
                     SELECT close_price, individual_net_buy, 
                            foreign_net_buy, institution_net_buy, volume 
                     FROM daily_stock_investor 
                     WHERE stock_code = %s 
-                    ORDER BY bsop_date DESC LIMIT 4
+                    ORDER BY bsop_date DESC LIMIT 10
                 """, (stock_code,))
                 rows = cursor.fetchall()
                 
-                # [v54.0] 1,863개 전 종목 완벽 지원: daily_stock_investor에 데이터가 없는 중소형 유망주는 stock_intraday_history에서 시계열 추출
+                # 중소형주 fallback: stock_intraday_history 일별 스냅샷
                 if len(rows) < 1:
                     cursor.execute("""
                         SELECT price as close_price, 0 as individual_net_buy,
@@ -142,66 +154,94 @@ class AIEngine:
                             SELECT price, program_net_buy, volume, captured_at,
                                    ROW_NUMBER() OVER(PARTITION BY DATE(captured_at) ORDER BY captured_at DESC) as rn
                             FROM stock_intraday_history
-                            WHERE stock_code = %s AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+                            WHERE stock_code = %s AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 20 DAY)
                         ) t
                         WHERE rn = 1
-                        ORDER BY captured_at DESC LIMIT 4
+                        ORDER BY captured_at DESC LIMIT 10
                     """, (stock_code,))
                     rows = cursor.fetchall()
 
-                # 여전히 데이터가 전혀 없으면 기본 중립값 반환
                 if len(rows) < 1:
                     return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
                 
+                # 시간 순서로 정렬 (과거 -> 최근)
                 past_df = pd.DataFrame(rows[::-1])
-                # 부족한 일수만큼 첫 번째 데이터로 패딩하여 5일치(과거4+오늘1)를 강제로 맞춤
-                if len(rows) < 4:
-                    padding = pd.concat([past_df.iloc[[0]]] * (4 - len(rows)), ignore_index=True)
-                    past_df = pd.concat([padding, past_df], ignore_index=True)
+                for col in ['close_price', 'individual_net_buy', 'foreign_net_buy', 'institution_net_buy', 'volume']:
+                    past_df[col] = past_df[col].astype(float)
                 
-                today_data = [curr_price, 0, curr_f, 0, curr_vol] 
-                df = pd.concat([past_df, pd.DataFrame([today_data], columns=past_df.columns)], ignore_index=True)
-                
-                df_values = df.values.astype(np.float32)
-                scaled_data = self.scaler.transform(df_values)
-                input_tensor = torch.FloatTensor(scaled_data).unsqueeze(0)
-                
-                # 3. 앙상블 예측 (삼각편대)
-                try:
-                    with torch.no_grad():
-                        lstm_pred = self.lstm_model(input_tensor).item()
-                except: lstm_pred = scaled_data[-1, 0]
-                
-                try:
-                    if self.tcn_model is not None:
-                        with torch.no_grad():
-                            tcn_pred = self.tcn_model(input_tensor).item()
-                    else: tcn_pred = lstm_pred
-                except: tcn_pred = lstm_pred
-                
-                final_pred = (lstm_pred + tcn_pred) / 2
-                xgb_pred = final_pred
+                # 실시간 당일 틱 반영
+                if curr_price > 0 and curr_vol > 0:
+                    today_row = {
+                        'close_price': float(curr_price),
+                        'individual_net_buy': 0.0,
+                        'foreign_net_buy': float(curr_f or 0),
+                        'institution_net_buy': 0.0,
+                        'volume': float(curr_vol)
+                    }
+                    past_df = pd.concat([past_df, pd.DataFrame([today_row])], ignore_index=True)
+
+                # 최소 5일치 확보를 위한 패딩
+                if len(past_df) < 5:
+                    pad = pd.concat([past_df.iloc[[0]]] * (5 - len(past_df)), ignore_index=True)
+                    past_df = pd.concat([pad, past_df], ignore_index=True)
+
+                # 2. 6개 스케일 불변 정상 시계열 피처 계산
+                past_df['ret_1d'] = (past_df['close_price'].pct_change() * 100).fillna(0.0).clip(-15.0, 15.0)
+                ma5 = past_df['close_price'].rolling(5, min_periods=1).mean()
+                past_df['ma5_ratio'] = ((past_df['close_price'] / ma5 - 1) * 100).fillna(0.0).clip(-20.0, 20.0)
+                vol_safe = past_df['volume'].replace(0, np.nan)
+                past_df['foreign_ratio'] = (past_df['foreign_net_buy'] / vol_safe * 100).fillna(0.0).clip(-50.0, 50.0)
+                past_df['institution_ratio'] = (past_df['institution_net_buy'] / vol_safe * 100).fillna(0.0).clip(-50.0, 50.0)
+                past_df['retail_ratio'] = (past_df['individual_net_buy'] / vol_safe * 100).fillna(0.0).clip(-50.0, 50.0)
+                vol5 = past_df['volume'].rolling(5, min_periods=1).mean()
+                past_df['vol_surge'] = (past_df['volume'] / vol5.replace(0, np.nan)).fillna(1.0).clip(0.1, 5.0)
+
+                feat_cols = ['ret_1d', 'ma5_ratio', 'foreign_ratio', 'institution_ratio', 'retail_ratio', 'vol_surge']
+                seq_df = past_df[feat_cols].iloc[-5:] # 최근 5거래일 시퀀스
+
+                # 정규화
+                scaled_seq = self.scaler.transform(seq_df.values.astype(np.float32))
+                input_tensor = torch.FloatTensor(scaled_seq).unsqueeze(0)
+
+                # 3. 앙상블 추론 (LSTM, TCN)
+                with torch.no_grad():
+                    try: lstm_pred = float(self.lstm_model(input_tensor).item())
+                    except: lstm_pred = 0.0
+
+                    try:
+                        if self.tcn_model is not None:
+                            tcn_pred = float(self.tcn_model(input_tensor).item())
+                        else: tcn_pred = lstm_pred
+                    except: tcn_pred = lstm_pred
+
+                # 4. XGBoost Stacking Meta-Learner (8개 피처)
+                xgb_pred = (lstm_pred + tcn_pred) / 2
                 if self.xgb_model is not None:
                     try:
-                        meta_features = [lstm_pred, tcn_pred] + list(scaled_data[-1, :])
-                        if len(meta_features) == 7:
+                        meta_features = [lstm_pred, tcn_pred] + list(scaled_seq[-1, :])
+                        if len(meta_features) == 8:
                             meta_input = np.array([meta_features], dtype=np.float32)
                             xgb_pred = float(self.xgb_model.predict(meta_input)[0])
-                            final_pred = xgb_pred
                     except: pass
-                
-                # 4. 개별 점수화 (50점 기준 강도 측정)
-                def calc_score(pred, base):
-                    return max(0, min(100, 50 + ((pred - base) * 500)))
 
-                base_val = scaled_data[-1, 0]
+                # 5. 기대수익률 -> 안정적 캘리브레이션 스코어 (0~100)
+                def calc_score(pred_ret):
+                    # pred_ret: 3일 후 예상 수익률(%)
+                    # 0% -> 50점, +5% -> 67.5점, +10% -> 85점, -5% -> 32.5점, -10% -> 15점
+                    return round(max(5.0, min(95.0, 50.0 + (pred_ret * 3.5))), 1)
+
+                l_score = calc_score(lstm_pred)
+                t_score = calc_score(tcn_pred)
+                x_score = calc_score(xgb_pred)
+                tot_score = round((l_score * 0.33) + (t_score * 0.33) + (x_score * 0.34), 1)
+
                 return {
-                    'total': calc_score(final_pred, base_val),
-                    'lstm': calc_score(lstm_pred, base_val),
-                    'tcn': calc_score(tcn_pred, base_val),
-                    'xgb': calc_score(xgb_pred, base_val) # XGBoost 독립 점수 산출
+                    'total': tot_score,
+                    'lstm': l_score,
+                    'tcn': t_score,
+                    'xgb': x_score
                 }
-        except Exception:
+        except Exception as e:
             return {'total': 50.0, 'lstm': 50.0, 'tcn': 50.0, 'xgb': 50.0}
 
     # [v1.11] 정밀 적중률 산출 로직 (최근 7일 사후 검증)

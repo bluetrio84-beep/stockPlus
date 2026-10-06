@@ -7,7 +7,7 @@ import { getStockStatusBadge } from '../utils/stockUtils';
 
 const SmartMoneyDashboard = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('stealth'); // 'stealth' (세력 잠행 매집) | 'hallOfFame' (90%+ 명예의 전당)
+    const [activeTab, setActiveTab] = useState('stealth'); // 'stealth' (세력 잠행 매집) | 'hallOfFame' (85%+ 명예의 전당)
     const [stocks, setStocks] = useState([]);
     const [stealthStocks, setStealthStocks] = useState([]);
     const [stockBadges, setStockBadges] = useState({});
@@ -114,7 +114,7 @@ const SmartMoneyDashboard = () => {
                     <div>
                         <h1 className="text-xl lg:text-3xl font-black text-[var(--theme-text)] tracking-tight uppercase italic flex items-center gap-2 transition-colors">
                             Smart Money <span className={activeTab === 'stealth' ? "text-indigo-500 not-italic font-sans" : "text-amber-600 not-italic font-sans"}>
-                                {activeTab === 'stealth' ? 'Stealth Accumulation' : '90%+ Hall of Fame'}
+                                {activeTab === 'stealth' ? 'Stealth Accumulation' : '85%+ Hall of Fame'}
                             </span>
                         </h1>
                         <p className="text-slate-500 text-[10px] lg:text-xs font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5 transition-colors">
@@ -147,7 +147,7 @@ const SmartMoneyDashboard = () => {
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <Sparkles size={14} /> 90%+ 명예의 전당 ({stocks.length})
+                            <Sparkles size={14} /> 85%+ 명예의 전당 ({stocks.length})
                         </button>
                     </div>
 
@@ -311,7 +311,7 @@ const SmartMoneyDashboard = () => {
                             })}
                         </div>
                     ) : (
-                        /* 기존 90%+ 명예의 전당 카드 그리드 */
+                        /* 기존 85%+ 명예의 전당 카드 그리드 */
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pb-10">
                             {filteredStocks.map((stock, idx) => {
                                 const lastDate = new Date(stock.last_detected);
@@ -386,7 +386,7 @@ const SmartMoneyDashboard = () => {
                         <div className="text-center">
                             <p className="text-[var(--theme-text)] opacity-60 text-sm font-black uppercase tracking-widest mb-2">No Stocks Found</p>
                             <p className="text-slate-500 text-xs font-bold italic">
-                                {activeTab === 'stealth' ? '현재 조건에 부합하는 세력 잠행 매집 종목이 없습니다.' : '최근 30일 이내에 90점을 돌파한 종목이 아직 없습니다.'}
+                                {activeTab === 'stealth' ? '현재 조건에 부합하는 세력 잠행 매집 종목이 없습니다.' : '최근 30일 이내에 85점을 돌파한 종목이 아직 없습니다.'}
                             </p>
                         </div>
                     </div>

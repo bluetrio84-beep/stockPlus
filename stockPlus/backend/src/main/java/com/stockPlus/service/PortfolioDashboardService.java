@@ -57,6 +57,8 @@ public class PortfolioDashboardService {
                             h.put("lstmScore", radar.get("lstm"));
                             h.put("tcnScore", radar.get("tcn"));
                             h.put("xgbScore", radar.get("xgb"));
+                            h.put("smartMoneyScore", radar.get("smart"));
+                            h.put("quantScore", radar.get("quant"));
                         }
                         List<String> reasons = (List<String>) ins.get("reasoning");
                         if (reasons != null && !reasons.isEmpty()) {

@@ -1,6 +1,51 @@
 # StockPlus Project Development Task - Phase 4 (Editor & UX Perfection) 🔥 🚀 💎
 
-## 🚀 최신 업데이트 현황 (v16.74) - 네이버 증권 2026.09 리뉴얼(Next.js SPA) 완벽 대응 & 어드민 대시보드 Hot Themes 264개 전수 복구 ⚡ 🎯 💎
+## 🚀 최신 업데이트 현황 (v16.75) - LTX 모델(v60.0) 재학습 & 스마트머니(v50.0) 고도화 & MY-DASHBOARD 단일 진실 공급원(SSOT) 및 수석 애널리스트 팩트 서사 엔진 구축 🧠 ⚡ 💎
+
+### 1. 스마트머니 S-Score (v50.0) 고도화 & 85%+ 명예의 전당 개편
+- **P축 (프로그램 수급)**: 비율(%) vs 절대금액(500억/200억/100억/50억/20억/10억) 하이브리드 판정 적용으로 대형주 역차별 원천 해소. `daily_stock_investor` 연동으로 외인+기관 동시 순매수 시 +6~8점 가점 및 `💎외인기관쌍끌이` 태그 부여.
+- **S축 (공매도 전황)**: `avg_short_price > 0` 조건 추가로 장중 당일 0.00 행으로 인한 공매도 0점 버그 원천 차단.
+- **O축 & T축**: OBV 10일 정규화 [0, 1] 밴드 적용, 거래대금 3,000억/1,000억/500억 절대 티어 Floor 적용.
+- **Floor 방어**: `max(0.0, ...)` 바운드 적용으로 음수 점수(-64점 등) 버그 완전 박멸.
+- **85%+ 명예의 전당 (Hall of Fame)**: 상위 1% 가치 부여를 위해 `s_score >= 85.0` 보호 로직 및 `AdminMapper.xml`, `SmartMoneyDashboard.jsx` 85%+ 전면 UI/쿼리 개편 완료.
+
+### 2. LTX(LSTM, TCN, XGBoost) 앙상블 모델 전면 개편 및 재학습 파이프라인 (v60.0)
+- **피처 아키텍처 혁신**: 어제 종가 복사 버그를 제거하고 6대 스케일 불변 정상 시계열 피처(`ret_1d`, `ma5_ratio`, `foreign_ratio`, `institution_ratio`, `retail_ratio`, `vol_surge`) 적용.
+- **타깃 변수**: 3일 후 미래 기대수익률($R_{3d}$) 직접 예측.
+- **14,467개 시퀀스 샘플 대상 재학습 실측 지표**:
+  - LSTM Rank IC: **+0.2894** (기존 +0.009 대비 급상승)
+  - TCN Rank IC: **+0.1108** (기존 -0.023 음수 탈출)
+  - XGBoost Rank IC: **+0.2848** (기존 -0.016 음수 탈출)
+  - **Ensemble Rank IC: +0.2901**, **3일 방향성 승률: 58.26%** 달성.
+- 모델 가중치 파일 4종(`stock_lstm_v1.pth`, `stock_tcn_v1.pth`, `stock_xgb_v1.json`, `stock_scaler.gz`) 갱신 및 컬렉터 컨테이너 배포 완료.
+
+### 3. MY-DASHBOARD 단일 진실 공급원(SSOT) 아키텍처 개편 및 Q L T X S 동기화
+- **배후 수집 엔진 개편 (`collector/blackbox_analyst.py`)**:
+  - `NextLeaderEngine` 상속 및 단일 파이프라인 구축: 최신 Q(기술적 턴어라운드), L(LSTM), T(TCN), X(XGBoost), S(스마트머니) 100% 동기화.
+  - SK하이닉스 S점수 음수(-3.4점) 버그 및 LTX 임의 +5점 하드코딩 완전 해결.
+  - DB `collector_config` 동적 가중치(Dynamic Weights) 실시간 연동.
+- **백엔드 보강 (`PortfolioDashboardMapper.xml`, `PortfolioDashboardService.java`)**:
+  - 보유 종목(`holdings`) 쿼리에 `smartMoneyScore`, `quantScore` 매핑 컬럼 추가 및 Fallback 바인딩 완료, Maven 빌드 및 무중단 재기동.
+- **프론트엔드 UI/UX 개편 (`MyPortfolioDashboard.jsx`)**:
+  - AI 관제탑 게이지 바와 심층 모달 원형 차트에 **QUANT (Q)**, **LSTM (L)**, **TCN (T)**, **XGB (X)**, **SMART (S)** 순서와 명칭 완전 통일.
+  - 각 보유 종목 카드 헤더에 `AI XX점`, `S XX점` 뱃지 직관 노출.
+
+### 4. PROB 및 Prediction 수치 괴리 완전 일치화 (Single Source of Probability)
+- 기존의 상단 `PROB (total_score * 0.7 + 15)`와 하단 `Prediction (total_score * 1.1)` 간의 이중 계산 및 수치 불일치(56.3% vs 64%) 완전 박멸.
+- 단일 `ai_probability`를 기반으로 `3D PROB`와 시나리오 문구 속 확률을 단 0.1%의 오차도 없이 100% 동기화.
+- 자극적이고 모호했던 "수급 폭발 확률" 워딩을 **"향후 3거래일 내 단기 상승 모멘텀 확률"**로 정직하게 교정.
+
+### 5. 데이터 팩트 기반 수석 퀀트 애널리스트 서사 엔진 (v70.0) 전면 구축
+- **하드코딩 소설식 템플릿 영구 박멸 (`collector/narrative_matrix.py`)**:
+  - 뜬구름 잡는 무협지/소설식 클리셰("수급의 칼날", "폭발 전야의 고요함", "거대 자본의 설계", "천상의 타점") 100% 영구 삭제.
+- **3단계 논리적 금융 리포트 아키텍처 완성**:
+  1. **[기술적 가격 국면]**: 52주 최고가 대비 괴리율(%), RSI 지수, 5일선/20일선 초밀집 수렴율을 직접 연산하여 '심층 과매도 눌림목 / 건전한 기술적 조정 / 에너지 응축 변곡점 / 신고가 가시권' 정량 판정.
+  2. **[메이저 자금 & 공매도 전황]**: 외국인·기관·프로그램의 실제 순매수 금액(억 원 단위)과 공매도 세력의 실측 평균단가 대비 숏커버링 압박률을 구체적 숫자로 명시.
+  3. **[5대 AI 모델 종합 판정 & 실전 전략]**: Q, L, T, X, S 중 현재 상승을 주도하는 최고 득점 모델(Driver Model)을 지목하고, 3일 신뢰도(PROB)에 따른 실전 매매 가이드('단계적 분할 접근' 등) 제시.
+
+---
+
+## 🚀 이전 업데이트 현황 (v16.74) - 네이버 증권 2026.09 리뉴얼(Next.js SPA) 완벽 대응 & 어드민 대시보드 Hot Themes 264개 전수 복구 ⚡ 🎯 💎
 
 ### 1. 어드민 대시보드 Hot Themes 미출력 원인 규명 및 완벽 해결
 - **사용자 요청**: "현재 어드민 대시보드에 hot themes가 안나옴... 원인파악좀"

@@ -13,6 +13,7 @@
             nl.lstm_score as lstmScore,
             nl.tcn_score as tcnScore,
             nl.xgb_score as xgbScore,
+            nl.smart_money_score as smartMoneyScore,
             nl.reason as aiReason,
             cf.revenue,
             cf.op_profit as opProfit,

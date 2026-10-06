@@ -118,19 +118,28 @@ class NextLeaderEngine(AIEngine):
 
     def get_smart_money_score(self, code, price, volume, current_obv):
         """
-        [v39.0] 지능형 스마트머니 S-Score (Adaptive Scoring)
-        공매도 미대상 종목은 4:3:3 (40:30:30) 레시피로 자동 전환
+        [v50.0] 초정밀 스마트머니 S-Score (Smart Money Core Engine)
+        - P축: 프로그램 비중 + 절대금액 하이브리드 + 외인/기관 양매수(쌍끌이) 결합 (Max 30 / 미대상 40)
+        - S축: 공매도 세력 평단가(avg_short_price > 0) 돌파율 + 누적 숏스퀴즈 압박 (Max 15 / 미대상 0)
+        - O축: OBV 10일 정규화 밴드 + 신고가 돌파 보너스 (Max 25 / 미대상 30)
+        - T축: 과거 대비 급증율(Surge) + 절대 거래대금 티어(1,000억+) 보장 (Max 30 / 미대상 30)
+        - Floor 방어: 음수 발생 완벽 차단 (0 ~ 100점 스케일 보장)
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 0. 공매도 데이터 존재 여부 확인
-                sql_sd = "SELECT avg_short_price FROM daily_short_selling WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 1"
+                # 0. 공매도 데이터 존재 여부 확인 (장중 당일 0.00 행 방어: avg_short_price > 0 조건 필수)
+                sql_sd = """
+                    SELECT avg_short_price, total_short_ratio, short_ratio 
+                    FROM daily_short_selling 
+                    WHERE stock_code = %s AND avg_short_price > 0 
+                    ORDER BY bsop_date DESC LIMIT 1
+                """
                 cursor.execute(sql_sd, (code,))
                 sd_row = cursor.fetchone()
                 has_short = True if sd_row and float(sd_row['avg_short_price'] or 0) > 0 else False
 
-                # 1. 프로그램 순매수 (Max 35 or 40)
+                # 1. P축: 프로그램 수급 + 절대금액 + 외인/기관 양매수 (Max 30 or 40)
                 sql_pgm = """
                     SELECT program_net_buy, captured_at 
                     FROM stock_intraday_history 
@@ -140,14 +149,31 @@ class NextLeaderEngine(AIEngine):
                 cursor.execute(sql_pgm, (code,))
                 pgm_rows = cursor.fetchall()
                 p_score = 0.0
-                p_max_base = 30.0 if has_short else 30.0 # 기본 30점 베이스 유지
+                p_limit = 30.0 if has_short else 40.0
+                tags = []
+
                 if pgm_rows:
                     curr_pgm = float(pgm_rows[0]['program_net_buy'] or 0)
                     pgm_ratio = (curr_pgm / volume) * 100 if volume > 0 else 0
-                    # 공매도 없으면 비중 점수 만점을 30점으로 상향 (총 40점 만점)
-                    p_limit = 25.0 if has_short else 30.0
-                    p_score += min(p_limit, pgm_ratio * 1.7)
-                    
+                    pgm_amt = curr_pgm * price
+
+                    # A. 비중(Ratio) vs 절대금액(Amount) 하이브리드 판정
+                    ratio_score = 0.0
+                    if pgm_ratio > 0:
+                        ratio_score = min(20.0 if has_short else 25.0, pgm_ratio * 1.5)
+
+                    amt_score = 0.0
+                    if pgm_amt >= 50000000000:   amt_score = 20.0 if has_short else 25.0 # 500억 이상
+                    elif pgm_amt >= 20000000000: amt_score = 16.0 if has_short else 21.0 # 200억 이상
+                    elif pgm_amt >= 10000000000: amt_score = 13.0 if has_short else 17.0 # 100억 이상
+                    elif pgm_amt >= 5000000000:  amt_score = 10.0 if has_short else 13.0 # 50억 이상
+                    elif pgm_amt >= 2000000000:  amt_score = 6.0  if has_short else 8.0  # 20억 이상
+                    elif pgm_amt >= 1000000000:  amt_score = 3.0  if has_short else 4.0  # 10억 이상
+
+                    # 둘 중 유리한 점수 채택 (최소 0점 하한선 방어)
+                    base_p = max(0.0, max(ratio_score, amt_score))
+
+                    # B. 연속 순매수 가점
                     df_pgm = pd.DataFrame(pgm_rows)
                     df_pgm['date'] = pd.to_datetime(df_pgm['captured_at']).dt.date
                     daily_pgm = df_pgm.groupby('date')['program_net_buy'].sum().reset_index()
@@ -155,39 +181,76 @@ class NextLeaderEngine(AIEngine):
                     for val in daily_pgm.sort_values('date', ascending=False)['program_net_buy']:
                         if val > 0: consecutive_days += 1
                         else: break
-                    if consecutive_days >= 3: p_score += 10.0
-                    elif consecutive_days >= 2: p_score += 5.0
+                    consec_bonus = 0.0
+                    if consecutive_days >= 3: consec_bonus = 8.0
+                    elif consecutive_days >= 2: consec_bonus = 4.0
 
-                # 2. 숏스퀴즈 및 공매도 (Max 15 or 0)
+                    p_score = base_p + consec_bonus
+
+                # C. 외인/기관 양매수(쌍끌이) 팩터 결합 (daily_stock_investor 최근일 조회)
+                sql_inv = """
+                    SELECT foreign_net_buy, institution_net_buy, individual_net_buy 
+                    FROM daily_stock_investor 
+                    WHERE stock_code = %s 
+                    ORDER BY bsop_date DESC LIMIT 1
+                """
+                cursor.execute(sql_inv, (code,))
+                inv_row = cursor.fetchone()
+                if inv_row:
+                    f_buy = int(inv_row.get('foreign_net_buy') or 0)
+                    i_buy = int(inv_row.get('institution_net_buy') or 0)
+                    ind_buy = int(inv_row.get('individual_net_buy') or 0)
+
+                    if f_buy > 0 and i_buy > 0: # 외인 + 기관 동시 순매수 (쌍끌이)
+                        dual_bonus = 6.0 if has_short else 8.0
+                        p_score += dual_bonus
+                        if ind_buy < 0:
+                            tags.append("💎외인기관쌍끌이")
+                        else:
+                            tags.append("메이저양매수")
+                    elif f_buy > 0 or i_buy > 0:
+                        major_amt = max(f_buy, i_buy) * price
+                        if major_amt >= 10000000000: # 100억 이상 유입 시 보너스
+                            p_score += 3.0
+
+                p_score = max(0.0, min(p_limit, p_score))
+
+                # 2. S축: 숏스퀴즈 및 공매도 (Max 15 or 0)
                 s_score = 0.0
                 if has_short:
-                    s_boost, _ = self.get_short_cover_boost(code, price)
-                    s_score = min(15.0, s_boost)
+                    s_boost, s_tag = self.get_short_cover_boost(code, price)
+                    s_score = max(0.0, min(15.0, s_boost))
+                    if s_tag: tags.extend([t.strip() for t in s_tag.split(',') if t.strip()])
 
-                # 3. OBV 추세 (Max 25 or 30)
+                # 3. O축: OBV 추세 (Max 25 or 30)
                 sql_obv = "SELECT MAX(obv) as max_o, MIN(obv) as min_o FROM stock_intraday_history WHERE stock_code = %s AND captured_at >= DATE_SUB(NOW(), INTERVAL 10 DAY)"
                 cursor.execute(sql_obv, (code,))
                 o_range = cursor.fetchone()
                 o_score = 0.0
-                obv_tag = "" 
-                if o_range and o_range['max_o'] is not None:
+                o_limit = 20.0 if has_short else 25.0
+                if o_range and o_range['max_o'] is not None and o_range['min_o'] is not None:
                     max_o, min_o = float(o_range['max_o']), float(o_range['min_o'])
-                    o_limit = 20.0 if has_short else 25.0 # 공매도 없으면 5점 상향
-                    if max_o > min_o: o_score += min(o_limit, (current_obv - min_o) / (max_o - min_o) * o_limit)
+                    if max_o > min_o:
+                        pos_ratio = max(0.0, min(1.0, (current_obv - min_o) / (max_o - min_o)))
+                        o_score += pos_ratio * o_limit
                     
                     sql_prev_max = "SELECT MAX(obv) as p_max FROM stock_intraday_history WHERE stock_code = %s AND captured_at < DATE(NOW()) AND captured_at >= DATE_SUB(CURDATE(), INTERVAL 10 DAY)"
                     cursor.execute(sql_prev_max, (code,))
                     p_max_row = cursor.fetchone()
                     if p_max_row and p_max_row['p_max'] and current_obv > float(p_max_row['p_max']): 
                         o_score += 5.0
-                        obv_tag = "💎OBV매집포착"
+                        tags.append("💎OBV매집포착")
 
-                # 4. 거래대금 회전율 (Max 25 or 30) [v40.0: 데이터 출처 실시간 테이블로 단일화 & 50억 Floor]
+                o_score = max(0.0, min(25.0 if has_short else 30.0, o_score))
+
+                # 4. T축: 거래대금 회전율 (Max 30) [50억 Floor + 절대 거래대금 티어 결합]
                 t_score = 0.0
+                t_limit = 30.0
                 current_energy = price * volume
-                if current_energy < 5000000000: # [v40.0] 거래대금 50억 미만은 노이즈로 간주 (0점)
+                if current_energy < 5000000000: # 50억 미만은 노이즈 0점 Floor
                     t_score = 0.0
                 else:
+                    # A. 과거 대비 급증율 (Surge)
                     sql_avg_tr = """
                         SELECT AVG(energy) as avg_tr FROM (
                             SELECT MAX(volume * price) as energy 
@@ -199,12 +262,29 @@ class NextLeaderEngine(AIEngine):
                     """
                     cursor.execute(sql_avg_tr, (code,))
                     avg_tr_row = cursor.fetchone()
+                    surge_score = 0.0
                     if avg_tr_row and avg_tr_row['avg_tr'] and float(avg_tr_row['avg_tr']) > 0:
                         surge = current_energy / float(avg_tr_row['avg_tr'])
-                        t_limit = 25.0 if has_short else 30.0
-                        t_score = min(t_limit, surge * (t_limit / 3)) # 3배 급증 시 만점
+                        surge_score = min(t_limit, surge * (t_limit / 3)) # 3배 급증 시 30점 만점
 
-                return round(p_score + s_score + o_score + t_score, 2), obv_tag
+                    # B. 절대 거래대금 티어 (대형 메가 주도주 보장 Floor)
+                    tier_score = 0.0
+                    if current_energy >= 300000000000:   tier_score = 25.0 # 3,000억 이상
+                    elif current_energy >= 100000000000: tier_score = 20.0 # 1,000억 이상
+                    elif current_energy >= 50000000000:  tier_score = 15.0 # 500억 이상
+                    elif current_energy >= 20000000000:  tier_score = 10.0 # 200억 이상
+
+                    t_score = max(0.0, min(t_limit, max(surge_score, tier_score)))
+
+                total_s = round(min(100.0, max(0.0, p_score + s_score + o_score + t_score)), 1)
+                
+                # 중복 태그 제거
+                unique_tags = []
+                for t in tags:
+                    if t not in unique_tags: unique_tags.append(t)
+                tag_str = ", ".join(unique_tags)
+
+                return total_s, tag_str
         except Exception as e:
             print(f">>> [Ultimate S-Score Error] {e}")
             return 0.0, ""
@@ -212,13 +292,18 @@ class NextLeaderEngine(AIEngine):
     def get_short_cover_boost(self, code, current_price):
         """
         [v26.0] 숏커버링 및 숏스퀴즈 정밀 분석 (수집 데이터 기반)
-        핵심: 현재가와 공매도 세력 평단가(avg_short_price)의 격차 분석
+        핵심: 현재가와 공매도 세력 평단가(avg_short_price > 0)의 격차 분석
         """
         try:
             if not self.conn or not self.conn.open: self.connect()
             with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                # 1. 공매도 데이터 조회 (평단가 및 누적 비중)
-                sql = "SELECT avg_short_price, short_ratio, total_short_ratio FROM daily_short_selling WHERE stock_code = %s ORDER BY bsop_date DESC LIMIT 1"
+                # 1. 공매도 데이터 조회 (평단가 및 누적 비중 - 유효 평단가 행 필터)
+                sql = """
+                    SELECT avg_short_price, short_ratio, total_short_ratio 
+                    FROM daily_short_selling 
+                    WHERE stock_code = %s AND avg_short_price > 0 
+                    ORDER BY bsop_date DESC LIMIT 1
+                """
                 cursor.execute(sql, (code,))
                 curr = cursor.fetchone()
                 if not curr or not curr['avg_short_price']: return 0.0, ""
@@ -234,21 +319,20 @@ class NextLeaderEngine(AIEngine):
                 # 평단가보다 현재가가 높을수록 세력의 패닉(숏커버) 유도
                 if current_price > avg_price:
                     diff_pct = ((current_price - avg_price) / avg_price) * 100
-                    # [v44.6] 맥스 가점 하향: 10% 돌파 시 12.5점 (1%당 1.25점)
                     boost += min(12.5, diff_pct * 1.25)
                     if diff_pct > 5.0: tags.append("숏스퀴즈임박")
                     elif diff_pct > 2.0: tags.append("세력손실전환")
 
                 # B. 누적 에너지 가점 (누적 비중이 높을수록 폭발력 증가)
                 if total_ratio > 15.0:
-                    boost += 7.5  # 10.0 -> 7.5
+                    boost += 7.5
                     tags.append("고농축공매도")
                 elif total_ratio > 10.0:
-                    boost += 4.0  # 5.0 -> 4.0
+                    boost += 4.0
 
                 # C. 공격 중단 가점 (당일 공매도 비중 급감 시)
                 if curr_ratio < 3.0 and total_ratio > 8.0:
-                    boost += 4.0  # 5.0 -> 4.0
+                    boost += 4.0
                     tags.append("공매도항복")
 
                 return round(boost, 2), ",".join(tags)
@@ -336,7 +420,11 @@ class NextLeaderEngine(AIEngine):
                 s_boost, s_tag = self.get_short_cover_boost(code, float(curr['price']))
                 if s_tag: reason = f"{s_tag}, {reason}"
                 
-                # F. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
+                # F. 초정밀 스마트머니 S-Score (v50.0) 선제적 계산
+                s_score, sm_tags = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
+                if sm_tags: reason = f"{sm_tags}, {reason}"
+
+                # G. 사용자 피드백 가점 (H-Bonus) [v19.1 정밀화]
                 intuition_bonus = 0.0
                 tag = feedback_map.get(code)
                 if tag == '성공' or tag == '매집':
@@ -352,9 +440,12 @@ class NextLeaderEngine(AIEngine):
                     intuition_bonus = -15.0
                     reason = f"✖오판주의, {reason}"
 
-                # G. 최종 합산 (가점 역할 분리 및 이중 반영 해소)
-                # 퀀트(Q) 점수에 기술적 지표 + 수급(프로그램) + 공매도(숏커버) 데이터 집약 반영
-                algo_score = max(0, min(100, algo_score + p_boost + s_boost))
+                # H. 최종 합산 (스마트머니 실증 알파 연계)
+                # 퀀트(Q) 점수에 기술적 지표 + 수급(프로그램) + 공매도(숏커버) + 스마트머니 유입 가점
+                algo_boost = p_boost + s_boost
+                if s_score >= 80: algo_boost += 8.0
+                elif s_score >= 65: algo_boost += 4.0
+                algo_score = max(0, min(100, algo_score + algo_boost))
 
                 # AI 모델(L, T, X)은 순수 시계열 예측력 보존 + 펀더멘털 실적 가점(f_boost)만 연계
                 lstm_f = max(0, min(100, e_data['lstm'] + f_boost))
@@ -395,15 +486,12 @@ class NextLeaderEngine(AIEngine):
                         reason = f"⚠️과열진입, {reason}"
                 # RSI 55 미만이거나 눌림목(Pullback) 구간은 점수 100% 보존
 
-                # [v45.8] 수급 주도주 보호를 위해 스마트머니 점수 선제적 계산
-                s_score, obv_tag = self.get_smart_money_score(code, float(curr['price']), float(curr['volume']), float(curr.get('obv', 0)))
-
-                # [v46.4] 리스크 관리 필터: '심각과열' 종목만 전격 배제 (고점경계는 추세로 인정하여 노출)
+                # [v50.0] 리스크 관리 필터: '심각과열' 종목만 전격 배제 (고점경계는 추세로 인정하여 노출)
                 is_dangerous = "⚠️심각과열" in reason
 
-                if (total_score >= min_threshold or s_score >= 90.0) and not is_dangerous:
-                    if s_score >= 90: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
-                    if obv_tag: reason = f"{obv_tag}, {reason}"
+                # [v50.0] 85%+ 명예의 전당 (상위 1% 가치 기준) 주도주 직행 통과
+                if (total_score >= min_threshold or s_score >= 85.0) and not is_dangerous:
+                    if s_score >= 85: reason = f"🔥스마트머니({int(s_score)}%), {reason}"
 
                     # [v32.5] 태그 중복 제거 및 클린업 (모든 사유 노출)
                     reason_list = [r.strip() for r in reason.split(',') if r.strip()]
@@ -421,9 +509,9 @@ class NextLeaderEngine(AIEngine):
                         'smart_score': s_score
                     })
 
-            # [v45.9] 랭킹 필터링 고도화 (종합 TOP 20 + 수급 대장주 합산)
+            # [v50.0] 랭킹 필터링 고도화 (종합 TOP 20 + 85%+ 명예의 전당 수급 대장주 합산)
             top_by_total = sorted(results, key=lambda x: x['total'], reverse=True)[:20]
-            high_smart_money = [r for r in results if r['smart_score'] >= 90.0]
+            high_smart_money = [r for r in results if r['smart_score'] >= 85.0]
             
             # 중복 제거하며 두 리스트 합산 (수급 대장주 보호)
             final_list = {item['code']: item for item in (top_by_total + high_smart_money)}.values()

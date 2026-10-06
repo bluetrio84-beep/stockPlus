@@ -226,7 +226,7 @@
         INNER JOIN (
             SELECT stock_code, MAX(id) as max_id
             FROM ai_next_leaders
-            WHERE smart_money_score >= 90 
+            WHERE smart_money_score >= 85 
             AND captured_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
             GROUP BY stock_code
         ) t2 ON t1.id = t2.max_id
