@@ -8,18 +8,19 @@
         VALUES (#{usrId}, #{requestType}, #{modelName}, #{promptTokens}, #{completionTokens}, #{totalTokens})
     </insert>
 
-    <!-- [v16.25] 최근 7일간 일별 사용량 통계 -->
+    <!-- [v16.25] 최근 14일간 일별 사용량 통계 (차트 및 상세 테이블용) -->
     <select id="getDailyUsageStats" resultType="map">
         SELECT 
             DATE_FORMAT(captured_at, '%m-%d') as date,
+            DATE_FORMAT(captured_at, '%Y-%m-%d') as full_date,
             COUNT(*) as request_count,
             SUM(total_tokens) as total_tokens,
             SUM(prompt_tokens) as prompt_tokens,
             SUM(completion_tokens) as completion_tokens
         FROM ai_usage_log
-        WHERE captured_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-        GROUP BY DATE_FORMAT(captured_at, '%m-%d')
-        ORDER BY date ASC
+        WHERE captured_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+        GROUP BY DATE(captured_at), DATE_FORMAT(captured_at, '%m-%d'), DATE_FORMAT(captured_at, '%Y-%m-%d')
+        ORDER BY full_date ASC
     </select>
 
     <!-- [v16.25] 요청 타입별 사용량 비중 -->
