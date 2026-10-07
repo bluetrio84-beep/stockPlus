@@ -153,27 +153,24 @@ const RealTerminal = ({ passkey, onLock }) => {
             }
         });
 
-        // 4. 리사이즈 디바운스 (무한 루프 방지 핵심)
+        // 4. 창 크기 변경 대응 (window resize만 디바운스로 안전하게 처리, ResizeObserver 완전 제거)
         let resizeTimer = null;
-        const triggerDebouncedFit = () => {
+        const handleResize = () => {
             if (resizeTimer) clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 try {
                     fitAddon.fit();
                 } catch (e) {}
-            }, 150);
+            }, 200);
         };
+        window.addEventListener('resize', handleResize);
 
-        window.addEventListener('resize', triggerDebouncedFit);
-
-        // ResizeObserver 디바운스 적용
-        let resizeObserver = null;
-        if (window.ResizeObserver && terminalRef.current) {
-            resizeObserver = new ResizeObserver(() => {
-                triggerDebouncedFit();
-            });
-            resizeObserver.observe(terminalRef.current);
-        }
+        // 최초 렌더링 시 안정적 핏 (1회성)
+        const initialTimer = setTimeout(() => {
+            try {
+                fitAddon.fit();
+            } catch (e) {}
+        }, 150);
 
         // 터미널 클릭 시 포커스
         const termElement = terminalRef.current;
@@ -182,8 +179,8 @@ const RealTerminal = ({ passkey, onLock }) => {
 
         return () => {
             if (resizeTimer) clearTimeout(resizeTimer);
-            if (resizeObserver) resizeObserver.disconnect();
-            window.removeEventListener('resize', triggerDebouncedFit);
+            clearTimeout(initialTimer);
+            window.removeEventListener('resize', handleResize);
             termElement?.removeEventListener('click', handleTerminalClick);
             socket.close();
             term.dispose();
@@ -203,14 +200,14 @@ const RealTerminal = ({ passkey, onLock }) => {
 
     return (
         <div className={classNames(
-            "flex flex-col w-full h-full rounded-2xl border border-indigo-500/30 overflow-hidden bg-slate-950/90 shadow-2xl transition-all duration-300",
+            "flex flex-col w-full h-full min-w-0 min-h-0 max-w-full rounded-2xl border border-indigo-500/30 overflow-hidden bg-slate-950/90 shadow-2xl transition-all duration-300",
             isFullscreen && "fixed inset-0 z-50 rounded-none border-none p-3 bg-black"
         )}>
             {/* 1. 상단 터미널 툴바 & 퀵 액션 바 */}
-            <div className="bg-slate-900/90 border-b border-indigo-500/20 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="bg-slate-900/90 border-b border-indigo-500/20 px-3 py-2 flex items-center justify-between gap-2 shrink-0 min-w-0 max-w-full overflow-hidden">
                 {/* 퀵 액션 버튼 그룹 */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 mr-1 hidden sm:inline-flex items-center gap-1">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 mr-1 hidden sm:inline-flex items-center gap-1 shrink-0">
                         <Zap size={11} className="text-amber-400" /> Quick:
                     </span>
                     {quickActions.map((action, idx) => {
@@ -277,7 +274,7 @@ const RealTerminal = ({ passkey, onLock }) => {
                                 try {
                                     fitAddonRef.current?.fit();
                                 } catch (e) {}
-                            }, 100);
+                            }, 150);
                         }}
                         title={isFullscreen ? "창 모드로 복귀" : "전체화면"}
                         className="p-1.5 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-all active:scale-90"
@@ -298,8 +295,10 @@ const RealTerminal = ({ passkey, onLock }) => {
                 </div>
             </div>
 
-            {/* 2. xterm 터미널 본체 렌더링 영역 */}
-            <div ref={terminalRef} className="flex-1 w-full h-full overflow-hidden p-2" />
+            {/* 2. xterm 터미널 본체 렌더링 영역 (absolute inset으로 자식 캔버스가 부모를 절대로 밀어내지 못하게 봉쇄) */}
+            <div className="flex-1 w-full min-w-0 min-h-0 relative overflow-hidden bg-slate-950">
+                <div ref={terminalRef} className="absolute inset-0 p-2 overflow-hidden" />
+            </div>
         </div>
     );
 };
@@ -457,7 +456,7 @@ const AdminFailureManagement = () => {
             </header>
 
             <main className={classNames(
-                "flex-1 min-h-0 relative overflow-hidden",
+                "flex-1 min-h-0 min-w-0 max-w-full relative overflow-hidden",
                 activeTab !== 'aidev' ? "grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6" : "flex flex-col"
             )}>
                 {/* ... 지능 관제 뷰 (기존 코드 유지) ... */}
@@ -555,7 +554,7 @@ const AdminFailureManagement = () => {
 
                 {/* 3. Antigravity AI Station Panel (v38.00 스마트 인증 + 퀵 액션 가드) */}
                 {activeTab === 'aidev' && (
-                    <div className="flex-1 flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full transition-colors">
+                    <div className="flex-1 min-w-0 min-h-0 max-w-full flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full transition-colors">
                         {/* 패널 헤더 */}
                         <div className="px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors">
                             <div className="flex items-center gap-3 transition-colors">
@@ -577,7 +576,7 @@ const AdminFailureManagement = () => {
                             </div>
                         </div>
                         
-                        <div className="flex-1 flex flex-col min-h-0 bg-black/60 p-3 sm:p-4 overflow-hidden relative h-full">
+                        <div className="flex-1 min-w-0 min-h-0 max-w-full flex flex-col bg-black/60 p-3 sm:p-4 overflow-hidden relative h-full">
                             {!isTerminalUnlocked ? (
                                 // [v38.00] 하이브리드 잠금 해제 화면 (원클릭 Admin 인증 + 수동 마스터키 지원)
                                 <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-md mx-auto w-full transition-colors">
