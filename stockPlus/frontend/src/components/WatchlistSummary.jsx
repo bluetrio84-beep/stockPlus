@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom'; // [v13.9] URL 파라미터 확인용 추가
-import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory, fetchYoutubeGallery } from '../api/stockApi';
-import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown, Youtube, Play, X } from 'lucide-react';
+import { fetchWatchlist, fetchStockPrice, fetchSpecialReport, refreshSpecialReport, fetchHoldings, addTrade, fetchTradeHistory, deleteTradeHistory, updateTradeHistory, fetchYoutubeGallery } from '../api/stockApi';
+import { Repeat, Brain, TrendingUp, Sparkles, ArrowLeft, Plus, Calculator, Wallet, History, Calendar, Trash2, ArrowUp, ArrowDown, Youtube, Play, X, RefreshCw } from 'lucide-react';
 import classNames from 'classnames';
 import { getSignSymbol, getColorClass, getMarketDisplay, getStockStatusBadge, isKosdaq } from '../utils/stockUtils';
 
@@ -11,6 +11,7 @@ const WatchlistSummary = () => {
     const [holdings, setHoldings] = useState([]); 
     const [aiReport, setAiReport] = useState(''); 
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshingAi, setIsRefreshingAi] = useState(false);
     const [globalMarketMode, setGlobalMarketMode] = useState('UN'); 
     const [activeSubTab, setActiveSubTab] = useState('list'); 
     const [activeTab, setActiveTab] = useState('analysis'); // [v16.1] 상위 탭: analysis | youtube
@@ -92,6 +93,21 @@ const WatchlistSummary = () => {
         loadReport();
         loadHoldings();
     }, [loadHoldings]);
+
+    const handleRefreshAi = async () => {
+        if (isRefreshingAi) return;
+        setIsRefreshingAi(true);
+        try {
+            const updated = await refreshSpecialReport();
+            if (updated) {
+                setAiReport(updated);
+            }
+        } catch (e) {
+            console.error("AI report refresh failed", e);
+        } finally {
+            setIsRefreshingAi(false);
+        }
+    };
 
     const loadFavoriteStocks = useCallback(async (market) => {
         setIsLoading(true);
@@ -465,8 +481,29 @@ const WatchlistSummary = () => {
                 <div className={classNames("flex flex-col bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden relative h-full transition-colors duration-500", {
                     "flex": activeSubTab === 'ai' || window.innerWidth >= 1024, "hidden lg:flex": activeSubTab !== 'ai'
                 })}>
-                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-point)]/5 to-purple-500/5 pointer-events-none"></div>
-                    <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center gap-3 relative z-10 shrink-0 transition-colors duration-500"><div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={24} /></div><div><h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">전담 AI 분석가</h2><p className="text-xs text-[var(--theme-point)] font-bold transition-colors">전략적 투자 브리핑</p></div></div>
+                    <div className="p-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex items-center justify-between relative z-10 shrink-0 transition-colors duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-[var(--theme-point)]/10 rounded-lg"><Brain className="text-[var(--theme-point)]" size={24} /></div>
+                            <div>
+                                <h2 className="text-xl font-black text-[var(--theme-text)] transition-colors">전담 AI 분석가</h2>
+                                <p className="text-xs text-[var(--theme-point)] font-bold transition-colors">보유 및 관심 종목 맞춤 심층 브리핑</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handleRefreshAi} 
+                            disabled={isRefreshingAi}
+                            className={classNames(
+                                "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border shadow-sm",
+                                isRefreshingAi 
+                                    ? "bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed" 
+                                    : "bg-[var(--theme-point)]/10 text-[var(--theme-point)] border-[var(--theme-point)]/30 hover:bg-[var(--theme-point)]/20 active:scale-95"
+                            )}
+                            title="전담 AI 분석가 즉시 갱신"
+                        >
+                            <RefreshCw size={14} className={classNames(isRefreshingAi && "animate-spin text-indigo-400")} />
+                            <span>{isRefreshingAi ? '분석 생성 중...' : 'AI 분석 갱신'}</span>
+                        </button>
+                    </div>
                     <div className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar relative z-10 text-sm leading-relaxed text-[var(--theme-text)] transition-colors space-y-3">
                         {aiReport ? (
                             aiReport.split('\n').filter(l => l.trim()).map((line, i) => {

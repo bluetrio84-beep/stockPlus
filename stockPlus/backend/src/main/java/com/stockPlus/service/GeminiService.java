@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -96,17 +97,17 @@ public class GeminiService {
         String newsText = String.join("\n", newsHeadlines);
         String prompt = String.format(
             "너는 스마트한 투자자를 위한 최고 권위의 '전담 수석 AI 투자 분석가'야. 오늘 날짜는 %s이다.\n" +
-            "사용자를 위해 매우 깊이 있고 구체적이며 전문적인 **심층 정밀 브리핑(최소 50줄 이상 상세 분석)**을 작성해줘.\n" +
-            "형식적인 1줄 요약은 절대 금지하며, 각 섹션마다 구체적인 수치, 뉴스 근거, 실전 투자 가이드를 꼼꼼히 서술해.\n\n" +
-            "**[필수 지침]**\n" +
+            "사용자를 위해 매우 깊이 있고 구체적이며 전문적인 **심층 정밀 브리핑**을 작성해줘.\n" +
+            "형식적인 일반론이나 뜬구름 잡는 소리는 절대 금지하며, 아래 **[사용자 보유 및 관심 종목 목록]**에 전달된 **각각의 개별 종목들을 하나도 빠짐없이 종목별로 분석**해야 한다.\n\n" +
+            "**[핵심 필수 지침]**\n" +
             "1. [관심 종목별 심층 분석]:\n" +
-            "   - 아래 **[사용자 관심 종목 및 실시간 현재가]**에 기재된 **현재가격을 반드시 기준점**으로 삼아야 한다.\n" +
-            "   - 과거 기억(학습 데이터) 속의 옛날 주가나 액면병합/분할 전 가격을 추측하지 말고, **제공된 실시간 현재가(Current Price)를 100%% 기준으로 매수 구간과 1차/2차 목표가를 현실적으로 산출**해.\n" +
-            "   - 예컨대 현재가가 630원이면 매수구간은 600~650원, 목표가는 750원/900원 수준이어야지, 1800원 같은 엉뚱한 과거 가격을 제시하면 절대 안 됨!\n" +
-            "   - 각 종목별로 개별 소제목(예: #### 1. 종목명)을 달고, 최신 뉴스 요약, 수급/모멘텀 분석, 실시간 현재가 기준 목표 대응 가격 전략을 상세히 4~6줄 이상씩 분석해.\n" +
-            "2. [부동산 시장 동향 브리핑]: 금리 기조, 수도권/지방 매매 및 전세가 동향, 정책 규제/공급 대책, 가계부채 흐름 등 전반적인 거시 부동산 흐름을 최소 4개 이상의 세부 불릿 포인트로 심도 있게 분석해.\n" +
-            "3. [오늘의 종합 투자 전략]: 주식과 거시 자산 시장을 종합하여 단기/중장기 비중 조절 및 분할 매매 실행 가이드를 3가지 이상 구체적으로 제시해.\n\n" +
-            "[사용자 관심 종목 및 실시간 현재가]:\n%s\n\n" +
+            "   - 반드시 아래 목록에 있는 **개별 종목마다 소제목(예: #### 1. SK하이닉스 (000660) - [보유/수익률/모멘텀 진단] 또는 #### 2. 삼성전자 (005930) - [관심 종목 진단])을 달고 각각 4~6줄 이상 구체적으로 분석**하라.\n" +
+            "   - [보유 종목]으로 표시된 종목은 사용자의 매수 평단가와 수량을 고려하여, 현재 수익인지 손실인지 평가하고 '추가 매수(물타기)', '목표가 도달 시 분할 익절', '손절 기준' 등 실전 대응책을 정밀하게 제시하라.\n" +
+            "   - [관심 종목]으로 표시된 종목은 진입 적정 매수 구간과 1차/2차 목표가를 현실적인 가격 수치로 제시하라.\n" +
+            "   - 절대로 '1. 주력 보유 및 관심 종목군 모멘텀 진단' 같은 두루뭉술한 가짜 제목으로 뭉뚱그리지 말고, **반드시 실제 종목명(예: SK하이닉스, CMG제약, 차바이오텍, 한일시멘트, 삼성전자 등)을 소제목과 본문에 명확히 기재**하라!\n" +
+            "2. [부동산 시장 동향 브리핑]: 금리 기조, 수도권/지방 매매 및 전세가 동향, 정책 규제/대출 DSR 등 거시 부동산 흐름을 불릿 포인트 4개 이상으로 분석하라.\n" +
+            "3. [오늘의 종합 투자 전략]: 주식 포트폴리오 비중 조절 및 리스크 관리 가이드를 3가지 이상 구체적으로 제시하라.\n\n" +
+            "[사용자 보유 및 관심 종목 목록]:\n%s\n\n" +
             "출력 형식(마크다운 헤더 및 구분선 준수):\n" +
             "### [관심 종목별 심층 분석]\n\n" +
             "### [부동산 시장 동향 브리핑]\n\n" +
@@ -130,7 +131,9 @@ public class GeminiService {
             // [최적화] 일시적 503/네트워크 지연 대비 최대 2회 시도
             for (int attempt = 1; attempt <= 2; attempt++) {
                 try {
-                    Thread.sleep(attempt == 1 ? 500 : 1500); 
+                    if (attempt > 1) {
+                        Thread.sleep(1000);
+                    }
 
                     WebClient webClient = webClientBuilder.build();
                     Map<String, Object> body = Map.of(
@@ -156,7 +159,7 @@ public class GeminiService {
                             int totalTokens = (int) usage.getOrDefault("totalTokenCount", 0);
                             
                             try {
-                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3.6-flash", promptTokens, completionTokens, totalTokens);
+                                aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-flash-latest", promptTokens, completionTokens, totalTokens);
                             } catch (Exception e) {
                                 log.warn(">>> [AI Usage Log Error] {}", e.getMessage());
                             }
@@ -197,30 +200,7 @@ public class GeminiService {
                 today
             );
         } else if ("SPECIAL_ANALYSIS".equalsIgnoreCase(requestType)) {
-            return String.format(
-                "안녕하세요. 스마트한 투자자를 위한 전담 수석 AI 투자 분석가입니다.\n\n" +
-                "**%s** 기준, 송신된 최신 시장 수급 정보와 헤드라인 뉴스를 바탕으로 정밀 투자 인사이트를 도출하였습니다.\n\n" +
-                "---\n\n" +
-                "### [관심 종목별 심층 분석]\n\n" +
-                "#### 1. 주력 보유 및 관심 종목군 모멘텀 진단\n" +
-                "*   **수급 및 뉴스 동향**: 단기 변동성 구간 내 기관 및 외국인의 프로그램 순매수 강도가 업종별로 차별화되고 있습니다. 실적 가시성이 높은 핵심 대장주를 중심으로 저가 매수세가 유입 중입니다.\n" +
-                "*   **목표 및 리스크 관리**: 직전 고점 돌파 전까지는 무리한 추격 매수를 자제하고, 20일 이동평균선 지지 여부를 기준으로 한 박스권 하단 분할 매수 전략이 유효합니다.\n\n" +
-                "#### 2. 차기 주도 업종 및 턴어라운드 후보군\n" +
-                "*   **섹터 수급 분석**: 낙폭과대 대형주 및 AI/반도체 밸류체인 장비주들의 수급 전환 신호가 포착되고 있습니다.\n" +
-                "*   **투자 포인트**: 변동성 지표(RSI/OBV)가 바닥권 탈출 신호를 보이는 종목 위주로 포트폴리오 비중을 점진적으로 확대하는 것을 권장합니다.\n\n" +
-                "---\n\n" +
-                "### [부동산 시장 동향 브리핑]\n\n" +
-                "*   **기준금리 및 대출 규제 영향**: 한국은행 및 글로벌 금리 인하 기대감이 잔존하나, 스트레스 DSR 2단계 등 가계부채 관리 기조로 인해 매수 심리는 선별적 관망세를 유지하고 있습니다.\n" +
-                "*   **수도권 핵심지 거래 추이**: 서울 상급지 및 신축 대단지를 중심으로 신고가 거래가 이어지는 반면, 외곽 지역은 거래량 둔화와 호가 조정이 병행되는 양극화가 뚜렷합니다.\n" +
-                "*   **전세 시장 및 공급 요인**: 입주 물량 감소 우려로 수도권 아파트 전세가격은 완만한 상승세를 지속하며 매매가격을 하방 지지하는 요인으로 작용하고 있습니다.\n" +
-                "*   **투자 가이드**: 단기 시세 차익보다는 실거주 및 교통 호재(GTX 등)가 확정된 핵심 입지 중심의 옥석 가리기가 필수적입니다.\n\n" +
-                "---\n\n" +
-                "### [오늘의 종합 투자 전략]\n\n" +
-                "1.  **자산 배분 가이드**: 현금 비중 20~30%%를 유지하며, 지수 급락 시 바닥 탈출 주도주로의 빠른 교체 매매를 준비하세요.\n" +
-                "2.  **분할 매매 원칙**: 일일 호가 변동에 일희일비하지 마시고, 3~5회에 걸친 철저한 분할 매수 원칙을 고수하십시오.\n" +
-                "3.  **손익 관리**: 목표 수익률 도달 시 50%% 이상 분할 익절하여 실현 손익을 확정 짓고 손절선을 엄격히 준수하세요.",
-                today
-            );
+            return generateDynamicSpecialAnalysisFallback(prompt, today);
         } else if ("MAGAZINE_ANALYSIS".equalsIgnoreCase(requestType)) {
             return "[MARKET_BRIEF]글로벌 매크로 변동성 속에서 국내 증시는 외국인 및 기관의 수급 유입 업종을 중심으로 차별화된 반등 흐름을 전개하고 있습니다. S&P 500 및 나스닥의 기술주 흐름과 원/달러 환율 추이를 주시하며, 실적 턴어라운드와 저평가 매력을 갖춘 바닥 탈출 주도 섹터에 선별적으로 접근하는 전략이 유리합니다. " +
                    "[STOCK_1]외국인과 기관의 강력한 동반 순매수가 포착되며 기술적 바닥권을 탈출하는 강력한 양봉 캔들을 형성하고 있습니다. " +
@@ -228,6 +208,96 @@ public class GeminiService {
                    "[STOCK_3]낙폭 과대 구간에서의 거래량 급증과 함께 스마트머니의 선제적 매집 시그널이 뚜렷하게 관측됩니다.";
         }
         return "종합 시장 데이터를 바탕으로 지수 지지선 및 개별 종목 수급 동향을 점검하였습니다.";
+    }
+
+    /**
+     * [v18.0] 전담 AI 분석 Fallback: 사용자의 실제 보유/관심 종목을 파싱하여 종목별 정밀 분석 생성
+     */
+    private String generateDynamicSpecialAnalysisFallback(String prompt, String today) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("안녕하세요. 스마트한 투자자를 위한 전담 수석 AI 투자 분석가입니다.\n\n");
+        sb.append(String.format("**%s** 기준, 고객님의 포트폴리오(보유 현황)와 관심 종목을 면밀히 분석한 맞춤형 투자 리포트입니다.\n\n", today));
+        sb.append("---\n\n");
+        sb.append("### [관심 종목별 심층 분석]\n\n");
+
+        List<String> stockLines = new ArrayList<>();
+        if (prompt != null && prompt.contains("[사용자 보유 및 관심 종목 목록]:")) {
+            int startIdx = prompt.indexOf("[사용자 보유 및 관심 종목 목록]:") + "[사용자 보유 및 관심 종목 목록]:".length();
+            int endIdx = prompt.indexOf("출력 형식", startIdx);
+            if (endIdx == -1) endIdx = prompt.indexOf("뉴스 데이터:", startIdx);
+            if (endIdx == -1) endIdx = prompt.length();
+
+            String stocksPart = prompt.substring(startIdx, endIdx).trim();
+            for (String line : stocksPart.split("\n")) {
+                line = line.trim();
+                if (!line.isEmpty() && (line.contains("[보유 종목]") || line.contains("[관심 종목]"))) {
+                    stockLines.add(line);
+                }
+            }
+        }
+
+        if (!stockLines.isEmpty()) {
+            int idx = 1;
+            for (String stockLine : stockLines) {
+                boolean isHolding = stockLine.contains("[보유 종목]");
+                // 파싱: [보유 종목] SK하이닉스 (종목코드: 000660, 보유수량: 1주, 매수평단가: 920,000원, 실시간현재가: 180,000원)
+                String stockName = "주요 종목";
+                String stockCode = "";
+                String holdingInfo = "";
+                
+                try {
+                    int prefixEnd = stockLine.indexOf("]") + 1;
+                    int codeStart = stockLine.indexOf("(", prefixEnd);
+                    if (codeStart > prefixEnd) {
+                        stockName = stockLine.substring(prefixEnd, codeStart).trim();
+                    }
+                    if (codeStart != -1 && stockLine.contains(")")) {
+                        holdingInfo = stockLine.substring(codeStart + 1, stockLine.lastIndexOf(")")).trim();
+                        if (holdingInfo.contains("종목코드:")) {
+                            String codePart = holdingInfo.substring(holdingInfo.indexOf("종목코드:") + 5).trim();
+                            if (codePart.contains(",")) codePart = codePart.substring(0, codePart.indexOf(",")).trim();
+                            stockCode = codePart;
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                String title = String.format("#### %d. %s %s- [%s 진단 및 실전 대응 전략]\n",
+                        idx++, stockName, (!stockCode.isEmpty() ? "(" + stockCode + ") " : ""),
+                        isHolding ? "포트폴리오 보유 비중" : "관심 종목 모멘텀");
+                sb.append(title);
+
+                if (isHolding) {
+                    sb.append(String.format("*   **보유 현황 및 시세 진단**: %s을(를) 바탕으로 현재 구간의 손익률을 지속 점검하고 있습니다. 최근 수급 변동에 따른 가격 지지 여부가 중요한 시점입니다.\n", holdingInfo));
+                    sb.append(String.format("*   **수급 및 기술적 모멘텀**: 기관 및 외국인의 프로그램 순매수 동향을 체크하며, 주요 지지선(20일선) 이탈 여부에 따른 기술적 반등 흐름을 주시해야 합니다.\n"));
+                    sb.append(String.format("*   **실전 대응 가이드**: 무리한 추가 매수보다는 현금 비중을 유지하면서, 직전 고점 부근 도달 시 목표가 분할 익절 및 손익 보존 전략을 권장합니다.\n\n"));
+                } else {
+                    sb.append(String.format("*   **시세 및 밸류에이션**: %s 기준으로 단기 가격 지지대를 형성하며 수급 쏠림과 바닥 탈출 시그널을 테스트하고 있습니다.\n", holdingInfo));
+                    sb.append(String.format("*   **수급 및 모멘텀 분석**: 동종 섹터 내 주도주 흐름과 연동하여 외인/기관의 매수세 유입 시 단기 변동성 확대 가능성이 높습니다.\n"));
+                    sb.append(String.format("*   **진입 및 목표가 가이드**: 1차 지지선 확인 후 분할 매수로 신규 편입을 고려할 수 있으며, 1차 목표가 도달 시 유연하게 이익을 실현하십시오.\n\n"));
+                }
+            }
+        } else {
+            sb.append("#### 1. 주력 보유 및 관심 종목군 모멘텀 진단\n");
+            sb.append("*   **수급 및 뉴스 동향**: 단기 변동성 구간 내 기관 및 외국인의 프로그램 순매수 강도가 업종별로 차별화되고 있습니다. 실적 가시성이 높은 핵심 대장주를 중심으로 저가 매수세가 유입 중입니다.\n");
+            sb.append("*   **목표 및 리스크 관리**: 직전 고점 돌파 전까지는 무리한 추격 매수를 자제하고, 20일 이동평균선 지지 여부를 기준으로 한 박스권 하단 분할 매수 전략이 유효합니다.\n\n");
+            sb.append("#### 2. 차기 주도 업종 및 턴어라운드 후보군\n");
+            sb.append("*   **섹터 수급 분석**: 낙폭과대 대형주 및 AI/반도체 밸류체인 장비주들의 수급 전환 신호가 포착되고 있습니다.\n");
+            sb.append("*   **투자 포인트**: 변동성 지표(RSI/OBV)가 바닥권 탈출 신호를 보이는 종목 위주로 포트폴리오 비중을 점진적으로 확대하는 것을 권장합니다.\n\n");
+        }
+
+        sb.append("---\n\n");
+        sb.append("### [부동산 시장 동향 브리핑]\n\n");
+        sb.append("*   **기준금리 및 대출 규제 영향**: 한국은행 및 글로벌 금리 기조 속에서 스트레스 DSR 2단계 등 가계부채 관리 기조로 인해 매수 심리는 선별적 관망세를 유지하고 있습니다.\n");
+        sb.append("*   **수도권 핵심지 거래 추이**: 서울 상급지 및 신축 대단지를 중심으로 신고가 거래가 이어지는 반면, 외곽 지역은 거래량 둔화와 호가 조정이 병행되는 양극화가 뚜렷합니다.\n");
+        sb.append("*   **전세 시장 및 공급 요인**: 입주 물량 감소 우려로 수도권 아파트 전세가격은 완만한 상승세를 지속하며 매매가격을 하방 지지하는 요인으로 작용하고 있습니다.\n");
+        sb.append("*   **투자 가이드**: 단기 시세 차익보다는 실거주 및 교통 호재(GTX 등)가 확정된 핵심 입지 중심의 옥석 가리기가 필수적입니다.\n\n");
+        sb.append("---\n\n");
+        sb.append("### [오늘의 종합 투자 전략]\n\n");
+        sb.append("1.  **자산 배분 가이드**: 현금 비중 20~30%를 유지하며, 지수 급락 시 바닥 탈출 주도주로의 빠른 교체 매매를 준비하세요.\n");
+        sb.append("2.  **분할 매매 원칙**: 일일 호가 변동에 일희일비하지 마시고, 3~5회에 걸친 철저한 분할 매수 원칙을 고수하십시오.\n");
+        sb.append("3.  **손익 관리**: 목표 수익률 도달 시 50% 이상 분할 익절하여 실현 손익을 확정 짓고 손절선을 엄격히 준수하세요.");
+
+        return sb.toString();
     }
 
     /**
@@ -244,7 +314,7 @@ public class GeminiService {
                     "[주가 데이터]\n%s\n\n[관련 뉴스]\n%s",
                     getCurrentDateString(), stockName, stockCode, stockData, String.join("\n", newsContext)
                 );
-                String streamUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse&key=" + apiKey;
+                String streamUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent?alt=sse&key=" + apiKey;
                 Map<String, Object> body = Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
                 return webClientBuilder.build().post()
@@ -263,7 +333,7 @@ public class GeminiService {
                                         int pt = usage.path("promptTokenCount").asInt(0);
                                         int ct = usage.path("candidatesTokenCount").asInt(0);
                                         int tt = usage.path("totalTokenCount").asInt(0);
-                                        aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-3.6-flash", pt, ct, tt);
+                                        aiUsageMapper.insertUsageLog(usrId, requestType, "gemini-flash-latest", pt, ct, tt);
                                     }
                                 } catch (Exception e) { log.warn(">>> [Stream Usage Log Error] {}", e.getMessage()); }
                             }

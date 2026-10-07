@@ -259,8 +259,7 @@ public class StockDashboardController {
      */
     @PostMapping("/special-report/refresh")
     public String refreshSpecializedReport() {
-        dashboardService.updateSpecializedAnalysisScheduled();
-        return dashboardService.getSpecializedReport();
+        return dashboardService.refreshSpecializedReport();
     }
 
     /**

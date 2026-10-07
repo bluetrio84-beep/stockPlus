@@ -118,6 +118,25 @@ export async function fetchSpecialReport() {
     return data || "전담 AI 분석 리포트가 아직 생성되지 않았습니다.";
 }
 
+// 전담 AI 리포트(맞춤형 분석) 즉시 수동 갱신
+export async function refreshSpecialReport() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/dashboard/special-report/refresh', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (response.ok) {
+            return await response.text();
+        }
+    } catch (e) {
+        console.error("Refresh special report error:", e);
+    }
+    return null;
+}
+
 // 관심 종목 목록 조회
 export async function fetchWatchlist(groupId = 1) {
     const data = await safeFetch(`api/dashboard/watchlist?groupId=${groupId}`);

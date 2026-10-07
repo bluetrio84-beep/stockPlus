@@ -30,6 +30,8 @@ public class StockDashboardService {
     private final NaverService naverService; // 뉴스 검색 서비스
     private final GeminiService geminiService; // AI 생성 서비스
     private final KisRealtimeService kisRealtimeService; // 실시간 시세 서비스
+    private final KisStockService kisStockService; // KIS REST 시세 서비스
+    private final HoldingsMapper holdingsMapper; // 사용자 보유 현황 DB 매퍼
 
     // [v36.50] 현재 로그인한 사용자 ID 조회 (v36.76 알림 보안 유연화 대응)
     private String getCurrentUsrId() {
@@ -266,57 +268,153 @@ public class StockDashboardService {
         log.info("[Scheduler] General Market Insight Batch Completed.");
     }
 
+    /**
+     * 특정 종목의 실시간 또는 정규장 현재가를 안전하게 조회 (KIS API 연동)
+     */
+    private Double resolveCurrentPrice(String stockCode) {
+        try {
+            StockPriceDto dto = kisStockService.fetchUnifiedCurrentPrice(stockCode, "UN")
+                    .block(java.time.Duration.ofMillis(800));
+            if (dto != null && dto.getCurrentPrice() != null) {
+                return Double.parseDouble(dto.getCurrentPrice().replaceAll("[^0-9.]", ""));
+            }
+        } catch (Exception e) {
+            try {
+                StockPriceDto dto = kisStockService.fetchUnifiedCurrentPrice(stockCode, "J")
+                        .block(java.time.Duration.ofMillis(600));
+                if (dto != null && dto.getCurrentPrice() != null) {
+                    return Double.parseDouble(dto.getCurrentPrice().replaceAll("[^0-9.]", ""));
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    /**
+     * [v18.0] 특정 사용자에 대한 전담 AI 맞춤 심층 분석 리포트 생성
+     * 사용자의 실제 보유 종목(Holdings)과 관심 종목(Watchlist)을 정밀 결합하여 종목별 분석 제공
+     */
+    public String generateSpecialReportForUser(String usrId) {
+        log.info("[AI Report] Generating specialized report for user: {}", usrId);
+        List<String> commonKeywords = Arrays.asList("부동산 시장 시황", "아파트 매매 가격 동향", "금리 부동산 영향");
+        Set<String> headlines = new LinkedHashSet<>();
+        List<String> targetStockDescriptions = new ArrayList<>();
+        Set<String> processedCodes = new HashSet<>();
+
+        // 1. 보유 종목 (Holdings) 우선 수집 (사용자의 실제 포트폴리오)
+        try {
+            List<Holdings> holdingsList = holdingsMapper.findByUsrId(usrId);
+            if (holdingsList != null) {
+                for (Holdings h : holdingsList) {
+                    if (h.getQuantity() != null && h.getQuantity() > 0) {
+                        String code = h.getStockCode();
+                        String name = h.getStockName();
+                        if (name == null || name.trim().isEmpty() || name.equals(code)) {
+                            StockMaster sm = stockMasterMapper.findByStockCode(code);
+                            if (sm != null && sm.getStockName() != null) name = sm.getStockName();
+                            else name = code;
+                        }
+                        // 현재가 조회
+                        Double currentPrice = resolveCurrentPrice(code);
+                        String priceStr = (currentPrice != null && currentPrice > 0) 
+                            ? String.format("%,.0f원", currentPrice) 
+                            : (h.getAvgPrice() != null ? String.format("%,.0f원", h.getAvgPrice().doubleValue()) : "시세확인중");
+                        String avgStr = h.getAvgPrice() != null ? String.format("%,.0f원", h.getAvgPrice().doubleValue()) : "-";
+                        
+                        targetStockDescriptions.add(String.format("[보유 종목] %s (종목코드: %s, 보유수량: %d주, 매수평단가: %s, 실시간현재가: %s)",
+                                name, code, h.getQuantity(), avgStr, priceStr));
+                        processedCodes.add(code);
+
+                        // 보유 종목 뉴스 검색 (상위 3개만)
+                        if (targetStockDescriptions.size() <= 3) {
+                            List<String> res = naverService.searchNewsHeadlines(name);
+                            if (res != null) headlines.addAll(res);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[AI Report] Error reading holdings for {}: {}", usrId, e.getMessage());
+        }
+
+        // 2. 관심 종목 (즐겨찾기 Watchlist) 수집
+        try {
+            List<Watchlist> favorites = watchlistMapper.findFavorites(usrId);
+            if (favorites != null) {
+                for (Watchlist w : favorites) {
+                    String code = w.getStockCode();
+                    if (!processedCodes.contains(code)) {
+                        String name = w.getStockName();
+                        if (name == null || name.trim().isEmpty() || name.equals(code)) {
+                            StockMaster sm = stockMasterMapper.findByStockCode(code);
+                            if (sm != null && sm.getStockName() != null) name = sm.getStockName();
+                            else name = code;
+                        }
+                        Double currentPrice = (w.getCurrentPrice() != null && w.getCurrentPrice() > 0) 
+                            ? w.getCurrentPrice() 
+                            : resolveCurrentPrice(code);
+                        String priceStr = (currentPrice != null && currentPrice > 0)
+                                ? String.format("%,.0f원", currentPrice)
+                                : "실시간 시세 확인중";
+                        
+                        targetStockDescriptions.add(String.format("[관심 종목] %s (종목코드: %s, 실시간현재가: %s)",
+                                name, code, priceStr));
+                        processedCodes.add(code);
+
+                        if (targetStockDescriptions.size() <= 5) {
+                            List<String> res = naverService.searchNewsHeadlines(name);
+                            if (res != null) headlines.addAll(res);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[AI Report] Error reading favorites for {}: {}", usrId, e.getMessage());
+        }
+
+        // 3. 부동산 뉴스 수집
+        for (String k : commonKeywords) {
+            List<String> res = naverService.searchNewsHeadlines(k);
+            if (res != null) headlines.addAll(res);
+        }
+
+        if (targetStockDescriptions.isEmpty()) {
+            targetStockDescriptions.add("보유 및 관심 종목 (현재 등록된 종목 없음)");
+        }
+
+        // 4. AI 생성 호출
+        String insight = geminiService.getSpecializedAnalysis(targetStockDescriptions, new ArrayList<>(headlines));
+        if (insight != null) {
+            userMarketInsightMapper.insert(usrId, "SPECIAL", insight);
+            log.info("[AI Report] Special Report created successfully for {}", usrId);
+            return insight;
+        }
+        return getSpecializedReport();
+    }
+
+    /**
+     * [v18.0] 현재 사용자의 전담 AI 리포트 즉시 수동 갱신
+     */
+    public String refreshSpecializedReport() {
+        return generateSpecialReportForUser(getCurrentUsrId());
+    }
+
     // [2] 전담 AI 분석가 스케줄러 (08:55, 15:55 실행 - 개장 전/마감 전)
     // 사용자별 관심 종목과 특정 부동산 키워드를 중심으로 맞춤형 분석을 제공합니다.
     @Scheduled(cron = "0 55 8,15 * * *")
     @Transactional
     public void updateSpecializedAnalysisScheduled() {
         log.info("[Scheduler] Specialized AI Analysis Start...");
-        
-        List<String> activeUserIds = userMapper.findAllActiveUserIds(); // [v17.9] 활성 사용자만 처리
-        // [수정] 특정 지역 대신 전반적인 부동산 흐름을 파악할 수 있는 키워드로 변경
-        List<String> commonKeywords = Arrays.asList("부동산 시장 시황", "아파트 매매 가격 동향", "금리 부동산 영향");
-        
+        List<String> activeUserIds = userMapper.findAllActiveUserIds();
         for (String usrId : activeUserIds) {
             try {
-                Set<String> headlines = new LinkedHashSet<>();
-                
-                // 1. 사용자 관심 종목 뉴스 수집 (즐겨찾기 종목만)
-                List<Watchlist> favorites = watchlistMapper.findFavorites(usrId);
-                List<String> favStockNames = new ArrayList<>();
-                int limit = 0;
-                for (Watchlist w : favorites) {
-                    String priceStr = (w.getCurrentPrice() != null && w.getCurrentPrice() > 0)
-                            ? String.format("%,.0f원", w.getCurrentPrice())
-                            : "실시간 시세 확인중";
-                    favStockNames.add(w.getStockName() + " (코드: " + w.getStockCode() + ", 실시간 현재가: " + priceStr + ")");
-                    if (limit++ < 5) { // 상위 5개 종목에 대해서만 뉴스 검색
-                        List<String> res = naverService.searchNewsHeadlines(w.getStockName());
-                        if (res != null) headlines.addAll(res);
-                    }
-                }
-                
-                // 2. 공통 부동산 키워드 뉴스 수집
-                for (String k : commonKeywords) {
-                    List<String> res = naverService.searchNewsHeadlines(k);
-                    if (res != null) headlines.addAll(res);
-                }
-
-                if (headlines.isEmpty() && favStockNames.isEmpty()) continue;
-                
-                // 3. AI 맞춤 분석 생성 (관심 종목 리스트 명시적 전달)
-                String insight = geminiService.getSpecializedAnalysis(favStockNames, new ArrayList<>(headlines));
-                if (insight != null) {
-                    // [수정] 이전 리포트와 내용이 다를 때만 저장 및 알림 발생
-                    String prevInsight = userMarketInsightMapper.findLatestByType(usrId, "SPECIAL");
-                    
-                    if (!insight.equals(prevInsight)) {
-                        userMarketInsightMapper.insert(usrId, "SPECIAL", insight);
-                        notificationMapper.insertNotification(usrId, "🔔 전담 AI 분석가의 최신 리포트가 도착했습니다!", "AI_INSIGHT");
-                        log.info("[Scheduler] Special Report created/updated for {}", usrId);
-                    } else {
-                        log.info("[Scheduler] Special Report content unchanged for {}, skipping notification.", usrId);
-                    }
+                String prevInsight = userMarketInsightMapper.findLatestByType(usrId, "SPECIAL");
+                String newInsight = generateSpecialReportForUser(usrId);
+                if (newInsight != null && !newInsight.equals(prevInsight)) {
+                    notificationMapper.insertNotification(usrId, "🔔 전담 AI 분석가의 최신 리포트가 도착했습니다!", "AI_INSIGHT");
+                    log.info("[Scheduler] Special Report created/updated for {}", usrId);
+                } else {
+                    log.info("[Scheduler] Special Report content unchanged for {}, skipping notification.", usrId);
                 }
             } catch (Exception e) {
                 log.error("[Scheduler] Error creating report for {}: {}", usrId, e.getMessage());
