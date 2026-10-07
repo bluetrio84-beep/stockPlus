@@ -138,7 +138,7 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* Summary Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 px-2">
+            <div className="shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 px-2">
                 {/* 1. Today Requests */}
                 <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl py-3 px-4 shadow-xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 bg-amber-500/10 group-hover:scale-150 duration-700 transition-transform"></div>
@@ -216,7 +216,7 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* Intelligence Notice & Cost Policy (상단 배치로 가시성 극대화) */}
-            <div className="p-5 lg:p-6 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 rounded-[2rem] border border-indigo-500/30 text-white shadow-2xl relative overflow-hidden mb-6 mx-2 transition-all">
+            <div className="shrink-0 p-5 lg:p-6 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 rounded-[2rem] border border-indigo-500/30 text-white shadow-2xl relative overflow-hidden mb-6 mx-2 transition-all">
                 <Brain className="absolute bottom-[-30px] right-[-30px] opacity-10 text-white pointer-events-none" size={200} />
                 <h4 className="text-xs lg:text-sm font-black uppercase tracking-[0.25em] mb-3 text-indigo-200 flex items-center gap-3">
                     <ShieldAlert size={18} className="text-amber-400 shrink-0" /> AI GOVERNANCE VERDICT & BILLING AUDIT
@@ -264,7 +264,7 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 px-2">
+            <div className="shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 px-2">
                 {/* Usage Trend Line Chart */}
                 <div className="lg:col-span-8 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl transition-colors">
                     <div className="flex items-center justify-between mb-6">
@@ -330,7 +330,7 @@ const AdminAiUsageManagement = () => {
             </div>
 
             {/* [신규 핵심 기능] 일별 사용량 상세 내역 테이블 (Daily Usage Ledger) */}
-            <div className="bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl transition-colors mb-6 mx-2">
+            <div className="shrink-0 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl transition-colors mb-6 mx-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div>
                         <h3 className="text-sm font-black text-[var(--theme-text)] uppercase tracking-[0.2em] flex items-center gap-3">
