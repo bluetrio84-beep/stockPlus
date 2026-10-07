@@ -215,6 +215,54 @@ const AdminAiUsageManagement = () => {
                 </div>
             </div>
 
+            {/* Intelligence Notice & Cost Policy (상단 배치로 가시성 극대화) */}
+            <div className="p-5 lg:p-6 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 rounded-[2rem] border border-indigo-500/30 text-white shadow-2xl relative overflow-hidden mb-6 mx-2 transition-all">
+                <Brain className="absolute bottom-[-30px] right-[-30px] opacity-10 text-white pointer-events-none" size={200} />
+                <h4 className="text-xs lg:text-sm font-black uppercase tracking-[0.25em] mb-3 text-indigo-200 flex items-center gap-3">
+                    <ShieldAlert size={18} className="text-amber-400 shrink-0" /> AI GOVERNANCE VERDICT & BILLING AUDIT
+                </h4>
+                <div className="space-y-4 relative z-10 text-xs lg:text-sm">
+                    <p className="leading-relaxed font-medium text-slate-300 border-l-[4px] border-amber-400 pl-4 py-1 break-keep">
+                        현재 시스템은 <span className="text-amber-300 font-black">Google Gemini 3.6 Flash</span> 모델을 주력으로 사용 중입니다. 
+                        Google AI Studio 기본 정책에 따라 하루 1,500회(1,500 RPD)까지 완전 무료로 제공되며, 
+                        현재 StockPlus 시스템은 하루 평균 <span className="text-emerald-400 font-extrabold">10~16회(약 0.8%)</span> 수준만 사용하여 
+                        <span className="text-emerald-300 font-black"> 실제 청구 요금은 0원(완전 무료)</span>입니다.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4 pt-1">
+                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">일일 무료 한도 (RPD)</p>
+                            <p className="text-base lg:text-lg font-black text-amber-300 tracking-tight">1,500 <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">Requests / Day</span></p>
+                            <p className="text-[11px] text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                                현재 사용률: ~0.8% (초안전)
+                            </p>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">분당 한도 (RPM / TPM)</p>
+                            <p className="text-base lg:text-lg font-black text-amber-300 tracking-tight">15 RPM <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">/ 1M TPM</span></p>
+                            <p className="text-[11px] text-slate-400 font-bold mt-1.5 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>
+                                스로틀링 지연 제로
+                            </p>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">Flash 공식 단가 (1M 토큰)</p>
+                            <p className="text-base lg:text-lg font-black text-cyan-300 tracking-tight">In $0.075 <span className="text-[10px] opacity-70 text-white font-normal">/ Out $0.30</span></p>
+                            <p className="text-[11px] text-slate-400 font-bold mt-1.5">
+                                100만 토큰당 약 100~400원
+                            </p>
+                        </div>
+                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
+                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">유료 전환 시 일 예상 비용</p>
+                            <p className="text-base lg:text-lg font-black text-rose-300 tracking-tight">약 ₩4 ~ 6원 <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">/ 1일</span></p>
+                            <p className="text-[11px] text-slate-400 font-bold mt-1.5">
+                                한 달 30일 기준 약 120~180원
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 px-2">
                 {/* Usage Trend Line Chart */}
@@ -422,54 +470,6 @@ const AdminAiUsageManagement = () => {
                             </tfoot>
                         )}
                     </table>
-                </div>
-            </div>
-
-            {/* Intelligence Notice & Cost Policy */}
-            <div className="p-5 lg:p-7 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 rounded-[2rem] border border-indigo-500/30 text-white shadow-2xl relative overflow-hidden mb-8 mx-2 transition-all">
-                <Brain className="absolute bottom-[-30px] right-[-30px] opacity-10 text-white pointer-events-none" size={200} />
-                <h4 className="text-sm lg:text-base font-black uppercase tracking-[0.25em] mb-3 text-indigo-200 flex items-center gap-3">
-                    <ShieldAlert size={20} className="text-amber-400 shrink-0" /> AI GOVERNANCE VERDICT & BILLING AUDIT
-                </h4>
-                <div className="space-y-4 relative z-10 text-xs lg:text-sm">
-                    <p className="leading-relaxed font-medium text-slate-300 border-l-[4px] border-amber-400 pl-4 py-1 break-keep">
-                        현재 시스템은 <span className="text-amber-300 font-black">Google Gemini 3.6 Flash</span> 모델을 주력으로 사용 중입니다. 
-                        Google AI Studio의 기본 정책에 따라 하루 1,500회(1,500 RPD)까지 완전 무료로 제공되며, 
-                        현재 StockPlus 시스템은 하루 평균 <span className="text-emerald-400 font-extrabold">10~16회(약 0.8%)</span> 수준만 사용하여 
-                        <span className="text-emerald-300 font-black"> 실제 청구 요금은 0원(완전 무료)</span>입니다.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-4 pt-1">
-                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
-                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">일일 무료 한도 (RPD)</p>
-                            <p className="text-base lg:text-lg font-black text-amber-300 tracking-tight">1,500 <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">Requests / Day</span></p>
-                            <p className="text-[11px] text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-                                현재 사용률: ~0.8% (초안전)
-                            </p>
-                        </div>
-                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
-                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">분당 한도 (RPM / TPM)</p>
-                            <p className="text-base lg:text-lg font-black text-amber-300 tracking-tight">15 RPM <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">/ 1M TPM</span></p>
-                            <p className="text-[11px] text-slate-400 font-bold mt-1.5 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>
-                                스로틀링 지연 제로
-                            </p>
-                        </div>
-                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
-                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">Flash 공식 단가 (1M 토큰)</p>
-                            <p className="text-base lg:text-lg font-black text-cyan-300 tracking-tight">In $0.075 <span className="text-[10px] opacity-70 text-white font-normal">/ Out $0.30</span></p>
-                            <p className="text-[11px] text-slate-400 font-bold mt-1.5">
-                                100만 토큰당 약 100~400원
-                            </p>
-                        </div>
-                        <div className="bg-white/5 rounded-2xl p-4 backdrop-blur-xl border border-white/10 shadow-lg flex flex-col justify-between">
-                            <p className="text-[10px] font-black uppercase opacity-70 mb-1 tracking-[0.1em] text-slate-400">유료 전환 시 일 예상 비용</p>
-                            <p className="text-base lg:text-lg font-black text-rose-300 tracking-tight">약 ₩4 ~ 6원 <span className="text-[10px] opacity-70 text-white font-normal ml-0.5">/ 1일</span></p>
-                            <p className="text-[11px] text-slate-400 font-bold mt-1.5">
-                                한 달 30일 기준 약 120~180원
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
