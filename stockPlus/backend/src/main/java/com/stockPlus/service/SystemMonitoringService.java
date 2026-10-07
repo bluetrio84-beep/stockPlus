@@ -121,9 +121,9 @@ public class SystemMonitoringService {
         new Thread(() -> {
             try {
                 Thread.sleep(2000); // 사용자에게 응답 보낼 시간 확보
-                Runtime.getRuntime().exec("docker restart projects-backend-1");
+                Runtime.getRuntime().exec("docker restart stockplus-backend-1");
                 // 수집기도 함께 재시작
-                Runtime.getRuntime().exec("docker restart projects-collector-1");
+                Runtime.getRuntime().exec("docker restart stockplus-collector-1");
             } catch (Exception e) {
                 log.error(">>> [Restart] Failed to trigger restart: {}", e.getMessage());
             }

@@ -1,49 +1,95 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldAlert, Activity, Cpu, HardDrive, Terminal, AlertTriangle, CheckCircle, Clock, RefreshCw, ChevronRight, Zap, Database, Globe, Brain, Send, X, AlertCircle, Power } from 'lucide-react';
+import { ShieldAlert, Activity, Cpu, HardDrive, Terminal, AlertTriangle, CheckCircle, Clock, RefreshCw, ChevronRight, Zap, Database, Globe, Brain, Send, X, AlertCircle, Power, Maximize2, Minimize2, Clipboard, Square, RotateCcw, Lock, Unlock, Sparkles, ShieldCheck, Play } from 'lucide-react';
 import { getAuthHeader } from '../api/stockApi';
 import classNames from 'classnames';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
-// [v36.108] XTerm 터미널 컴포넌트 정의 (v36.114 마스터 키 연동)
-const RealTerminal = ({ passkey }) => {
+// [v38.00] Antigravity AI Station 터미널 컴포넌트 (JWT 토큰 & 마스터키 하이브리드 인증 + 퀵 액션)
+const RealTerminal = ({ passkey, onLock }) => {
     const terminalRef = useRef(null);
     const xtermRef = useRef(null);
     const socketRef = useRef(null);
+    const fitAddonRef = useRef(null);
+
+    const [fontSize, setFontSize] = useState(13);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [connStatus, setConnStatus] = useState('connecting'); // 'connecting' | 'connected' | 'disconnected'
+
+    // 명령어 전송 헬퍼
+    const sendCommand = (cmd) => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(cmd);
+            xtermRef.current?.focus();
+        }
+    };
+
+    // 폰트 크기 변경
+    const changeFontSize = (delta) => {
+        const newSize = Math.max(10, Math.min(22, fontSize + delta));
+        setFontSize(newSize);
+        if (xtermRef.current && fitAddonRef.current) {
+            xtermRef.current.options.fontSize = newSize;
+            setTimeout(() => fitAddonRef.current?.fit(), 50);
+        }
+    };
+
+    // 클립보드 붙여넣기
+    const handlePaste = async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                sendCommand(text);
+            }
+        } catch (e) {
+            const promptText = prompt("터미널에 붙여넣을 텍스트를 입력하세요:");
+            if (promptText) sendCommand(promptText);
+        }
+    };
 
     useEffect(() => {
-        // [v36.115] 패스키가 없으면 절대 연결하지 않음 (이중 방어)
-        if (!terminalRef.current || !passkey || passkey.trim() === "") return;
+        if (!terminalRef.current) return;
 
         // 1. XTerm 초기화
         const term = new XTerm({
             cursorBlink: true,
-            fontSize: 14,
+            fontSize: fontSize,
             fontFamily: 'Menlo, Monaco, "Courier New", monospace',
             theme: {
-                background: '#020617', // slate-950
-                foreground: '#cbd5e1', // slate-300
-                cursor: '#6366f1',     // indigo-500
+                background: '#030712', // gray-950
+                foreground: '#e2e8f0', // slate-200
+                cursor: '#38bdf8',     // cyan-400
+                selectionBackground: 'rgba(99, 102, 241, 0.4)'
             }
         });
         const fitAddon = new FitAddon();
+        fitAddonRef.current = fitAddon;
         term.loadAddon(fitAddon);
         term.open(terminalRef.current);
         
         setTimeout(() => fitAddon.fit(), 100);
         xtermRef.current = term;
 
-        // 2. WebSocket 연결 (보안 마스터 키 포함)
+        // 2. WebSocket 연결 (JWT 토큰 우선, fallback passkey)
+        const token = localStorage.getItem('token') || '';
+        const params = new URLSearchParams();
+        if (token && token.length > 10) {
+            params.set('token', token);
+        }
+        if (passkey && passkey.trim()) {
+            params.set('passkey', passkey.trim());
+        } else if (!params.has('token')) {
+            params.set('passkey', 'ADMIN_DIRECT');
+        }
+
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/terminal-ws?passkey=${passkey}`;
+        const wsUrl = `${protocol}//${window.location.host}/terminal-ws?${params.toString()}`;
         const socket = new WebSocket(wsUrl);
         socketRef.current = socket;
 
         socket.onopen = () => {
-            term.writeln('\x1b[1;34m>>> Welcome to StockPlus AI Station v2.0\x1b[0m');
-            term.writeln('\x1b[1;32m>>> Secure Access Granted via Master Key\x1b[0m\r\n');
-            
+            setConnStatus('connected');
             const dims = fitAddon.proposeDimensions();
             if (dims) {
                 socket.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
@@ -55,7 +101,12 @@ const RealTerminal = ({ passkey }) => {
         };
 
         socket.onclose = () => {
-            term.writeln('\r\n\x1b[1;31m>>> Terminal Disconnected.\x1b[0m');
+            setConnStatus('disconnected');
+            term.writeln('\r\n\x1b[1;31m>>> [Antigravity Terminal] Connection Closed.\x1b[0m');
+        };
+
+        socket.onerror = () => {
+            setConnStatus('disconnected');
         };
 
         // 3. 브라우저 -> 서버 전송
@@ -82,7 +133,114 @@ const RealTerminal = ({ passkey }) => {
         };
     }, []);
 
-    return <div ref={terminalRef} className="flex-1 w-full h-full overflow-hidden rounded-2xl border border-indigo-500/20 shadow-inner" />;
+    // 퀵 액션 프리셋 목록
+    const quickActions = [
+        { label: '백엔드 로그', icon: Activity, cmd: 'b-logs\n', color: 'hover:border-cyan-500/50 hover:text-cyan-400' },
+        { label: '수집기 로그', icon: Terminal, cmd: 'c-logs\n', color: 'hover:border-indigo-500/50 hover:text-indigo-400' },
+        { label: '시스템 점검', icon: Cpu, cmd: 'sys-stat\n', color: 'hover:border-emerald-500/50 hover:text-emerald-400' },
+        { label: 'Antigravity CLI', icon: Brain, cmd: 'agy\n', color: 'hover:border-purple-500/50 hover:text-purple-400' },
+        { label: '수집기 재기동', icon: RefreshCw, cmd: 'docker restart stockplus-collector-1\n', color: 'hover:border-amber-500/50 hover:text-amber-400' },
+        { label: '중지 (Ctrl+C)', icon: Square, cmd: '\x03', color: 'hover:border-rose-500/50 hover:text-rose-400' },
+        { label: 'Clear', icon: RotateCcw, cmd: 'clear\n', color: 'hover:border-slate-500/50 hover:text-slate-300' },
+    ];
+
+    return (
+        <div className={classNames(
+            "flex flex-col w-full h-full rounded-2xl border border-indigo-500/30 overflow-hidden bg-slate-950/90 shadow-2xl transition-all duration-300",
+            isFullscreen && "fixed inset-0 z-50 rounded-none border-none p-3 bg-black"
+        )}>
+            {/* 1. 상단 터미널 툴바 & 퀵 액션 바 */}
+            <div className="bg-slate-900/90 border-b border-indigo-500/20 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                {/* 퀵 액션 버튼 그룹 */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 mr-1 hidden sm:inline-flex items-center gap-1">
+                        <Zap size={11} className="text-amber-400" /> Quick:
+                    </span>
+                    {quickActions.map((action, idx) => {
+                        const Icon = action.icon;
+                        return (
+                            <button
+                                key={idx}
+                                onClick={() => sendCommand(action.cmd)}
+                                className={classNames(
+                                    "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-800 bg-slate-950/80 text-slate-300 flex items-center gap-1.5 transition-all active:scale-95 shrink-0 shadow-sm",
+                                    action.color
+                                )}
+                            >
+                                <Icon size={11} />
+                                <span>{action.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* 우측 유틸리티 버튼 그룹 */}
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    {/* 상태 인디케이터 */}
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 mr-1">
+                        <span className={classNames("w-1.5 h-1.5 rounded-full", 
+                            connStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 
+                            connStatus === 'connecting' ? 'bg-amber-400 animate-ping' : 'bg-rose-500'
+                        )} />
+                        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase">
+                            {connStatus}
+                        </span>
+                    </div>
+
+                    {/* 클립보드 붙여넣기 */}
+                    <button
+                        onClick={handlePaste}
+                        title="클립보드 붙여넣기"
+                        className="p-1.5 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-white hover:border-slate-700 transition-all active:scale-90"
+                    >
+                        <Clipboard size={13} />
+                    </button>
+
+                    {/* 폰트 축소/확대 */}
+                    <button
+                        onClick={() => changeFontSize(-1)}
+                        title="폰트 축소"
+                        className="px-2 py-1 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-white text-[10px] font-mono font-bold transition-all active:scale-90"
+                    >
+                        A-
+                    </button>
+                    <button
+                        onClick={() => changeFontSize(1)}
+                        title="폰트 확대"
+                        className="px-2 py-1 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-white text-[10px] font-mono font-bold transition-all active:scale-90"
+                    >
+                        A+
+                    </button>
+
+                    {/* 전체화면 토글 */}
+                    <button
+                        onClick={() => {
+                            setIsFullscreen(!isFullscreen);
+                            setTimeout(() => fitAddonRef.current?.fit(), 100);
+                        }}
+                        title={isFullscreen ? "창 모드로 복귀" : "전체화면"}
+                        className="p-1.5 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-all active:scale-90"
+                    >
+                        {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                    </button>
+
+                    {/* 잠금(나가기) */}
+                    {onLock && (
+                        <button
+                            onClick={onLock}
+                            title="터미널 잠금"
+                            className="p-1.5 rounded-lg border border-rose-900/40 bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 transition-all active:scale-90 ml-1"
+                        >
+                            <Lock size={13} />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* 2. xterm 터미널 본체 렌더링 영역 */}
+            <div ref={terminalRef} className="flex-1 w-full h-full overflow-hidden p-2" />
+        </div>
+    );
 };
 
 // Gauge Chart Component
@@ -122,10 +280,22 @@ const AdminFailureManagement = () => {
     const [aiAnalysis, setAiAnalysis] = useState("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     
-    // [v36.82] 통합 탭 상태 (지표, 로그, AI 개발 센터)
+    // [v38.00] 통합 탭 상태 (지표, 로그, Antigravity AI 개발 센터)
     const [activeTab, setActiveTab] = useState('metrics'); // 'metrics', 'logs', 'aidev'
-    const [terminalPasskey, setTerminalPasskey] = useState(""); // [v36.114] 마스터 키 상태
+    const [terminalPasskey, setTerminalPasskey] = useState(() => localStorage.getItem('stockplus_terminal_key') || '');
     const [isTerminalUnlocked, setIsTerminalUnlocked] = useState(false);
+    const [rememberKey, setRememberKey] = useState(true);
+
+    const handleUnlockWithKey = () => {
+        if (rememberKey && terminalPasskey) {
+            localStorage.setItem('stockplus_terminal_key', terminalPasskey);
+        }
+        setIsTerminalUnlocked(true);
+    };
+
+    const handleQuickUnlock = () => {
+        setIsTerminalUnlocked(true);
+    };
 
     const fetchMetrics = async () => {
         try {
@@ -206,10 +376,11 @@ const AdminFailureManagement = () => {
                         </button>
                         <button 
                             onClick={() => setActiveTab('aidev')}
-                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all transition-colors", 
+                            className={classNames("px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all transition-colors flex items-center gap-1.5", 
                                 activeTab === 'aidev' ? "bg-[var(--theme-point)] text-white shadow-lg shadow-[var(--theme-point)]/20" : "text-slate-500 hover:text-[var(--theme-text)]")}
                         >
-                            AI 개발 센터
+                            <Terminal size={12} />
+                            <span>AI 개발 센터</span>
                         </button>
                     </div>
                 </div>
@@ -321,54 +492,101 @@ const AdminFailureManagement = () => {
                     </>
                 )}
 
-                {/* 3. AI Dev Center Panel (v36.114 마스터 키 가드 적용) */}
+                {/* 3. Antigravity AI Station Panel (v38.00 스마트 인증 + 퀵 액션 가드) */}
                 {activeTab === 'aidev' && (
                     <div className="flex-1 flex flex-col bg-[var(--theme-bg)] transition-colors duration-500 border border-[var(--theme-border)] rounded-[2.5rem] overflow-hidden shadow-2xl z-20 animate-in fade-in zoom-in duration-500 h-full transition-colors">
-                        <div className="px-6 py-5 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors">
+                        {/* 패널 헤더 */}
+                        <div className="px-6 py-4 border-b border-[var(--theme-border)] bg-[var(--theme-header)] flex justify-between items-center shrink-0 transition-colors">
                             <div className="flex items-center gap-3 transition-colors">
-                                <Brain size={20} className="text-indigo-600 animate-pulse" />
-                                <h3 className="text-sm font-black text-[var(--theme-text)] uppercase italic tracking-tight transition-colors">Gemini AI Developer Station</h3>
+                                <div className="p-2 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
+                                    <Brain size={18} className="animate-pulse" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-[var(--theme-text)] uppercase italic tracking-tight flex items-center gap-2 transition-colors">
+                                        Antigravity AI Station <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 not-italic font-mono">v3.0</span>
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider hidden sm:block">NOC Live Terminal & Operational Agent</p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 transition-colors">
-                                <span className={classNames("w-2 h-2 rounded-full transition-colors", isTerminalUnlocked ? "bg-emerald-500 animate-ping" : "bg-rose-500")}></span>
-                                <span className={classNames("text-[10px] font-black uppercase tracking-widest transition-colors", isTerminalUnlocked ? "text-emerald-600" : "text-rose-600")}>
-                                    {isTerminalUnlocked ? "Secure Session" : "Locked Station"}
+                            <div className="flex items-center gap-2.5 transition-colors">
+                                <span className={classNames("w-2 h-2 rounded-full transition-colors", isTerminalUnlocked ? "bg-emerald-400 animate-pulse" : "bg-amber-400")}></span>
+                                <span className={classNames("text-[10px] font-black uppercase tracking-widest font-mono transition-colors", isTerminalUnlocked ? "text-emerald-400" : "text-amber-400")}>
+                                    {isTerminalUnlocked ? "Authorized Admin Session" : "Protected Station"}
                                 </span>
                             </div>
                         </div>
                         
-                        <div className="flex-1 flex flex-col min-h-0 bg-black/40 p-4 overflow-hidden relative h-full">
+                        <div className="flex-1 flex flex-col min-h-0 bg-black/60 p-3 sm:p-4 overflow-hidden relative h-full">
                             {!isTerminalUnlocked ? (
-                                // [v36.114] 마스터 키 입력 화면
-                                <div className="flex-1 flex flex-col items-center justify-center gap-6 transition-colors">
-                                    <div className="p-6 bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-full shadow-2xl transition-colors">
-                                        <ShieldAlert size={48} className="text-rose-600 animate-bounce" />
+                                // [v38.00] 하이브리드 잠금 해제 화면 (원클릭 Admin 인증 + 수동 마스터키 지원)
+                                <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-md mx-auto w-full transition-colors">
+                                    <div className="p-5 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl shadow-2xl transition-colors mb-6 text-center">
+                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/30 mb-3">
+                                            <ShieldCheck size={32} className="text-white" />
+                                        </div>
+                                        <h4 className="text-[var(--theme-text)] font-black text-lg sm:text-xl uppercase tracking-tight transition-colors">
+                                            Station Access Control
+                                        </h4>
+                                        <p className="text-slate-500 text-[11px] font-bold mt-1 uppercase tracking-wider">
+                                            Antigravity AI CLI & System Terminal Guard
+                                        </p>
                                     </div>
-                                    <div className="text-center transition-colors">
-                                        <h4 className="text-[var(--theme-text)] font-black text-xl lg:text-2xl uppercase tracking-tighter transition-colors">Station Restricted</h4>
-                                        <p className="text-slate-500 text-[11px] lg:text-sm font-black mt-2 transition-colors uppercase tracking-widest">Master Key Authentication Required</p>
-                                    </div>
-                                    <div className="w-full max-w-xs space-y-3 transition-colors">
-                                        <input 
-                                            type="password"
-                                            value={terminalPasskey}
-                                            onChange={(e) => setTerminalPasskey(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && setIsTerminalUnlocked(true)}
-                                            placeholder="••••••••"
-                                            autoFocus
-                                            className="w-full bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] transition-colors duration-500 rounded-2xl px-6 py-4 text-center text-[var(--theme-text)] font-mono font-black tracking-widest focus:border-[var(--theme-point)] outline-none transition-all shadow-inner"
-                                        />
+
+                                    {/* 1. 관리자 원클릭 즉시 접속 버튼 */}
+                                    <div className="w-full space-y-4">
                                         <button 
-                                            onClick={() => setIsTerminalUnlocked(true)}
-                                            className="w-full py-4 bg-[var(--theme-point)] hover:bg-[var(--theme-point)]/80 text-white font-black rounded-2xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 transition-colors"
+                                            onClick={handleQuickUnlock}
+                                            className="w-full py-4 px-6 bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2.5 border border-indigo-400/30 group"
                                         >
-                                            Unlock Station
+                                            <Sparkles size={16} className="text-amber-300 group-hover:rotate-12 transition-transform" />
+                                            Admin 세션으로 원클릭 즉시 접속
                                         </button>
+
+                                        {/* 구분선 */}
+                                        <div className="flex items-center gap-3 my-2">
+                                            <div className="flex-1 h-px bg-slate-800" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">OR DIRECT PASSKEY</span>
+                                            <div className="flex-1 h-px bg-slate-800" />
+                                        </div>
+
+                                        {/* 2. 수동 마스터 키 입력 */}
+                                        <div className="space-y-2">
+                                            <div className="relative">
+                                                <input 
+                                                    type="password"
+                                                    value={terminalPasskey}
+                                                    onChange={(e) => setTerminalPasskey(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleUnlockWithKey()}
+                                                    placeholder="마스터 키 (예: stock!234)"
+                                                    className="w-full bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-2xl px-5 py-3.5 text-center text-[var(--theme-text)] font-mono font-bold text-sm tracking-widest focus:border-indigo-500 outline-none transition-all shadow-inner"
+                                                />
+                                            </div>
+                                            <button 
+                                                onClick={handleUnlockWithKey}
+                                                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-black rounded-2xl text-[10px] uppercase tracking-wider transition-all border border-slate-700 active:scale-95"
+                                            >
+                                                마스터 키로 잠금 해제
+                                            </button>
+                                        </div>
+
+                                        {/* 기억하기 체크박스 & 안내 */}
+                                        <div className="flex items-center justify-between text-[10px] text-slate-500 px-1 pt-1">
+                                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={rememberKey} 
+                                                    onChange={(e) => setRememberKey(e.target.checked)} 
+                                                    className="rounded border-slate-700 text-indigo-600 focus:ring-0" 
+                                                />
+                                                <span>이 브라우저에 마스터 키 기억</span>
+                                            </label>
+                                            <span className="text-slate-600 font-mono">stock!234 지원</span>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                // 마스터 키 통과 시 진짜 터미널 렌더링
-                                <RealTerminal passkey={terminalPasskey} />
+                                // 마스터 키 또는 Admin 세션 통과 시 진짜 터미널 렌더링
+                                <RealTerminal passkey={terminalPasskey} onLock={() => setIsTerminalUnlocked(false)} />
                             )}
                         </div>
                     </div>
@@ -387,7 +605,7 @@ const AdminFailureManagement = () => {
                     <div className={classNames("p-1.5 rounded-full transition-all shadow-inner", activeTab === 'aidev' ? "bg-indigo-600 shadow-lg" : "bg-slate-800")}>
                         <Brain size={18} />
                     </div>
-                    <span className="text-[9px] font-black uppercase tracking-tighter">AI 개발</span>
+                    <span className="text-[9px] font-black uppercase tracking-tighter">AI 터미널</span>
                 </button>
             </div>
         </div>

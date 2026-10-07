@@ -55,6 +55,7 @@ services:
       - ./img/notes:/app/img/notes
       - /home/lms/.npm-global:/usr/local/npm-global
       - /home/lms/.gemini:/root/.gemini
+      - /home/lms/.local/bin/agy:/usr/local/bin/agy:ro
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       mysql:
