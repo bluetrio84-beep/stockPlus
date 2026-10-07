@@ -51,6 +51,11 @@ wss.on('connection', (ws, req) => {
     const clientKey = url.searchParams.get('passkey');
     const token = url.searchParams.get('token');
 
+    const clientCols = parseInt(url.searchParams.get('cols'), 10);
+    const clientRows = parseInt(url.searchParams.get('rows'), 10);
+    const initialCols = (clientCols && clientCols >= 10 && clientCols <= 500) ? clientCols : 100;
+    const initialRows = (clientRows && clientRows >= 5 && clientRows <= 200) ? clientRows : 30;
+
     let authorized = false;
     let authReason = '';
 
@@ -71,7 +76,7 @@ wss.on('connection', (ws, req) => {
         return;
     }
 
-    console.log(`>>> [Terminal Server] Authorized access granted (${authReason})`);
+    console.log(`>>> [Terminal Server] Authorized access granted (${authReason}) [Initial Size: ${initialCols}x${initialRows}]`);
 
     // Heartbeat: 30초마다 ping 전송 (1분 타임아웃 방지)
     const heartbeat = setInterval(() => {
@@ -85,13 +90,14 @@ wss.on('connection', (ws, req) => {
     const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
     const ptyProcess = pty.spawn(shell, [], {
         name: 'xterm-256color',
-        cols: 100,
-        rows: 30,
+        cols: initialCols,
+        rows: initialRows,
         cwd: '/Projects',
         env: {
             ...process.env,
             HOME: '/root',
             TERM: 'xterm-256color',
+            COLORTERM: 'truecolor',
             LANG: 'C.UTF-8',
             LC_ALL: 'C.UTF-8',
             PS1: '\\[\\e[1;36m\\][Antigravity Station]\\[\\e[0m\\]:\\[\\e[1;32m\\]\\w\\[\\e[0m\\]$ ',
@@ -130,15 +136,19 @@ wss.on('connection', (ws, req) => {
     // ws -> pty
     ws.on('message', (message) => {
         const data = message.toString();
-        // 리사이즈 메시지 판별
-        if (data.startsWith('{') && data.includes('cols')) {
+        // 리사이즈 메시지 판별 (JSON 형식)
+        if (data.startsWith('{') && (data.includes('"cols"') || data.includes('cols'))) {
             try {
-                const { cols, rows } = JSON.parse(data);
-                ptyProcess.resize(cols, rows);
+                const parsed = JSON.parse(data);
+                const cols = parseInt(parsed.cols, 10);
+                const rows = parseInt(parsed.rows, 10);
+                if (cols >= 10 && rows >= 5 && cols <= 500 && rows <= 200) {
+                    ptyProcess.resize(cols, rows);
+                    return; // 리사이즈 패킷은 셸에 입력으로 전달하지 않음
+                }
             } catch (e) {}
-        } else {
-            ptyProcess.write(data);
         }
+        ptyProcess.write(data);
     });
 
     ws.on('close', () => {

@@ -7,6 +7,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
 // [v38.00] Antigravity AI Station 터미널 컴포넌트 (JWT 토큰 & 마스터키 하이브리드 인증 + 퀵 액션)
+// [v38.10] Antigravity AI Station 터미널 컴포넌트 (초정밀 cols/rows 동기화 + ResizeObserver + TUI 안정화)
 const RealTerminal = ({ passkey, onLock }) => {
     const terminalRef = useRef(null);
     const xtermRef = useRef(null);
@@ -25,13 +26,25 @@ const RealTerminal = ({ passkey, onLock }) => {
         }
     };
 
+    // 터미널 크기 맞추기 및 PTY 동기화 헬퍼
+    const fitAndSync = () => {
+        try {
+            if (!fitAddonRef.current || !xtermRef.current) return;
+            fitAddonRef.current.fit();
+            const { cols, rows } = xtermRef.current;
+            if (cols > 0 && rows > 0 && socketRef.current?.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+            }
+        } catch (e) {}
+    };
+
     // 폰트 크기 변경
     const changeFontSize = (delta) => {
         const newSize = Math.max(10, Math.min(22, fontSize + delta));
         setFontSize(newSize);
-        if (xtermRef.current && fitAddonRef.current) {
+        if (xtermRef.current) {
             xtermRef.current.options.fontSize = newSize;
-            setTimeout(() => fitAddonRef.current?.fit(), 50);
+            setTimeout(fitAndSync, 50);
         }
     };
 
@@ -51,15 +64,22 @@ const RealTerminal = ({ passkey, onLock }) => {
     useEffect(() => {
         if (!terminalRef.current) return;
 
-        // 1. XTerm 초기화
+        // 1. XTerm 정밀 초기화 (TUI 및 agy CLI 커서/텍스트 싱크 최적화)
         const term = new XTerm({
             cursorBlink: true,
+            cursorStyle: 'block',
             fontSize: fontSize,
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", "Liberation Mono", monospace',
+            lineHeight: 1.15,
+            letterSpacing: 0,
+            convertEol: true,
+            scrollback: 10000,
+            windowsMode: false,
             theme: {
                 background: '#030712', // gray-950
                 foreground: '#e2e8f0', // slate-200
                 cursor: '#38bdf8',     // cyan-400
+                cursorAccent: '#030712',
                 selectionBackground: 'rgba(99, 102, 241, 0.4)'
             }
         });
@@ -67,11 +87,21 @@ const RealTerminal = ({ passkey, onLock }) => {
         fitAddonRef.current = fitAddon;
         term.loadAddon(fitAddon);
         term.open(terminalRef.current);
-        
-        setTimeout(() => fitAddon.fit(), 100);
         xtermRef.current = term;
 
-        // 2. WebSocket 연결 (JWT 토큰 우선, fallback passkey)
+        // xterm 내부 resize 이벤트 발생 시 PTY로 자동 전송
+        term.onResize(({ cols, rows }) => {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+            }
+        });
+
+        // 초기 예상 dims 계산
+        const initialDims = fitAddon.proposeDimensions();
+        const initialCols = initialDims?.cols || 100;
+        const initialRows = initialDims?.rows || 30;
+
+        // 2. WebSocket 연결 (초기 cols, rows 포함)
         const token = localStorage.getItem('token') || '';
         const params = new URLSearchParams();
         if (token && token.length > 10) {
@@ -82,6 +112,8 @@ const RealTerminal = ({ passkey, onLock }) => {
         } else if (!params.has('token')) {
             params.set('passkey', 'ADMIN_DIRECT');
         }
+        params.set('cols', initialCols);
+        params.set('rows', initialRows);
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/terminal-ws?${params.toString()}`;
@@ -90,10 +122,7 @@ const RealTerminal = ({ passkey, onLock }) => {
 
         socket.onopen = () => {
             setConnStatus('connected');
-            const dims = fitAddon.proposeDimensions();
-            if (dims) {
-                socket.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
-            }
+            fitAndSync();
         };
 
         socket.onmessage = (event) => {
@@ -109,25 +138,41 @@ const RealTerminal = ({ passkey, onLock }) => {
             setConnStatus('disconnected');
         };
 
-        // 3. 브라우저 -> 서버 전송
+        // 3. 브라우저 -> 서버 키 입력 전송
         term.onData((data) => {
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(data);
             }
         });
 
-        // 4. 창 크기 조절 대응
-        const handleResize = () => {
-            fitAddon.fit();
-            const dims = fitAddon.proposeDimensions();
-            if (dims && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ cols: dims.cols, rows: dims.rows }));
-            }
-        };
-        window.addEventListener('resize', handleResize);
+        // 4. 컨테이너 크기 변경 실시간 감지 (ResizeObserver)
+        const resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => {
+                fitAndSync();
+            });
+        });
+        resizeObserver.observe(terminalRef.current);
+
+        // 렌더링 직후 타이밍 보정 (폰트 로드 및 CSS 트랜지션 완료 대응)
+        const timer1 = setTimeout(fitAndSync, 100);
+        const timer2 = setTimeout(fitAndSync, 300);
+        const timer3 = setTimeout(fitAndSync, 600);
+
+        const handleWindowResize = () => fitAndSync();
+        window.addEventListener('resize', handleWindowResize);
+
+        // 터미널 영역 클릭 시 자동 포커스
+        const handleTerminalClick = () => term.focus();
+        const termElement = terminalRef.current;
+        termElement?.addEventListener('click', handleTerminalClick);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            clearTimeout(timer3);
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', handleWindowResize);
+            termElement?.removeEventListener('click', handleTerminalClick);
             socket.close();
             term.dispose();
         };
@@ -216,7 +261,7 @@ const RealTerminal = ({ passkey, onLock }) => {
                     <button
                         onClick={() => {
                             setIsFullscreen(!isFullscreen);
-                            setTimeout(() => fitAddonRef.current?.fit(), 100);
+                            setTimeout(fitAndSync, 100);
                         }}
                         title={isFullscreen ? "창 모드로 복귀" : "전체화면"}
                         className="p-1.5 rounded-lg border border-slate-800 bg-slate-950/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-all active:scale-90"
