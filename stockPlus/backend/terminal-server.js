@@ -133,21 +133,35 @@ wss.on('connection', (ws, req) => {
         } catch (err) {}
     });
 
+    let curCols = initialCols;
+    let curRows = initialRows;
+
     // ws -> pty
     ws.on('message', (message) => {
         const data = message.toString();
-        // 리사이즈 메시지 판별 (JSON 형식)
-        if (data.startsWith('{') && (data.includes('"cols"') || data.includes('cols'))) {
+        
+        // 제어 패킷(JSON) 판별: 무조건 소비하고 셸(pty)로 절대 유입되지 않도록 격리
+        if (data.startsWith('{')) {
             try {
                 const parsed = JSON.parse(data);
-                const cols = parseInt(parsed.cols, 10);
-                const rows = parseInt(parsed.rows, 10);
-                if (cols >= 10 && rows >= 5 && cols <= 500 && rows <= 200) {
-                    ptyProcess.resize(cols, rows);
-                    return; // 리사이즈 패킷은 셸에 입력으로 전달하지 않음
+                if (parsed.type === 'resize' || parsed.cols != null || parsed.rows != null) {
+                    const cols = parseInt(parsed.cols, 10);
+                    const rows = parseInt(parsed.rows, 10);
+                    if (cols >= 10 && rows >= 5 && cols <= 500 && rows <= 200) {
+                        if (cols !== curCols || rows !== curRows) {
+                            curCols = cols;
+                            curRows = rows;
+                            ptyProcess.resize(cols, rows);
+                        }
+                    }
+                    return; // 제어 패킷 처리 완료 (셸 입력 차단)
                 }
-            } catch (e) {}
+            } catch (e) {
+                return; // JSON 형식인 경우 에러가 나도 셸에 텍스트로 쓰지 않음
+            }
         }
+
+        // 일반 키보드/명령어 입력만 PTY로 전달
         ptyProcess.write(data);
     });
 
