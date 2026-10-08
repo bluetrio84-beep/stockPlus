@@ -141,63 +141,63 @@ const RealEstateDashboard = () => {
     return (
         <div className="flex flex-col h-full bg-[var(--theme-bg)] text-[var(--theme-text)] overflow-hidden transition-colors duration-500">
             {/* 상단 헤더 바 */}
-            <div className="bg-[var(--theme-header)] border-b border-[var(--theme-border)] px-4 sm:px-6 py-3.5 shrink-0 shadow-md">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20 shadow-xs">
-                            <Building2 size={20} />
+            <div className="bg-[var(--theme-header)] border-b border-[var(--theme-border)] px-3 sm:px-6 py-2 sm:py-3.5 shrink-0 shadow-md">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-rose-500/10 text-rose-500 rounded-lg sm:rounded-xl border border-rose-500/20 shadow-xs">
+                            <Building2 size={16} className="sm:w-5 sm:h-5" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-base sm:text-lg font-black tracking-tight text-[var(--theme-text)]">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <h1 className="text-sm sm:text-lg font-black tracking-tight text-[var(--theme-text)]">
                                     부동산 시장 현황
                                 </h1>
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                <span className="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
                                     REAL ESTATE
                                 </span>
                             </div>
-                            <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                            <p className="hidden sm:block text-[11px] font-bold text-slate-500 mt-0.5">
                                 한국부동산원(REB) & KB부동산 공표 주간·월간·연간 변동률 및 전국 시·군·구 실거래가
                             </p>
                         </div>
                     </div>
 
                     {/* 메인 탭 전환: 시세 변동률 랭킹 vs 수도권 지도 히트맵 vs 아파트 실거래가 */}
-                    <div className="flex items-center gap-1.5 bg-[var(--theme-bg)] p-1 rounded-xl border border-[var(--theme-border)] shrink-0 self-start md:self-auto">
+                    <div className="flex items-center gap-1 sm:gap-1.5 bg-[var(--theme-bg)] p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-[var(--theme-border)] shrink-0 self-start md:self-auto overflow-x-auto max-w-full">
                         <button
                             onClick={() => { setActiveTab('rankings'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
                                 activeTab === 'rankings'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <TrendingUp size={14} />
+                            <TrendingUp size={13} className="shrink-0" />
                             <span>시세 변동률 Top 50</span>
                         </button>
                         <button
                             onClick={() => { setActiveTab('map'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
                                 activeTab === 'map'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <Map size={14} />
+                            <Map size={13} className="shrink-0" />
                             <span>🗺️ 수도권 지도 히트맵</span>
                         </button>
                         <button
                             onClick={() => { setActiveTab('transactions'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
                                 activeTab === 'transactions'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <Flame size={14} />
+                            <Flame size={13} className="shrink-0" />
                             <span>아파트 실거래가 동향</span>
                         </button>
                     </div>
@@ -205,9 +205,9 @@ const RealEstateDashboard = () => {
 
                 {/* 서브 필터 컨트롤 바 */}
                 {(activeTab === 'rankings' || activeTab === 'map') ? (
-                    <div className="mt-3.5 pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* [신규] 1. 기간 구분: 주간 / 월간 / 연간 */}
+                    <div className="mt-2 sm:mt-3.5 pt-2 sm:pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            {/* 1. 기간 구분: 주간 / 월간 / 연간 */}
                             <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
                                 {[
                                     { id: 'WEEKLY', label: '주간' },
@@ -218,7 +218,7 @@ const RealEstateDashboard = () => {
                                         key={p.id}
                                         onClick={() => setPeriodType(p.id)}
                                         className={classNames(
-                                            "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                            "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all",
                                             periodType === p.id 
                                                 ? "bg-rose-500 text-white shadow-xs" 
                                                 : "text-slate-400 hover:text-[var(--theme-text)]"
@@ -229,16 +229,16 @@ const RealEstateDashboard = () => {
                                 ))}
                             </div>
 
-                            {/* 기준일자 선택 드롭다운 (주간 21개 주차, 월간 9개 월, 연간 자유 선택) */}
+                            {/* 기준일자 선택 드롭다운 */}
                             {availableDates.length > 0 && (
-                                <div className="flex items-center gap-1.5 bg-[var(--theme-bg)] px-2.5 py-1 rounded-lg border border-[var(--theme-border)] shadow-xs">
-                                    <Calendar size={13} className="text-rose-500 shrink-0" />
-                                    <span className="text-[10px] font-black text-slate-400">기준</span>
+                                <div className="flex items-center gap-1 bg-[var(--theme-bg)] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border border-[var(--theme-border)] shadow-xs">
+                                    <Calendar size={12} className="text-rose-500 shrink-0" />
+                                    <span className="text-[9.5px] sm:text-[10px] font-black text-slate-400">기준</span>
                                     <select
                                         value={selectedDate}
                                         onChange={(e) => setSelectedDate(e.target.value)}
                                         aria-label="기준일자 선택"
-                                        className="bg-transparent text-xs font-black text-[var(--theme-text)] focus:outline-none cursor-pointer py-0.5 font-mono"
+                                        className="bg-transparent text-[11px] sm:text-xs font-black text-[var(--theme-text)] focus:outline-none cursor-pointer py-0 font-mono"
                                     >
                                         {availableDates.map(d => (
                                             <option key={d} value={d} className="bg-slate-900 text-white font-mono">
@@ -249,25 +249,27 @@ const RealEstateDashboard = () => {
                                 </div>
                             )}
 
-                            {/* 기관 구분: KB부동산 vs 한국부동산원 */}
+                            {/* 기관 구분: KB부동산 vs 한국부동산원 (위로 올려서 밀착 및 크기 축소) */}
                             <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
                                 <button
                                     onClick={() => setSourceType('KB')}
                                     className={classNames(
-                                        "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all",
                                         sourceType === 'KB' ? "bg-amber-500 text-white shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
                                     )}
                                 >
-                                    KB부동산
+                                    <span className="sm:hidden">KB</span>
+                                    <span className="hidden sm:inline">KB부동산</span>
                                 </button>
                                 <button
                                     onClick={() => setSourceType('REB')}
                                     className={classNames(
-                                        "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                        "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-black transition-all",
                                         sourceType === 'REB' ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
                                     )}
                                 >
-                                    한국부동산원 (REB)
+                                    <span className="sm:hidden">부동산원</span>
+                                    <span className="hidden sm:inline">한국부동산원 (REB)</span>
                                 </button>
                             </div>
 

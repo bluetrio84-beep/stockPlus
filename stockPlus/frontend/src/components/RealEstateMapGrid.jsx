@@ -441,102 +441,104 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
     return (
         <div className="flex flex-col h-full bg-[var(--theme-bg)] text-[var(--theme-text)] overflow-hidden">
             {/* 1. 상단 통계 카드 & 서브 필터 바 */}
-            <div className="bg-[var(--theme-header)] border-b border-[var(--theme-border)] px-4 sm:px-6 py-3 shrink-0 shadow-sm">
-                {/* 핵심 지표 KPI 요약 카드 */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
-                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 flex items-center justify-between">
+            <div className="bg-[var(--theme-header)] border-b border-[var(--theme-border)] px-2.5 sm:px-6 py-1.5 sm:py-3 shrink-0 shadow-sm">
+                {/* 핵심 지표 KPI 요약 카드 (모바일 초컴팩트 2x2 / 데스크탑 4열) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2.5 mb-1.5 sm:mb-3">
+                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 flex items-center justify-between">
                         <div>
-                            <span className="text-[10px] font-black text-slate-400 block">수도권 평균 변동</span>
+                            <span className="text-[9px] sm:text-[10px] font-black text-slate-400 block">수도권 평균 변동</span>
                             <span className={classNames(
-                                "text-sm sm:text-base font-black font-mono mt-0.5 block",
+                                "text-xs sm:text-base font-black font-mono mt-0 sm:mt-0.5 block",
                                 stats.avg > 0 ? "text-rose-400" : stats.avg < 0 ? "text-blue-400" : "text-slate-300"
                             )}>
                                 {stats.avg > 0 ? `+${stats.avg}%` : `${stats.avg}%`}
                             </span>
                         </div>
-                        <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        <div className="hidden sm:flex p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
                             <Layers size={16} />
                         </div>
                     </div>
 
-                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 flex items-center justify-between">
+                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 flex items-center justify-between">
                         <div>
-                            <span className="text-[10px] font-black text-slate-400 block">최고 상승 지역 🔥</span>
-                            <span className="text-xs sm:text-sm font-black text-rose-400 truncate max-w-[120px] block mt-0.5">
+                            <span className="text-[9px] sm:text-[10px] font-black text-slate-400 block">최고 상승 지역 🔥</span>
+                            <span className="text-[10.5px] sm:text-sm font-black text-rose-400 truncate max-w-[110px] sm:max-w-[120px] block mt-0 sm:mt-0.5">
                                 {stats.max ? `${stats.max.name} (+${stats.max.rate}%)` : '-'}
                             </span>
                         </div>
-                        <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        <div className="hidden sm:flex p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
                             <ArrowUpRight size={16} />
                         </div>
                     </div>
 
-                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 flex items-center justify-between">
+                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 flex items-center justify-between">
                         <div>
-                            <span className="text-[10px] font-black text-slate-400 block">상승 vs 하락 비율</span>
-                            <div className="flex items-center gap-1.5 mt-0.5 font-mono text-xs font-bold">
+                            <span className="text-[9px] sm:text-[10px] font-black text-slate-400 block">상승 vs 하락 비율</span>
+                            <div className="flex items-center gap-1 sm:gap-1.5 mt-0 sm:mt-0.5 font-mono text-[10px] sm:text-xs font-bold">
                                 <span className="text-rose-400 font-black">상승 {stats.upCnt}</span>
                                 <span className="text-slate-500">/</span>
                                 <span className="text-blue-400 font-black">하락 {stats.downCnt}</span>
                             </div>
                         </div>
-                        <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <div className="hidden sm:flex p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
                             <TrendingUp size={16} />
                         </div>
                     </div>
 
-                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 flex items-center justify-between">
+                    <div className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-lg sm:rounded-xl p-1.5 sm:p-2.5 flex items-center justify-between">
                         <div>
-                            <span className="text-[10px] font-black text-slate-400 block">최저/조정 지역 ❄️</span>
-                            <span className="text-xs sm:text-sm font-black text-blue-400 truncate max-w-[120px] block mt-0.5">
+                            <span className="text-[9px] sm:text-[10px] font-black text-slate-400 block">최저/조정 지역 ❄️</span>
+                            <span className="text-[10.5px] sm:text-sm font-black text-blue-400 truncate max-w-[110px] sm:max-w-[120px] block mt-0 sm:mt-0.5">
                                 {stats.min ? `${stats.min.name} (${stats.min.rate > 0 ? '+' : ''}${stats.min.rate}%)` : '-'}
                             </span>
                         </div>
-                        <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <div className="hidden sm:flex p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
                             <ArrowDownRight size={16} />
                         </div>
                     </div>
                 </div>
 
                 {/* 2. 뷰 모드 전환 [🗺️ 실제 지도 뷰] vs [▦ 타일 블록] & 권역 탭 & 검색 */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5">
-                    <div className="flex items-center gap-2">
-                        {/* [핵심] 실제 지도 뷰 vs 타일 블록 뷰 전환 토글 버튼 */}
-                        <div className="flex items-center bg-[var(--theme-bg)] p-1 rounded-xl border border-rose-500/40 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        {/* [핵심] 실제 지도 뷰 vs 타일 블록 뷰 전환 토글 버튼 (크기 컴팩트화) */}
+                        <div className="flex items-center bg-[var(--theme-bg)] p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-rose-500/40 shadow-xs">
                             <button
                                 onClick={() => setViewMode('map')}
                                 className={classNames(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                    "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black transition-all",
                                     viewMode === 'map'
                                         ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
                                         : "text-slate-400 hover:text-[var(--theme-text)]"
                                 )}
                             >
-                                <Globe size={14} />
-                                <span>🗺️ 실제 지도 뷰 (위성·도로)</span>
+                                <Globe size={13} className="shrink-0" />
+                                <span className="sm:hidden">지도 뷰</span>
+                                <span className="hidden sm:inline">🗺️ 실제 지도 뷰 (위성·도로)</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={classNames(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                    "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black transition-all",
                                     viewMode === 'grid'
                                         ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
                                         : "text-slate-400 hover:text-[var(--theme-text)]"
                                 )}
                             >
-                                <LayoutGrid size={14} />
-                                <span>▦ 네모박스 타일 그리드</span>
+                                <LayoutGrid size={13} className="shrink-0" />
+                                <span className="sm:hidden">타일 그리드</span>
+                                <span className="hidden sm:inline">▦ 네모박스 타일 그리드</span>
                             </button>
                         </div>
 
                         {/* 권역 탭 버튼 */}
-                        <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-xl border border-[var(--theme-border)] overflow-x-auto max-w-full">
+                        <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg sm:rounded-xl border border-[var(--theme-border)] overflow-x-auto max-w-full">
                             {groupTabs.map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setSelectedGroup(tab.id)}
                                     className={classNames(
-                                        "flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black whitespace-nowrap transition-all",
+                                        "flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-black whitespace-nowrap transition-all",
                                         selectedGroup === tab.id
                                             ? "bg-slate-800 text-rose-400 border border-rose-500/40 shadow-xs"
                                             : "text-slate-400 hover:text-[var(--theme-text)]"
@@ -550,7 +552,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                     </div>
 
                     {/* 히트맵 범례 및 검색창 */}
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
                         {/* 범례 */}
                         <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-[var(--theme-bg)] px-2.5 py-1 rounded-lg border border-[var(--theme-border)]">
                             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500"></span> +0.3%↑ 급등</span>
@@ -560,13 +562,13 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                         </div>
 
                         {/* 구/시 검색 */}
-                        <div className="w-40 sm:w-48">
+                        <div className="w-32 sm:w-48">
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="구/시 검색 (분당, 강남 등)..."
-                                className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
+                                placeholder="구/시 검색..."
+                                className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-[10.5px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
                             />
                         </div>
                     </div>
@@ -574,22 +576,22 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
             </div>
 
             {/* 3. 메인 콘텐츠 영역: [실제 지도 뷰] OR [네모박스 타일 그리드] */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-5 relative">
-                <div className="max-w-7xl mx-auto space-y-4">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-5 relative">
+                <div className="max-w-7xl mx-auto space-y-2.5 sm:space-y-4">
                     {/* ======================================================== */}
                     {/* [A] 실제 지도 (Real Leaflet Dark Map) 뷰 */}
                     {/* ======================================================== */}
                     {viewMode === 'map' && (
-                        <div className="bg-slate-950 rounded-2xl border border-rose-500/40 p-3 sm:p-4 shadow-2xl relative overflow-hidden">
+                        <div className="bg-slate-950 rounded-xl sm:rounded-2xl border border-rose-500/40 p-2 sm:p-4 shadow-2xl relative overflow-hidden">
                             {/* 지도 안내 툴바 */}
-                            <div className="flex items-center justify-between mb-3 px-1 border-b border-slate-800 pb-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-rose-500 font-black text-sm">🌍 실제 수도권 다크모드 타일 지도</span>
-                                    <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                            <div className="flex items-center justify-between mb-1.5 sm:mb-3 px-1 border-b border-slate-800 pb-1.5 sm:pb-2">
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <span className="text-rose-500 font-black text-xs sm:text-sm">🌍 실제 수도권 다크모드 타일 지도</span>
+                                    <span className="hidden sm:inline text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                                         OpenStreetMap & CARTO 실제 위성·도로망
                                     </span>
                                 </div>
-                                <div className="text-[11px] font-bold text-slate-400 flex items-center gap-3">
+                                <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 flex items-center gap-1.5 sm:gap-3">
                                     <span className="text-rose-400">{sourceType} {periodType} ({baseDate || '최신'})</span>
                                 </div>
                             </div>
@@ -597,7 +599,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                             {/* Leaflet 실제 지도가 마운트되는 DOM 컨테이너 */}
                             <div 
                                 ref={mapContainerRef} 
-                                className="w-full h-[580px] lg:h-[650px] rounded-xl overflow-hidden border border-slate-800 shadow-inner z-10"
+                                className="w-full h-[500px] xs:h-[550px] sm:h-[600px] lg:h-[650px] rounded-lg sm:rounded-xl overflow-hidden border border-slate-800 shadow-inner z-10"
                                 style={{ background: '#090d16' }}
                             />
                         </div>
