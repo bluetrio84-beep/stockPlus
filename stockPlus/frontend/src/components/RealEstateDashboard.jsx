@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
     Home, Building2, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, 
     RefreshCw, Layers, MapPin, Calendar, Flame, AlertCircle, ShieldCheck, 
-    CheckCircle2, Sparkles, Filter, ChevronRight, Clock
+    CheckCircle2, Sparkles, Filter, ChevronRight, Clock, Map
 } from 'lucide-react';
 import classNames from 'classnames';
 import { 
@@ -11,9 +11,10 @@ import {
     fetchRealEstateDates,
     fetchRealEstateTransactions 
 } from '../api/stockApi';
+import RealEstateMapGrid from './RealEstateMapGrid';
 
 const RealEstateDashboard = () => {
-    // 탭: 'rankings' (시세 랭킹 Top 50) | 'transactions' (실거래가 신고가/하락거래)
+    // 탭: 'rankings' (시세 랭킹 Top 50) | 'map' (수도권 지도 히트맵) | 'transactions' (실거래가 신고가/하락거래)
     const [activeTab, setActiveTab] = useState('rankings');
 
     // 1. 기간 구분: 'WEEKLY' (주간) | 'MONTHLY' (월간) | 'YEARLY' (연간)
@@ -40,6 +41,7 @@ const RealEstateDashboard = () => {
     // 데이터 상태
     const [summary, setSummary] = useState(null);
     const [rankings, setRankings] = useState([]);
+    const [mapRankings, setMapRankings] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -47,7 +49,7 @@ const RealEstateDashboard = () => {
     // 기간 구분 또는 기관 변경 시 기준일자 목록 로드
     useEffect(() => {
         const loadDates = async () => {
-            if (activeTab !== 'rankings') return;
+            if (activeTab !== 'rankings' && activeTab !== 'map') return;
             try {
                 const dates = await fetchRealEstateDates(sourceType, periodType);
                 setAvailableDates(dates);
@@ -74,6 +76,9 @@ const RealEstateDashboard = () => {
                 ]);
                 setSummary(summaryRes);
                 setRankings(rankingsRes);
+            } else if (activeTab === 'map') {
+                const mapRes = await fetchRealEstateRankings(sourceType, periodType, selectedDate, '수도권', 'UP', 200);
+                setMapRankings(mapRes);
             } else {
                 const txRes = await fetchRealEstateTransactions(tradeType, 150);
                 setTransactions(txRes);
@@ -157,7 +162,7 @@ const RealEstateDashboard = () => {
                         </div>
                     </div>
 
-                    {/* 메인 탭 전환: 시세 변동률 랭킹 vs 아파트 실거래가 */}
+                    {/* 메인 탭 전환: 시세 변동률 랭킹 vs 수도권 지도 히트맵 vs 아파트 실거래가 */}
                     <div className="flex items-center gap-1.5 bg-[var(--theme-bg)] p-1 rounded-xl border border-[var(--theme-border)] shrink-0 self-start md:self-auto">
                         <button
                             onClick={() => { setActiveTab('rankings'); setSearchKeyword(''); }}
@@ -170,6 +175,18 @@ const RealEstateDashboard = () => {
                         >
                             <TrendingUp size={14} />
                             <span>시세 변동률 Top 50</span>
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('map'); setSearchKeyword(''); }}
+                            className={classNames(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all",
+                                activeTab === 'map'
+                                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
+                                    : "text-slate-400 hover:text-[var(--theme-text)]"
+                            )}
+                        >
+                            <Map size={14} />
+                            <span>🗺️ 수도권 지도 히트맵</span>
                         </button>
                         <button
                             onClick={() => { setActiveTab('transactions'); setSearchKeyword(''); }}
@@ -187,7 +204,7 @@ const RealEstateDashboard = () => {
                 </div>
 
                 {/* 서브 필터 컨트롤 바 */}
-                {activeTab === 'rankings' ? (
+                {(activeTab === 'rankings' || activeTab === 'map') ? (
                     <div className="mt-3.5 pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-2">
                             {/* [신규] 1. 기간 구분: 주간 / 월간 / 연간 */}
@@ -254,59 +271,66 @@ const RealEstateDashboard = () => {
                                 </button>
                             </div>
 
-                            {/* 지역 권역 필터: 전체 vs 수도권 vs 지방 */}
-                            <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
-                                {[
-                                    { id: 'ALL', name: '전국 전체' },
-                                    { id: '수도권', name: '수도권 (서울/경기/인천)' },
-                                    { id: '지방', name: '지방 광역시/도' }
-                                ].map(r => (
-                                    <button
-                                        key={r.id}
-                                        onClick={() => setRegionType(r.id)}
-                                        className={classNames(
-                                            "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
-                                            regionType === r.id ? "bg-[var(--theme-header)] text-[var(--theme-point)] border border-[var(--theme-border)] shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
-                                        )}
-                                    >
-                                        {r.name}
-                                    </button>
-                                ))}
-                            </div>
+                            {/* rankings 탭일 때만 지역/정렬 필터 추가 노출 */}
+                            {activeTab === 'rankings' && (
+                                <>
+                                    {/* 지역 권역 필터: 전체 vs 수도권 vs 지방 */}
+                                    <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
+                                        {[
+                                            { id: 'ALL', name: '전국 전체' },
+                                            { id: '수도권', name: '수도권 (서울/경기/인천)' },
+                                            { id: '지방', name: '지방 광역시/도' }
+                                        ].map(r => (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => setRegionType(r.id)}
+                                                className={classNames(
+                                                    "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                                    regionType === r.id ? "bg-[var(--theme-header)] text-[var(--theme-point)] border border-[var(--theme-border)] shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
+                                                )}
+                                            >
+                                                {r.name}
+                                            </button>
+                                        ))}
+                                    </div>
 
-                            {/* 정렬: 상승률 Top 50 vs 하락률 Top 50 */}
-                            <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
-                                <button
-                                    onClick={() => setOrderType('UP')}
-                                    className={classNames(
-                                        "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
-                                        orderType === 'UP' ? "bg-red-500/20 text-red-500 border border-red-500/30" : "text-slate-400 hover:text-[var(--theme-text)]"
-                                    )}
-                                >
-                                    <TrendingUp size={12} /> {getPeriodName()} 상승률 Top 50
-                                </button>
-                                <button
-                                    onClick={() => setOrderType('DOWN')}
-                                    className={classNames(
-                                        "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
-                                        orderType === 'DOWN' ? "bg-blue-500/20 text-blue-500 border border-blue-500/30" : "text-slate-400 hover:text-[var(--theme-text)]"
-                                    )}
-                                >
-                                    <TrendingDown size={12} /> {getPeriodName()} 하락률 Top 50
-                                </button>
-                            </div>
+                                    {/* 정렬: 상승률 Top 50 vs 하락률 Top 50 */}
+                                    <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
+                                        <button
+                                            onClick={() => setOrderType('UP')}
+                                            className={classNames(
+                                                "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                                orderType === 'UP' ? "bg-red-500/20 text-red-500 border border-red-500/30" : "text-slate-400 hover:text-[var(--theme-text)]"
+                                            )}
+                                        >
+                                            <TrendingUp size={12} /> {getPeriodName()} 상승률 Top 50
+                                        </button>
+                                        <button
+                                            onClick={() => setOrderType('DOWN')}
+                                            className={classNames(
+                                                "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
+                                                orderType === 'DOWN' ? "bg-blue-500/20 text-blue-500 border border-blue-500/30" : "text-slate-400 hover:text-[var(--theme-text)]"
+                                            )}
+                                        >
+                                            <TrendingDown size={12} /> {getPeriodName()} 하락률 Top 50
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        {/* 검색창 */}
-                        <div className="w-full sm:w-60">
-                            <input
-                                type="text"
-                                value={searchKeyword}
-                                onChange={(e) => setSearchKeyword(e.target.value)}
-                                placeholder="만안구, 동안구, 영통구 등 검색..."
-                                className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-bold px-3 py-1.5 rounded-xl border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
-                            />
-                        </div>
+                        {/* rankings 탭 검색창 */}
+                        {activeTab === 'rankings' && (
+                            <div className="w-full sm:w-60">
+                                <input
+                                    type="text"
+                                    value={searchKeyword}
+                                    onChange={(e) => setSearchKeyword(e.target.value)}
+                                    placeholder="만안구, 동안구, 영통구 등 검색..."
+                                    className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-bold px-3 py-1.5 rounded-xl border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
+                                />
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="mt-3.5 pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-3">
@@ -368,7 +392,24 @@ const RealEstateDashboard = () => {
             </div>
 
             {/* 메인 콘텐츠 영역 */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-4">
+            {activeTab === 'map' ? (
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    {isLoading ? (
+                        <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
+                            <RefreshCw size={28} className="animate-spin text-rose-500" />
+                            <span className="text-xs font-black">수도권 부동산 지도 데이터를 불러오는 중...</span>
+                        </div>
+                    ) : (
+                        <RealEstateMapGrid
+                            data={mapRankings}
+                            sourceType={sourceType}
+                            periodType={periodType}
+                            baseDate={selectedDate}
+                        />
+                    )}
+                </div>
+            ) : (
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 space-y-4">
                 {/* 1. 매크로 요약 지표 카드 */}
                 {activeTab === 'rankings' && summary && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
@@ -594,6 +635,7 @@ const RealEstateDashboard = () => {
                     )
                 )}
             </div>
+            )}
         </div>
     );
 };
