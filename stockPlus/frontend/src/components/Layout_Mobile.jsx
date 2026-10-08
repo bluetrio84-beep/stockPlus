@@ -169,19 +169,40 @@ const LayoutMobile = ({ logic }) => {
                             )}
                         </div>
 
-                        <div className="mt-auto pt-1.5 border-t border-[var(--theme-border)]/60 relative px-2.5 pb-1 transition-colors duration-500 shrink-0">
-                            <button onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)} className={classNames("w-full text-left px-3.5 py-1.5 text-[11px] flex items-center justify-between font-black rounded-xl transition-all transition-colors", logic.isThemeOpen ? "text-[var(--theme-point)] bg-[var(--theme-point)]/5" : "text-slate-500")}>
-                                <div className="flex items-center gap-3 transition-colors"><Palette size={15} className={logic.isThemeOpen ? "text-[var(--theme-point)]" : "text-slate-500"} /><span className="uppercase tracking-widest transition-colors">Style Theme</span></div>
-                                <ChevronRight size={13} className={classNames("transition-transform duration-300", logic.isThemeOpen ? "rotate-180" : "")} />
+                        <div className="mt-auto pt-1.5 border-t border-[var(--theme-border)]/60 px-2.5 pb-2 transition-colors duration-500 shrink-0">
+                            <button onClick={() => logic.setIsThemeOpen(!logic.isThemeOpen)} className={classNames("w-full text-left px-3.5 py-1.5 text-[11px] flex items-center justify-between font-black rounded-xl transition-all transition-colors", logic.isThemeOpen ? "text-[var(--theme-point)] bg-[var(--theme-point)]/10" : "text-slate-500 hover:text-[var(--theme-text)]")}>
+                                <div className="flex items-center gap-3 transition-colors">
+                                    <Palette size={15} className={logic.isThemeOpen ? "text-[var(--theme-point)]" : "text-slate-500"} />
+                                    <span className="uppercase tracking-widest transition-colors font-black">Style Theme</span>
+                                </div>
+                                <ChevronRight size={13} className={classNames("transition-transform duration-300", logic.isThemeOpen ? "rotate-90" : "")} />
                             </button>
                             {logic.isThemeOpen && (
-                                <div className="absolute left-[calc(100%-10px)] bottom-3 w-12 p-1 bg-[var(--theme-header)]/95 backdrop-blur-md border border-[var(--theme-border)] rounded-xl shadow-2xl animate-in slide-in-from-left-2 duration-200 z-[70] flex flex-col gap-2 items-center transition-colors">
-                                    {[{ id: 'midnight', color: 'bg-[#020617]', name: 'Mid' }, { id: 'pure-white', color: 'bg-[#ffffff]', name: 'Wht' }, { id: 'pitch-black', color: 'bg-[#000000]', name: 'Blk' }].map(t => (
-                                        <button key={t.id} onClick={() => { logic.setTheme(t.id); logic.setIsThemeOpen(false); }} className={classNames("group flex flex-col items-center gap-0.5 p-1 rounded-lg transition-all active:scale-90 transition-colors", logic.theme === t.id ? "opacity-100" : "opacity-40 hover:opacity-100")}>
-                                            <div className={classNames("w-6 h-6 rounded-full border border-[var(--theme-border)] shadow-sm transition-colors", t.color, logic.theme === t.id ? "border-indigo-400 ring-2 ring-indigo-400/20" : "")}></div>
-                                            <span className="text-[6px] font-black text-slate-500 uppercase transition-colors">{t.name}</span>
-                                        </button>
-                                    ))}
+                                <div className="mt-1.5 p-1.5 bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-xl flex items-center justify-around gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200 transition-colors">
+                                    {[
+                                        { id: 'midnight', color: 'bg-[#020617]', name: 'Midnight', shortName: 'Mid' },
+                                        { id: 'pure-white', color: 'bg-[#ffffff]', name: 'White', shortName: 'Wht' },
+                                        { id: 'pitch-black', color: 'bg-[#000000]', name: 'Black', shortName: 'Blk' }
+                                    ].map(t => {
+                                        const isSelected = logic.theme === t.id;
+                                        return (
+                                            <button 
+                                                key={t.id} 
+                                                onClick={() => { logic.setTheme(t.id); }} 
+                                                className={classNames(
+                                                    "flex-1 flex flex-col items-center gap-1 py-1.5 px-1 rounded-lg border transition-all active:scale-95",
+                                                    isSelected 
+                                                        ? "border-[var(--theme-point)] bg-[var(--theme-point)]/15 shadow-sm" 
+                                                        : "border-[var(--theme-border)] opacity-60 hover:opacity-100"
+                                                )}
+                                            >
+                                                <div className={classNames("w-5 h-5 rounded-full border border-slate-600 shadow-sm", t.color, isSelected ? "ring-2 ring-[var(--theme-point)]" : "")}></div>
+                                                <span className={classNames("text-[8.5px] font-black uppercase tracking-wider", isSelected ? "text-[var(--theme-point)]" : "text-slate-400")}>
+                                                    {t.shortName}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
