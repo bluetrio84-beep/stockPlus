@@ -3,6 +3,7 @@ import { LayoutDashboard, TrendingUp, Zap, PieChart, Activity, Sparkles, Target,
 import { getAuthHeader, fetchStockChart } from '../api/stockApi';
 import classNames from 'classnames';
 import ChartWidget from './ChartWidget';
+import AdminMarketChartWidget from './AdminMarketChartWidget';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -20,15 +21,25 @@ const AdminIntelligenceDashboard = () => {
     const [selectedSector, setSelectedSector] = useState(null);
     const [helpModal, setHelpModal] = useState(null); 
     
-    // [v16.39.3] 차트 모달 연동 상태 (객체로 관리)
+    // [v16.39.3] 차트 상태 (인라인 위젯 & 모달)
     const [selectedStock, setSelectedStock] = useState(null);
+    const [inlineStock, setInlineStock] = useState(null);
+    const [isChartModalOpen, setIsChartModalOpen] = useState(false);
     const [isSearchingCode, setIsSearchingCode] = useState(false);
 
     // [v16.39.4] 페이지네이션 변수 복구
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
 
-    const handleStockClick = async (e, rawStockName) => {
+    // [v16.75] 반응형 화면 너비 상태 (차트 단일 마운트 보장)
+    const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+    useEffect(() => {
+        const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const handleStockClick = async (e, rawStockName, openModal = false) => {
         if (e) e.preventDefault();
         try {
             setIsSearchingCode(true);
@@ -51,15 +62,14 @@ const AdminIntelligenceDashboard = () => {
                     let priceData = {};
                     if (priceRes.ok) priceData = await priceRes.json();
                     
-                    // ChartWidget 활성화를 위한 객체 구성
-                    setSelectedStock({
+                    const stockObj = {
                         ...found,
                         code: found.stockCode,
                         name: found.stockName,
                         chartData: chartData,
                         exchangeCode: 'UN',
                         // [v16.39.8] UI 컴포넌트(ChartWidget) 기대 규격으로 최종 정밀 매핑
-                        price: parseFloat(priceData.currentPrice || 0), // currentPrice -> price
+                        price: parseFloat(priceData.currentPrice || 0),
                         currentPrice: parseFloat(priceData.currentPrice || 0),
                         prevClose: parseFloat(priceData.prevClose || 0),
                         open: parseFloat(priceData.open || 0),
@@ -73,8 +83,15 @@ const AdminIntelligenceDashboard = () => {
                         high52w: parseFloat(priceData.high52w || 0),
                         low52w: parseFloat(priceData.low52w || 0),
                         priceSign: priceData.priceSign || '3',
-                        sign: priceData.priceSign || '3' // priceSign -> sign
-                    });
+                        sign: priceData.priceSign || '3'
+                    };
+
+                    // 좌측 인라인 위젯에 주도주 실시간 세팅
+                    setInlineStock(stockObj);
+                    setSelectedStock(stockObj);
+                    if (openModal) {
+                        setIsChartModalOpen(true);
+                    }
                 } else {
                     alert(`'${cleanName}' 종목 정보를 찾을 수 없습니다.`);
                 }
@@ -318,42 +335,16 @@ const AdminIntelligenceDashboard = () => {
         </div>
     );
 
-    const renderAiTracker = () => (
-        <div className="bg-[var(--theme-header)] transition-colors duration-500 border border-[var(--theme-border)] rounded-2xl p-4 shadow-xl flex flex-col gap-3 h-full min-h-[300px]">
-            <div className="flex justify-between items-center shrink-0 transition-colors">
-                <div className="flex items-center gap-2 transition-colors">
-                    <h2 className="text-xs lg:text-sm font-black text-[var(--theme-text)] flex items-center gap-2 uppercase tracking-tighter transition-colors"><Sparkles size={16} className="text-[var(--theme-point)] animate-pulse" /> 실시간 AI 수급 포착</h2>
-                    <button onClick={() => setHelpModal('supply')} className="text-slate-500 hover:text-[var(--theme-point)] transition-colors"><HelpCircle size={14} /></button>
-                </div>
-                <span className="text-[8px] font-black text-[var(--theme-point)] bg-[var(--theme-point)]/10 px-2 py-0.5 rounded-full border border-[var(--theme-point)]/20 transition-colors">LIVE</span>
-            </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar-thin space-y-2 pr-1 transition-colors">
-                {data.aiSignals && data.aiSignals.length > 0 ? (
-                    data.aiSignals.map((sig, i) => {
-                        const colors = getScoreColor(sig.prediction_score);
-                        return (
-                            <div key={i} className={classNames("bg-[var(--theme-bg)] transition-colors border rounded-xl p-3 flex items-center justify-between group hover:border-[var(--theme-point)]/50 transition-all shadow-sm animate-in slide-in-from-right-4 duration-300", colors.border)}>
-                                <div className="flex flex-col gap-0.5 transition-colors">
-                                    <span className="text-[12px] font-black text-[var(--theme-text)] group-hover:text-[var(--theme-point)] transition-colors">{sig.stock_name}</span>
-                                    <div className="flex items-center gap-1.5 transition-colors">
-                                        <span className={classNames("text-[8px] font-black px-1.5 py-0.5 rounded-md border uppercase transition-colors", colors.text, colors.lightBg, colors.border)}>{sig.signal_type.replace(/_/g, ' ')}</span>
-                                        <span className="text-[9px] text-slate-500 font-mono font-bold italic transition-colors">{new Date(sig.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end transition-colors">
-                                    <span className={classNames("text-sm font-black transition-colors", colors.text)}>{sig.prediction_score}%</span>
-                                    <div className="w-14 h-1.5 bg-slate-200/50 rounded-full mt-1 overflow-hidden transition-colors">
-                                        <div className={classNames("h-full transition-all duration-1000", colors.bg)} style={{ width: `${sig.prediction_score}%` }}></div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
-                ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-2 py-8 opacity-50 transition-colors"><Activity size={24} className="animate-pulse" /><p className="text-[10px] font-black uppercase transition-colors">수급 분석 중...</p></div>
-                )}
-            </div>
-        </div>
+    // [v16.74] 하이브리드 시장 지수 & 주도주 실시간 차트 패널
+    const renderChartPanel = () => (
+        <AdminMarketChartWidget 
+            activeStock={inlineStock} 
+            onClearActiveStock={() => setInlineStock(null)} 
+            onExpandModal={(stock) => {
+                setSelectedStock(stock);
+                setIsChartModalOpen(true);
+            }}
+        />
     );
 
     const renderAiStrategy = () => {
@@ -714,10 +705,10 @@ const AdminIntelligenceDashboard = () => {
                         </div>
                     ))}
                 </div>
-                <div className="lg:hidden transition-colors">{renderAiTracker()}</div>
+                {!isDesktop && <div className="transition-colors mb-2">{renderChartPanel()}</div>}
             </div>
             <div className="grid grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0 overflow-hidden transition-colors">
-                <div className="hidden lg:flex lg:col-span-3 flex-col h-full overflow-hidden transition-colors">{renderAiTracker()}</div>
+                {isDesktop && <div className="col-span-12 lg:col-span-3 flex flex-col h-full overflow-hidden transition-colors">{renderChartPanel()}</div>}
                 <div id="industry-heatmap-area" className={classNames("col-span-12 lg:col-span-6 bg-[var(--theme-header)] border border-[var(--theme-border)] rounded-3xl p-5 lg:p-8 shadow-xl flex flex-col h-full overflow-hidden transition-colors", mobileTab !== 'heatmap' && 'hidden lg:flex')}>
                     <div className="flex justify-between items-center mb-6 shrink-0 transition-colors"><h2 className="text-sm lg:text-lg font-black text-[var(--theme-text)] flex items-center gap-2 transition-colors"><PieChart size={20} className="text-[var(--theme-point)]" /> 업종 등락 히트맵</h2><span className="text-[10px] font-black text-[var(--theme-point)] bg-[var(--theme-point)]/10 px-3 py-1 rounded-full border border-[var(--theme-point)]/20 transition-colors">Top 50 Sectors</span></div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 overflow-y-auto custom-scrollbar pr-1 flex-1 pb-4 content-start transition-colors">
@@ -739,7 +730,21 @@ const AdminIntelligenceDashboard = () => {
                         {paginatedThemes?.map((theme, idx) => (
                             <div key={idx} className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-2xl p-4 flex flex-col gap-2 hover:border-[var(--theme-point)]/50 transition-all shadow-sm group transition-colors">
                                 <div className="flex justify-between items-start transition-colors"><div className="flex items-center gap-2 flex-1 min-w-0 mr-2 transition-colors"><span className="text-[12px] lg:text-sm font-black text-[var(--theme-text)] group-hover:text-[var(--theme-point)] transition-colors truncate">{theme.theme_name}</span><span className={classNames("text-[8px] font-black uppercase px-2 py-0.5 rounded-full border transition-colors", parseFloat(theme.total_score) >= 10 ? "text-rose-600 border-rose-500/20 bg-rose-500/10" : "text-slate-500 border-slate-300 bg-slate-100")}>{parseFloat(theme.total_score) >= 10 ? 'Hot' : 'Normal'}</span></div><span className="text-sm font-black text-[var(--theme-text)] transition-colors">{parseFloat(theme.total_score || 0).toFixed(1)}</span></div>
-                                <div className="bg-[var(--theme-header)] rounded-xl border border-[var(--theme-border)] w-full p-3 flex items-start gap-2.5 transition-colors shadow-inner"><Target size={12} className="text-cyan-600 shrink-0 mt-0.5 transition-colors" /><span className="text-[10px] lg:text-[11px] font-black text-slate-500 break-all leading-relaxed transition-colors">{theme.lead_stocks || '-'}</span></div>
+                                <div className="bg-[var(--theme-header)] rounded-xl border border-[var(--theme-border)] w-full p-2.5 flex items-start gap-2 transition-colors shadow-inner">
+                                    <Target size={12} className="text-cyan-600 shrink-0 mt-1 transition-colors" />
+                                    <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                                        {theme.lead_stocks ? theme.lead_stocks.split(',').map((stk, sIdx) => (
+                                            <button
+                                                key={sIdx}
+                                                type="button"
+                                                onClick={(e) => handleStockClick(e, stk.trim())}
+                                                className="text-[10px] font-bold text-slate-400 hover:text-[var(--theme-point)] hover:underline transition-colors cursor-pointer bg-[var(--theme-bg)]/60 px-1.5 py-0.5 rounded-md border border-[var(--theme-border)]"
+                                            >
+                                                {stk.trim()}
+                                            </button>
+                                        )) : <span className="text-[10px] text-slate-500">-</span>}
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -785,7 +790,10 @@ const AdminIntelligenceDashboard = () => {
                                         <button 
                                             key={i} 
                                             type="button"
-                                            onClick={(e) => handleStockClick(e, stock)}
+                                            onClick={(e) => {
+                                                handleStockClick(e, stock);
+                                                setSelectedSector(null);
+                                            }}
                                             disabled={isSearchingCode}
                                             className="px-4 py-2 bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-black rounded-xl border border-[var(--theme-border)] hover:border-[var(--theme-point)] hover:text-[var(--theme-point)] transition-all active:scale-95 cursor-pointer transition-colors flex items-center gap-2"
                                         >
@@ -803,9 +811,9 @@ const AdminIntelligenceDashboard = () => {
             )}
 
             {/* [v16.39.3] Intelligence Stock Chart Modal */}
-            {selectedStock && (
+            {selectedStock && isChartModalOpen && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 lg:p-10 animate-in fade-in duration-300">
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedStock(null)}></div>
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsChartModalOpen(false)}></div>
                     <div className="relative w-full max-w-6xl h-[85vh] bg-[var(--theme-bg)] rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/10 animate-in zoom-in-95 duration-300">
                         {/* Modal Header */}
                         <div className="h-16 bg-[var(--theme-header)] border-b border-[var(--theme-border)] flex items-center justify-between px-8 shrink-0">
@@ -813,10 +821,12 @@ const AdminIntelligenceDashboard = () => {
                                 <div className="p-2 bg-[var(--theme-point)]/10 rounded-lg">
                                     <TrendingUp className="text-[var(--theme-point)]" size={20} />
                                 </div>
-                                <h3 className="text-lg font-black text-[var(--theme-text)] uppercase tracking-tighter">Stock Intelligence Chart</h3>
+                                <h3 className="text-lg font-black text-[var(--theme-text)] uppercase tracking-tighter">
+                                    Stock Intelligence Chart - {selectedStock.name} <span className="text-xs text-slate-400 font-mono font-normal">({selectedStock.code})</span>
+                                </h3>
                             </div>
                             <button 
-                                onClick={() => setSelectedStock(null)}
+                                onClick={() => setIsChartModalOpen(false)}
                                 className="p-2.5 bg-[var(--theme-bg)] rounded-full text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
                             >
                                 <X size={24} />

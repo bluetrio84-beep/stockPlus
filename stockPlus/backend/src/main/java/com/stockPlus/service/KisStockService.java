@@ -28,6 +28,20 @@ public class KisStockService {
     private final ObjectMapper objectMapper;
     private final com.stockPlus.mapper.StockMasterMapper stockMasterMapper;
 
+    // [v16.76] 차트 데이터 초단기 인메모리 캐시 (60초 TTL, 400개 대용량 데이터 초고속 로딩 보장)
+    private static class CachedChart {
+        final List<StockChartDto> data;
+        final long expiresAt;
+        CachedChart(List<StockChartDto> data, long ttlMillis) {
+            this.data = data;
+            this.expiresAt = System.currentTimeMillis() + ttlMillis;
+        }
+        boolean isExpired() {
+            return System.currentTimeMillis() > expiresAt;
+        }
+    }
+    private final Map<String, CachedChart> chartMemoryCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     public Mono<StockPriceDto> fetchCurrentPrice(final String stockCode) {
         return fetchUnifiedCurrentPrice(stockCode, "J");
     }
@@ -538,28 +552,56 @@ public class KisStockService {
     }
 
     private Mono<List<StockChartDto>> fetchHistoryChart(String stockCode, String marketDiv, String period) {
-        if ("1M".equals(period)) {
-            // 월봉은 1회 호출로도 수년 치가 나오므로 기존 로직 유지
-            return fetchSingleHistoryChart(stockCode, marketDiv, period, null);
+        String cacheKey = stockCode + ":" + marketDiv + ":" + period;
+        CachedChart cached = chartMemoryCache.get(cacheKey);
+        if (cached != null && !cached.isExpired() && cached.data != null && !cached.data.isEmpty()) {
+            return Mono.just(cached.data);
         }
 
-        // 일봉(D), 주봉(W)은 2회 호출하여 데이터 보강 (*2 멀티패치)
-        return fetchSingleHistoryChart(stockCode, marketDiv, period, null)
-            .flatMap(firstList -> {
-                if (firstList.size() < 50) return Mono.just(firstList); // 데이터가 적으면 2차 호출 생략
-                
-                // 1차 리스트의 가장 과거 날짜(첫 번째 아이템)를 기준으로 2차 호출 범위 설정
-                // parseChartResponse에서 reverse를 하므로 firstList[0]이 가장 과거임
-                String earliestDate = firstList.get(0).getDate().replace("-", "");
-                LocalDate endDate2 = LocalDate.parse(earliestDate, DateTimeFormatter.ofPattern("yyyyMMdd")).minusDays(1);
-                
-                return fetchSingleHistoryChart(stockCode, marketDiv, period, endDate2.format(DateTimeFormatter.ofPattern("yyyyMMdd")))
-                    .map(secondList -> {
-                        Map<Long, StockChartDto> mergedMap = new TreeMap<>();
-                        for (StockChartDto s : secondList) mergedMap.put(s.getTime(), s);
-                        for (StockChartDto f : firstList) mergedMap.put(f.getTime(), f);
-                        return new ArrayList<>(mergedMap.values());
-                    });
+        // [v16.76] 400개 대용량 데이터 확보: 일봉(1D)=4회(최대 400개), 주봉(1W)=3회(최대 300개), 월봉(1M)=2회(최대 200개)
+        int maxBatches = "1D".equalsIgnoreCase(period) ? 4 : ("1W".equalsIgnoreCase(period) ? 3 : 2);
+        return fetchMultiBatchHistoryChart(stockCode, marketDiv, period, null, 1, maxBatches, new TreeMap<>())
+            .doOnNext(list -> {
+                if (list != null && !list.isEmpty()) {
+                    chartMemoryCache.put(cacheKey, new CachedChart(list, 60_000L)); // 60초 캐싱
+                }
+            });
+    }
+
+    private Mono<List<StockChartDto>> fetchMultiBatchHistoryChart(
+            String stockCode, String marketDiv, String period, 
+            String currentEndDate, int currentBatch, int maxBatches, 
+            Map<Long, StockChartDto> accumulatedMap) {
+
+        return fetchSingleHistoryChart(stockCode, marketDiv, period, currentEndDate)
+            .flatMap(list -> {
+                if (list == null || list.isEmpty()) {
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
+
+                // parseChartResponse에서 reverse를 하므로 list[0]이 가장 과거 날짜임
+                for (StockChartDto item : list) {
+                    accumulatedMap.put(item.getTime(), item);
+                }
+
+                // 스마트 조기 종료: 목표 배치 수 도달했거나 데이터 고갈(70개 미만 반환) 시 추가 호출 생략
+                if (currentBatch >= maxBatches || list.size() < 70) {
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
+
+                try {
+                    String earliestDate = list.get(0).getDate().replace("-", "");
+                    LocalDate nextEndDate = LocalDate.parse(earliestDate, DateTimeFormatter.ofPattern("yyyyMMdd")).minusDays(1);
+                    String nextEndDateStr = nextEndDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+                    return fetchMultiBatchHistoryChart(
+                        stockCode, marketDiv, period, nextEndDateStr, 
+                        currentBatch + 1, maxBatches, accumulatedMap
+                    );
+                } catch (Exception e) {
+                    log.warn(">>> [KIS API] Next endDate parse error: {}", e.getMessage());
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
             });
     }
 
@@ -567,7 +609,7 @@ public class KisStockService {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
         String endDate = (customEndDate != null) ? customEndDate : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String startDate = LocalDate.now().minusYears(4).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String startDate = LocalDate.now().minusYears(25).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"
                 + "?FID_COND_MRKT_DIV_CODE=" + marketDiv
@@ -591,26 +633,53 @@ public class KisStockService {
     }
 
     private Mono<List<StockChartDto>> fetchIndexHistoryChart(String indexCode, String period) {
-        if ("1M".equals(period)) {
-            return fetchSingleIndexHistoryChart(indexCode, period, null);
+        String cacheKey = "INDEX:" + indexCode + ":" + period;
+        CachedChart cached = chartMemoryCache.get(cacheKey);
+        if (cached != null && !cached.isExpired() && cached.data != null && !cached.data.isEmpty()) {
+            return Mono.just(cached.data);
         }
 
-        // 일봉(D), 주봉(W)은 2회 호출하여 100개 캔들 확보 (*2 멀티패치)
-        return fetchSingleIndexHistoryChart(indexCode, period, null)
-            .flatMap(firstList -> {
-                if (firstList.size() < 50) return Mono.just(firstList);
+        int maxBatches = "1D".equalsIgnoreCase(period) ? 4 : ("1W".equalsIgnoreCase(period) ? 3 : 2);
+        return fetchMultiBatchIndexHistoryChart(indexCode, period, null, 1, maxBatches, new TreeMap<>())
+            .doOnNext(list -> {
+                if (list != null && !list.isEmpty()) {
+                    chartMemoryCache.put(cacheKey, new CachedChart(list, 60_000L)); // 60초 캐싱
+                }
+            });
+    }
 
-                // 1차 리스트의 가장 과거 날짜(첫 번째 아이템)를 기준으로 2차 호출 범위 설정
-                String earliestDate = firstList.get(0).getDate().replace("-", "");
-                LocalDate endDate2 = LocalDate.parse(earliestDate, DateTimeFormatter.ofPattern("yyyyMMdd")).minusDays(1);
+    private Mono<List<StockChartDto>> fetchMultiBatchIndexHistoryChart(
+            String indexCode, String period, 
+            String currentEndDate, int currentBatch, int maxBatches, 
+            Map<Long, StockChartDto> accumulatedMap) {
 
-                return fetchSingleIndexHistoryChart(indexCode, period, endDate2.format(DateTimeFormatter.ofPattern("yyyyMMdd")))
-                    .map(secondList -> {
-                        Map<Long, StockChartDto> mergedMap = new TreeMap<>();
-                        for (StockChartDto s : secondList) mergedMap.put(s.getTime(), s);
-                        for (StockChartDto f : firstList) mergedMap.put(f.getTime(), f);
-                        return new ArrayList<>(mergedMap.values());
-                    });
+        return fetchSingleIndexHistoryChart(indexCode, period, currentEndDate)
+            .flatMap(list -> {
+                if (list == null || list.isEmpty()) {
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
+
+                for (StockChartDto item : list) {
+                    accumulatedMap.put(item.getTime(), item);
+                }
+
+                if (currentBatch >= maxBatches || list.size() < 70) {
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
+
+                try {
+                    String earliestDate = list.get(0).getDate().replace("-", "");
+                    LocalDate nextEndDate = LocalDate.parse(earliestDate, DateTimeFormatter.ofPattern("yyyyMMdd")).minusDays(1);
+                    String nextEndDateStr = nextEndDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+                    return fetchMultiBatchIndexHistoryChart(
+                        indexCode, period, nextEndDateStr, 
+                        currentBatch + 1, maxBatches, accumulatedMap
+                    );
+                } catch (Exception e) {
+                    log.warn(">>> [KIS API] Index next endDate parse error: {}", e.getMessage());
+                    return Mono.just(new ArrayList<>(accumulatedMap.values()));
+                }
             });
     }
 
@@ -618,7 +687,7 @@ public class KisStockService {
         String token = kisAuthService.getAccessToken();
         String typeCode = "1W".equals(period) ? "W" : ("1M".equals(period) ? "M" : "D");
         String endDate = (customEndDate != null) ? customEndDate : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String startDate = LocalDate.now().minusYears(4).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String startDate = LocalDate.now().minusYears(25).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         String uri = kisAuthService.getBaseUrl() + "/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice"
                 + "?FID_COND_MRKT_DIV_CODE=U"
