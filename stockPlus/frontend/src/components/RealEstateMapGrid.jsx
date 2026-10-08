@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
     MapPin, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, 
     Flame, Sparkles, Filter, ChevronRight, Layers, Eye, Info, CheckCircle2,
-    Map, LayoutGrid, ZoomIn, ZoomOut, Compass, Navigation
+    Map, LayoutGrid, ZoomIn, ZoomOut, Compass, Navigation, Globe
 } from 'lucide-react';
 import classNames from 'classnames';
 
@@ -126,7 +126,7 @@ export const METRO_DISTRICTS_DATA = [
 ];
 
 const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY', baseDate = '' }) => {
-    // 뷰 모드: 'map' (실제 지리 지도 뷰) | 'grid' (타일 블록 뷰)
+    // 뷰 모드: 'map' (실제 리얼 지도 뷰) | 'grid' (타일 블록 그리드 뷰)
     const [viewMode, setViewMode] = useState('map');
     // 권역 선택 필터 ('ALL' | 'SEOUL' | 'GG_SOUTH' | 'GG_NORTH' | 'INCHEON')
     const [selectedGroup, setSelectedGroup] = useState('ALL');
@@ -134,6 +134,11 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
     const [selectedDistrict, setSelectedDistrict] = useState(null);
     // 검색 필터
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Leaflet 맵 DOM ref & 인스턴스 ref
+    const mapContainerRef = useRef(null);
+    const leafletMapRef = useRef(null);
+    const markersRef = useRef([]);
 
     // DB 데이터(data)를 각 지역 메타데이터에 매핑
     const mappedDistricts = useMemo(() => {
@@ -223,8 +228,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 badgeBg: 'bg-slate-800 text-slate-400',
                 fill: '#1e293b',
                 stroke: '#334155',
-                dot: 'bg-slate-500',
-                glow: ''
+                dot: '#64748b'
             };
         }
 
@@ -235,10 +239,9 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 border: 'border-rose-500/60 shadow-xs shadow-rose-950/50',
                 text: 'text-rose-400 font-black',
                 badgeBg: 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
-                fill: '#4c0519',
+                fill: '#881337',
                 stroke: '#f43f5e',
-                dot: 'bg-rose-500',
-                glow: 'ring-1 ring-rose-500/30'
+                dot: '#f43f5e'
             };
         } else if (rate >= 0.10) {
             // 📈 견조한 상승 (+0.1% ~ +0.3%)
@@ -247,10 +250,9 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 border: 'border-amber-500/50 shadow-xs shadow-amber-950/40',
                 text: 'text-amber-300 font-bold',
                 badgeBg: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-                fill: '#451a03',
+                fill: '#78350f',
                 stroke: '#f59e0b',
-                dot: 'bg-amber-500',
-                glow: ''
+                dot: '#f59e0b'
             };
         } else if (rate > 0) {
             // 🌿 완만한 미세상승 (0.01% ~ 0.09%)
@@ -261,8 +263,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 badgeBg: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
                 fill: '#064e3b',
                 stroke: '#10b981',
-                dot: 'bg-emerald-500',
-                glow: ''
+                dot: '#10b981'
             };
         } else if (rate === 0) {
             // ➖ 보합
@@ -273,8 +274,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 badgeBg: 'bg-slate-800 text-slate-300 border border-slate-700',
                 fill: '#0f172a',
                 stroke: '#475569',
-                dot: 'bg-slate-400',
-                glow: ''
+                dot: '#94a3b8'
             };
         } else {
             // 📉 하락
@@ -283,52 +283,152 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 border: 'border-blue-500/50 shadow-xs shadow-blue-950/40',
                 text: 'text-blue-400 font-bold',
                 badgeBg: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-                fill: '#172554',
+                fill: '#1e3a8a',
                 stroke: '#3b82f6',
-                dot: 'bg-blue-500',
-                glow: ''
+                dot: '#3b82f6'
             };
         }
     };
 
-    // 지리 맵 좌표 투영 파라미터 (권역에 따라 동적 계산)
-    const mapBounds = useMemo(() => {
-        if (selectedGroup === 'SEOUL') {
-            // 서울 중심 확대: 남쪽 관악/서초/금천/강남까지 완벽 포용
-            return { minLat: 37.40, maxLat: 37.71, minLng: 126.78, maxLng: 127.20 };
-        } else if (selectedGroup === 'GG_SOUTH') {
-            // 경기 남부 확대: 평택/안성부터 과천/성남/하남까지
-            return { minLat: 36.88, maxLat: 37.60, minLng: 126.65, maxLng: 127.70 };
-        } else if (selectedGroup === 'GG_NORTH') {
-            // 경기 북부 확대: 고양/파주부터 연천/포천/가평까지
-            return { minLat: 37.50, maxLat: 38.20, minLng: 126.50, maxLng: 127.65 };
-        } else if (selectedGroup === 'INCHEON') {
-            // 인천 확대: 강화/옹진부터 송도/청라/부평까지
-            return { minLat: 37.35, maxLat: 37.85, minLng: 126.25, maxLng: 126.85 };
+    // ========================================================================
+    // 실제 지도(Leaflet + CartoDB Dark 타일) 로딩 및 마커 주입 엔진
+    // ========================================================================
+    useEffect(() => {
+        if (viewMode !== 'map') return;
+
+        // 1. Leaflet CSS 및 다크모드 타일 필터 동적 주입
+        if (!document.getElementById('leaflet-css')) {
+            const link = document.createElement('link');
+            link.id = 'leaflet-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+        }
+
+        if (!document.getElementById('leaflet-dark-filter')) {
+            const style = document.createElement('style');
+            style.id = 'leaflet-dark-filter';
+            style.innerHTML = `
+                .leaflet-tile-pane {
+                    filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(105%) !important;
+                }
+                .leaflet-container {
+                    background: #0b0f19 !important;
+                    font-family: Pretendard, -apple-system, sans-serif !important;
+                }
+                .real-estate-marker-pin:hover {
+                    transform: scale(1.12);
+                    z-index: 9999 !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const renderMap = () => {
+            const L = window.L;
+            if (!L || !mapContainerRef.current) return;
+
+            // 기존 맵 인스턴스가 있으면 제거 후 재생성 방지
+            if (!leafletMapRef.current) {
+                // OpenStreetMap 기반 실제 지도 인스턴스 생성 (서울 중심)
+                const map = L.map(mapContainerRef.current, {
+                    center: [37.53, 126.98],
+                    zoom: 10,
+                    minZoom: 8,
+                    maxZoom: 17,
+                    zoomControl: false
+                });
+
+                // 완전 무료 & 워터마크 없는 실제 도로·하천·지명 타일맵
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                // 우측 하단에 미니 줌 컨트롤 추가
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+                leafletMapRef.current = map;
+            }
+
+            const map = leafletMapRef.current;
+
+            // 기존 마커 전체 제거
+            markersRef.current.forEach(m => map.removeLayer(m));
+            markersRef.current = [];
+
+            // 82개 행정구역 실제 위치에 뱃지 마커 꽂기
+            filteredDistricts.forEach(district => {
+                const theme = getHeatmapColor(district.rate);
+                const rateText = district.rate !== null 
+                    ? (district.rate > 0 ? `+${district.rate}%` : `${district.rate}%`) 
+                    : '-';
+                const rateColor = district.rate > 0 ? '#fda4af' : district.rate < 0 ? '#93c5fd' : '#cbd5e1';
+
+                const iconHtml = `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 4px;
+                        background: ${theme.fill};
+                        border: 1.5px solid ${theme.stroke};
+                        border-radius: 6px;
+                        padding: 2px 7px;
+                        min-width: 68px;
+                        box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+                        cursor: pointer;
+                        font-family: Pretendard, sans-serif;
+                        transition: transform 0.15s ease;
+                    ">
+                        <span style="font-size: 10px; font-weight: 900; color: #ffffff; white-space: nowrap;">
+                            ${district.shortName}
+                        </span>
+                        <span style="font-size: 9.5px; font-weight: 900; color: ${rateColor}; font-family: monospace;">
+                            ${rateText}
+                        </span>
+                    </div>
+                `;
+
+                const customIcon = L.divIcon({
+                    className: 'real-estate-marker-pin',
+                    html: iconHtml,
+                    iconSize: [70, 24],
+                    iconAnchor: [35, 12]
+                });
+
+                const marker = L.marker([district.lat, district.lng], { icon: customIcon }).addTo(map);
+                marker.on('click', () => {
+                    setSelectedDistrict(district);
+                });
+
+                markersRef.current.push(marker);
+            });
+
+            // 권역 탭 선택 시 부드럽게 카메라 뷰포트 이동 (flyTo)
+            if (selectedGroup === 'SEOUL') {
+                map.flyTo([37.55, 126.98], 11, { duration: 1 });
+            } else if (selectedGroup === 'GG_SOUTH') {
+                map.flyTo([37.28, 127.08], 10, { duration: 1 });
+            } else if (selectedGroup === 'GG_NORTH') {
+                map.flyTo([37.75, 127.05], 10, { duration: 1 });
+            } else if (selectedGroup === 'INCHEON') {
+                map.flyTo([37.50, 126.68], 11, { duration: 1 });
+            } else {
+                map.flyTo([37.45, 127.00], 9.5, { duration: 1 });
+            }
+        };
+
+        if (window.L) {
+            renderMap();
         } else {
-            // 수도권 전체 (여백 최적화)
-            return { minLat: 36.85, maxLat: 38.25, minLng: 126.20, maxLng: 127.80 };
+            const script = document.createElement('script');
+            script.id = 'leaflet-js';
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = () => renderMap();
+            document.head.appendChild(script);
         }
-    }, [selectedGroup]);
-
-    // 위경도 -> SVG 캔버스 (1000 x 750) 좌표 변환 (스마트 겹침 방지 알고리즘 탑재)
-    const projectCoords = (district) => {
-        let lat = district.lat;
-        let lng = district.lng;
-
-        // 수도권 전체 뷰일 때 서울 25개 구가 한곳에 뭉쳐 겹치는 현상을 방지하는 방사형 분산
-        if (selectedGroup === 'ALL' && district.group === 'SEOUL') {
-            const centerLat = 37.55;
-            const centerLng = 126.98;
-            lat = centerLat + (lat - centerLat) * 1.35;
-            lng = centerLng + (lng - centerLng) * 1.35;
-        }
-
-        const { minLat, maxLat, minLng, maxLng } = mapBounds;
-        const x = ((lng - minLng) / (maxLng - minLng)) * 940 + 30;
-        const y = ((maxLat - lat) / (maxLat - minLat)) * 690 + 30;
-        return { x: Math.max(25, Math.min(975, x)), y: Math.max(25, Math.min(725, y)) };
-    };
+    }, [viewMode, selectedGroup, filteredDistricts]);
 
     const groupTabs = [
         { id: 'ALL', label: '수도권 전체', count: 82, icon: '🌟' },
@@ -398,10 +498,10 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                     </div>
                 </div>
 
-                {/* 2. 뷰 모드 전환 [🗺️ 실제 지리 지도] vs [▦ 타일 블록] & 권역 탭 & 검색 */}
+                {/* 2. 뷰 모드 전환 [🗺️ 실제 지도 뷰] vs [▦ 타일 블록] & 권역 탭 & 검색 */}
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
-                        {/* [핵심] 지도 뷰 vs 타일 블록 뷰 전환 토글 버튼 */}
+                        {/* [핵심] 실제 지도 뷰 vs 타일 블록 뷰 전환 토글 버튼 */}
                         <div className="flex items-center bg-[var(--theme-bg)] p-1 rounded-xl border border-rose-500/40 shadow-xs">
                             <button
                                 onClick={() => setViewMode('map')}
@@ -412,8 +512,8 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                                         : "text-slate-400 hover:text-[var(--theme-text)]"
                                 )}
                             >
-                                <Compass size={14} />
-                                <span>🗺️ 실제 지리 지도</span>
+                                <Globe size={14} />
+                                <span>🗺️ 실제 지도 뷰 (위성·도로)</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
@@ -425,7 +525,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                                 )}
                             >
                                 <LayoutGrid size={14} />
-                                <span>▦ 타일 블록 그리드</span>
+                                <span>▦ 네모박스 타일 그리드</span>
                             </button>
                         </div>
 
@@ -473,196 +573,38 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 </div>
             </div>
 
-            {/* 3. 메인 콘텐츠 영역: [실제 지리 지도 뷰] OR [타일 블록 뷰] */}
+            {/* 3. 메인 콘텐츠 영역: [실제 지도 뷰] OR [네모박스 타일 그리드] */}
             <div className="flex-1 overflow-y-auto p-3 sm:p-5 relative">
                 <div className="max-w-7xl mx-auto space-y-4">
                     {/* ======================================================== */}
-                    {/* [A] 실제 지리 지도 (Real Geo-SVG Map) 뷰 */}
+                    {/* [A] 실제 지도 (Real Leaflet Dark Map) 뷰 */}
                     {/* ======================================================== */}
                     {viewMode === 'map' && (
-                        <div className="bg-slate-950/90 rounded-2xl border border-rose-500/30 p-3 sm:p-5 shadow-2xl relative overflow-hidden backdrop-blur-md">
-                            {/* 지도 상단 툴바 */}
+                        <div className="bg-slate-950 rounded-2xl border border-rose-500/40 p-3 sm:p-4 shadow-2xl relative overflow-hidden">
+                            {/* 지도 안내 툴바 */}
                             <div className="flex items-center justify-between mb-3 px-1 border-b border-slate-800 pb-2">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-rose-500 font-black text-sm">📍 수도권 실제 지리 시세 지도</span>
+                                    <span className="text-rose-500 font-black text-sm">🌍 실제 수도권 다크모드 타일 지도</span>
                                     <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                                        실측 위경도 정밀 투영 (Lat/Lng)
+                                        OpenStreetMap & CARTO 실제 위성·도로망
                                     </span>
                                 </div>
                                 <div className="text-[11px] font-bold text-slate-400 flex items-center gap-3">
-                                    <span className="hidden sm:inline">🌊 한강 라인 및 실제 지형 배치</span>
-                                    <span className="text-rose-400">{sourceType} {periodType} 기준 ({baseDate || '최신'})</span>
+                                    <span className="text-rose-400">{sourceType} {periodType} ({baseDate || '최신'})</span>
                                 </div>
                             </div>
 
-                            {/* 실제 SVG 지도 캔버스 컨테이너 */}
-                            <div className="w-full relative bg-radial from-slate-900/60 to-slate-950 rounded-xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center min-h-[580px] lg:min-h-[660px]">
-                                <svg
-                                    viewBox="0 0 1000 750"
-                                    className="w-full h-full max-h-[720px] select-none"
-                                >
-                                    <defs>
-                                        {/* 한강 글로우 필터 */}
-                                        <filter id="riverGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                            <feGaussianBlur stdDeviation="3" result="glow" />
-                                            <feComposite in="SourceGraphic" in2="glow" operator="over" />
-                                        </filter>
-                                        <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.08" />
-                                            <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
-                                        </radialGradient>
-                                    </defs>
-
-                                    {/* 지도 배경 그리드 레이더 선 */}
-                                    <circle cx="500" cy="375" r="300" fill="none" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 6" opacity="0.6" />
-                                    <circle cx="500" cy="375" r="180" fill="url(#centerGlow)" stroke="#334155" strokeWidth="1" strokeDasharray="3 4" opacity="0.7" />
-                                    <line x1="500" y1="20" x2="500" y2="730" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 5" opacity="0.4" />
-                                    <line x1="20" y1="375" x2="980" y2="375" stroke="#1e293b" strokeWidth="1" strokeDasharray="3 5" opacity="0.4" />
-
-                                    {/* 수도권 및 서울 외곽 실루엣 가이드 라인 */}
-                                    {selectedGroup !== 'SEOUL' && (
-                                        <path
-                                            d="M 160 120 C 350 40, 680 50, 880 180 C 950 360, 910 580, 820 680 C 650 740, 380 720, 220 640 C 120 540, 110 320, 160 120 Z"
-                                            fill="#0b0f19"
-                                            stroke="#1e293b"
-                                            strokeWidth="2"
-                                            opacity="0.6"
-                                        />
-                                    )}
-
-                                    {/* 서울특별시 특별 경계 원형 실루엣 */}
-                                    <ellipse
-                                        cx="490"
-                                        cy="350"
-                                        rx="160"
-                                        ry="110"
-                                        fill="#0f172a"
-                                        stroke="#f43f5e"
-                                        strokeWidth="1.5"
-                                        strokeDasharray="4 4"
-                                        opacity="0.35"
-                                    />
-                                    {/* 한강 (Han River) 실제 물줄기 흐름 벡터 */}
-                                    <path
-                                        d={selectedGroup === 'SEOUL'
-                                            ? "M 60 410 C 220 380, 360 440, 480 420 C 600 400, 720 460, 840 420 C 910 390, 950 360, 980 340"
-                                            : "M 320 370 C 380 360, 430 400, 490 395 C 550 390, 600 355, 650 375 C 700 390, 750 380, 810 360"
-                                        }
-                                        fill="none"
-                                        stroke="#38bdf8"
-                                        strokeWidth={selectedGroup === 'SEOUL' ? "5.5" : "4"}
-                                        strokeLinecap="round"
-                                        opacity="0.75"
-                                        filter="url(#riverGlow)"
-                                    />
-                                    <text 
-                                        x={selectedGroup === 'SEOUL' ? "520" : "590"} 
-                                        y={selectedGroup === 'SEOUL' ? "405" : "385"} 
-                                        fill="#38bdf8" 
-                                        fontSize="11" 
-                                        fontWeight="bold" 
-                                        opacity="0.85" 
-                                        letterSpacing="1"
-                                    >
-                                        한강 (Han River)
-                                    </text>
-
-                                    {/* 82개 행정구역 실측 위경도 노드 및 % 뱃지 핀 렌더링 */}
-                                    {filteredDistricts.map(district => {
-                                        const coords = projectCoords(district);
-                                        const theme = getHeatmapColor(district.rate);
-                                        const isSelected = selectedDistrict?.id === district.id;
-
-                                        return (
-                                            <g
-                                                key={district.id}
-                                                transform={`translate(${coords.x}, ${coords.y})`}
-                                                onClick={() => setSelectedDistrict(district)}
-                                                className="cursor-pointer group"
-                                            >
-                                                {/* 1. 히트맵 파동 펄스 효과 (급등 지역) */}
-                                                {district.rate >= 0.30 && (
-                                                    <circle
-                                                        cx="0"
-                                                        cy="0"
-                                                        r="18"
-                                                        fill="none"
-                                                        stroke={theme.stroke}
-                                                        strokeWidth="1.5"
-                                                        opacity="0.5"
-                                                        className="animate-ping"
-                                                    />
-                                                )}
-
-                                                {/* 2. 중심 앵커 도트 */}
-                                                <circle
-                                                    cx="0"
-                                                    cy="0"
-                                                    r={isSelected ? "7" : "4.5"}
-                                                    fill={theme.stroke}
-                                                    stroke="#0f172a"
-                                                    strokeWidth="2"
-                                                    className="transition-all duration-200"
-                                                />
-
-                                                {/* 3. 지도 위에 얹히는 실제 핀 뱃지 카드 */}
-                                                <g transform={`translate(-34, -28)`} className="transition-transform duration-200 group-hover:scale-110">
-                                                    {/* 카드 배경 */}
-                                                    <rect
-                                                        x="0"
-                                                        y="0"
-                                                        width="68"
-                                                        height="24"
-                                                        rx="6"
-                                                        fill={isSelected ? '#1e1b4b' : theme.fill}
-                                                        stroke={isSelected ? '#f43f5e' : theme.stroke}
-                                                        strokeWidth={isSelected ? '2' : '1.2'}
-                                                        className="shadow-md"
-                                                    />
-                                                    {/* 지역명 텍스트 */}
-                                                    <text
-                                                        x="6"
-                                                        y="16"
-                                                        fill="#ffffff"
-                                                        fontSize="10"
-                                                        fontWeight="900"
-                                                        letterSpacing="-0.3"
-                                                    >
-                                                        {district.shortName.length > 4 ? district.shortName.slice(0, 4) : district.shortName}
-                                                    </text>
-                                                    {/* % 변동률 텍스트 */}
-                                                    <text
-                                                        x="62"
-                                                        y="16"
-                                                        fill={district.rate > 0 ? '#fda4af' : district.rate < 0 ? '#93c5fd' : '#cbd5e1'}
-                                                        fontSize="9.5"
-                                                        fontWeight="900"
-                                                        textAnchor="end"
-                                                        fontFamily="monospace"
-                                                    >
-                                                        {district.rate !== null
-                                                            ? (district.rate > 0 ? `+${district.rate}%` : `${district.rate}%`)
-                                                            : '-'}
-                                                    </text>
-                                                </g>
-                                            </g>
-                                        );
-                                    })}
-                                </svg>
-
-                                {/* 지도 내부 우측 하단 미니 방위계 */}
-                                <div className="absolute right-4 bottom-4 bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 backdrop-blur-xs flex items-center gap-2 pointer-events-none">
-                                    <Navigation size={16} className="text-rose-500 animate-pulse" />
-                                    <div className="text-[10px] font-black text-slate-400">
-                                        <span>N 북쪽 (서울 중심 수도권)</span>
-                                    </div>
-                                </div>
-                            </div>
+                            {/* Leaflet 실제 지도가 마운트되는 DOM 컨테이너 */}
+                            <div 
+                                ref={mapContainerRef} 
+                                className="w-full h-[580px] lg:h-[650px] rounded-xl overflow-hidden border border-slate-800 shadow-inner z-10"
+                                style={{ background: '#090d16' }}
+                            />
                         </div>
                     )}
 
                     {/* ======================================================== */}
-                    {/* [B] 타일 블록 그리드 (Tile Block Grid) 뷰 */}
+                    {/* [B] 네모박스 타일 그리드 (Tile Block Grid) 뷰 */}
                     {/* ======================================================== */}
                     {viewMode === 'grid' && (
                         <div className="space-y-4">
@@ -711,7 +653,6 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                                                             "cursor-pointer rounded-xl p-2.5 border transition-all duration-200 relative group flex flex-col justify-between min-h-[78px]",
                                                             theme.bg,
                                                             theme.border,
-                                                            theme.glow,
                                                             isSelected ? "ring-2 ring-rose-500 scale-[1.02] shadow-md z-10" : "hover:scale-[1.01]"
                                                         )}
                                                     >
