@@ -173,8 +173,9 @@ async def collect_reb_official_report_async():
     """
     print(">>> [Collector] 한국부동산원(REB) 공식 보도자료 실시간 스크래퍼 가동...")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
         page = await browser.new_page()
+        page.set_default_timeout(20000)
 
         doc_id = None
         async def on_req(req):

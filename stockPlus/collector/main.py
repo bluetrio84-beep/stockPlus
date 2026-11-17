@@ -5,6 +5,8 @@ import time
 import random
 from datetime import datetime
 import os
+import sys
+import signal
 import pytz
 from bs4 import BeautifulSoup
 import re
@@ -157,10 +159,11 @@ class MegaCollector:
         sects, themes, sc_cnt = [], [], 0
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                 context = browser.new_context(user_agent=self.user_agent)
                 try:
                     page = context.new_page()
+                    page.set_default_timeout(15000)
                     sects, themes = self.scrape_lists(page)
                     indices = self.fetch_market_indices() # [v15.1] 원복: 무거운 스크래핑 제외
                     sc_cnt = len(sects) + len(themes) + len(indices)
@@ -185,10 +188,11 @@ class MegaCollector:
                 chunk = sects[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
+                            page.set_default_timeout(15000)
                             conn = self.get_db_connection()
                             try:
                                 with conn.cursor() as cursor:
@@ -225,10 +229,11 @@ class MegaCollector:
                 chunk = themes_sorted[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
+                            page.set_default_timeout(15000)
                             conn = self.get_db_connection()
                             try:
                                 with conn.cursor() as cursor:
@@ -324,10 +329,11 @@ class DaumTraderScraper:
                 chunk = queue[i:i + chunk_size]
                 try:
                     with sync_playwright() as p:
-                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+                        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                         context = browser.new_context(user_agent=self.user_agent)
                         try:
                             page = context.new_page()
+                            page.set_default_timeout(15000)
                             for item in chunk:
                                 try:
                                     if page.is_closed(): break 
@@ -344,8 +350,63 @@ class DaumTraderScraper:
         finally: conn.close()
         return total_sc_cnt
 
+def run_subtask(cmd, timeout_sec=180, label="Subtask", mega=None):
+    """서브프로세스를 독립 프로세스 그룹으로 실행하고 타임아웃 시 하위 Playwright 프로세스까지 강제 정리."""
+    proc = subprocess.Popen(cmd, start_new_session=True)
+    try:
+        ret = proc.wait(timeout=timeout_sec)
+        return ret == 0
+    except subprocess.TimeoutExpired:
+        msg = f"[타임아웃복구] {label} ({timeout_sec}s 초과) 강제 종료 및 스케줄러 정상화"
+        print(f">>> {msg}", flush=True)
+        if mega:
+            mega.log_to_db("WARN", msg)
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            pass
+        return False
+
+def run_realtime_cycle():
+    """단일 통합 수집 사이클을 독립 프로세스에서 실행 (Playwright 행/메모리 누수 원천 격리)."""
+    mega = MegaCollector()
+    trader = DaumTraderScraper()
+    engine = AIEngine()
+    start_time = datetime.now()
+    total_collected = 0
+    sects, themes = [], []
+    try:
+        sects, themes, q_cnt = mega.run_quick_sync()
+        total_collected += (q_cnt if q_cnt else 0)
+    except Exception as e:
+        print(f">>> [Quick Sync Error] {e}", flush=True)
+    try:
+        t_cnt = trader.run_relay_cycle(mega)
+        total_collected += (t_cnt if t_cnt else 0)
+    except Exception as e:
+        print(f">>> [Relay Cycle Error] {e}", flush=True)
+    try:
+        d_cnt = mega.run_deep_analysis(sects, themes)
+        total_collected += (d_cnt if d_cnt else 0)
+    except Exception as e:
+        print(f">>> [Deep Analysis Error] {e}", flush=True)
+    try:
+        duration = (datetime.now() - start_time).seconds
+        mega.update_stats(total_collected)
+        mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
+        engine.analyze_market()
+    except Exception as e:
+        print(f">>> [Post Cycle Error] {e}", flush=True)
+
 def main():
-    mega = MegaCollector(); trader = DaumTraderScraper(); engine = AIEngine()
+    mega = MegaCollector()
     next_engine = NextLeaderEngine() 
     last_sync_date = ""
     last_next_leader_date = "" 
@@ -377,7 +438,7 @@ def main():
                 # [v53.0] 일요일 20:30 ~ 20:35 주간 축적 데이터 기반 AI 3대 모델(LSTM, TCN, XGBoost) 전면 재학습 (Self-Evolution)
                 if now_weekday == 6 and now_hour == 20 and 30 <= now_min <= 35:
                     mega.log_to_db("INFO", "[지능진화] 주말 3대 AI 앙상블 모델 정기 딥러닝 재학습 시작 (train_model.py)")
-                    subprocess.run(["python3", "train_model.py"])
+                    run_subtask(["python3", "train_model.py"], timeout_sec=900, label="AI모델재학습", mega=mega)
                     mega.log_to_db("INFO", "[지능진화] 주말 3대 AI 앙상블 모델 재학습 완료 및 가중치 파일 갱신 성공")
                     time.sleep(360) # 중복 실행 방지 (6분 휴식)
 
@@ -391,7 +452,7 @@ def main():
                 # [v16.1] 일요일 21:10 유튜브 프리미엄 수집 (월요일 장 대비)
                 if now_weekday == 6 and now_hour == 21 and 10 <= now_min <= 15:
                     mega.log_to_db("INFO", "[유튜브] 월요일 장 개시 전 주말 분석 영상 수집 시작")
-                    subprocess.run(["python3", "youtube_engine.py"])
+                    run_subtask(["python3", "youtube_engine.py"], timeout_sec=240, label="주말유튜브수집", mega=mega)
                     time.sleep(360)
 
                 if now_min == 0: print(f">>> [Weekend] 주말 휴식 중... (Policy: {policy['weekend']})")
@@ -418,7 +479,7 @@ def main():
             # 3. [23:00] 어제의 잔상 기록 (히트맵)
             if now_hour == 23 and 0 <= now_min <= 5 and last_snapshot_date != now_str:
                 mega.log_to_db("INFO", "[스냅샷] 히트맵 캡처 시작 (23시)")
-                subprocess.run(["python3", "snapshot_engine.py", "--mode", "heatmap"])
+                run_subtask(["python3", "snapshot_engine.py", "--mode", "heatmap"], timeout_sec=180, label="히트맵스냅샷", mega=mega)
                 last_snapshot_date = now_str
 
             # 4. [07:00] 오늘의 바닥 탈출 분석
@@ -434,18 +495,18 @@ def main():
             if now_hour == 7 and 20 <= now_min <= 25:
                 if last_next_leader_date == now_str:
                     mega.log_to_db("INFO", "[스냅샷] Next Leaders 랭킹 리스트 캡처 시작 (07시 20분)")
-                    subprocess.run(["python3", "snapshot_engine.py", "--mode", "ranking"])
+                    run_subtask(["python3", "snapshot_engine.py", "--mode", "ranking"], timeout_sec=120, label="랭킹스냅샷", mega=mega)
 
             # 6. [07:30] 데일리 매거진 선제 생성
             if now_hour == 7 and 30 <= now_min <= 35:
                 if last_next_leader_date == now_str:
                     mega.log_to_db("INFO", "[리포트] 데일리 매거진 선제적 생성 트리거 (07시 30분)")
-                    subprocess.run(["python3", "snapshot_engine.py", "--mode", "trigger_report"])
+                    run_subtask(["python3", "snapshot_engine.py", "--mode", "trigger_report"], timeout_sec=120, label="데일리매거진", mega=mega)
 
             # [v16.1] 08:30 유튜브 프리미엄 인텔리전스 수집 (평일/공휴일 공통)
             if now_hour == 8 and 30 <= now_min <= 35:
                 mega.log_to_db("INFO", "[유튜브] 개장 전 프리미엄 주식 교육/추천 영상 수집 시작")
-                subprocess.run(["python3", "youtube_engine.py"])
+                run_subtask(["python3", "youtube_engine.py"], timeout_sec=240, label="유튜브수집", mega=mega)
                 time.sleep(360) # 중복 실행 방지
 
             # 7. [20:30] 시총 갱신
@@ -458,25 +519,25 @@ def main():
             if now_hour in [6, 12, 18, 21] and 15 <= now_min <= 35 and last_re_tx_hour != now_hour:
                 try:
                     mega.log_to_db("INFO", f"[부동산] 아파트 실거래가(신고가/급락/상승) 상시 수집 가동 ({now_hour}시)")
-                    subprocess.run(["python3", "real_estate_collector.py"])
+                    run_subtask(["python3", "real_estate_collector.py"], timeout_sec=180, label="부동산실거래가수집", mega=mega)
                     last_re_tx_hour = now_hour
                 except Exception as e:
                     mega.log_to_db("ERROR", f"[부동산 실거래 수집 오류] {e}")
 
-            # (2) 한국부동산원(REB) 주간 아파트 시세 동향: 매주 목요일 15:00 공표 직후 자동 동기화
-            if now_weekday == 3 and now_hour == 15 and 0 <= now_min <= 15 and last_reb_date != now_str:
+            # (2) 한국부동산원(REB) 주간 아파트 시세 동향: 매주 목요일 15:00 공표 직후 자동 동기화 (15시 이후 1회 보장)
+            if now_weekday == 3 and now_hour >= 15 and last_reb_date != now_str:
                 try:
-                    mega.log_to_db("INFO", "[부동산] 한국부동산원(REB) 주간 아파트 시세 동향 정기 수집 (목요일 15시)")
-                    subprocess.run(["python3", "real_estate_collector.py"])
+                    mega.log_to_db("INFO", "[부동산] 한국부동산원(REB) 주간 아파트 시세 동향 정기 수집 (목요일 15시+)")
+                    run_subtask(["python3", "real_estate_collector.py"], timeout_sec=180, label="한국부동산원(REB)수집", mega=mega)
                     last_reb_date = now_str
                 except Exception as e:
                     mega.log_to_db("ERROR", f"[한국부동산원 수집 오류] {e}")
 
-            # (3) KB부동산 주간 아파트 시장 동향: 매주 금요일 10:00 공표 직후 자동 동기화
-            if now_weekday == 4 and now_hour == 10 and 0 <= now_min <= 15 and last_kb_date != now_str:
+            # (3) KB부동산 주간 아파트 시장 동향: 매주 금요일 10:00 공표 직후 자동 동기화 (10시 이후 1회 보장)
+            if now_weekday == 4 and now_hour >= 10 and last_kb_date != now_str:
                 try:
-                    mega.log_to_db("INFO", "[부동산] KB부동산 주간 아파트 시장 동향 정기 수집 (금요일 10시)")
-                    subprocess.run(["python3", "real_estate_collector.py"])
+                    mega.log_to_db("INFO", "[부동산] KB부동산 주간 아파트 시장 동향 정기 수집 (금요일 10시+)")
+                    run_subtask(["python3", "real_estate_collector.py"], timeout_sec=180, label="KB부동산수집", mega=mega)
                     last_kb_date = now_str
                 except Exception as e:
                     mega.log_to_db("ERROR", f"[KB부동산 수집 오류] {e}")
@@ -492,7 +553,6 @@ def main():
                         if res: interval = int(res['collect_interval'])
                 finally: conn.close()
 
-                start_time = datetime.now()
                 mega.log_to_db("INFO", f"[수집시작] 통합 수집 사이클 가동 (주기: {interval}s)")
                 
                 # [v35.90] 최우선 순위 가동: AI 관제탑 블랙박스 분석 (09:00 ~ 20:10 애프터마켓 최종 마감 전구간 대응)
@@ -500,32 +560,13 @@ def main():
                 if is_blackbox_hours:
                     try:
                         mega.log_to_db("INFO", "[지능가동] AI 관제탑 블랙박스 정밀 분석 수행")
-                        subprocess.run(["python3", "blackbox_analyst.py"])
+                        run_subtask(["python3", "blackbox_analyst.py"], timeout_sec=180, label="블랙박스분석", mega=mega)
                         mega.log_to_db("INFO", "[지능완료] AI 관제탑 정밀 분석 및 리포트 생성 완료")
                     except Exception as e:
                         mega.log_to_db("ERROR", f"[분석오류] {str(e)}")
 
-                total_collected = 0
-                try:
-                    sects, themes, q_cnt = mega.run_quick_sync()
-                    total_collected += (q_cnt if q_cnt else 0)
-                except: pass
-                try:
-                    t_cnt = trader.run_relay_cycle(mega)
-                    total_collected += (t_cnt if t_cnt else 0)
-                except: pass
-                try:
-                    s_list = sects if 'sects' in locals() else []
-                    t_list = themes if 'themes' in locals() else []
-                    d_cnt = mega.run_deep_analysis(s_list, t_list)
-                    total_collected += (d_cnt if d_cnt else 0)
-                except: pass
-                try:
-                    duration = (datetime.now() - start_time).seconds
-                    mega.update_stats(total_collected)
-                    mega.log_to_db("INFO", f"[수집완료] {total_collected}건 처리 완료 ({duration}초 소요)")
-                    engine.analyze_market()
-                except: pass
+                # [재발방지] Playwright 크롤링 사이클을 서브프로세스로 격리 실행 (최대 12분 타임아웃)
+                run_subtask(["python3", "main.py", "--run-realtime-cycle"], timeout_sec=720, label="통합수집사이클", mega=mega)
                 time.sleep(interval)
             else:
                 time.sleep(60) 
@@ -534,4 +575,7 @@ def main():
             time.sleep(60)
 
 if __name__ == "__main__":
-    main()
+    if "--run-realtime-cycle" in sys.argv:
+        run_realtime_cycle()
+    else:
+        main()
