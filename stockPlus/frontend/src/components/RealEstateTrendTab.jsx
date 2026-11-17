@@ -5,35 +5,58 @@ import { fetchRealEstateHistory, fetchRealEstateMomentum } from '../api/stockApi
 const classNames = (...classes) => classes.filter(Boolean).join(' ');
 
 const QUICK_REGIONS = [
-    '서울', '수도권', '안양시 동안구', '안양시 만안구',
+    '서울', '수도권', '경기', '인천', '전국',
+    '안양시 동안구', '안양시 만안구',
     '화성시 동탄구', '용인시 기흥구', '구리시',
-    '과천시', '성남시 분당구', '서울 강남구', '서울 서초구', '서울 마포구'
+    '과천시', '성남시 분당구', '서울 강남구'
 ];
 
-// 토허제 3중 규제 및 풍선효과 인접 지역 그룹
+// 규제 상태 판별 (현재 규제지역은 모두 토허제+투기+조정 3중 규제)
+const NEW_TRIPLE_REGULATED = new Set(['화성시 동탄구', '용인시 기흥구', '구리시']);
+const EXISTING_TRIPLE_REGULATED = new Set([
+    '과천시', '성남시 분당구', '성남시 수정구', '성남시 중원구',
+    '광명시', '안양시 동안구', '의왕시', '하남시',
+    '수원시 영통구', '수원시 장안구', '수원시 팔달구', '용인시 수지구'
+]);
+
+const getRegulationStatus = (regionName) => {
+    if (!regionName) return { type: 'non', label: '비규제', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+    if (NEW_TRIPLE_REGULATED.has(regionName)) {
+        return { type: 'triple', label: '3중규제(확대)', cls: 'bg-rose-500/20 text-rose-400 border-rose-500/40' };
+    }
+    if (regionName.startsWith('서울 ') || regionName === '서울' || EXISTING_TRIPLE_REGULATED.has(regionName)) {
+        return { type: 'triple', label: '3중규제', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+    }
+    return { type: 'non', label: '비규제', cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+};
+
+// 기본 3그룹 비교 (확대 3중규제 vs 기존 3중규제 vs 비규제)
 const REGULATION_GROUPS = [
     {
         id: 'triple',
-        title: '🔴 3중 규제 (토허제·투기·조정)',
+        title: '🔴 확대 3중 규제 (토허제·투기·조정)',
         badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
         regions: ['화성시 동탄구', '용인시 기흥구', '구리시']
     },
     {
         id: 'core',
-        title: '🟠 서울·과천·성남 핵심 규제권',
+        title: '🟠 기존 3중 규제 (서울·경기 주요)',
         badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-        regions: ['서울 강남구', '서울 서초구', '서울 송파구', '과천시', '성남시 분당구']
+        regions: ['서울 강남구', '서울 서초구', '과천시', '성남시 분당구', '안양시 동안구', '수원시 영통구', '용인시 수지구', '하남시']
     },
     {
         id: 'adjacent',
         title: '🟢 인접 비규제 (풍선효과 모니터)',
         badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-        regions: ['안양시 동안구', '안양시 만안구', '수원시 영통구', '용인시 수지구', '하남시']
+        regions: ['안양시 만안구', '수원시 권선구', '용인시 처인구', '군포시', '부천시 원미구', '김포시', '남양주시', '오산시']
     }
 ];
 
 export default function RealEstateTrendTab({ sourceType = 'KB' }) {
     const [selectedRegion, setSelectedRegion] = useState('안양시 동안구');
+    const [comboAreaFilter, setComboAreaFilter] = useState('ALL'); // 'ALL' | 'SEOUL' | 'GYEONGGI' | 'INCHEON' | 'LOCAL'
+    const [monitorScope, setMonitorScope] = useState('GROUPS'); // 'GROUPS' | 'SEOUL' | 'METRO' | 'NON_REG'
+
     const [history, setHistory] = useState([]);
     const [momentumList, setMomentumList] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
@@ -118,12 +141,54 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
         return m;
     }, [momentumList]);
 
+    // 콤보박스용 권역별 시·군·구 목록 분류
+    const comboRegions = useMemo(() => {
+        const names = momentumList.map(m => m.region_name).sort((a, b) => a.localeCompare(b, 'ko'));
+        if (comboAreaFilter === 'SEOUL') {
+            return ['서울', ...names.filter(n => n.startsWith('서울 '))];
+        }
+        if (comboAreaFilter === 'GYEONGGI') {
+            const gyeonggiSet = new Set(
+                momentumList
+                    .filter(m => m.region_type === '수도권' && !m.region_name.startsWith('서울 ') && !m.region_name.startsWith('인천 '))
+                    .map(m => m.region_name)
+            );
+            return ['경기', ...Array.from(gyeonggiSet).sort((a, b) => a.localeCompare(b, 'ko'))];
+        }
+        if (comboAreaFilter === 'INCHEON') {
+            return ['인천', ...names.filter(n => n.startsWith('인천 '))];
+        }
+        if (comboAreaFilter === 'LOCAL') {
+            const localNames = momentumList
+                .filter(m => m.region_type === '지방')
+                .map(m => m.region_name)
+                .sort((a, b) => a.localeCompare(b, 'ko'));
+            return ['지방', ...localNames];
+        }
+        return ['전국', '수도권', '서울', '경기', '인천', ...names];
+    }, [momentumList, comboAreaFilter]);
+
+    // 모니터 섹션 Select Box에 따른 리스트
+    const monitorList = useMemo(() => {
+        const sorted = [...momentumList].sort((a, b) => Number(b.latest_rate) - Number(a.latest_rate));
+        if (monitorScope === 'SEOUL') {
+            return sorted.filter(m => m.region_name.startsWith('서울 '));
+        }
+        if (monitorScope === 'METRO') {
+            return sorted.filter(m => m.region_type === '수도권' && !m.region_name.startsWith('서울 '));
+        }
+        if (monitorScope === 'NON_REG') {
+            return sorted.filter(m => m.region_type === '수도권' && getRegulationStatus(m.region_name).type === 'non');
+        }
+        return [];
+    }, [momentumList, monitorScope]);
+
     // 검색 자동완성 후보
     const filteredRegionSuggestions = useMemo(() => {
         const q = searchQuery.trim();
         if (!q) return [];
         const allNames = Array.from(new Set([...QUICK_REGIONS, ...momentumList.map(m => m.region_name)]));
-        return allNames.filter(name => name.includes(q)).slice(0, 8);
+        return allNames.filter(name => name.includes(q)).slice(0, 10);
     }, [searchQuery, momentumList]);
 
     // 모멘텀 TOP 10 (4주 vs 20주)
@@ -189,6 +254,8 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
         ? chartData[activePointIdx]
         : chartData[chartData.length - 1];
 
+    const selectedRegStatus = getRegulationStatus(selectedRegion);
+
     return (
         <div className="space-y-3 sm:space-y-4">
             {/* 1. 관심지역 20주 시계열 추이 & KB vs REB 비교 차트 */}
@@ -199,8 +266,11 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                             <TrendingUp size={15} className="text-rose-500 shrink-0" />
                             <span>지역별 20주 변동률 추이 · KB vs 부동산원</span>
                         </h3>
-                        <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">
-                            선택 지역: <strong className="text-rose-400">{selectedRegion}</strong> (포인트 터치 시 주차별 수치 확인)
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>선택: <strong className="text-rose-400">{selectedRegion}</strong></span>
+                            <span className={classNames("px-1.5 py-0.2 rounded text-[9.5px] font-black border", selectedRegStatus.cls)}>
+                                {selectedRegStatus.label}
+                            </span>
                         </p>
                     </div>
 
@@ -230,8 +300,8 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                     </div>
                 </div>
 
-                {/* 빠른 선택 칩 (모바일 가로 스크롤 깔끔 처리) */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-2.5 no-scrollbar">
+                {/* 빠른 선택 칩 (서울/수도권/핵심지역) */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-2 no-scrollbar">
                     {QUICK_REGIONS.map((reg) => (
                         <button
                             key={reg}
@@ -246,6 +316,45 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                             {reg}
                         </button>
                     ))}
+                </div>
+
+                {/* [신규] 2단 콤보박스 (권역 + 서울 구 / 경기도 시·군·구 전체 선택) */}
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 mb-2.5">
+                    <select
+                        value={comboAreaFilter}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setComboAreaFilter(val);
+                            if (val === 'SEOUL') setSelectedRegion('서울');
+                            else if (val === 'GYEONGGI') setSelectedRegion('경기');
+                            else if (val === 'INCHEON') setSelectedRegion('인천');
+                            else if (val === 'LOCAL') setSelectedRegion('지방');
+                        }}
+                        className="bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text)] text-[11px] font-bold rounded-lg px-2 py-1.5 focus:outline-none focus:border-rose-500"
+                    >
+                        <option value="ALL">전체 권역 (전국)</option>
+                        <option value="SEOUL">서울 (25개 자치구)</option>
+                        <option value="GYEONGGI">경기 (시·군·구 전체)</option>
+                        <option value="INCHEON">인천 (구·군 전체)</option>
+                        <option value="LOCAL">지방 광역시</option>
+                    </select>
+
+                    <select
+                        value={comboRegions.includes(selectedRegion) ? selectedRegion : ''}
+                        onChange={(e) => {
+                            if (e.target.value) setSelectedRegion(e.target.value);
+                        }}
+                        className="bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text)] text-[11px] font-bold rounded-lg px-2 py-1.5 sm:min-w-[200px] focus:outline-none focus:border-rose-500"
+                    >
+                        {!comboRegions.includes(selectedRegion) && (
+                            <option value="">-- 세부 지역 선택 ({comboRegions.length}곳) --</option>
+                        )}
+                        {comboRegions.map((name) => (
+                            <option key={name} value={name}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* 요약 KPI 칩 3종 (모바일 3열 압축) */}
@@ -356,80 +465,127 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                 </div>
             </div>
 
-            {/* 2. 토허제 3중 규제 & 풍선효과 집중 모니터 */}
+            {/* 2. 토허제 3중 규제 & 서울/수도권 규제·비규제 집중 모니터 */}
             <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                     <div>
                         <h3 className="text-xs sm:text-sm font-black text-[var(--theme-text)] flex items-center gap-1.5">
                             <ShieldAlert size={15} className="text-rose-500 shrink-0" />
-                            <span>토허제 3중 규제 & 인접 풍선효과 모니터</span>
+                            <span>토허제 3중 규제 & 서울·수도권 집중 모니터</span>
                         </h3>
                         <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">
                             지역 클릭 시 상단 20주 추이 차트로 즉시 연동됩니다 ({sourceType} 기준)
                         </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        {/* [신규] 서울 / 수도권 모니터 Select Box */}
+                        <select
+                            value={monitorScope}
+                            onChange={(e) => setMonitorScope(e.target.value)}
+                            className="bg-[var(--theme-bg)] border border-[var(--theme-border)] text-[var(--theme-text)] text-[10.5px] font-black rounded-lg px-2.5 py-1 focus:outline-none focus:border-rose-500"
+                        >
+                            <option value="GROUPS">핵심 비교 (확대3중·기존3중·비규제)</option>
+                            <option value="SEOUL">서울 전역 (25개 구 · 3중규제)</option>
+                            <option value="METRO">수도권 (경기·인천 전체)</option>
+                            <option value="NON_REG">수도권 비규제만 모아보기</option>
+                        </select>
                         <button
                             onClick={() => setMapModalMode('light')}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10.5px] font-black hover:bg-rose-500/25 transition-all"
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10.5px] font-black hover:bg-rose-500/25 transition-all"
                         >
                             <Maximize2 size={11} />
-                            <span>토허제 지도(라이트)</span>
+                            <span>토허제 지도</span>
                         </button>
                         <button
                             onClick={() => setMapModalMode('dark')}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-700/40 text-slate-300 border border-slate-600/40 text-[10.5px] font-black hover:bg-slate-700/70 transition-all"
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-700/40 text-slate-300 border border-slate-600/40 text-[10.5px] font-black hover:bg-slate-700/70 transition-all"
                         >
-                            <Maximize2 size={11} />
                             <span>다크</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
-                    {REGULATION_GROUPS.map((grp) => (
-                        <div key={grp.id} className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 sm:p-3">
-                            <div className={classNames("inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black border mb-2", grp.badgeClass)}>
-                                {grp.title}
+                {monitorScope === 'GROUPS' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+                        {REGULATION_GROUPS.map((grp) => (
+                            <div key={grp.id} className="bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-xl p-2.5 sm:p-3">
+                                <div className={classNames("inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black border mb-2", grp.badgeClass)}>
+                                    {grp.title}
+                                </div>
+                                <div className="space-y-1.5">
+                                    {grp.regions.map((rName) => {
+                                        const stat = momentumMap[rName];
+                                        const rate = stat ? Number(stat.latest_rate) : null;
+                                        const sum4 = stat ? Number(stat.sum_4w) : null;
+                                        return (
+                                            <button
+                                                key={rName}
+                                                onClick={() => setSelectedRegion(rName)}
+                                                className={classNames(
+                                                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition-all",
+                                                    selectedRegion === rName
+                                                        ? "border-rose-500 bg-rose-500/10"
+                                                        : "border-[var(--theme-border)]/60 hover:border-slate-500"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <MapPin size={11} className="text-slate-400 shrink-0" />
+                                                    <span className="text-[11px] font-bold text-[var(--theme-text)] truncate">{rName}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className={classNames(
+                                                        "text-[11px] font-black",
+                                                        rate === null ? "text-slate-500" : rate > 0 ? "text-rose-400" : rate < 0 ? "text-sky-400" : "text-slate-400"
+                                                    )}>
+                                                        {rate !== null ? `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%` : '-'}
+                                                    </span>
+                                                    <span className="text-[9.5px] font-bold text-slate-400 bg-[var(--theme-card)] px-1.5 py-0.5 rounded">
+                                                        4주 {sum4 !== null ? `${sum4 > 0 ? '+' : ''}${sum4.toFixed(2)}%` : '-'}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                            <div className="space-y-1.5">
-                                {grp.regions.map((rName) => {
-                                    const stat = momentumMap[rName];
-                                    const rate = stat ? Number(stat.latest_rate) : null;
-                                    const sum4 = stat ? Number(stat.sum_4w) : null;
-                                    return (
-                                        <button
-                                            key={rName}
-                                            onClick={() => setSelectedRegion(rName)}
-                                            className={classNames(
-                                                "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition-all",
-                                                selectedRegion === rName
-                                                    ? "border-rose-500 bg-rose-500/10"
-                                                    : "border-[var(--theme-border)]/60 hover:border-slate-500"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                <MapPin size={11} className="text-slate-400 shrink-0" />
-                                                <span className="text-[11px] font-bold text-[var(--theme-text)] truncate">{rName}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <span className={classNames(
-                                                    "text-[11px] font-black",
-                                                    rate === null ? "text-slate-500" : rate > 0 ? "text-rose-400" : rate < 0 ? "text-sky-400" : "text-slate-400"
-                                                )}>
-                                                    {rate !== null ? `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%` : '-'}
-                                                </span>
-                                                <span className="text-[9.5px] font-bold text-slate-400 bg-[var(--theme-card)] px-1.5 py-0.5 rounded">
-                                                    4주 {sum4 !== null ? `${sum4 > 0 ? '+' : ''}${sum4.toFixed(2)}%` : '-'}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[380px] overflow-y-auto pr-1">
+                        {monitorList.map((stat) => {
+                            const rate = Number(stat.latest_rate ?? 0);
+                            const sum4 = Number(stat.sum_4w ?? 0);
+                            const reg = getRegulationStatus(stat.region_name);
+                            return (
+                                <button
+                                    key={stat.region_name}
+                                    onClick={() => setSelectedRegion(stat.region_name)}
+                                    className={classNames(
+                                        "flex items-center justify-between px-2.5 py-2 rounded-xl border text-left transition-all bg-[var(--theme-bg)]",
+                                        selectedRegion === stat.region_name
+                                            ? "border-rose-500 bg-rose-500/10"
+                                            : "border-[var(--theme-border)] hover:border-slate-500"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className={classNames("px-1.5 py-0.5 rounded text-[9px] font-black border shrink-0", reg.cls)}>
+                                            {reg.label}
+                                        </span>
+                                        <span className="text-[11px] font-bold text-[var(--theme-text)] truncate">{stat.region_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className={classNames("text-[11px] font-black", rate > 0 ? "text-rose-400" : rate < 0 ? "text-sky-400" : "text-slate-400")}>
+                                            {rate > 0 ? `+${rate.toFixed(2)}%` : `${rate.toFixed(2)}%`}
+                                        </span>
+                                        <span className="text-[9.5px] font-bold text-slate-400 bg-[var(--theme-card)] px-1.5 py-0.5 rounded">
+                                            4주 {sum4 > 0 ? `+${sum4.toFixed(2)}%` : `${sum4.toFixed(2)}%`}
+                                        </span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* 3. 최근 4주 · 20주 모멘텀 급등 TOP 10 */}
@@ -469,6 +625,7 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                             const cumVal = Number(momentumTab === '4w' ? item.sum_4w : item.sum_20w);
                             const latestVal = Number(item.latest_rate);
                             const upWks = Number(item.up_weeks_4w ?? 0);
+                            const reg = getRegulationStatus(item.region_name);
                             return (
                                 <button
                                     key={item.region_name}
@@ -483,7 +640,12 @@ export default function RealEstateTrendTab({ sourceType = 'KB' }) {
                                             {idx + 1}
                                         </span>
                                         <div className="min-w-0">
-                                            <div className="text-[11.5px] font-black text-[var(--theme-text)] truncate">{item.region_name}</div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[11.5px] font-black text-[var(--theme-text)] truncate">{item.region_name}</span>
+                                                <span className={classNames("px-1 py-0.2 rounded text-[8.5px] font-black border shrink-0", reg.cls)}>
+                                                    {reg.label}
+                                                </span>
+                                            </div>
                                             <div className="text-[9.5px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                                                 <span>최근주 {latestVal >= 0 ? `+${latestVal.toFixed(2)}%` : `${latestVal.toFixed(2)}%`}</span>
                                                 <span className="text-emerald-400 font-bold">4주중 {upWks}주↑</span>

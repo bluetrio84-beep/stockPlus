@@ -7,6 +7,7 @@ const classNames = (...classes) => classes.filter(Boolean).join(' ');
 export default function RealEstateJeonseTab() {
     const [momentumList, setMomentumList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [regionTab, setRegionTab] = useState('ALL'); // 'ALL' | 'SEOUL' | 'METRO' | 'LOCAL'
     const [viewMode, setViewMode] = useState('both'); // 'both' | 'jeonse_lead' | 'sale_lead'
     const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -23,16 +24,32 @@ export default function RealEstateJeonseTab() {
         return () => { active = false; };
     }, []);
 
-    // 시장 요약 통계 (4종 KPI)
+    // 1차 권역 필터링 (전체 / 서울 / 수도권(경기·인천) / 지방)
+    const scopedList = useMemo(() => {
+        if (regionTab === 'SEOUL') {
+            return momentumList.filter((item) => item.region_name?.startsWith('서울 '));
+        }
+        if (regionTab === 'METRO') {
+            return momentumList.filter((item) => item.region_type === '수도권' && !item.region_name?.startsWith('서울 '));
+        }
+        if (regionTab === 'LOCAL') {
+            return momentumList.filter((item) => item.region_type === '지방');
+        }
+        return momentumList;
+    }, [momentumList, regionTab]);
+
+    const scopeLabel = regionTab === 'SEOUL' ? '서울' : regionTab === 'METRO' ? '수도권(경기·인천)' : regionTab === 'LOCAL' ? '지방' : '전국 시군구';
+
+    // 시장 요약 통계 (선택 권역 기준 4종 KPI)
     const kpiStats = useMemo(() => {
-        if (!momentumList.length) {
-            return { latestDate: '-', jeonseUpCnt: 0, avgJeonse: '0.00', bothUpCnt: 0, jeonseLeadCnt: 0 };
+        if (!scopedList.length) {
+            return { latestDate: '-', jeonseUpCnt: 0, avgJeonse: '0.00', bothUpCnt: 0, jeonseLeadCnt: 0, total: 0 };
         }
         let jeonseUpCnt = 0;
         let bothUpCnt = 0;
         let jeonseLeadCnt = 0;
         let sumJeonse = 0;
-        momentumList.forEach((item) => {
+        scopedList.forEach((item) => {
             const s = Number(item.latest_rate ?? 0);
             const j = Number(item.latest_jeonse_rate ?? 0);
             sumJeonse += j;
@@ -41,19 +58,19 @@ export default function RealEstateJeonseTab() {
             if (j > s) jeonseLeadCnt += 1;
         });
         return {
-            latestDate: momentumList[0]?.latest_date || '-',
+            latestDate: scopedList[0]?.latest_date || '-',
             jeonseUpCnt,
-            avgJeonse: (sumJeonse / momentumList.length).toFixed(2),
+            avgJeonse: (sumJeonse / scopedList.length).toFixed(2),
             bothUpCnt,
             jeonseLeadCnt,
-            total: momentumList.length
+            total: scopedList.length
         };
-    }, [momentumList]);
+    }, [scopedList]);
 
-    // 정렬 및 필터링된 리스트
+    // 정렬 및 검색 필터링된 리스트
     const filteredList = useMemo(() => {
         const kw = searchKeyword.trim();
-        let list = momentumList.filter((item) => !kw || item.region_name.includes(kw));
+        let list = scopedList.filter((item) => !kw || item.region_name.includes(kw));
 
         if (viewMode === 'both') {
             // 실수요 동반 강세 (매매 + 전세 합산)
@@ -78,20 +95,43 @@ export default function RealEstateJeonseTab() {
             });
         }
         return list.slice(0, 30);
-    }, [momentumList, viewMode, searchKeyword]);
+    }, [scopedList, viewMode, searchKeyword]);
 
     return (
         <div className="space-y-3 sm:space-y-4">
+            {/* 0. 권역 구분 탭 (전체 / 서울 / 수도권(경기·인천) / 지방) */}
+            <div className="grid grid-cols-4 sm:inline-flex gap-1 bg-[var(--theme-card)] p-1 rounded-xl border border-[var(--theme-border)] w-full sm:w-auto">
+                {[
+                    { id: 'ALL', label: '전체' },
+                    { id: 'SEOUL', label: '서울' },
+                    { id: 'METRO', label: '수도권' },
+                    { id: 'LOCAL', label: '지방' }
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setRegionTab(tab.id)}
+                        className={classNames(
+                            "px-2 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-xs font-black transition-all text-center",
+                            regionTab === tab.id
+                                ? "bg-rose-500 text-white shadow-sm"
+                                : "text-slate-400 hover:text-[var(--theme-text)]"
+                        )}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
             {/* 1. 매매·전세 시장 심리 요약 KPI (모바일 2x2 압축) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-2.5 sm:p-3.5">
-                    <div className="text-[10px] text-slate-400 font-bold">전세 상승 지역 ({kpiStats.latestDate})</div>
+                    <div className="text-[10px] text-slate-400 font-bold">전세 상승 ({kpiStats.latestDate})</div>
                     <div className="text-sm sm:text-lg font-black text-amber-400 mt-0.5">
                         {kpiStats.jeonseUpCnt} <span className="text-[10px] text-slate-500 font-bold">/ {kpiStats.total || 0}곳</span>
                     </div>
                 </div>
                 <div className="bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl p-2.5 sm:p-3.5">
-                    <div className="text-[10px] text-slate-400 font-bold">전국 시군구 평균 전세</div>
+                    <div className="text-[10px] text-slate-400 font-bold">{scopeLabel} 평균 전세</div>
                     <div className={classNames("text-sm sm:text-lg font-black mt-0.5", Number(kpiStats.avgJeonse) >= 0 ? "text-amber-400" : "text-sky-400")}>
                         {Number(kpiStats.avgJeonse) >= 0 ? `+${kpiStats.avgJeonse}%` : `${kpiStats.avgJeonse}%`}
                     </div>
