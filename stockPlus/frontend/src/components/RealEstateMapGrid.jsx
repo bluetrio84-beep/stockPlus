@@ -294,7 +294,14 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
     // 실제 지도(Leaflet + CartoDB Dark 타일) 로딩 및 마커 주입 엔진
     // ========================================================================
     useEffect(() => {
-        if (viewMode !== 'map') return;
+        if (viewMode !== 'map') {
+            if (leafletMapRef.current) {
+                try { leafletMapRef.current.remove(); } catch (e) {}
+                leafletMapRef.current = null;
+                markersRef.current = [];
+            }
+            return;
+        }
 
         // 1. Leaflet CSS 및 다크모드 타일 필터 동적 주입
         if (!document.getElementById('leaflet-css')) {
@@ -328,7 +335,13 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
             const L = window.L;
             if (!L || !mapContainerRef.current) return;
 
-            // 기존 맵 인스턴스가 있으면 제거 후 재생성 방지
+            // 기존 맵 인스턴스가 다른(언마운트된) DOM을 가리키고 있으면 정리 후 재생성
+            if (leafletMapRef.current && leafletMapRef.current.getContainer() !== mapContainerRef.current) {
+                try { leafletMapRef.current.remove(); } catch (e) {}
+                leafletMapRef.current = null;
+                markersRef.current = [];
+            }
+
             if (!leafletMapRef.current) {
                 // OpenStreetMap 기반 실제 지도 인스턴스 생성 (서울 중심)
                 const map = L.map(mapContainerRef.current, {
@@ -349,6 +362,7 @@ const RealEstateMapGrid = ({ data = [], sourceType = 'KB', periodType = 'WEEKLY'
                 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
                 leafletMapRef.current = map;
+                setTimeout(() => { try { map.invalidateSize(); } catch (e) {} }, 120);
             }
 
             const map = leafletMapRef.current;
