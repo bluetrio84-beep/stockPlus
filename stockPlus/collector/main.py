@@ -514,17 +514,8 @@ def main():
                 mega.sync_market_cap()
                 last_sync_date = now_str
 
-            # [v16.72] 부동산 시장 데이터 정기/상시 수집 스케줄러
-            # (1) 아파트 실거래가 상시 수집: 매일 06:15, 12:30, 18:30, 21:30 (하루 4회)
-            if now_hour in [6, 12, 18, 21] and 15 <= now_min <= 35 and last_re_tx_hour != now_hour:
-                try:
-                    mega.log_to_db("INFO", f"[부동산] 아파트 실거래가(신고가/급락/상승) 상시 수집 가동 ({now_hour}시)")
-                    run_subtask(["python3", "real_estate_collector.py"], timeout_sec=180, label="부동산실거래가수집", mega=mega)
-                    last_re_tx_hour = now_hour
-                except Exception as e:
-                    mega.log_to_db("ERROR", f"[부동산 실거래 수집 오류] {e}")
-
-            # (2) 한국부동산원(REB) 주간 아파트 시세 동향: 매주 목요일 15:00 공표 직후 자동 동기화 (15시 이후 1회 보장)
+            # [v16.72] 부동산 시장 데이터 정기 수집 스케줄러 (실거래가 하드코딩 폐기 -> 목/금 라이브 공표 동기화)
+            # (1) 한국부동산원(REB) 주간 아파트 시세 동향: 매주 목요일 15:00 공표 직후 자동 동기화 (15시 이후 1회 보장)
             if now_weekday == 3 and now_hour >= 15 and last_reb_date != now_str:
                 try:
                     mega.log_to_db("INFO", "[부동산] 한국부동산원(REB) 주간 아파트 시세 동향 정기 수집 (목요일 15시+)")

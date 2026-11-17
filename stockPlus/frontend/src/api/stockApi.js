@@ -335,3 +335,13 @@ export async function fetchRealEstateTransactions(tradeType = 'ALL', limit = 150
     return Array.isArray(data) ? data : [];
 }
 
+export async function fetchRealEstateHistory(regionName = '서울', periodType = 'WEEKLY') {
+    const data = await safeFetch(`api/dashboard/real-estate/history?regionName=${encodeURIComponent(regionName)}&periodType=${periodType}`);
+    return Array.isArray(data) ? data : [];
+}
+
+export async function fetchRealEstateMomentum(sourceType = 'KB') {
+    const data = await safeFetch(`api/dashboard/real-estate/momentum?sourceType=${sourceType}`);
+    return Array.isArray(data) ? data : [];
+}
+

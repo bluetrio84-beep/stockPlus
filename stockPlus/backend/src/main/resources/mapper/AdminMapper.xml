@@ -451,4 +451,60 @@
         LIMIT #{limit}
     </select>
 
+    <!-- [v16.87] 특정 지역 20주 시계열 추이 조회 (KB vs REB, 매매 vs 전세) -->
+    <select id="getRealEstateRegionHistory" resultType="map">
+        <choose>
+            <when test="regionName == '전국' or regionName == '수도권' or regionName == '서울' or regionName == '경기' or regionName == '인천' or regionName == '지방'">
+                SELECT base_date, source_type,
+                    <choose>
+                        <when test="regionName == '전국'">nation_rate</when>
+                        <when test="regionName == '수도권'">capital_rate</when>
+                        <when test="regionName == '서울'">seoul_rate</when>
+                        <when test="regionName == '경기'">gyeonggi_rate</when>
+                        <when test="regionName == '인천'">incheon_rate</when>
+                        <otherwise>local_rate</otherwise>
+                    </choose>
+                    AS fluctuation_rate,
+                    0.0 AS jeonse_rate
+                FROM real_estate_market_summary
+                WHERE period_type = #{periodType}
+                ORDER BY base_date ASC
+            </when>
+            <otherwise>
+                SELECT base_date, source_type, fluctuation_rate, COALESCE(jeonse_rate, 0) AS jeonse_rate
+                FROM real_estate_weekly_trend
+                WHERE period_type = #{periodType}
+                  AND region_name = #{regionName}
+                ORDER BY base_date ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- [v16.87] 전 지역 4주/20주 모멘텀 및 매매·전세 동시 집계 -->
+    <select id="getRealEstateMomentum" resultType="map">
+        WITH ranked AS (
+            SELECT region_name, region_type, base_date, fluctuation_rate, COALESCE(jeonse_rate, 0) AS jeonse_rate,
+                   DENSE_RANK() OVER (ORDER BY base_date DESC) AS wk_rank
+            FROM real_estate_weekly_trend
+            WHERE source_type = #{sourceType}
+              AND period_type = 'WEEKLY'
+        )
+        SELECT
+            region_name,
+            MAX(region_type) AS region_type,
+            MAX(CASE WHEN wk_rank = 1 THEN base_date END) AS latest_date,
+            COALESCE(MAX(CASE WHEN wk_rank = 1 THEN fluctuation_rate END), 0) AS latest_rate,
+            COALESCE(MAX(CASE WHEN wk_rank = 1 THEN jeonse_rate END), 0) AS latest_jeonse_rate,
+            ROUND(SUM(CASE WHEN wk_rank &lt;= 4 THEN fluctuation_rate ELSE 0 END), 2) AS sum_4w,
+            ROUND(SUM(CASE WHEN wk_rank &lt;= 4 THEN jeonse_rate ELSE 0 END), 2) AS jeonse_sum_4w,
+            ROUND(SUM(CASE WHEN wk_rank &lt;= 20 THEN fluctuation_rate ELSE 0 END), 2) AS sum_20w,
+            ROUND(SUM(CASE WHEN wk_rank &lt;= 20 THEN jeonse_rate ELSE 0 END), 2) AS jeonse_sum_20w,
+            SUM(CASE WHEN wk_rank &lt;= 4 AND fluctuation_rate &gt; 0 THEN 1 ELSE 0 END) AS up_weeks_4w,
+            COUNT(CASE WHEN wk_rank &lt;= 20 THEN 1 END) AS week_count
+        FROM ranked
+        WHERE wk_rank &lt;= 20
+        GROUP BY region_name
+        ORDER BY sum_4w DESC
+    </select>
+
 </mapper>

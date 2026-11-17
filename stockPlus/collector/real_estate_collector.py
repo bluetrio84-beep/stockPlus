@@ -83,6 +83,7 @@ def fetch_and_sync_kb_live(recent_weeks=20):
     ]
 
     districts_by_date = {d: [] for d in target_dates}
+    jeonse_by_date = {d: {} for d in target_dates}
 
     for reg_code, reg_label, reg_type in region_targets:
         try:
@@ -92,7 +93,7 @@ def fetch_and_sync_kb_live(recent_weeks=20):
             }, headers=headers, timeout=15).json()
 
             items = r.get('dataBody', {}).get('data', {}).get('데이터리스트', [])
-            print(f">>> [Collector] KB {reg_label}({reg_code}) 수집 완료: {len(items)}개 시·군·구")
+            print(f">>> [Collector] KB 매매 {reg_label}({reg_code}) 수집 완료: {len(items)}개 시·군·구")
 
             for item in items:
                 raw_name = item.get('지역명', '').strip()
@@ -112,7 +113,34 @@ def fetch_and_sync_kb_live(recent_weeks=20):
                         'rate': rate_val
                     })
         except Exception as e:
-            print(f">>> [Collector ERR] KB {reg_label} 수집 중 오류: {e}")
+            print(f">>> [Collector ERR] KB 매매 {reg_label} 수집 중 오류: {e}")
+
+        # [신규] 동일 지역 KB 전세(매매전세코드='02') 주간 변동률 수집
+        try:
+            rj = requests.get(url, params={
+                '기간': '2', '매매전세코드': '02', '매물종별구분': '01', '월간주간구분코드': '02',
+                '지역코드': reg_code, '메뉴코드': '2'
+            }, headers=headers, timeout=15).json()
+
+            j_data = rj.get('dataBody', {}).get('data', {})
+            j_dates = j_data.get('날짜리스트', [])
+            j_items = j_data.get('데이터리스트', [])
+            for item in j_items:
+                raw_name = item.get('지역명', '').strip()
+                if reg_label == '서울':
+                    full_name = f"서울 {raw_name}" if not raw_name.startswith('서울') else raw_name
+                elif reg_label == '인천':
+                    full_name = f"인천 {raw_name}" if not raw_name.startswith('인천') else raw_name
+                else:
+                    full_name = raw_name
+
+                d_list = item.get('dataList', [])
+                for d in target_dates:
+                    if d in j_dates:
+                        j_idx = j_dates.index(d)
+                        jeonse_by_date[d][full_name] = calc_rate(d_list, j_idx)
+        except Exception as e:
+            print(f">>> [Collector ERR] KB 전세 {reg_label} 수집 중 오류: {e}")
 
     conn = get_db()
     with conn.cursor() as cur:
@@ -151,11 +179,12 @@ def fetch_and_sync_kb_live(recent_weeks=20):
             sorted_dists = sorted(dist_list, key=lambda x: x['rate'], reverse=True)
 
             for idx, dist in enumerate(sorted_dists, 1):
+                j_rate = jeonse_by_date.get(d, {}).get(dist['region_name'], 0.0)
                 cur.execute("""
                     INSERT INTO real_estate_weekly_trend
-                    (source_type, period_type, base_date, region_name, region_type, fluctuation_rate, rank_no)
-                    VALUES ('KB', 'WEEKLY', %s, %s, %s, %s, %s)
-                """, (formatted_date, dist['region_name'], dist['region_type'], dist['rate'], idx))
+                    (source_type, period_type, base_date, region_name, region_type, fluctuation_rate, jeonse_rate, rank_no)
+                    VALUES ('KB', 'WEEKLY', %s, %s, %s, %s, %s, %s)
+                """, (formatted_date, dist['region_name'], dist['region_type'], dist['rate'], j_rate, idx))
 
         conn.commit()
     conn.close()
@@ -367,7 +396,6 @@ if __name__ == '__main__':
     elif args.source == 'REB':
         collect_reb_official_report()
     else:
-        # ALL: KB 라이브 API 및 REB 공식 보도자료 실시간 수집 전체 가동
+        # ALL: KB 라이브 API(매매+전세) 및 REB 공식 보도자료 실시간 수집 전체 가동
         fetch_and_sync_kb_live(recent_weeks=args.weeks)
         collect_reb_official_report()
-        collect_real_estate_transactions()

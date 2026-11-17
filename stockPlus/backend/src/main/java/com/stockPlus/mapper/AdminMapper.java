@@ -121,4 +121,11 @@ public interface AdminMapper {
     List<Map<String, Object>> getRealEstateTransactions(
             @Param("tradeType") String tradeType,
             @Param("limit") int limit);
+
+    List<Map<String, Object>> getRealEstateRegionHistory(
+            @Param("regionName") String regionName,
+            @Param("periodType") String periodType);
+
+    List<Map<String, Object>> getRealEstateMomentum(
+            @Param("sourceType") String sourceType);
 }

@@ -365,6 +365,25 @@ public class StockDashboardController {
         return adminMapper.getRealEstateTransactions(tradeType, limit);
     }
 
+    /**
+     * 특정 지역 20주 시계열 추이 (KB vs REB, 매매 vs 전세)
+     */
+    @GetMapping("/real-estate/history")
+    public List<Map<String, Object>> getRealEstateRegionHistory(
+            @RequestParam String regionName,
+            @RequestParam(defaultValue = "WEEKLY") String periodType) {
+        return adminMapper.getRealEstateRegionHistory(regionName, periodType);
+    }
+
+    /**
+     * 전 지역 4주/20주 모멘텀 및 매매·전세 동시 집계
+     */
+    @GetMapping("/real-estate/momentum")
+    public List<Map<String, Object>> getRealEstateMomentum(
+            @RequestParam(defaultValue = "KB") String sourceType) {
+        return adminMapper.getRealEstateMomentum(sourceType);
+    }
+
     // --- Debug/Admin (관리자용) ---
 
     /**

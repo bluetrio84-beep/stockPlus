@@ -8,13 +8,14 @@ import classNames from 'classnames';
 import { 
     fetchRealEstateSummary, 
     fetchRealEstateRankings, 
-    fetchRealEstateDates,
-    fetchRealEstateTransactions 
+    fetchRealEstateDates
 } from '../api/stockApi';
 import RealEstateMapGrid from './RealEstateMapGrid';
+import RealEstateTrendTab from './RealEstateTrendTab';
+import RealEstateJeonseTab from './RealEstateJeonseTab';
 
 const RealEstateDashboard = () => {
-    // 탭: 'rankings' (시세 랭킹 Top 50) | 'map' (수도권 지도 히트맵) | 'transactions' (실거래가 신고가/하락거래)
+    // 탭: 'rankings' | 'map' | 'trend' (20주 추이·토허제) | 'jeonse' (매매·전세 수급)
     const [activeTab, setActiveTab] = useState('rankings');
 
     // 1. 기간 구분: 'WEEKLY' (주간) | 'MONTHLY' (월간) | 'YEARLY' (연간)
@@ -33,16 +34,10 @@ const RealEstateDashboard = () => {
     // 5. 상승/하락 순위 선택
     const [orderType, setOrderType] = useState('UP'); // 'UP' (상승률 Top 50) | 'DOWN' (하락률 Top 50)
 
-    // 6. 실거래가 거래 유형 선택
-    const [tradeType, setTradeType] = useState('ALL'); // 'ALL' | '신고가' | '하락거래'
-    // [신규] 실거래가 지역 퀵 필터 ('ALL' | '안양' | '서울' | '경기' | '지방')
-    const [txRegionFilter, setTxRegionFilter] = useState('ALL');
-
     // 데이터 상태
     const [summary, setSummary] = useState(null);
     const [rankings, setRankings] = useState([]);
     const [mapRankings, setMapRankings] = useState([]);
-    const [transactions, setTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -79,9 +74,6 @@ const RealEstateDashboard = () => {
             } else if (activeTab === 'map') {
                 const mapRes = await fetchRealEstateRankings(sourceType, periodType, selectedDate, '수도권', 'UP', 200);
                 setMapRankings(mapRes);
-            } else {
-                const txRes = await fetchRealEstateTransactions(tradeType, 150);
-                setTransactions(txRes);
             }
         } catch (e) {
             console.error('RealEstate load error:', e);
@@ -92,7 +84,7 @@ const RealEstateDashboard = () => {
 
     useEffect(() => {
         loadData();
-    }, [activeTab, sourceType, periodType, selectedDate, regionType, orderType, tradeType]);
+    }, [activeTab, sourceType, periodType, selectedDate, regionType, orderType]);
 
     // 검색 필터링 (안양시 만안구 등 실시간 검색)
     const filteredRankings = useMemo(() => {
@@ -100,24 +92,6 @@ const RealEstateDashboard = () => {
         const kw = searchKeyword.trim().toLowerCase();
         return rankings.filter(r => (r.region_name && r.region_name.toLowerCase().includes(kw)));
     }, [rankings, searchKeyword]);
-
-    const filteredTransactions = useMemo(() => {
-        return transactions.filter(t => {
-            // 지역 퀵 칩 필터
-            if (txRegionFilter === '안양' && !t.region_name?.includes('안양')) return false;
-            if (txRegionFilter === '서울' && !t.region_name?.includes('서울')) return false;
-            if (txRegionFilter === '경기' && (!t.region_name?.includes('경기') || t.region_name?.includes('안양'))) return false;
-            if (txRegionFilter === '지방' && (t.region_name?.includes('서울') || t.region_name?.includes('경기'))) return false;
-
-            // 검색어 필터
-            if (!searchKeyword.trim()) return true;
-            const kw = searchKeyword.trim().toLowerCase();
-            return (
-                (t.complex_name && t.complex_name.toLowerCase().includes(kw)) ||
-                (t.region_name && t.region_name.toLowerCase().includes(kw))
-            );
-        });
-    }, [transactions, searchKeyword, txRegionFilter]);
 
     // 억/만원 포맷터
     const formatPrice = (val) => {
@@ -162,43 +136,55 @@ const RealEstateDashboard = () => {
                         </div>
                     </div>
 
-                    {/* 메인 탭 전환: 시세 변동률 랭킹 vs 수도권 지도 히트맵 vs 아파트 실거래가 */}
-                    <div className="flex items-center gap-1 sm:gap-1.5 bg-[var(--theme-bg)] p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-[var(--theme-border)] shrink-0 self-start md:self-auto overflow-x-auto max-w-full">
+                    {/* 메인 탭 전환: 시세 변동률 랭킹 / 수도권 지도 / 20주 추이·토허제 / 매매·전세 심리 (모바일 2x2 깔끔 배치) */}
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-xl border border-[var(--theme-border)] shrink-0 w-full md:w-auto">
                         <button
                             onClick={() => { setActiveTab('rankings'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
+                                "flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
                                 activeTab === 'rankings'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <TrendingUp size={13} className="shrink-0" />
+                            <TrendingUp size={12} className="shrink-0" />
                             <span>시세 변동률 Top 50</span>
                         </button>
                         <button
                             onClick={() => { setActiveTab('map'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
+                                "flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
                                 activeTab === 'map'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <Map size={13} className="shrink-0" />
-                            <span>🗺️ 수도권 지도 히트맵</span>
+                            <Map size={12} className="shrink-0" />
+                            <span>🗺️ 수도권 지도</span>
                         </button>
                         <button
-                            onClick={() => { setActiveTab('transactions'); setSearchKeyword(''); }}
+                            onClick={() => { setActiveTab('trend'); setSearchKeyword(''); }}
                             className={classNames(
-                                "flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
-                                activeTab === 'transactions'
+                                "flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
+                                activeTab === 'trend'
                                     ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                                     : "text-slate-400 hover:text-[var(--theme-text)]"
                             )}
                         >
-                            <Flame size={13} className="shrink-0" />
-                            <span>아파트 실거래가 동향</span>
+                            <Sparkles size={12} className="shrink-0" />
+                            <span>📈 추이·토허제</span>
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('jeonse'); setSearchKeyword(''); }}
+                            className={classNames(
+                                "flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10.5px] sm:text-xs font-black whitespace-nowrap transition-all",
+                                activeTab === 'jeonse'
+                                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
+                                    : "text-slate-400 hover:text-[var(--theme-text)]"
+                            )}
+                        >
+                            <Flame size={12} className="shrink-0" />
+                            <span>🔥 매매·전세 심리</span>
                         </button>
                     </div>
                 </div>
@@ -334,63 +320,27 @@ const RealEstateDashboard = () => {
                             </div>
                         )}
                     </div>
-                ) : (
-                    <div className="mt-3.5 pt-3 border-t border-[var(--theme-border)]/50 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* 거래 유형: 전체 / 신고가 / 하락거래 */}
-                            <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
-                                {[
-                                    { id: 'ALL', name: '전체 거래' },
-                                    { id: '신고가', name: '🔥 최고가 / 신고가' },
-                                    { id: '하락거래', name: '❄️ 직전 대비 하락' }
-                                ].map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => setTradeType(t.id)}
-                                        className={classNames(
-                                            "px-3 py-1 rounded-md text-[11px] font-black transition-all",
-                                            tradeType === t.id ? "bg-[var(--theme-header)] text-[var(--theme-point)] border border-[var(--theme-border)] shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
-                                        )}
-                                    >
-                                        {t.name}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* [신규] 지역별 퀵 필터 칩 */}
-                            <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
-                                {[
-                                    { id: 'ALL', name: '전체 (100건+)' },
-                                    { id: '안양', name: '📍 안양시 (24건)' },
-                                    { id: '서울', name: '서울 (25건)' },
-                                    { id: '경기', name: '화성/경기 (28건)' },
-                                    { id: '지방', name: '인천/지방 (23건)' }
-                                ].map(f => (
-                                    <button
-                                        key={f.id}
-                                        onClick={() => setTxRegionFilter(f.id)}
-                                        className={classNames(
-                                            "px-2.5 py-1 rounded-md text-[11px] font-black transition-all",
-                                            txRegionFilter === f.id ? "bg-rose-500 text-white shadow-xs" : "text-slate-400 hover:text-[var(--theme-text)]"
-                                        )}
-                                    >
-                                        {f.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="w-full sm:w-64">
-                            <input
-                                type="text"
-                                value={searchKeyword}
-                                onChange={(e) => setSearchKeyword(e.target.value)}
-                                placeholder="단지명/지역 검색 (메가트리아, 평촌더샵 등)..."
-                                className="w-full bg-[var(--theme-bg)] text-[var(--theme-text)] text-xs font-bold px-3 py-1.5 rounded-xl border border-[var(--theme-border)] focus:outline-none focus:border-rose-500 transition-colors"
-                            />
+                ) : activeTab === 'trend' ? (
+                    <div className="mt-2 pt-2 border-t border-[var(--theme-border)]/50 flex items-center justify-between gap-2">
+                        <span className="text-[10.5px] sm:text-xs text-slate-400 font-bold">
+                            모멘텀·규제 모니터 기준 기관:
+                        </span>
+                        <div className="flex items-center bg-[var(--theme-bg)] p-0.5 rounded-lg border border-[var(--theme-border)]">
+                            {[{ id: 'KB', label: 'KB부동산' }, { id: 'REB', label: '한국부동산원' }].map((src) => (
+                                <button
+                                    key={src.id}
+                                    onClick={() => setSourceType(src.id)}
+                                    className={classNames(
+                                        "px-2.5 py-1 rounded-md text-[10.5px] font-black transition-all",
+                                        sourceType === src.id ? "bg-rose-500 text-white" : "text-slate-400 hover:text-[var(--theme-text)]"
+                                    )}
+                                >
+                                    {src.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                )}
+                ) : null}
             </div>
 
             {/* 메인 콘텐츠 영역 */}
@@ -547,94 +497,10 @@ const RealEstateDashboard = () => {
                             </div>
                         </div>
                     )
+                ) : activeTab === 'trend' ? (
+                    <RealEstateTrendTab sourceType={sourceType} />
                 ) : (
-                    /* 3. 아파트 실거래가 신고가/하락거래 카드 그리드 */
-                    isLoading ? (
-                        <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
-                            <RefreshCw size={28} className="animate-spin text-rose-500" />
-                            <span className="text-xs font-black">실거래가 데이터를 불러오는 중...</span>
-                        </div>
-                    ) : filteredTransactions.length === 0 ? (
-                        <div className="h-64 flex flex-col items-center justify-center text-slate-500">
-                            <span className="text-sm font-black">해당 조건의 실거래 데이터가 없습니다.</span>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                            {filteredTransactions.map((tx) => {
-                                const isNewHigh = tx.trade_type === '신고가';
-                                return (
-                                    <div 
-                                        key={tx.id} 
-                                        className={classNames(
-                                            "bg-[var(--theme-header)] border rounded-2xl p-4 shadow-sm transition-all hover:shadow-md",
-                                            isNewHigh 
-                                                ? "border-rose-500/20 hover:border-rose-500/50" 
-                                                : "border-blue-500/20 hover:border-blue-500/50"
-                                        )}
-                                    >
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={classNames(
-                                                        "text-[10px] font-black px-2 py-0.5 rounded-full border",
-                                                        isNewHigh 
-                                                            ? "bg-rose-500/10 text-rose-500 border-rose-500/20" 
-                                                            : "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                                                    )}>
-                                                        {isNewHigh ? '🔥 신고가 경신' : '❄️ 급락 거래'}
-                                                    </span>
-                                                    <span className="text-[11px] font-mono text-slate-400">
-                                                        {tx.trade_date}
-                                                    </span>
-                                                </div>
-                                                <h3 className="text-base font-black text-[var(--theme-text)] mt-1.5 tracking-tight">
-                                                    {tx.complex_name}
-                                                </h3>
-                                                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                                                    {tx.region_name}
-                                                </p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <span className="text-[11px] font-black text-slate-400">
-                                                    전용 {tx.area_m2}㎡ ({Math.round(tx.area_m2 / 3.3)}평)
-                                                </span>
-                                                <div className="text-[10px] font-bold text-slate-500">
-                                                    {tx.floor}층
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-3 pt-3 border-t border-[var(--theme-border)]/50 flex items-end justify-between">
-                                            <div>
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                                                    실거래 체결가
-                                                </span>
-                                                <span className={classNames(
-                                                    "text-lg font-black font-mono tracking-tight",
-                                                    isNewHigh ? "text-rose-500" : "text-blue-500"
-                                                )}>
-                                                    {formatPrice(tx.price_krw)}
-                                                </span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-bold text-slate-500 block">
-                                                    직전거래 {formatPrice(tx.prev_price_krw)}
-                                                </span>
-                                                <div className={classNames(
-                                                    "text-xs font-black font-mono inline-flex items-center gap-0.5",
-                                                    isNewHigh ? "text-rose-500" : "text-blue-500"
-                                                )}>
-                                                    {isNewHigh ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                                    <span>{tx.diff_krw > 0 ? '+' : ''}{formatPrice(tx.diff_krw)}</span>
-                                                    <span>({tx.diff_rate > 0 ? '+' : ''}{tx.diff_rate}%)</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )
+                    <RealEstateJeonseTab />
                 )}
             </div>
             )}
