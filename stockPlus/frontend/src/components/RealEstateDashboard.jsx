@@ -40,6 +40,7 @@ const RealEstateDashboard = () => {
     const [mapRankings, setMapRankings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [showScheduleTip, setShowScheduleTip] = useState(false);
 
     // 기간 구분 또는 기관 변경 시 기준일자 목록 로드
     useEffect(() => {
@@ -122,16 +123,53 @@ const RealEstateDashboard = () => {
                             <Building2 size={16} className="sm:w-5 sm:h-5" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-1.5 sm:gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                 <h1 className="text-sm sm:text-lg font-black tracking-tight text-[var(--theme-text)]">
                                     부동산 시장 현황
                                 </h1>
                                 <span className="text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
                                     REAL ESTATE
                                 </span>
+                                {/* 수집 스케줄 안내 배지 + 툴팁 (PC 호버 / 모바일 터치 지원) */}
+                                <div className="relative group">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowScheduleTip((v) => !v)}
+                                        onBlur={() => setTimeout(() => setShowScheduleTip(false), 180)}
+                                        title="한국부동산원: 매주 목요일 15:00 / KB부동산: 매주 금요일 10:00"
+                                        className="flex items-center gap-1 text-[9.5px] sm:text-[10.5px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full bg-slate-800/70 text-slate-300 border border-[var(--theme-border)] hover:border-rose-500/50 hover:text-white transition-all"
+                                    >
+                                        <Clock size={10} className="text-rose-400 shrink-0" />
+                                        <span className="sm:hidden">수집시간</span>
+                                        <span className="hidden sm:inline">REB 목 15:00 · KB 금 10:00</span>
+                                    </button>
+                                    <div
+                                        className={classNames(
+                                            "absolute left-0 top-full mt-1.5 z-50 w-60 sm:w-64 p-2.5 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl text-[11px] text-slate-200 transition-all",
+                                            showScheduleTip ? "block" : "hidden group-hover:block"
+                                        )}
+                                    >
+                                        <div className="font-black text-rose-400 mb-1.5 flex items-center gap-1">
+                                            <Clock size={11} /> 주간 데이터 자동 수집 안내
+                                        </div>
+                                        <div className="space-y-1 text-[10.5px]">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400">🏢 한국부동산원(REB)</span>
+                                                <span className="font-black text-cyan-400">매주 목요일 15:00+</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-400">🏠 KB부동산(KB)</span>
+                                                <span className="font-black text-amber-400">매주 금요일 10:00+</span>
+                                            </div>
+                                        </div>
+                                        <p className="mt-1.5 pt-1.5 border-t border-slate-800 text-[9.5px] text-slate-400">
+                                            공표 직후 자동으로 공식 API·보도자료를 파싱해 적재됩니다.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             <p className="hidden sm:block text-[11px] font-bold text-slate-500 mt-0.5">
-                                한국부동산원(REB) & KB부동산 공표 주간·월간·연간 변동률 및 전국 시·군·구 실거래가
+                                한국부동산원(REB) &amp; KB부동산 공표 주간·월간·연간 변동률, 20주 추이·토허제 및 매매·전세 수급 심리
                             </p>
                         </div>
                     </div>
